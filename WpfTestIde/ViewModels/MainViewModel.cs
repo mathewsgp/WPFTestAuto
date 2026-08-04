@@ -114,6 +114,7 @@ namespace WpfTestIde.ViewModels
         public ICommand PickElementCommand { get; }
         public ICommand GetDataGridContentOcrCommand { get; }
         public ICommand OpenCheckpointWizardCommand { get; }
+        public ICommand OpenSpyToolCommand { get; }
 
         public MainViewModel()
         {
@@ -137,6 +138,7 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
             PickElementCommand = new RelayCommand(_ => TogglePickMode(), _ => IsAttached);
             GetDataGridContentOcrCommand = new RelayCommand(async _ => await GetDataGridContentOcr(), _ => IsAttached);
             OpenCheckpointWizardCommand = new RelayCommand(_ => OpenCheckpointWizard());
+            OpenSpyToolCommand = new RelayCommand(_ => OpenSpyTool());
 
             Steps.CollectionChanged += (_, __) => RegenerateScript();
             Elements.CollectionChanged += (_, __) => RegenerateRepository();
@@ -340,6 +342,38 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
                 Steps.Add(verifyStep);
                 
                 StatusText = $"Checkpoint created: {checkpoint.Id} - {checkpoint.Type}";
+            }
+        }
+
+        private void OpenSpyTool()
+        {
+            if (!IsAttached)
+            {
+                MessageBox.Show("Please attach to a process first.", "Spy Tool",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new Dialogs.SpyToolDialog(PipeName);
+            if (dialog.ShowDialog() == true)
+            {
+                // Add selected element to repository
+                var props = dialog.SelectedProperties;
+                if (props != null && props.Count > 0)
+                {
+                    var alias = dialog.SelectedAlias ?? "NewElement";
+                    var newElement = new ElementEntry
+                    {
+                        Alias = alias,
+                        DisplayName = props.GetValueOrDefault("Name", alias),
+                        ControlType = props.GetValueOrDefault("ControlType", "Unknown"),
+                        AutomationId = props.GetValueOrDefault("AutomationId", ""),
+                        Name = props.GetValueOrDefault("Name", ""),
+                        XPath = props.GetValueOrDefault("XPath", "")
+                    };
+                    Elements.Add(newElement);
+                    StatusText = $"Added element: {alias}";
+                }
             }
         }
 

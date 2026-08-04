@@ -356,6 +356,21 @@ case "GetDataGridContent":
                     }
                     return SpyResponse.Ok("Recording cleared");
                 }
+                case "GetFullTree":
+                {
+                    // Get the main window and build a tree
+                    var mainWindow = System.Windows.Application.Current?.MainWindow;
+                    if (mainWindow == null)
+                    {
+                        return SpyResponse.Fail("No main window found");
+                    }
+
+                    var treeData = new
+                    {
+                        nodes = new[] { VisualTreeInspector.BuildElementTree(mainWindow) }
+                    };
+                    return SpyResponse.Ok(JsonHelper.Serialize(treeData));
+                }
                 case "CaptureArea":
                 {
                     var x = (int)(request.X ?? 0);

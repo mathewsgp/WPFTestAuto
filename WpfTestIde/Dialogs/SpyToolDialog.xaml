@@ -1,0 +1,143 @@
+<Window x:Class="WpfTestIde.Dialogs.SpyToolDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Spy Tool - Element Inspector" 
+        Height="700" Width="1000"
+        WindowStartupLocation="CenterOwner"
+        MinWidth="800" MinHeight="500">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.5*"/>
+            <ColumnDefinition Width="0.5*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Toolbar -->
+        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox x:Name="SearchBox" Width="200" Padding="4" 
+                     TextChanged="SearchBox_TextChanged"/>
+            <Button Content="🔍" Click="Search_Click" Padding="8,4" Margin="4,0,16,0" ToolTip="Search elements"/>
+            
+            <Button Content="🔄 Refresh Tree" Click="RefreshTree_Click" Padding="8,4" Margin="0,0,8,0"/>
+            <Button Content="📋 Copy XPath" Click="CopyXPath_Click" Padding="8,4" Margin="0,0,8,0"/>
+            <Button Content="📋 Copy All Props" Click="CopyAllProps_Click" Padding="8,4"/>
+        </StackPanel>
+
+        <!-- Left Panel: Visual Tree View -->
+        <Border Grid.Row="1" Grid.Column="0" Margin="0,0,4,8" 
+                BorderBrush="#DDD" BorderThickness="1" CornerRadius="4">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Element Tree" FontWeight="Bold" 
+                           Margin="8,8,8,4" Background="#F5F5F5" Padding="4"/>
+                <TreeView x:Name="ElementTree" BorderThickness="0" 
+                          SelectedItemChanged="ElementTree_SelectedItemChanged">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Icon}" Margin="0,0,4,0"/>
+                                <TextBlock Text="{Binding DisplayName}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasAutomationId}" Value="True">
+                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                    <Setter Property="Foreground" Value="#2563EB"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{Binding ControlTypeSuffix}" Foreground="Gray" Margin="4,0,0,0"/>
+                            </StackPanel>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </DockPanel>
+        </Border>
+
+        <!-- Right Panel: Property Grid + XPath Editor -->
+        <Grid Grid.Row="1" Grid.Column="1" Margin="4,0,0,8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Property Grid -->
+            <Border Grid.Row="0" Margin="0,0,0,8" 
+                    BorderBrush="#DDD" BorderThickness="1" CornerRadius="4">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Properties" FontWeight="Bold" 
+                               Margin="8,8,8,4" Background="#F5F5F5" Padding="4"/>
+                    
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <Grid x:Name="PropertyGrid">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Property rows will be added dynamically -->
+                        </Grid>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- XPath Editor -->
+            <Border Grid.Row="1" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,8,8,4">
+                        <TextBlock Text="XPath" FontWeight="Bold" Background="#F5F5F5" Padding="4"/>
+                        <Button Content="✓ Validate" Click="ValidateXPath_Click" Padding="6,2" Margin="8,0,0,0" FontSize="11"/>
+                    </StackPanel>
+                    
+                    <TextBox x:Name="XPathEditor" 
+                             FontFamily="Consolas" FontSize="12"
+                             AcceptsReturn="True" TextWrapping="NoWrap"
+                             HorizontalScrollBarVisibility="Auto"
+                             VerticalScrollBarVisibility="Auto"
+                             MinHeight="80" MaxHeight="120"
+                             Background="#1E1E1E" Foreground="#D4D4D4"
+                             BorderThickness="0" Padding="8"/>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- XPath Validation Result -->
+        <Border Grid.Row="2" Grid.ColumnSpan="2" Margin="0,0,0,8">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Left" Text="XPath Status:" FontWeight="Bold" 
+                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock x:Name="XPathStatus" Text="No element selected" 
+                           Foreground="Gray" VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
+
+        <!-- Actions -->
+        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Orientation="Horizontal" 
+                    HorizontalAlignment="Right">
+            <Button Content="Add to Repository" Click="AddToRepository_Click" 
+                    Padding="16,8" Margin="0,0,8,0" 
+                    Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
+            <Button Content="Close" Click="Close_Click" Padding="16,8"/>
+        </StackPanel>
+    </Grid>
+</Window>

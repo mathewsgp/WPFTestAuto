@@ -317,14 +317,14 @@ This is the **most important gap** for reducing rework when UIs change between v
 
 ### Critical (Must Have for Professional Tool)
 1. **AI-Powered Self-Healing Locators** — Implement ML-based similarity scoring for element matching when primary locators fail
-2. **Live UIA Event Recording** — Replace simulated recorder with real Windows UI Automation event hooking
-3. **Checkpoint Wizard** — Add point-and-click wizard for property, image, and area checkpoints
+2. **Live UIA Event Recording** — ✅ Implemented via `UiaEventRecorder.cs` with real Windows UI Automation event hooks
+3. **Checkpoint Wizard** — ✅ Implemented via `CheckpointWizardDialog.xaml` with point-and-click interface
 4. **Automatic Screenshot Capture** — Add automatic failure screenshots and baseline management
 
 ### High Priority (Significantly Reduces Rework)
 5. **Vision AI Integration** — Add visual-based element recognition for custom controls and canvas elements
-6. **Locator Healing Metadata Store** — Capture element snapshots and learn from successful/failed matches
-7. **Enhanced Spy Tool** — Add tree view, property grid, and XPath editor to IDE
+6. **Locator Healing Metadata Store** — ✅ Implemented via `healing_metadata_store.py` with CLI tool
+7. **Enhanced Spy Tool** — ✅ Implemented via `SpyToolDialog.xaml` with tree view, property grid, XPath editor
 8. **Smart Wait Auto-Insertion** — Analyze timing during recording and auto-insert appropriate waits
 
 ### Medium Priority (Improves Developer Experience)

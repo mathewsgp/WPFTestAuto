@@ -1344,6 +1344,98 @@ return JsonHelper.Serialize(result);
             }
             return csv.ToString();
         }
+
+        /// <summary>
+        /// Builds a tree structure of all elements in a visual tree.
+        /// Used by the Spy Tool to display the element hierarchy.
+        /// </summary>
+        public static ElementTreeNode? BuildElementTree(DependencyObject root)
+        {
+            if (root == null) return null;
+
+            var node = new ElementTreeNode
+            {
+                Name = (root as FrameworkElement)?.Name ?? "",
+                AutomationId = GetAutomationId(root),
+                ControlType = root.GetType().Name,
+                ClassName = root.GetType().FullName ?? "",
+                Text = GetElementText(root),
+                IsEnabled = IsElementEnabled(root),
+                IsVisible = IsElementVisible(root),
+                XPath = root is FrameworkElement fe ? BuildXPath(fe) : null
+            };
+
+            // Add children
+            int childCount = VisualTreeHelper.GetChildrenCount(root);
+            for (int i = 0; i < childCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                if (child != null)
+                {
+                    var childNode = BuildElementTree(child);
+                    if (childNode != null)
+                    {
+                        childNode.Parent = node;
+                        node.Children.Add(childNode);
+                    }
+                }
+            }
+
+            return node;
+        }
+
+        private static string? GetAutomationId(DependencyObject? element)
+        {
+            if (element is FrameworkElement fe)
+            {
+                var id = AutomationProperties.GetAutomationId(fe);
+                return string.IsNullOrEmpty(id) ? null : id;
+            }
+            return null;
+        }
+
+        private static string? GetElementText(DependencyObject? element)
+        {
+            if (element is System.Windows.Controls.TextBlock tb)
+                return tb.Text;
+            if (element is System.Windows.Controls.TextBox txt)
+                return txt.Text;
+            if (element is System.Windows.Controls.ContentControl cc)
+                return cc.Content?.ToString();
+            return null;
+        }
+
+        private static bool IsElementEnabled(DependencyObject? element)
+        {
+            if (element is FrameworkElement fe)
+                return fe.IsEnabled;
+            return true;
+        }
+
+        private static bool IsElementVisible(DependencyObject? element)
+        {
+            if (element is FrameworkElement fe)
+                return fe.IsVisible && fe.IsLoaded;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Represents a node in the element tree for the Spy Tool.
+    /// </summary>
+    public class ElementTreeNode
+    {
+        public string? Name { get; set; }
+        public string? AutomationId { get; set; }
+        public string? ControlType { get; set; }
+        public string? ClassName { get; set; }
+        public string? Text { get; set; }
+        public string? XPath { get; set; }
+        public bool? IsEnabled { get; set; }
+        public bool? IsVisible { get; set; }
+        public Rect? Bounds { get; set; }
+        public ElementTreeNode? Parent { get; set; }
+        public List<ElementTreeNode> Children { get; set; } = new();
     }
 }
 
