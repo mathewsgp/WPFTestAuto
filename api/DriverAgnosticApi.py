@@ -18,7 +18,7 @@ import os
 import subprocess
 import time
 import signal
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -37,6 +37,9 @@ from logging_utils import get_api_logger, execution_logger  # noqa: E402
 from base_driver import ElementHandle  # noqa: E402
 
 import repository_access as repo  # noqa: E402
+
+# Import healing metadata store (Phase 1 feature)
+from healing_metadata_store import get_healing_store  # noqa: E402
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "flaui_robotframework"))
@@ -217,6 +220,11 @@ class DriverAgnosticApi:
         and for each driver, tries all strategies in priority order.
         Automatically falls back if one strategy or driver fails.
         
+        Phase 1 Enhancement: Integrates with HealingMetadataStore to:
+        - Capture baseline properties on successful interactions
+        - Record healing attempts when driver fallback occurs
+        - Track strategy success/failure for post-run repository updates
+        
         Path Resolution:
         - If element has parentAlias, walks parent chain to build full XPath
         - Relative XPath is appended to parent's full XPath
@@ -233,6 +241,13 @@ class DriverAgnosticApi:
         Raises:
             AllStrategiesFailedError: If all strategies across all drivers fail.
         """
+        # Initialize healing store for metadata capture
+        healing_store = None
+        try:
+            healing_store = get_healing_store()
+        except Exception:
+            pass  # Healing store is optional
+        
         # Get all strategies for this element, sorted by priority
         all_strategies = repo.get_all_driver_strategies_sorted(alias)
         wpfspy_mode = os.environ.get("WPFSPY_MODE", "mock")
@@ -255,6 +270,18 @@ class DriverAgnosticApi:
         # Build ordered strategy list from config and available strategies
         driver_order = config.DRIVER_ORDER
         attempts = []
+        
+        # Track healing info: first failure and subsequent success
+        healing_info = {
+            "attempted": False,
+            "primary_driver": None,
+            "primary_search_by": None,
+            "primary_value": None,
+            "primary_error": None,
+            "healing_driver": None,
+            "healing_search_by": None,
+            "healing_value": None
+        }
         
         for driver_name in driver_order:
             if driver_name not in all_strategies:
@@ -325,12 +352,73 @@ class DriverAgnosticApi:
                         duration_ms=round(duration_ms, 2)
                     )
                     
+                    # Phase 1: Capture baseline and record healing
+                    if healing_store is not None:
+                        # Record strategy attempt for statistics
+                        healing_store.record_strategy_attempt(
+                            alias=alias,
+                            driver=driver_name,
+                            search_method=search_by,
+                            success=True,
+                            duration_ms=duration_ms
+                        )
+                        
+                        # If this was a healing success (fallback worked)
+                        if healing_info["attempted"]:
+                            # Record the healing attempt
+                            healing_store.record_healing(
+                                alias=alias,
+                                primary_driver=healing_info["primary_driver"],
+                                primary_search_method=healing_info["primary_search_by"],
+                                primary_search_value=healing_info["primary_value"],
+                                failure_reason=healing_info["primary_error"],
+                                healing_driver=driver_name,
+                                healing_search_method=search_by,
+                                healing_search_value=strategy_value,
+                                healing_successful=True,
+                                new_properties=self._capture_element_properties(driver, element)
+                            )
+                            logger.info(
+                                f"[Healing] Element healed via {driver_name}:{search_by}",
+                                alias=alias,
+                                primary=healing_info["primary_driver"],
+                                healing=driver_name
+                            )
+                        else:
+                            # Capture baseline on successful interaction
+                            props = self._capture_element_properties(driver, element)
+                            healing_store.capture_baseline(
+                                alias=alias,
+                                properties=props,
+                                driver=driver_name,
+                                search_method=search_by,
+                                search_value=strategy_value
+                            )
+                    
                     return result
                     
                 except Exception as e:
                     duration_ms = (time.time() - start_time) * 1000
                     error_msg = str(e)[:100]
                     attempts.append((strategy_desc, f"FAILED: {error_msg}"))
+                    
+                    # Phase 1: Record strategy failure
+                    if healing_store is not None:
+                        healing_store.record_strategy_attempt(
+                            alias=alias,
+                            driver=driver_name,
+                            search_method=search_by,
+                            success=False,
+                            duration_ms=duration_ms
+                        )
+                    
+                    # Record first failure for healing tracking
+                    if not healing_info["attempted"]:
+                        healing_info["attempted"] = True
+                        healing_info["primary_driver"] = driver_name
+                        healing_info["primary_search_by"] = search_by
+                        healing_info["primary_value"] = strategy_value
+                        healing_info["primary_error"] = error_msg
                     
                     logger.debug(
                         f"Strategy failed, trying next",
@@ -359,6 +447,20 @@ class DriverAgnosticApi:
             "driver_order": driver_order
         }
         
+        # Phase 1: Record failed healing attempt
+        if healing_store is not None and healing_info["attempted"]:
+            healing_store.record_healing(
+                alias=alias,
+                primary_driver=healing_info["primary_driver"],
+                primary_search_method=healing_info["primary_search_by"],
+                primary_search_value=healing_info["primary_value"],
+                failure_reason=healing_info["primary_error"],
+                healing_driver="None",
+                healing_search_method="N/A",
+                healing_search_value="N/A",
+                healing_successful=False
+            )
+        
         logger.error(
             f"All strategies failed for {alias}",
             alias=alias,
@@ -370,6 +472,51 @@ class DriverAgnosticApi:
             attempts=attempts,
             details=error_details
         )
+    
+    def _capture_element_properties(self, driver, element: ElementHandle) -> Dict[str, Any]:
+        """Capture element properties for baseline storage.
+        
+        Args:
+            driver: The driver instance used to find the element.
+            element: The element handle.
+            
+        Returns:
+            Dict of captured properties.
+        """
+        properties = {}
+        
+        try:
+            # Get basic properties
+            properties["automation_id"] = driver.get_attribute(element, "AutomationId")
+        except Exception:
+            pass
+        
+        try:
+            properties["name"] = driver.get_attribute(element, "Name")
+        except Exception:
+            pass
+        
+        try:
+            properties["control_type"] = driver.get_attribute(element, "ControlType")
+        except Exception:
+            pass
+        
+        try:
+            properties["text"] = driver.get_text(element)
+        except Exception:
+            pass
+        
+        try:
+            properties["is_visible"] = driver.is_visible(element)
+        except Exception:
+            pass
+        
+        try:
+            properties["is_enabled"] = driver.is_enabled(element)
+        except Exception:
+            pass
+        
+        return properties
     
     def _resolve_strategy_with_parent(self, strategy: dict, alias: str) -> dict:
         """Resolve strategy by building full XPath from parent chain.
