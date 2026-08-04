@@ -4,7 +4,9 @@ using System.Windows;
 using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
+#if NET8_0_OR_GREATER
 using Tesseract;
+#endif
 using WpfSpyAgent.Protocol;
 
 namespace WpfSpyAgent
@@ -235,6 +237,7 @@ case "GetDataGridContent":
                      var base64 = VisualTreeInspector.GetDataGridScreenshot(element);
                      return SpyResponse.Ok(base64);
                  }
+#if NET8_0_OR_GREATER
                  case "GetDataGridContentOcr":
                  {
                      var element = RequireElement(request.Name, request.XPath);
@@ -263,6 +266,7 @@ case "GetDataGridContent":
                              "\nEnsure tessdata/eng.traineddata is available.");
                      }
                  }
+#endif
                  case "ResetState":
                 {
                     ResetAppState();
