@@ -363,7 +363,7 @@ namespace WpfTestIde.Recording
             var filePath = Path.Combine(_baselineImagesDir, fileName);
 
             // Send capture command to agent
-            var response = _client.Send("CaptureArea", x: x, y: y, width: width, height: height);
+            var response = _client.Send("CaptureArea", x: (int)x, y: (int)y, width: (int)width, height: (int)height);
             if (response.Success && !string.IsNullOrEmpty(response.Data))
             {
                 try

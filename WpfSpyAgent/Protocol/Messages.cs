@@ -40,6 +40,14 @@ namespace WpfSpyAgent.Protocol
         [JsonPropertyName("y")]
         public double? Y { get; set; }
 
+        /// <summary>Used by CaptureArea — width of capture region.</summary>
+        [JsonPropertyName("width")]
+        public double? Width { get; set; }
+
+        /// <summary>Used by CaptureArea — height of capture region.</summary>
+        [JsonPropertyName("height")]
+        public double? Height { get; set; }
+
         /// <summary>Used by FindByXPath only — an XPath expression locating
         /// the element from the root window.</summary>
         [JsonPropertyName("xpath")]

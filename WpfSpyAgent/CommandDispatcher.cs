@@ -316,6 +316,30 @@ case "GetDataGridContent":
                     }
                     return SpyResponse.Ok("Recording cleared");
                 }
+                case "CaptureArea":
+                {
+                    var x = request.X ?? 0;
+                    var y = request.Y ?? 0;
+                    var width = request.Width ?? 100;
+                    var height = request.Height ?? 100;
+                    
+                    try
+                    {
+                        // Capture screenshot of the specified area
+                        using var bitmap = new System.Drawing.Bitmap(width, height);
+                        using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+                        graphics.CopyFromScreen((int)x, (int)y, 0, 0, new System.Drawing.Size(width, height));
+                        
+                        using var ms = new System.IO.MemoryStream();
+                        bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                        var base64 = Convert.ToBase64String(ms.ToArray());
+                        return SpyResponse.Ok(base64);
+                    }
+                    catch (Exception ex)
+                    {
+                        return SpyResponse.Fail($"CaptureArea failed: {ex.Message}");
+                    }
+                }
                 // --- End UIA Event Recording Commands ---
                 default:
                     return SpyResponse.Fail($"Unknown command '{request.Command}'");
