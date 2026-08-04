@@ -353,24 +353,15 @@ namespace WpfSpyAgent
                 if (string.IsNullOrEmpty(automationId) && string.IsNullOrEmpty(name))
                     return null;
 
-                // Build XPath (only for FrameworkElement)
-                string? xpath = null;
-                try
-                {
-                    var fe = element as FrameworkElement;
-                    if (fe != null)
-                    {
-                        xpath = VisualTreeInspector.BuildXPath(fe);
-                    }
-                }
-                catch { }
+                // Note: XPath building requires FrameworkElement, not available for all AutomationElements
+                // Use the helper method with FrameworkElement when available
 
                 return new ElementProperties
                 {
                     AutomationId = automationId,
                     Name = name,
                     ControlType = controlType,
-                    Xpath = xpath
+                    Xpath = null  // XPath not available for generic AutomationElement
                 };
             }
             catch
