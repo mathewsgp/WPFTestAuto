@@ -12,6 +12,42 @@ using WpfSpyAgent.Protocol;
 namespace WpfSpyAgent
 {
     /// <summary>
+    /// P/Invoke declarations for screen capture.
+    /// </summary>
+    internal static class NativeMethods
+    {
+        [DllImport("gdi32.dll")]
+        internal static extern bool BitBlt(IntPtr hdcDest, int xDest, int yDest, int wDest, int hDest,
+            IntPtr hdcSource, int xSrc, int ySrc, int rop);
+
+        [DllImport("gdi32.dll")]
+        internal static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+
+        [DllImport("gdi32.dll")]
+        internal static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int width, int height);
+
+        [DllImport("gdi32.dll")]
+        internal static extern IntPtr SelectObject(IntPtr hdc, IntPtr hObject);
+
+        [DllImport("gdi32.dll")]
+        internal static extern bool DeleteObject(IntPtr hObject);
+
+        [DllImport("gdi32.dll")]
+        internal static extern bool DeleteDC(IntPtr hdc);
+
+        [DllImport("user32.dll")]
+        internal static extern IntPtr GetDesktopWindow();
+
+        [DllImport("user32.dll")]
+        internal static extern IntPtr GetWindowDC(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        internal static extern bool ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        internal const int SRCCOPY = 0x00CC0020;
+    }
+
+    /// <summary>
     /// Parses one JSON request line, finds the target element fresh from
     /// the live visual tree, performs the requested action, and returns
     /// one JSON response line. Called on the WPF UI thread by
@@ -329,14 +365,34 @@ case "GetDataGridContent":
                     
                     try
                     {
-                        // Use System.Drawing for screen capture
-                        using var bitmap = new System.Drawing.Bitmap(width, height);
-                        using var graphics = System.Drawing.Graphics.FromImage(bitmap);
-                        graphics.CopyFromScreen(x, y, 0, 0, new System.Drawing.Size(width, height));
+                        // Use P/Invoke for cross-framework screen capture
+                        var hDesk = NativeMethods.GetDesktopWindow();
+                        var hSrce = NativeMethods.GetWindowDC(hDesk);
+                        var hDest = NativeMethods.CreateCompatibleDC(hSrce);
+                        var hBmp = NativeMethods.CreateCompatibleBitmap(hSrce, width, height);
+                        var hOld = NativeMethods.SelectObject(hDest, hBmp);
+                        
+                        NativeMethods.BitBlt(hDest, 0, 0, width, height, hSrce, x, y, NativeMethods.SRCCOPY);
+                        
+                        NativeMethods.SelectObject(hDest, hOld);
+                        
+                        // Convert HBITMAP to PNG using WPF
+                        var sourceBitmap = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+                            hBmp, IntPtr.Zero, System.Windows.Int32Rect.Empty,
+                            System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+                        
+                        var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                        encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(sourceBitmap));
                         
                         using var ms = new System.IO.MemoryStream();
-                        bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                        encoder.Save(ms);
                         var base64 = Convert.ToBase64String(ms.ToArray());
+                        
+                        // Cleanup
+                        NativeMethods.DeleteObject(hBmp);
+                        NativeMethods.DeleteDC(hDest);
+                        NativeMethods.ReleaseDC(hDesk, hSrce);
+                        
                         return SpyResponse.Ok(base64);
                     }
                     catch (Exception ex)

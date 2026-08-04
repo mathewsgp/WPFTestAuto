@@ -17,11 +17,6 @@
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
-  <!-- Shared packages for both frameworks -->
-  <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <!-- System.Text.Json 8.x is not compatible with .NET Framework;
          use Newtonsoft.Json for the net461 agent build. -->
