@@ -376,18 +376,21 @@ class MockWpfApp:
     # Locate (what each driver calls to resolve an element)
     # ------------------------------------------------------------------
     def find_by_automation_id(self, automation_id: str) -> Optional[Control]:
+        """Find a single control by AutomationId."""
         for ctrl in self.controls.values():
             if ctrl.automation_id and ctrl.automation_id == automation_id:
                 return ctrl
         return None
 
     def find_by_name(self, name: str) -> Optional[Control]:
+        """Find a single control by Name."""
         for ctrl in self.controls.values():
             if ctrl.name == name:
                 return ctrl
         return None
 
     def find_by_image_tag(self, tag: str) -> Optional[Control]:
+        """Find a single control by image tag."""
         for ctrl in self.controls.values():
             if ctrl.image_tag == tag:
                 return ctrl
@@ -401,6 +404,95 @@ class MockWpfApp:
         if 0 <= index - 1 < len(matches):
             return matches[index - 1]
         return None
+    
+    # ------------------------------------------------------------------
+    # Find Multiple Elements (find_elements support)
+    # ------------------------------------------------------------------
+    def find_all_by_automation_id(self, automation_id: str) -> List[Control]:
+        """Find all controls matching the given AutomationId.
+        
+        Args:
+            automation_id: The AutomationId to search for.
+            
+        Returns:
+            List of controls matching the AutomationId.
+        """
+        return [ctrl for ctrl in self.controls.values()
+                if ctrl.automation_id and ctrl.automation_id == automation_id]
+    
+    def find_all_by_name(self, name: str) -> List[Control]:
+        """Find all controls matching the given Name.
+        
+        Args:
+            name: The Name property to search for.
+            
+        Returns:
+            List of controls matching the Name.
+        """
+        return [ctrl for ctrl in self.controls.values()
+                if ctrl.name == name]
+    
+    def find_all_by_control_type(self, control_type: str) -> List[Control]:
+        """Find all controls of the given type.
+        
+        Args:
+            control_type: The WPF control type (e.g., "Button", "TextBox").
+            
+        Returns:
+            List of controls matching the type.
+        """
+        return [ctrl for ctrl in self.controls.values()
+                if ctrl.control_type == control_type]
+    
+    def find_all_by_image_tag(self, tag: str) -> List[Control]:
+        """Find all controls matching the given image tag.
+        
+        Args:
+            tag: The image tag to search for.
+            
+        Returns:
+            List of controls matching the image tag.
+        """
+        return [ctrl for ctrl in self.controls.values()
+                if ctrl.image_tag == tag]
+    
+    def find_all_by_xpath(self, xpath: str) -> List[Control]:
+        """Find all controls matching an XPath pattern.
+        
+        Note: For simplicity, this supports basic XPath patterns like
+        //ControlType or ControlType[@AutomationId='xxx']
+        
+        Args:
+            xpath: The XPath expression to evaluate.
+            
+        Returns:
+            List of controls matching the XPath.
+        """
+        results = []
+        
+        # Handle //ControlType pattern
+        if xpath.startswith("//"):
+            type_match = xpath[2:].split("[")[0] if "[" in xpath else xpath[2:]
+            results = [ctrl for ctrl in self.controls.values()
+                     if ctrl.control_type == type_match]
+            
+            # Filter by AutomationId if specified
+            if "[@AutomationId=" in xpath:
+                import re
+                match = re.search(r"\[@AutomationId='([^']+)'\]", xpath)
+                if match:
+                    aid = match.group(1)
+                    results = [ctrl for ctrl in results if ctrl.automation_id == aid]
+            
+            # Filter by Name if specified
+            elif "[@Name=" in xpath:
+                import re
+                match = re.search(r"\[@Name='([^']+)'\]", xpath)
+                if match:
+                    name = match.group(1)
+                    results = [ctrl for ctrl in results if ctrl.name == name]
+        
+        return results
 
     def find_by_flaui_path(self, path: str) -> Optional[Control]:
         """Find control by FlaUI XPath path."""
@@ -664,7 +756,72 @@ class MockWpfApp:
         return ctrl.text
 
     def is_visible(self, ctrl: Control) -> bool:
+        """Check if a control is visible."""
         return bool(ctrl.visible)
+    
+    def is_enabled(self, ctrl: Control) -> bool:
+        """Check if a control is enabled.
+        
+        Args:
+            ctrl: The control to check.
+            
+        Returns:
+            True if enabled, False otherwise.
+        """
+        return bool(ctrl.enabled)
+    
+    def get_attribute(self, ctrl: Control, attribute_name: str) -> Optional[str]:
+        """Get a specific attribute value from a control.
+        
+        Args:
+            ctrl: The control to get the attribute from.
+            attribute_name: The attribute name (e.g., "AutomationId", "Name", 
+                          "ControlType", "Text", "IsVisible", "IsEnabled").
+            
+        Returns:
+            The attribute value as a string, or None if not supported.
+        """
+        attr_lower = attribute_name.lower()
+        
+        if attr_lower in ("automationid", "automation_id"):
+            return ctrl.automation_id
+        elif attr_lower == "name":
+            return ctrl.name
+        elif attr_lower in ("controltype", "type"):
+            return ctrl.control_type
+        elif attr_lower in ("text", "content"):
+            return ctrl.text
+        elif attr_lower in ("isvisible", "visible"):
+            return str(ctrl.visible).lower()
+        elif attr_lower in ("isenabled", "enabled"):
+            return str(ctrl.enabled).lower()
+        elif attr_lower == "imagetag":
+            return ctrl.image_tag
+        elif attr_lower == "xpath":
+            # Return first FlaUI path as the canonical XPath
+            return ctrl.flaui_paths[0] if ctrl.flaui_paths else None
+        else:
+            return None
+    
+    def capture_screenshot(self, ctrl: Optional[Control] = None) -> bytes:
+        """Capture a screenshot (mock implementation).
+        
+        In production, this would capture the actual screen/window.
+        For the mock, we return a minimal PNG placeholder.
+        
+        Args:
+            ctrl: Optional control to capture. If None, captures entire screen.
+            
+        Returns:
+            PNG image data as bytes.
+        """
+        # Minimal 1x1 transparent PNG
+        return (
+            b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01'
+            b'\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89'
+            b'\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05'
+            b'\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82'
+        )
 
 
     def reset(self):

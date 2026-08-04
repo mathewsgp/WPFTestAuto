@@ -24,6 +24,7 @@ fully runnable and testable without Windows/.NET.
 
 import sys
 import os
+from typing import List, Optional
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "drivers", "mock_wpf_app"))
 from mock_app import APP_INSTANCE, ElementNotFoundError, ElementNotInteractableError  # noqa: E402
@@ -46,6 +47,12 @@ class FlaUIDriver:
         Args:
             strategy: Dict with searchBy and value keys.
                      Supports: AutomationId, Name, TypeAndIndex, XPath
+                     
+        Returns:
+            Single ElementHandle for the found element.
+            
+        Raises:
+            ElementNotFoundError: If no matching element is found.
         """
         search_by = strategy.get("searchBy", "AutomationId")
         value = strategy.get("value")
@@ -84,19 +91,99 @@ class FlaUIDriver:
         else:
             raise ElementNotFoundError(f"Unsupported FlaUI searchBy: {search_by}")
 
+    def find_elements(self, strategy: dict) -> List:
+        """Locates all elements matching the FlaUI strategy.
+        
+        Args:
+            strategy: Dict with searchBy and value keys.
+                     Supports: AutomationId, Name, Type, XPath
+                     
+        Returns:
+            List of ElementHandles for all matching elements (may be empty).
+        """
+        search_by = strategy.get("searchBy", "AutomationId")
+        value = strategy.get("value")
+        
+        if search_by == "AutomationId":
+            return APP_INSTANCE.find_all_by_automation_id(value)
+        
+        elif search_by == "Name":
+            return APP_INSTANCE.find_all_by_name(value)
+        
+        elif search_by == "Type":
+            return APP_INSTANCE.find_all_by_control_type(value)
+        
+        elif search_by == "XPath":
+            return APP_INSTANCE.find_all_by_xpath(value)
+        
+        elif search_by == "ImageTag":
+            return APP_INSTANCE.find_all_by_image_tag(value)
+        
+        else:
+            return []  # Unsupported search type returns empty list
+
     def invoke(self, element):
+        """Click/invoke an element."""
         APP_INSTANCE.invoke(element)
 
     def set_value(self, element, value: str):
+        """Set text value on an input element."""
         APP_INSTANCE.set_value(element, value)
 
     def get_text(self, element) -> str:
+        """Get the text content of an element."""
         return APP_INSTANCE.get_text(element)
 
     def is_visible(self, element) -> bool:
+        """Check if an element is visible."""
         return APP_INSTANCE.is_visible(element)
 
+    def is_enabled(self, element) -> bool:
+        """Check if an element is enabled.
+        
+        Args:
+            element: The element to check.
+            
+        Returns:
+            True if the element is enabled, False otherwise.
+        """
+        return APP_INSTANCE.is_enabled(element)
+
+    def is_actionable(self, element) -> bool:
+        """Check if an element is both visible and enabled."""
+        return self.is_visible(element) and self.is_enabled(element)
+
+    def get_attribute(self, element, attribute_name: str) -> Optional[str]:
+        """Get a specific attribute value from an element.
+        
+        Args:
+            element: The element to get the attribute from.
+            attribute_name: The attribute name (AutomationId, Name, ControlType, etc.)
+            
+        Returns:
+            The attribute value as a string, or None if not found.
+        """
+        return APP_INSTANCE.get_attribute(element, attribute_name)
+
+    def capture_screenshot(self, element=None) -> bytes:
+        """Capture a screenshot.
+        
+        Args:
+            element: Optional element to capture (region). If None, captures entire screen.
+            
+        Returns:
+            PNG image data as bytes.
+        """
+        return APP_INSTANCE.capture_screenshot(element)
+
     def toggle(self, element, state: bool = None):
+        """Toggle a checkbox or toggle button.
+        
+        Args:
+            element: The element to toggle.
+            state: Optional target state (True=checked, False=unchecked).
+                   If None, toggles current state.
+        """
         APP_INSTANCE.invoke(element)  # mock: toggle behaves as invoke
 
     def get_data_grid_content_ocr(self, element) -> str:
@@ -112,6 +199,14 @@ class FlaUIDriver:
             return "SKU,Qty"
         
         return grid_text
+
+    def close(self):
+        """Clean up driver resources.
+        
+        In production with real FlaUI, this would close the application
+        or release any acquired resources.
+        """
+        pass  # Mock implementation - no cleanup needed
 
 
 class FlaUILibrary:

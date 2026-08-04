@@ -141,6 +141,18 @@ class BaseDriver(ABC):
         pass
     
     @abstractmethod
+    def find_elements(self, locator: Dict[str, Any]) -> List[ElementHandle]:
+        """Find multiple elements matching the locator.
+        
+        Args:
+            locator: Dictionary containing strategy-specific locator info.
+        
+        Returns:
+            List[ElementHandle]: List of matching elements (may be empty).
+        """
+        pass
+    
+    @abstractmethod
     def toggle(self, element: ElementHandle, state: Optional[bool] = None) -> bool:
         """Toggle a checkbox or toggle button.
         
@@ -208,6 +220,7 @@ class BaseDriver(ABC):
         """
         raise NotImplementedError(f"{self.name} does not support screenshots")
     
+    @abstractmethod
     def get_attribute(
         self,
         element: ElementHandle,
@@ -220,9 +233,9 @@ class BaseDriver(ABC):
             attribute_name: Name of the attribute.
         
         Returns:
-            Optional[str]: The attribute value or None if not supported.
+            Optional[str]: The attribute value or None if not found.
         """
-        return None
+        pass
     
     def close(self) -> None:
         """Clean up driver resources.

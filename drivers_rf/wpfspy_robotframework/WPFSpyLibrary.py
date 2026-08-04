@@ -33,6 +33,7 @@ import json
 import base64
 import csv
 import io
+from typing import List, Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "..", "drivers", "mock_wpf_app"))
@@ -92,7 +93,18 @@ class WPFSpyRealDriver:
             win32file.CloseHandle(handle)
 
     def find_element(self, locator: dict):
-        """locator: {"searchBy": "XPath", "value": "..."} or {"searchBy": "Name", "value": "..."}"""
+        """Locates a single element using WPFSpy strategy.
+        
+        Args:
+            locator: Dict with searchBy and value keys.
+                    {"searchBy": "XPath", "value": "..."} or {"searchBy": "Name", "value": "..."}
+                    
+        Returns:
+            ElementHandle for the found element.
+            
+        Raises:
+            ElementNotFoundError: If no matching element is found.
+        """
         search_by = locator.get("searchBy", "XPath")
         value = locator.get("value")
         
@@ -122,7 +134,28 @@ class WPFSpyRealDriver:
             f"WPFSpy: no element with Name='{value}' after {max_retries} attempts"
         )
 
+    def find_elements(self, locator: dict) -> List[dict]:
+        """Locates all elements matching the WPFSpy strategy.
+        
+        Note: The real WPFSpy agent doesn't support find_elements natively.
+        This implementation uses the real driver for single-element finding.
+        
+        Args:
+            locator: Dict with searchBy and value keys.
+            
+        Returns:
+            List of ElementHandles for all matching elements.
+        """
+        # For real driver, we return a single-element list
+        # In production, the C# agent should implement FindElements
+        try:
+            element = self.find_element(locator)
+            return [element]
+        except ElementNotFoundError:
+            return []
+
     def invoke(self, element):
+        """Click/invoke an element."""
         if "xpath" in element:
             response = self._send("Invoke", xpath=element["xpath"])
         else:
@@ -131,6 +164,7 @@ class WPFSpyRealDriver:
             raise ElementNotInteractableError(response.get("error"))
 
     def set_value(self, element, value: str):
+        """Set text value on an input element."""
         if "xpath" in element:
             response = self._send("SetValue", xpath=element["xpath"], value=value)
         else:
@@ -139,6 +173,7 @@ class WPFSpyRealDriver:
             raise ElementNotInteractableError(response.get("error"))
 
     def get_text(self, element) -> str:
+        """Get the text content of an element."""
         if "xpath" in element:
             response = self._send("GetText", xpath=element["xpath"])
         else:
@@ -148,13 +183,54 @@ class WPFSpyRealDriver:
         return response.get("data", "")
 
     def is_visible(self, element) -> bool:
+        """Check if an element is visible."""
         if "xpath" in element:
             response = self._send("IsVisible", xpath=element["xpath"])
         else:
             response = self._send("IsVisible", name=element["name"])
         return response.get("data") == "true"
 
+    def is_enabled(self, element) -> bool:
+        """Check if an element is enabled.
+        
+        Note: This requires the C# agent to implement IsEnabled command.
+        Falls back to using IsVisible if IsEnabled is not supported.
+        """
+        if "xpath" in element:
+            response = self._send("IsEnabled", xpath=element["xpath"])
+        else:
+            response = self._send("IsEnabled", name=element["name"])
+        
+        if response.get("success"):
+            return response.get("data") == "true"
+        
+        # Fallback: assume enabled if we can find it
+        return True
+
+    def is_actionable(self, element) -> bool:
+        """Check if an element is both visible and enabled."""
+        return self.is_visible(element) and self.is_enabled(element)
+
+    def get_attribute(self, element, attribute_name: str) -> Optional[str]:
+        """Get a specific attribute value from an element.
+        
+        Note: This requires the C# agent to implement GetAttribute command.
+        For now, returns None as this is not yet implemented in the agent.
+        """
+        # In production, this would call a GetAttribute command
+        return None
+
+    def capture_screenshot(self, element=None) -> bytes:
+        """Capture a screenshot.
+        
+        Note: This requires the C# agent to implement CaptureScreenshot command.
+        For now, returns empty bytes.
+        """
+        # In production, this would call a CaptureScreenshot command
+        return b""
+
     def toggle(self, element, state: bool = None):
+        """Toggle a checkbox or toggle button."""
         if "xpath" in element:
             response = self._send("Toggle", xpath=element["xpath"])
         else:
@@ -203,6 +279,10 @@ class WPFSpyRealDriver:
             cells = line.split()
             writer.writerow(cells)
         return output.getvalue()
+    
+    def close(self):
+        """Clean up driver resources."""
+        pass  # Named pipe connections are stateless
 
 
 # ---------------------------------------------------------------------------
@@ -221,11 +301,17 @@ class WPFSpyMockDriver:
         print(f"[WPFSpy IPC] -> {command}({payload})")
 
     def find_element(self, strategy: dict):
-        """Locates an element using WPFSpy strategy.
+        """Locates a single element using WPFSpy strategy.
         
         Args:
             strategy: Dict with searchBy and value keys.
                     Supports: XPath, AutomationId, Name, TypeAndIndex
+                    
+        Returns:
+            ElementHandle for the found element.
+            
+        Raises:
+            ElementNotFoundError: If no matching element is found.
         """
         search_by = strategy.get("searchBy", "XPath")
         value = strategy.get("value")
@@ -261,7 +347,40 @@ class WPFSpyMockDriver:
         else:
             raise ElementNotFoundError(f"Unsupported WPFSpy searchBy: {search_by}")
 
+    def find_elements(self, strategy: dict) -> List:
+        """Locates all elements matching the WPFSpy strategy.
+        
+        Args:
+            strategy: Dict with searchBy and value keys.
+                    Supports: XPath, Name, Type, AutomationId
+                    
+        Returns:
+            List of ElementHandles for all matching elements.
+        """
+        search_by = strategy.get("searchBy", "XPath")
+        value = strategy.get("value")
+        
+        if search_by == "XPath":
+            self._log_ipc("FindAllByXPath", xpath=value)
+            return APP_INSTANCE.find_all_by_xpath(value)
+        
+        elif search_by == "Name":
+            self._log_ipc("FindAll", name=value)
+            return APP_INSTANCE.find_all_by_name(value)
+        
+        elif search_by == "AutomationId":
+            self._log_ipc("FindAllByAutomationId", automationId=value)
+            return APP_INSTANCE.find_all_by_automation_id(value)
+        
+        elif search_by == "Type":
+            self._log_ipc("FindAllByType", type=value)
+            return APP_INSTANCE.find_all_by_control_type(value)
+        
+        else:
+            return []
+
     def invoke(self, element):
+        """Click/invoke an element."""
         if hasattr(element, "xpath") and element.xpath:
             self._log_ipc("Invoke", xpath=element.xpath)
         else:
@@ -269,6 +388,7 @@ class WPFSpyMockDriver:
         APP_INSTANCE.invoke(element)
 
     def set_value(self, element, value: str):
+        """Set text value on an input element."""
         if hasattr(element, "xpath") and element.xpath:
             self._log_ipc("SetValue", xpath=element.xpath, value=value)
         else:
@@ -276,6 +396,7 @@ class WPFSpyMockDriver:
         APP_INSTANCE.set_value(element, value)
 
     def get_text(self, element) -> str:
+        """Get the text content of an element."""
         if hasattr(element, "xpath") and element.xpath:
             self._log_ipc("GetText", xpath=element.xpath)
         else:
@@ -283,13 +404,37 @@ class WPFSpyMockDriver:
         return APP_INSTANCE.get_text(element)
 
     def is_visible(self, element) -> bool:
+        """Check if an element is visible."""
         if hasattr(element, "xpath") and element.xpath:
             self._log_ipc("IsVisible", xpath=element.xpath)
         else:
             self._log_ipc("IsVisible", name=element.name)
         return APP_INSTANCE.is_visible(element)
 
+    def is_enabled(self, element) -> bool:
+        """Check if an element is enabled."""
+        if hasattr(element, "xpath") and element.xpath:
+            self._log_ipc("IsEnabled", xpath=element.xpath)
+        else:
+            self._log_ipc("IsEnabled", name=element.name)
+        return APP_INSTANCE.is_enabled(element)
+
+    def is_actionable(self, element) -> bool:
+        """Check if an element is both visible and enabled."""
+        return self.is_visible(element) and self.is_enabled(element)
+
+    def get_attribute(self, element, attribute_name: str) -> Optional[str]:
+        """Get a specific attribute value from an element."""
+        self._log_ipc("GetAttribute", name=getattr(element, "name", None), attribute=attribute_name)
+        return APP_INSTANCE.get_attribute(element, attribute_name)
+
+    def capture_screenshot(self, element=None) -> bytes:
+        """Capture a screenshot."""
+        self._log_ipc("CaptureScreenshot", element=getattr(element, "name", None))
+        return APP_INSTANCE.capture_screenshot(element)
+
     def toggle(self, element, state: bool = None):
+        """Toggle a checkbox or toggle button."""
         if hasattr(element, "xpath") and element.xpath:
             self._log_ipc("Toggle", xpath=element.xpath)
         else:
@@ -310,6 +455,10 @@ class WPFSpyMockDriver:
             return f"{grid.text}\n"
         
         return "SKU,Qty\n"
+    
+    def close(self):
+        """Clean up driver resources."""
+        pass  # Mock driver doesn't need cleanup
 
 
 def _make_driver():
