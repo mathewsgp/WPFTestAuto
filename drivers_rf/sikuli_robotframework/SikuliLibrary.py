@@ -25,19 +25,32 @@ from mock_app import APP_INSTANCE, ElementNotFoundError, ElementNotInteractableE
 
 
 class SikuliDriver:
-    """Sikuli driver — locates elements by simulated image match."""
+    """Sikuli driver — locates elements by simulated image match.
+    
+    This is the final fallback in the chain, used for custom-rendered
+    controls that standard UI Automation cannot see at all.
+    """
 
     name = "Sikuli"
 
-    def find_element(self, locator: dict):
-        """locator: {"searchBy": "Image", "imagePath": "...", "similarity": 0.9}
-        In the mock, `imagePath` is treated as a semantic tag (e.g.
-        'priority_checkbox') rather than a real file, standing in for
-        successful template matching above the similarity threshold.
+    def find_element(self, strategy: dict):
+        """Locates an element using Sikuli image matching.
+        
+        Args:
+            strategy: Dict with searchBy="Image" and value/imagePath keys.
+                     In the mock, `imagePath` is treated as a semantic tag
+                     rather than a real file.
         """
-        tag = locator.get("imagePath") or locator.get("value")
+        search_by = strategy.get("searchBy", "Image")
+        if search_by != "Image":
+            raise ElementNotFoundError(f"Sikuli: only Image search supported, got {search_by}")
+        
+        # Support both 'value' and 'imagePath' keys
+        tag = strategy.get("value") or strategy.get("imagePath")
+        similarity = strategy.get("similarity", 0.85)
+        
         print(f"[Sikuli] Matching image tag '{tag}' on screen "
-              f"(similarity>={locator.get('similarity', 0.85)})")
+              f"(similarity>={similarity})")
         ctrl = APP_INSTANCE.find_by_image_tag(tag)
         if ctrl is None:
             raise ElementNotFoundError(f"Sikuli: no on-screen match for image '{tag}'")

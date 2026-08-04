@@ -1,59 +1,70 @@
 """
 Mock WPF Application
 =====================
-Simulates a small WPF application's visual tree and behavior so the
-framework's Layer 4/5 drivers have a real, deterministic target to
-automate against — without requiring Windows, .NET, or a real WPF process.
+Simulates a WPF application's visual tree with comprehensive path support
+for multiple automation strategies: FlaUI, WPFSpy, and Sikuli.
 
-In a production deployment this file does not exist: FlaUI, WPFSpy, and
-Sikuli would instead talk to the REAL WPF application's process, visual
-tree, and screen. This mock exists purely so the whole framework can be
-exercised and demonstrated end-to-end on any platform (including this
-Linux sandbox), including the runtime self-healing fallback behavior.
+Path Priority Hierarchy:
+1. AutomationId (most reliable)
+2. Name (second choice)
+3. Type + Index/Siblings (fallback when no unique identifier)
 
-Drivers locate a Control via find_by_automation_id / find_by_name /
-find_by_image_tag (mirroring AutomationId lookups, WPFSpy Name lookups,
-and Sikuli image matching respectively), then act on the returned Control
-object directly. One control ("chkPriority" on the Orders page) is
-deliberately given NO reliable AutomationId — simulating a custom-rendered
-control not properly exposed via UI Automation — so it can only be found
-by Name (WPFSpy) or image (Sikuli). This is used by the self-healing
-locator demo test to prove the FlaUI -> WPFSpy -> Sikuli fallback chain.
+Each driver uses its native path format:
+- FlaUI: XPath with AutomationId, Name, or Type+Index
+- WPFSpy: Similar XPath format with @AutomationId='...' or @Name='...'
+- Sikuli: Image-based matching via image_tag
+
+Fallback Chain: FlaUI -> WPFSpy -> Sikuli
 """
 
 import threading
-from dataclasses import dataclass
-from typing import Dict, Optional
+import re
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass
 class Control:
-    key: str                 # internal identity, used for behavior wiring
-    automation_id: Optional[str]   # None/"" simulates "not exposed via UIA"
-    name: str
-    control_type: str
-    text: str = ""
+    key: str                           # internal identity, used for behavior wiring
+    automation_id: Optional[str]        # None/"" simulates "not exposed via UIA"
+    name: str                          # Name property (WPFSpy/ FlaUI Name)
+    control_type: str                  # Control type (Button, TextBox, etc.)
+    text: str = ""                     # Current text content
     visible: bool = True
     enabled: bool = True
-    image_tag: Optional[str] = None  # simulated Sikuli match target
-    xpath: Optional[str] = None      # XPath locator for deep-hierarchy elements
+    image_tag: Optional[str] = None    # Sikuli image match target
+    # Multi-format paths for different drivers
+    flaui_paths: List[str] = field(default_factory=list)  # FlaUI XPath variants
+    wpfspy_paths: List[str] = field(default_factory=list) # WPFSpy XPath variants
+    # Path building blocks (for dynamic path construction)
+    parent_automation_id: Optional[str] = None
+    sibling_index: int = 0            # Index among siblings of same type
+    sibling_count: int = 1             # Total siblings of same type
 
 
 class ElementNotFoundError(Exception):
+    """Raised when an element cannot be found in the mock app."""
     pass
 
 
 class ElementNotInteractableError(Exception):
+    """Raised when an element is found but not interactable (disabled/invisible)."""
     pass
 
 
-# Thread-local storage for parallel test execution support
-_thread_local = threading.local()
-_lock = threading.RLock()  # Reentrant lock for thread-safe operations
-
-
 class MockWpfApp:
-    """A minimal, stateful simulation of a two-screen WPF application."""
+    """A WPF application simulation with comprehensive path support.
+    
+    Supports multiple automation strategies with path priority:
+    - AutomationId (highest priority)
+    - Name (second priority)
+    - Type + Index/Siblings (fallback)
+    
+    Driver path formats:
+    - FlaUI: UIAutomation XPath
+    - WPFSpy: XPath with @AutomationId/@Name
+    - Sikuli: Image-based matching
+    """
 
     def __init__(self):
         self.current_page = "Login"
@@ -61,47 +72,118 @@ class MockWpfApp:
         self.orders: list = []  # Track actual orders for OCR
         self._build_login_page()
 
-    # ------------------------------------------------------------------
-    # Page construction
-    # ------------------------------------------------------------------
+    def _build_control_paths(self, control: Control, parent_aid: str = "MainWindow") -> Control:
+        """Build comprehensive paths for all drivers.
+        
+        Path priority: AutomationId -> Name -> Type+Index
+        """
+        control.parent_automation_id = parent_aid
+        
+        # FlaUI paths (UIAutomation XPath format)
+        # Path 1: AutomationId-based (most reliable)
+        if control.automation_id:
+            control.flaui_paths.append(
+                f"/Window[@AutomationId='{parent_aid}']/{control.control_type}[@AutomationId='{control.automation_id}']"
+            )
+        # Path 2: Name-based
+        control.flaui_paths.append(
+            f"/Window[@AutomationId='{parent_aid}']/{control.control_type}[@Name='{control.name}']"
+        )
+        # Path 3: Type + Index (sibling position)
+        if control.sibling_count > 1:
+            control.flaui_paths.append(
+                f"/Window[@AutomationId='{parent_aid}']/{control.control_type}[{control.sibling_index + 1}]"
+            )
+        
+        # WPFSpy paths (similar XPath format)
+        # Path 1: AutomationId-based
+        if control.automation_id:
+            control.wpfspy_paths.append(
+                f"/Window[@AutomationId='{parent_aid}']/{control.control_type}[@AutomationId='{control.automation_id}']"
+            )
+        # Path 2: Name-based
+        control.wpfspy_paths.append(
+            f"/Window[@Name='{parent_aid}']/{control.control_type}[@Name='{control.name}']"
+        )
+        # Path 3: Type + Index
+        if control.sibling_count > 1:
+            control.wpfspy_paths.append(
+                f"/Window[@Name='{parent_aid}']/{control.control_type}[{control.sibling_index + 1}]"
+            )
+        
+        return control
+
     def _build_login_page(self):
+        """Build Login page with comprehensive path support."""
         self.controls = {
-            "txtUsername": Control("txtUsername", "txtUsername", "UsernameInput", "TextBox",
-                                    image_tag="username_box",
-                                    xpath="/Window[@Name='MainWindow']/Grid/TextBox[@Name='UsernameInput']"),
-            "txtPassword": Control("txtPassword", "txtPassword", "PasswordInput", "TextBox",
-                                   image_tag="password_box",
-                                   xpath="/Window[@Name='MainWindow']/Grid/TextBox[@Name='PasswordInput']"),
-            "btnSubmit": Control("btnSubmit", "btnSubmit", "SubmitBtn", "Button", text="Login",
-                                  image_tag="login_button",
-                                  xpath="/Window[@Name='MainWindow']/Grid/Button[@Name='SubmitBtn']"),
-            "lblError": Control("lblError", "lblError", "ErrorLabel", "Label", text="", visible=False,
-                                 xpath="/Window[@Name='MainWindow']/Grid/Label[@Name='ErrorLabel']"),
+            "txtUsername": self._build_control_paths(
+                Control("txtUsername", "txtUsername", "UsernameInput", "TextBox",
+                        image_tag="username_box"),
+                "MainWindow"
+            ),
+            "txtPassword": self._build_control_paths(
+                Control("txtPassword", "txtPassword", "PasswordInput", "TextBox",
+                        image_tag="password_box"),
+                "MainWindow"
+            ),
+            "btnSubmit": self._build_control_paths(
+                Control("btnSubmit", "btnSubmit", "SubmitBtn", "Button", text="Login",
+                        image_tag="login_button"),
+                "MainWindow"
+            ),
+            "lblError": self._build_control_paths(
+                Control("lblError", "lblError", "ErrorLabel", "Label", text="", visible=False,
+                        image_tag="error_label"),
+                "MainWindow"
+            ),
         }
 
     def _build_orders_page(self):
+        """Build Orders page with comprehensive path support and sibling indexes."""
+        # Calculate sibling counts for type-based paths
+        button_count = 3  # btnCreateOrder, chkPriority, btnLogout
+        textbox_count = 2  # txtQty, txtSku (in combo)
+        
         self.controls = {
-            "cmbSku": Control("cmbSku", "cmbSku", "SkuCombo", "ComboBox", text="", image_tag="sku_combo",
-                               xpath="/Window[@Name='MainWindow']/ComboBox[@Name='SkuCombo']"),
-            "txtQty": Control("txtQty", "txtQty", "QtyInput", "TextBox", text="1", image_tag="qty_box",
-                               xpath="/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']"),
-            "btnCreateOrder": Control("btnCreateOrder", "btnCreateOrder", "CreateOrderBtn", "Button",
-                                       text="Create Order", image_tag="create_order_button",
-                                       xpath="/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"),
-            "lblConfirmation": Control("lblConfirmation", "lblConfirmation", "ConfirmationLabel", "Label",
-                                         text="", visible=False,
-                                         xpath="/Window[@Name='MainWindow']/Label[@Name='ConfirmationLabel']"),
-            "gridOrders": Control("gridOrders", "gridOrders", "OrdersGrid", "DataGrid", text="SKU,Qty\n",
-                                   xpath="/Window[@Name='MainWindow']/DataGrid[@Name='OrdersGrid']"),
+            "cmbSku": self._build_control_paths(
+                Control("cmbSku", "cmbSku", "SkuCombo", "ComboBox", text="",
+                        image_tag="sku_combo"),
+                "OrdersWindow"
+            ),
+            "txtQty": self._build_control_paths(
+                Control("txtQty", "txtQty", "QtyInput", "TextBox", text="1",
+                        image_tag="qty_box", sibling_index=0, sibling_count=1),
+                "OrdersWindow"
+            ),
+            "btnCreateOrder": self._build_control_paths(
+                Control("btnCreateOrder", "btnCreateOrder", "CreateOrderBtn", "Button",
+                        text="Create Order", image_tag="create_order_button",
+                        sibling_index=0, sibling_count=button_count),
+                "OrdersWindow"
+            ),
+            "lblConfirmation": self._build_control_paths(
+                Control("lblConfirmation", "lblConfirmation", "ConfirmationLabel", "Label",
+                        text="", visible=False, image_tag="confirmation_label"),
+                "OrdersWindow"
+            ),
+            "gridOrders": self._build_control_paths(
+                Control("gridOrders", "gridOrders", "OrdersGrid", "DataGrid", text="SKU,Qty\n",
+                        image_tag="orders_grid"),
+                "OrdersWindow"
+            ),
             # Non-standard control: NO reliable AutomationId (simulates a
             # custom-rendered WPF control not properly exposed via UIA).
             # Only findable by Name (WPFSpy) or image (Sikuli).
-            "chkPriority": Control("chkPriority", None, "PriorityToggle", "CheckBox", text="Off",
-                                    image_tag="priority_checkbox",
-                                    xpath="/Window[@Name='MainWindow']/CheckBox[@Name='PriorityToggle']"),
-            "btnLogout": Control("btnLogout", "btnLogout", "LogoutBtn", "Button", text="Logout",
-                                  image_tag="logout_button",
-                                  xpath="/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"),
+            "chkPriority": self._build_control_paths(
+                Control("chkPriority", None, "PriorityToggle", "CheckBox", text="Off",
+                        image_tag="priority_checkbox", sibling_index=1, sibling_count=button_count),
+                "OrdersWindow"
+            ),
+            "btnLogout": self._build_control_paths(
+                Control("btnLogout", "btnLogout", "LogoutBtn", "Button", text="Logout",
+                        image_tag="logout_button", sibling_index=2, sibling_count=button_count),
+                "OrdersWindow"
+            ),
         }
         # Rebuild grid text from orders
         self._update_grid_text()
@@ -138,6 +220,41 @@ class MockWpfApp:
                 return ctrl
         return None
 
+    def find_by_control_type_and_index(self, control_type: str, index: int) -> Optional[Control]:
+        """Find control by type and sibling index (1-based index)."""
+        matches = [ctrl for ctrl in self.controls.values() 
+                  if ctrl.control_type == control_type]
+        # Convert to 0-based index
+        if 0 <= index - 1 < len(matches):
+            return matches[index - 1]
+        return None
+
+    def find_by_flaui_path(self, path: str) -> Optional[Control]:
+        """Find control by FlaUI XPath path."""
+        return self.find_by_xpath(path)
+
+    def find_by_wpfspy_path(self, path: str) -> Optional[Control]:
+        """Find control by WPFSpy XPath path."""
+        return self.find_by_xpath(path)
+
+    def get_all_paths_for_control(self, control_key: str) -> dict:
+        """Get all paths for a control (for recording/debugging)."""
+        ctrl = self.controls.get(control_key)
+        if not ctrl:
+            return {}
+        return {
+            "automation_id": ctrl.automation_id,
+            "name": ctrl.name,
+            "flaui_paths": ctrl.flaui_paths,
+            "wpfspy_paths": ctrl.wpfspy_paths,
+            "image_tag": ctrl.image_tag,
+            "type_index": {
+                "type": ctrl.control_type,
+                "index": ctrl.sibling_index + 1,  # 1-based for recording
+                "total": ctrl.sibling_count
+            }
+        }
+
     def find_by_xpath(self, xpath: str) -> Optional[Control]:
         """Evaluates a simple WPF XPath expression against the mock app's
         virtual visual tree. Supported syntax:
@@ -150,7 +267,13 @@ class MockWpfApp:
         return self._match_xpath_segments(segments, 0, self._build_virtual_tree())
 
     def _parse_xpath_segments(self, xpath: str):
-        """Parse XPath into segments for matching."""
+        """Parse XPath into segments for matching.
+        
+        Supports:
+        - @AutomationId='value' (highest priority)
+        - @Name='value' (second priority)
+        - [index] (fallback)
+        """
         import re
         segments = []
         # Pattern to match: tag[@attr='value'] or tag[index] or just tag
@@ -164,6 +287,7 @@ class MockWpfApp:
             if not part:
                 continue
             tag = part
+            automation_id_predicate = None
             name_predicate = None
             index_predicate = None
             
@@ -173,48 +297,48 @@ class MockWpfApp:
                 tag = match.group(1)
                 pred = match.group(2)
                 if pred:
+                    # Check for @AutomationId='value' pattern (highest priority)
+                    aid_match = re.match(r"@AutomationId='([^']+)'", pred)
+                    if aid_match:
+                        automation_id_predicate = aid_match.group(1)
                     # Check for @Name='value' pattern
-                    name_match = re.match(r"@Name='([^']+)'", pred)
-                    if name_match:
+                    elif re.match(r"@Name='([^']+)'", pred):
+                        name_match = re.match(r"@Name='([^']+)'", pred)
                         name_predicate = name_match.group(1)
-                    # Check for numeric index
+                    # Check for numeric index (fallback)
                     elif pred.isdigit():
                         index_predicate = int(pred)
             
-            segments.append((tag, name_predicate, index_predicate))
+            segments.append((tag, automation_id_predicate, name_predicate, index_predicate))
         return segments
 
-    def _build_virtual_tree(self):
-        """Builds a simple tree: root -> Window -> controls.
-        
-        The Window always uses 'MainWindow' as Name to match the repository XPath.
-        The actual page state (Login vs Orders) is determined by which controls are present.
-        """
-        return {
-            "tag": "Root",
-            "children": [
-                {
-                    "tag": "Window",
-                    "attrs": {"Name": "MainWindow"},
-                    "children": [
-                        {"tag": ctrl.control_type, "attrs": {"Name": ctrl.name}, "control_key": key}
-                        for key, ctrl in self.controls.items()
-                    ],
-                }
-            ],
-        }
-
     def _match_xpath_segments(self, segments, index, node):
+        """Match XPath segments against the virtual tree.
+        
+        Matches in priority order:
+        1. AutomationId (if specified)
+        2. Name (if specified)
+        3. First match (if only index)
+        """
         if index >= len(segments):
             return None
-        tag, name_pred, index_pred = segments[index]
+        tag, aid_pred, name_pred, index_pred = segments[index]
         matches = []
         for child in node.get("children", []):
             if child["tag"] != tag:
                 continue
-            if name_pred is not None and child.get("attrs", {}).get("Name") != name_pred:
-                continue
+            # Check AutomationId first (highest priority)
+            if aid_pred is not None:
+                child_aid = child.get("attrs", {}).get("AutomationId") or child.get("attrs", {}).get("Name", "")
+                if child_aid != aid_pred:
+                    continue
+            # Then check Name
+            elif name_pred is not None:
+                if child.get("attrs", {}).get("Name") != name_pred:
+                    continue
             matches.append(child)
+        
+        # Handle index
         if index_pred is not None:
             if 0 < index_pred <= len(matches):
                 match = matches[index_pred - 1]
@@ -222,11 +346,46 @@ class MockWpfApp:
                 return None
         else:
             match = matches[0] if matches else None
+        
         if match is None:
             return None
         if index + 1 >= len(segments):
             return self.controls.get(match.get("control_key", "")) if "control_key" in match else None
         return self._match_xpath_segments(segments, index + 1, match)
+
+    def _build_virtual_tree(self):
+        """Builds a virtual tree: root -> Window -> controls.
+        
+        Uses the parent automation_id for both Window's AutomationId and Name.
+        Each control includes both its automation_id and name for flexible matching.
+        """
+        # Determine window ID based on current controls
+        window_aid = "MainWindow"
+        if self.controls:
+            first_ctrl = next(iter(self.controls.values()))
+            if first_ctrl.parent_automation_id:
+                window_aid = first_ctrl.parent_automation_id
+        
+        return {
+            "tag": "Root",
+            "children": [
+                {
+                    "tag": "Window",
+                    "attrs": {"AutomationId": window_aid, "Name": window_aid},
+                    "children": [
+                        {
+                            "tag": ctrl.control_type, 
+                            "attrs": {
+                                "AutomationId": ctrl.automation_id or "", 
+                                "Name": ctrl.name
+                            }, 
+                            "control_key": key
+                        }
+                        for key, ctrl in self.controls.items()
+                    ],
+                }
+            ],
+        }
 
     # ------------------------------------------------------------------
     # Act (what each driver calls once it has resolved a Control)

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<robot generator="Robot 7.4.2 (Python 3.13.14 on linux)" generated="2026-08-04T06:43:01.020081" rpa="false" schemaversion="5">
+<robot generator="Robot 7.4.2 (Python 3.13.14 on linux)" generated="2026-08-04T06:59:28.234899" rpa="false" schemaversion="5">
 <suite id="s1" name="Order Tests &amp; Self Healing Locators Demo">
 <suite id="s1-s1" name="Order Tests" source="/workspace/project/WPFTestAuto/tests/order_tests.robot">
 <test id="s1-s1-t1" name="Create And Confirm New Order" line="10">
@@ -7,672 +7,647 @@
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.054632" elapsed="0.000128"/>
+<status status="PASS" start="2026-08-04T06:59:28.268771" elapsed="0.000116"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.064563" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.064626" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtUsername</msg>
-<msg time="2026-08-04T06:43:01.064662" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='UsernameInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='UsernameInput']", 'value': 'user1'})</msg>
+<msg time="2026-08-04T06:59:28.290508" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.055197" elapsed="0.009500"/>
+<status status="PASS" start="2026-08-04T06:59:28.269312" elapsed="0.021254"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.065049" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.065087" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtPassword</msg>
-<msg time="2026-08-04T06:43:01.065110" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='PasswordInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='PasswordInput']", 'value': 'Pass@123'})</msg>
+<msg time="2026-08-04T06:59:28.290933" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.064810" elapsed="0.000323"/>
+<status status="PASS" start="2026-08-04T06:59:28.290662" elapsed="0.000304"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.065362" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.065396" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.btnSubmit</msg>
-<msg time="2026-08-04T06:43:01.065416" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='SubmitBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Grid/Button[@Name='SubmitBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.291218" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.065197" elapsed="0.000246"/>
+<status status="PASS" start="2026-08-04T06:59:28.291043" elapsed="0.000205"/>
 </kw>
 <arg>user1</arg>
 <arg>Pass@123</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.054994" elapsed="0.010490"/>
+<status status="PASS" start="2026-08-04T06:59:28.269114" elapsed="0.022175"/>
 </kw>
 <kw name="Create New Order" owner="order_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.066048" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.066084" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.cmbSku</msg>
-<msg time="2026-08-04T06:43:01.066106" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/ComboBox[@Name='SkuCombo']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/ComboBox[@Name='SkuCombo']", 'value': 'SKU-1001'})</msg>
+<msg time="2026-08-04T06:59:28.291829" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.cmbSku</arg>
 <arg>${sku}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.065850" elapsed="0.000278"/>
+<status status="PASS" start="2026-08-04T06:59:28.291634" elapsed="0.000225"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.066358" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.066391" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.txtQty</msg>
-<msg time="2026-08-04T06:43:01.066411" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']", 'value': '2'})</msg>
+<msg time="2026-08-04T06:59:28.292084" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.txtQty</arg>
 <arg>${qty}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.066186" elapsed="0.000245"/>
+<status status="PASS" start="2026-08-04T06:59:28.291920" elapsed="0.000190"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.066634" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.066665" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.btnCreateOrder</msg>
-<msg time="2026-08-04T06:43:01.066683" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.292302" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnCreateOrder</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.066487" elapsed="0.000215"/>
+<status status="PASS" start="2026-08-04T06:59:28.292164" elapsed="0.000162"/>
 </kw>
 <arg>SKU-1001</arg>
 <arg>2</arg>
 <doc>Creates a new order for the given SKU and quantity.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.065654" elapsed="0.001100"/>
+<status status="PASS" start="2026-08-04T06:59:28.291457" elapsed="0.000901"/>
 </kw>
 <kw name="Verify Order Confirmation Displayed" owner="order_verifications">
 <kw name="Verify Element Text" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.067255" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.067294" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.lblConfirmation</msg>
-<msg time="2026-08-04T06:43:01.067316" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Label[@Name='ConfirmationLabel']"})
-[WPFSpy IPC] -&gt; GetText({'xpath': "/Window[@Name='MainWindow']/Label[@Name='ConfirmationLabel']"})</msg>
+<msg time="2026-08-04T06:59:28.292839" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.lblConfirmation</arg>
 <arg>Order confirmed: ${sku} x${qty}</arg>
 <doc>Fails the test unless the element's text equals `expected`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.067049" elapsed="0.000287"/>
+<status status="PASS" start="2026-08-04T06:59:28.292630" elapsed="0.000236"/>
 </kw>
 <arg>SKU-1001</arg>
 <arg>2</arg>
 <doc>Verifies the confirmation label shows the expected
 SKU and quantity after an order is created.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.066898" elapsed="0.000471"/>
+<status status="PASS" start="2026-08-04T06:59:28.292486" elapsed="0.000416"/>
 </kw>
 <kw name="Verify Orders Grid Row Count" owner="order_verifications">
 <kw name="Get Element Text" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.067830" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.067869" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.gridOrders</msg>
-<msg time="2026-08-04T06:43:01.067890" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/DataGrid[@Name='OrdersGrid']"})
-[WPFSpy IPC] -&gt; GetText({'xpath': "/Window[@Name='MainWindow']/DataGrid[@Name='OrdersGrid']"})</msg>
-<msg time="2026-08-04T06:43:01.067941" level="INFO">${grid_text} = SKU,Qty
+<msg time="2026-08-04T06:59:28.293333" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T06:59:28.293388" level="INFO">${grid_text} = SKU,Qty
 SKU-1001,2</msg>
 <var>${grid_text}</var>
 <arg>OrdersPage.OrdersWindow.gridOrders</arg>
 <doc>Returns the current text of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.067647" elapsed="0.000306"/>
+<status status="PASS" start="2026-08-04T06:59:28.293183" elapsed="0.000217"/>
 </kw>
 <kw name="Should Contain" owner="BuiltIn">
 <arg>${grid_text}</arg>
 <arg>${sku}</arg>
 <doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.068013" elapsed="0.000347"/>
+<status status="PASS" start="2026-08-04T06:59:28.293458" elapsed="0.000351"/>
 </kw>
 <kw name="Should Contain" owner="BuiltIn">
 <arg>${grid_text}</arg>
 <arg>${qty}</arg>
 <doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.068426" elapsed="0.000181"/>
+<status status="PASS" start="2026-08-04T06:59:28.293877" elapsed="0.000196"/>
 </kw>
 <arg>SKU-1001</arg>
 <arg>2</arg>
 <doc>Verifies the orders grid contains an order with the expected SKU and quantity.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.067499" elapsed="0.001143"/>
+<status status="PASS" start="2026-08-04T06:59:28.293036" elapsed="0.001074"/>
 </kw>
 <kw name="Logout From Orders" owner="order_module">
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.069144" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.069178" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.btnLogout</msg>
-<msg time="2026-08-04T06:43:01.069200" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.294533" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnLogout</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.068969" elapsed="0.000251"/>
+<status status="PASS" start="2026-08-04T06:59:28.294369" elapsed="0.000192"/>
 </kw>
 <doc>Logs out from the Orders page and returns to the login page.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.068840" elapsed="0.000412"/>
+<status status="PASS" start="2026-08-04T06:59:28.294238" elapsed="0.000354"/>
 </kw>
 <doc>Happy-path: log in, create an order, verify confirmation.</doc>
 <tag>orders</tag>
 <tag>smoke</tag>
-<status status="PASS" start="2026-08-04T06:43:01.053929" elapsed="0.015430"/>
+<status status="PASS" start="2026-08-04T06:59:28.268144" elapsed="0.026564"/>
 </test>
 <test id="s1-s1-t2" name="Verify Orders Grid Content Via Ocr" line="19">
 <kw name="Reset Application" owner="DriverAgnosticApi" type="SETUP">
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.069866" elapsed="0.000068"/>
+<status status="PASS" start="2026-08-04T06:59:28.295180" elapsed="0.000073"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.070403" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.070440" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtUsername</msg>
-<msg time="2026-08-04T06:43:01.070462" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='UsernameInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='UsernameInput']", 'value': 'user1'})</msg>
+<msg time="2026-08-04T06:59:28.295702" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.070209" elapsed="0.000274"/>
+<status status="PASS" start="2026-08-04T06:59:28.295512" elapsed="0.000234"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.070706" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.070755" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtPassword</msg>
-<msg time="2026-08-04T06:43:01.070785" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='PasswordInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='PasswordInput']", 'value': 'Pass@123'})</msg>
+<msg time="2026-08-04T06:59:28.295962" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.070539" elapsed="0.000266"/>
+<status status="PASS" start="2026-08-04T06:59:28.295805" elapsed="0.000182"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.071007" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.071044" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.btnSubmit</msg>
-<msg time="2026-08-04T06:43:01.071063" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='SubmitBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Grid/Button[@Name='SubmitBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.296198" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.070860" elapsed="0.000221"/>
+<status status="PASS" start="2026-08-04T06:59:28.296048" elapsed="0.000176"/>
 </kw>
 <arg>user1</arg>
 <arg>Pass@123</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.070069" elapsed="0.001042"/>
+<status status="PASS" start="2026-08-04T06:59:28.295369" elapsed="0.000886"/>
 </kw>
 <kw name="Create New Order" owner="order_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.071565" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.071597" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.cmbSku</msg>
-<msg time="2026-08-04T06:43:01.071616" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/ComboBox[@Name='SkuCombo']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/ComboBox[@Name='SkuCombo']", 'value': 'SKU-1001'})</msg>
+<msg time="2026-08-04T06:59:28.296673" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.cmbSku</arg>
 <arg>${sku}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.071388" elapsed="0.000247"/>
+<status status="PASS" start="2026-08-04T06:59:28.296497" elapsed="0.000202"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.071874" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.071904" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.txtQty</msg>
-<msg time="2026-08-04T06:43:01.071923" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']", 'value': '2'})</msg>
+<msg time="2026-08-04T06:59:28.296981" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.txtQty</arg>
 <arg>${qty}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.071688" elapsed="0.000253"/>
+<status status="PASS" start="2026-08-04T06:59:28.296769" elapsed="0.000237"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.072139" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.072170" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.btnCreateOrder</msg>
-<msg time="2026-08-04T06:43:01.072188" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.297205" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnCreateOrder</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.071994" elapsed="0.000212"/>
+<status status="PASS" start="2026-08-04T06:59:28.297070" elapsed="0.000159"/>
 </kw>
 <arg>SKU-1001</arg>
 <arg>2</arg>
 <doc>Creates a new order for the given SKU and quantity.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.071245" elapsed="0.000991"/>
+<status status="PASS" start="2026-08-04T06:59:28.296363" elapsed="0.000895"/>
 </kw>
 <kw name="Get Data Grid Content Ocr" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.072500" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.072530" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.gridOrders</msg>
-<msg time="2026-08-04T06:43:01.072556" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/DataGrid[@Name='OrdersGrid']"})
+<msg time="2026-08-04T06:59:28.297909" level="INFO">Element found via WPFSpy:XPath</msg>
+<msg time="2026-08-04T06:59:28.297947" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/DataGrid[@AutomationId='gridOrders']"})
 [WPFSpy IPC] -&gt; GetDataGridContentOcr({'name': 'OrdersGrid'})</msg>
-<msg time="2026-08-04T06:43:01.072600" level="INFO">${ocr_csv} = SKU,Qty
+<msg time="2026-08-04T06:59:28.297999" level="INFO">${ocr_csv} = SKU,Qty
 SKU-1001,2
 </msg>
 <var>${ocr_csv}</var>
 <arg>OrdersPage.OrdersWindow.gridOrders</arg>
 <doc>Captures a DataGrid element screenshot and returns
 its content as CSV text using OCR.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.072337" elapsed="0.000274"/>
+<status status="PASS" start="2026-08-04T06:59:28.297341" elapsed="0.000672"/>
 </kw>
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-04T06:43:01.072949" level="INFO">DataGrid OCR CSV content:SKU,Qty
+<msg time="2026-08-04T06:59:28.298405" level="INFO">DataGrid OCR CSV content:SKU,Qty
 SKU-1001,2
 </msg>
 <arg>DataGrid OCR CSV content:${ocr_csv}</arg>
 <arg>console=True</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.072712" elapsed="0.000290"/>
+<status status="PASS" start="2026-08-04T06:59:28.298119" elapsed="0.000349"/>
 </kw>
 <kw name="Should Contain" owner="BuiltIn">
 <arg>${ocr_csv}</arg>
 <arg>SKU-1001</arg>
 <doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.073105" elapsed="0.000181"/>
+<status status="PASS" start="2026-08-04T06:59:28.298584" elapsed="0.000264"/>
 </kw>
 <kw name="Logout From Orders" owner="order_module">
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.073750" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.073790" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.btnLogout</msg>
-<msg time="2026-08-04T06:43:01.073838" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.299259" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
+<msg time="2026-08-04T06:59:28.299420" level="INFO">Element found via WPFSpy:XPath</msg>
+<msg time="2026-08-04T06:59:28.299453" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnLogout']"})
+[WPFSpy IPC] -&gt; Invoke({'name': 'LogoutBtn'})</msg>
 <arg>OrdersPage.OrdersWindow.btnLogout</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.073551" elapsed="0.000308"/>
+<status status="PASS" start="2026-08-04T06:59:28.299126" elapsed="0.000348"/>
 </kw>
 <doc>Logs out from the Orders page and returns to the login page.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.073408" elapsed="0.000484"/>
+<status status="PASS" start="2026-08-04T06:59:28.298991" elapsed="0.000516"/>
 </kw>
 <doc>Extracts DataGrid content via OCR and verifies it contains expected data.</doc>
 <tag>ocr</tag>
 <tag>orders</tag>
 <tag>verification</tag>
-<status status="PASS" start="2026-08-04T06:43:01.069551" elapsed="0.004438"/>
+<status status="PASS" start="2026-08-04T06:59:28.294904" elapsed="0.004683"/>
 </test>
 <test id="s1-s1-t3" name="Reject Invalid Login" line="29">
 <kw name="Reset Application" owner="DriverAgnosticApi" type="SETUP">
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.074397" elapsed="0.000063"/>
+<status status="PASS" start="2026-08-04T06:59:28.300022" elapsed="0.000079"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.075038" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.075074" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtUsername</msg>
-<msg time="2026-08-04T06:43:01.075096" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='UsernameInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='UsernameInput']", 'value': 'user1'})</msg>
+<msg time="2026-08-04T06:59:28.300559" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.074829" elapsed="0.000287"/>
+<status status="PASS" start="2026-08-04T06:59:28.300382" elapsed="0.000203"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.075345" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.075378" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtPassword</msg>
-<msg time="2026-08-04T06:43:01.075398" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='PasswordInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='PasswordInput']", 'value': 'WrongPassword'})</msg>
+<msg time="2026-08-04T06:59:28.300823" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.075175" elapsed="0.000242"/>
+<status status="PASS" start="2026-08-04T06:59:28.300642" elapsed="0.000213"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.075613" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.075645" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.btnSubmit</msg>
-<msg time="2026-08-04T06:43:01.075666" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='SubmitBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Grid/Button[@Name='SubmitBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.301047" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.075471" elapsed="0.000214"/>
+<status status="PASS" start="2026-08-04T06:59:28.300911" elapsed="0.000160"/>
 </kw>
 <arg>user1</arg>
 <arg>WrongPassword</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.074586" elapsed="0.001144"/>
+<status status="PASS" start="2026-08-04T06:59:28.300236" elapsed="0.000865"/>
 </kw>
 <kw name="Verify Login Error Displayed" owner="order_verifications">
 <kw name="Verify Element Text" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.076181" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.076214" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.lblError</msg>
-<msg time="2026-08-04T06:43:01.076235" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Label[@Name='ErrorLabel']"})
-[WPFSpy IPC] -&gt; GetText({'xpath': "/Window[@Name='MainWindow']/Grid/Label[@Name='ErrorLabel']"})</msg>
+<msg time="2026-08-04T06:59:28.301568" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.lblError</arg>
 <arg>${expected_message}</arg>
 <doc>Fails the test unless the element's text equals `expected`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.076000" elapsed="0.000254"/>
+<status status="PASS" start="2026-08-04T06:59:28.301351" elapsed="0.000247"/>
 </kw>
 <arg>Invalid username or password</arg>
 <doc>Verifies the login error label shows the expected message.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.075860" elapsed="0.000425"/>
+<status status="PASS" start="2026-08-04T06:59:28.301216" elapsed="0.000415"/>
 </kw>
 <doc>Negative path: wrong password shows the error label.</doc>
 <tag>login</tag>
 <tag>smoke</tag>
-<status status="PASS" start="2026-08-04T06:43:01.074166" elapsed="0.002214"/>
+<status status="PASS" start="2026-08-04T06:59:28.299788" elapsed="0.001954"/>
 </test>
 <test id="s1-s1-t4" name="Create Order Without Sku Shows Prompt" line="35">
 <kw name="Reset Application" owner="DriverAgnosticApi" type="SETUP">
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.076844" elapsed="0.000062"/>
+<status status="PASS" start="2026-08-04T06:59:28.302181" elapsed="0.000075"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.077372" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.077408" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtUsername</msg>
-<msg time="2026-08-04T06:43:01.077430" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='UsernameInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='UsernameInput']", 'value': 'user1'})</msg>
+<msg time="2026-08-04T06:59:28.302686" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.077180" elapsed="0.000270"/>
+<status status="PASS" start="2026-08-04T06:59:28.302519" elapsed="0.000193"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.077666" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.077698" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtPassword</msg>
-<msg time="2026-08-04T06:43:01.077734" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='PasswordInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='PasswordInput']", 'value': 'Pass@123'})</msg>
+<msg time="2026-08-04T06:59:28.302958" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.077505" elapsed="0.000249"/>
+<status status="PASS" start="2026-08-04T06:59:28.302794" elapsed="0.000193"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.077962" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.077993" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.btnSubmit</msg>
-<msg time="2026-08-04T06:43:01.078015" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='SubmitBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Grid/Button[@Name='SubmitBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.303197" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.077812" elapsed="0.000222"/>
+<status status="PASS" start="2026-08-04T06:59:28.303047" elapsed="0.000175"/>
 </kw>
 <arg>user1</arg>
 <arg>Pass@123</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.077035" elapsed="0.001028"/>
+<status status="PASS" start="2026-08-04T06:59:28.302379" elapsed="0.000874"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.078323" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.078354" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.txtQty</msg>
-<msg time="2026-08-04T06:43:01.078373" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']", 'value': '2'})</msg>
+<msg time="2026-08-04T06:59:28.303494" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.txtQty</arg>
 <arg>2</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.078158" elapsed="0.000261"/>
+<status status="PASS" start="2026-08-04T06:59:28.303348" elapsed="0.000170"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.078666" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.078697" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.btnCreateOrder</msg>
-<msg time="2026-08-04T06:43:01.078729" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.303770" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnCreateOrder</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.078515" elapsed="0.000235"/>
+<status status="PASS" start="2026-08-04T06:59:28.303607" elapsed="0.000191"/>
 </kw>
 <kw name="Verify Element Text" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.079011" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.079044" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.lblConfirmation</msg>
-<msg time="2026-08-04T06:43:01.079064" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Label[@Name='ConfirmationLabel']"})
-[WPFSpy IPC] -&gt; GetText({'xpath': "/Window[@Name='MainWindow']/Label[@Name='ConfirmationLabel']"})</msg>
+<msg time="2026-08-04T06:59:28.304076" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.lblConfirmation</arg>
 <arg>Please select a SKU</arg>
 <doc>Fails the test unless the element's text equals `expected`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.078852" elapsed="0.000231"/>
+<status status="PASS" start="2026-08-04T06:59:28.303918" elapsed="0.000183"/>
 </kw>
 <kw name="Logout From Orders" owner="order_module">
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.079483" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.079514" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.btnLogout</msg>
-<msg time="2026-08-04T06:43:01.079533" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.304501" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnLogout</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.079334" elapsed="0.000218"/>
+<status status="PASS" start="2026-08-04T06:59:28.304347" elapsed="0.000180"/>
 </kw>
 <doc>Logs out from the Orders page and returns to the login page.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.079204" elapsed="0.000377"/>
+<status status="PASS" start="2026-08-04T06:59:28.304218" elapsed="0.000339"/>
 </kw>
 <doc>Negative path: creating an order with no SKU selected
 shows a prompt instead of a confirmation.</doc>
 <tag>negative</tag>
 <tag>orders</tag>
-<status status="PASS" start="2026-08-04T06:43:01.076547" elapsed="0.003127"/>
+<status status="PASS" start="2026-08-04T06:59:28.301912" elapsed="0.002731"/>
 </test>
 <doc>Layer 1 — Test Scripts: Order creation &amp; login flows.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.042183" elapsed="0.037822"/>
+<status status="PASS" start="2026-08-04T06:59:28.256833" elapsed="0.048119"/>
 </suite>
 <suite id="s1-s2" name="Self Healing Locators Demo" source="/workspace/project/WPFTestAuto/tests/self_healing_locators_demo.robot">
-<test id="s1-s2-t1" name="Toggle Priority Checkbox With WPFSpy" line="12">
+<test id="s1-s2-t1" name="Toggle Priority Checkbox With WPFSpy" line="16">
 <kw name="Reset Application" owner="DriverAgnosticApi" type="SETUP">
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.082507" elapsed="0.000074"/>
+<status status="PASS" start="2026-08-04T06:59:28.307494" elapsed="0.000075"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.083098" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.083135" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtUsername</msg>
-<msg time="2026-08-04T06:43:01.083158" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='UsernameInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='UsernameInput']", 'value': 'user1'})</msg>
+<msg time="2026-08-04T06:59:28.308063" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.082885" elapsed="0.000293"/>
+<status status="PASS" start="2026-08-04T06:59:28.307869" elapsed="0.000228"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.083407" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.083441" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtPassword</msg>
-<msg time="2026-08-04T06:43:01.083466" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='PasswordInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='PasswordInput']", 'value': 'Pass@123'})</msg>
+<msg time="2026-08-04T06:59:28.308408" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.083236" elapsed="0.000249"/>
+<status status="PASS" start="2026-08-04T06:59:28.308155" elapsed="0.000282"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.083684" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.083739" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.btnSubmit</msg>
-<msg time="2026-08-04T06:43:01.083778" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='SubmitBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Grid/Button[@Name='SubmitBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.308665" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.083537" elapsed="0.000266"/>
+<status status="PASS" start="2026-08-04T06:59:28.308500" elapsed="0.000192"/>
 </kw>
 <arg>user1</arg>
 <arg>Pass@123</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.082736" elapsed="0.001100"/>
+<status status="PASS" start="2026-08-04T06:59:28.307704" elapsed="0.001038"/>
 </kw>
 <kw name="Toggle Order Priority" owner="order_module">
 <kw name="Toggle Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.084262" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.084296" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.chkPriority</msg>
-<msg time="2026-08-04T06:43:01.084316" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/CheckBox[@Name='PriorityToggle']"})
-[WPFSpy IPC] -&gt; Toggle({'xpath': "/Window[@Name='MainWindow']/CheckBox[@Name='PriorityToggle']"})</msg>
+<msg time="2026-08-04T06:59:28.309158" level="INFO">Element found via FlaUI:Name</msg>
 <arg>OrdersPage.OrdersWindow.chkPriority</arg>
 <doc>Toggles a checkbox/toggle-style element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.084085" elapsed="0.000251"/>
+<status status="PASS" start="2026-08-04T06:59:28.309000" elapsed="0.000184"/>
 </kw>
 <doc>Toggles the (non-standard, custom-rendered) priority
 checkbox - demonstrates the self-healing WPFSpy XPath strategy.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.083962" elapsed="0.000405"/>
+<status status="PASS" start="2026-08-04T06:59:28.308878" elapsed="0.000336"/>
 </kw>
 <kw name="Get Last Strategy Used" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.084536" level="INFO">${strategy} = WPFSpy</msg>
+<msg time="2026-08-04T06:59:28.309375" level="INFO">${strategy} = FlaUI:Name</msg>
 <var>${strategy}</var>
 <doc>Returns the name of the driver strategy that last succeeded —
 useful in assertions/logging for the self-healing demo tests.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.084464" elapsed="0.000085"/>
+<status status="PASS" start="2026-08-04T06:59:28.309306" elapsed="0.000081"/>
 </kw>
-<kw name="Should Be Equal As Strings" owner="BuiltIn">
+<kw name="Should Contain" owner="BuiltIn">
 <arg>${strategy}</arg>
-<arg>WPFSpy</arg>
-<doc>Fails if objects are unequal after converting them to strings.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.084641" elapsed="0.000244"/>
+<arg>Name</arg>
+<doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.309477" elapsed="0.000197"/>
 </kw>
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-04T06:43:01.085162" level="INFO">WPFSpy-only mode confirmed: PriorityCheckbox toggled via WPFSpy</msg>
-<arg>WPFSpy-only mode confirmed: PriorityCheckbox toggled via WPFSpy</arg>
+<msg time="2026-08-04T06:59:28.309981" level="INFO">Fallback confirmed: PriorityCheckbox toggled via FlaUI:Name</msg>
+<arg>Fallback confirmed: PriorityCheckbox toggled via ${strategy}</arg>
 <arg>console=True</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.084997" elapsed="0.000221"/>
+<status status="PASS" start="2026-08-04T06:59:28.309791" elapsed="0.000240"/>
 </kw>
 <kw name="Logout From Orders" owner="order_module">
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.085629" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.085701" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.btnLogout</msg>
-<msg time="2026-08-04T06:43:01.085740" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.310432" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnLogout</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.085461" elapsed="0.000300"/>
+<status status="PASS" start="2026-08-04T06:59:28.310278" elapsed="0.000180"/>
 </kw>
 <doc>Logs out from the Orders page and returns to the login page.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.085342" elapsed="0.000457"/>
+<status status="PASS" start="2026-08-04T06:59:28.310154" elapsed="0.000335"/>
 </kw>
-<doc>Proves WPFSpy can interact with non-standard controls
-like PriorityToggle that are not exposed via UI Automation.</doc>
+<doc>Proves the framework can interact with non-standard controls
+like PriorityToggle that are not exposed via UI Automation (no AutomationId).
+Strategy format is "Driver:SearchBy" (e.g., "FlaUI:Name" or "WPFSpy:Name").
+The framework finds the element using Name-based matching when AutomationId is absent.</doc>
 <tag>reliability</tag>
-<tag>wpfspy-only</tag>
-<status status="PASS" start="2026-08-04T06:43:01.082174" elapsed="0.003719"/>
+<tag>self-healing</tag>
+<status status="PASS" start="2026-08-04T06:59:28.307019" elapsed="0.003560"/>
 </test>
-<test id="s1-s2-t2" name="Verify Orders Grid Content Via Ocr With WPFSpy" line="23">
+<test id="s1-s2-t2" name="Verify Orders Grid Content Via Ocr With WPFSpy" line="31">
 <kw name="Reset Application" owner="DriverAgnosticApi" type="SETUP">
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.086313" elapsed="0.000061"/>
+<status status="PASS" start="2026-08-04T06:59:28.311004" elapsed="0.000075"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.086849" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.086885" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtUsername</msg>
-<msg time="2026-08-04T06:43:01.086905" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='UsernameInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='UsernameInput']", 'value': 'user1'})</msg>
+<msg time="2026-08-04T06:59:28.311508" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.086641" elapsed="0.000284"/>
+<status status="PASS" start="2026-08-04T06:59:28.311339" elapsed="0.000196"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.087143" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.087174" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.txtPassword</msg>
-<msg time="2026-08-04T06:43:01.087193" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='PasswordInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/Grid/TextBox[@Name='PasswordInput']", 'value': 'Pass@123'})</msg>
+<msg time="2026-08-04T06:59:28.311752" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.086980" elapsed="0.000232"/>
+<status status="PASS" start="2026-08-04T06:59:28.311587" elapsed="0.000202"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.087408" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.087440" level="INFO">Strategy attempt: WPFSpy for LoginPage.MainWindow.btnSubmit</msg>
-<msg time="2026-08-04T06:43:01.087460" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='SubmitBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Grid/Button[@Name='SubmitBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.312297" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.087262" elapsed="0.000222"/>
+<status status="PASS" start="2026-08-04T06:59:28.311843" elapsed="0.000485"/>
 </kw>
 <arg>user1</arg>
 <arg>Pass@123</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.086500" elapsed="0.001014"/>
+<status status="PASS" start="2026-08-04T06:59:28.311205" elapsed="0.001156"/>
 </kw>
 <kw name="Create New Order" owner="order_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.088332" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.088368" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.cmbSku</msg>
-<msg time="2026-08-04T06:43:01.088390" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/ComboBox[@Name='SkuCombo']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/ComboBox[@Name='SkuCombo']", 'value': 'SKU-2002'})</msg>
+<msg time="2026-08-04T06:59:28.312817" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.cmbSku</arg>
 <arg>${sku}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.087805" elapsed="0.000606"/>
+<status status="PASS" start="2026-08-04T06:59:28.312632" elapsed="0.000212"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.088640" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.088670" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.txtQty</msg>
-<msg time="2026-08-04T06:43:01.088689" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']"})
-[WPFSpy IPC] -&gt; SetValue({'xpath': "/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']", 'value': '3'})</msg>
+<msg time="2026-08-04T06:59:28.313054" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.txtQty</arg>
 <arg>${qty}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.088470" elapsed="0.000238"/>
+<status status="PASS" start="2026-08-04T06:59:28.312899" elapsed="0.000184"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.088926" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.088957" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.btnCreateOrder</msg>
-<msg time="2026-08-04T06:43:01.088975" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.313302" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnCreateOrder</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.088780" elapsed="0.000214"/>
+<status status="PASS" start="2026-08-04T06:59:28.313170" elapsed="0.000155"/>
 </kw>
 <arg>SKU-2002</arg>
 <arg>3</arg>
 <doc>Creates a new order for the given SKU and quantity.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.087640" elapsed="0.001385"/>
+<status status="PASS" start="2026-08-04T06:59:28.312490" elapsed="0.000864"/>
 </kw>
 <kw name="Get Data Grid Content Ocr" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.089287" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.089317" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.gridOrders</msg>
-<msg time="2026-08-04T06:43:01.089336" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/DataGrid[@Name='OrdersGrid']"})
+<msg time="2026-08-04T06:59:28.313803" level="INFO">Element found via WPFSpy:XPath</msg>
+<msg time="2026-08-04T06:59:28.313829" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/DataGrid[@AutomationId='gridOrders']"})
 [WPFSpy IPC] -&gt; GetDataGridContentOcr({'name': 'OrdersGrid'})</msg>
-<msg time="2026-08-04T06:43:01.089376" level="INFO">${ocr_csv} = SKU,Qty
+<msg time="2026-08-04T06:59:28.313871" level="INFO">${ocr_csv} = SKU,Qty
 SKU-2002,3
 </msg>
 <var>${ocr_csv}</var>
 <arg>OrdersPage.OrdersWindow.gridOrders</arg>
 <doc>Captures a DataGrid element screenshot and returns
 its content as CSV text using OCR.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.089126" elapsed="0.000261"/>
+<status status="PASS" start="2026-08-04T06:59:28.313449" elapsed="0.000433"/>
 </kw>
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-04T06:43:01.089681" level="INFO">DataGrid OCR CSV content:SKU,Qty
+<msg time="2026-08-04T06:59:28.314171" level="INFO">DataGrid OCR CSV content:SKU,Qty
 SKU-2002,3
 </msg>
 <arg>DataGrid OCR CSV content:${ocr_csv}</arg>
 <arg>console=True</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.089484" elapsed="0.000262"/>
+<status status="PASS" start="2026-08-04T06:59:28.313981" elapsed="0.000239"/>
 </kw>
 <kw name="Should Contain" owner="BuiltIn">
 <arg>${ocr_csv}</arg>
 <arg>SKU-2002</arg>
 <doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.089850" elapsed="0.000185"/>
+<status status="PASS" start="2026-08-04T06:59:28.314319" elapsed="0.000169"/>
 </kw>
 <kw name="Logout From Orders" owner="order_module">
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:43:01.090438" level="INFO">Element action succeeded</msg>
-<msg time="2026-08-04T06:43:01.090472" level="INFO">Strategy attempt: WPFSpy for OrdersPage.OrdersWindow.btnLogout</msg>
-<msg time="2026-08-04T06:43:01.090492" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"})
-[WPFSpy IPC] -&gt; Invoke({'xpath': "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"})</msg>
+<msg time="2026-08-04T06:59:28.314873" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
+<msg time="2026-08-04T06:59:28.315059" level="INFO">Element found via WPFSpy:XPath</msg>
+<msg time="2026-08-04T06:59:28.315084" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnLogout']"})
+[WPFSpy IPC] -&gt; Invoke({'name': 'LogoutBtn'})</msg>
 <arg>OrdersPage.OrdersWindow.btnLogout</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.090271" elapsed="0.000269"/>
+<status status="PASS" start="2026-08-04T06:59:28.314746" elapsed="0.000359"/>
 </kw>
 <doc>Logs out from the Orders page and returns to the login page.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.090154" elapsed="0.000418"/>
+<status status="PASS" start="2026-08-04T06:59:28.314606" elapsed="0.000531"/>
 </kw>
-<doc>Proves OCR-based DataGrid extraction works with WPFSpy.</doc>
+<doc>Proves OCR-based DataGrid extraction works.</doc>
 <tag>ocr</tag>
 <tag>reliability</tag>
-<tag>wpfspy-only</tag>
-<status status="PASS" start="2026-08-04T06:43:01.086059" elapsed="0.004605"/>
+<status status="PASS" start="2026-08-04T06:59:28.310760" elapsed="0.004465"/>
 </test>
-<doc>Layer 1 — Demonstrates WPFSpy-only mode.
+<test id="s1-s2-t3" name="Verify Multi-Strategy Fallback" line="41">
+<kw name="Reset Application" owner="DriverAgnosticApi" type="SETUP">
+<doc>Test-isolation keyword — restarts the application at the
+Login page. In mock mode, resets the in-memory mock app.
+In real mode, restarts the actual SampleWpfApp process.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.315746" elapsed="0.000074"/>
+</kw>
+<kw name="Login To Application" owner="login_module">
+<kw name="Set Element Value" owner="DriverAgnosticApi">
+<msg time="2026-08-04T06:59:28.316265" level="INFO">Element found via FlaUI:AutomationId</msg>
+<arg>LoginPage.MainWindow.txtUsername</arg>
+<arg>${username}</arg>
+<doc>Sets the text/value of the element identified by `alias`.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.316089" elapsed="0.000203"/>
+</kw>
+<kw name="Set Element Value" owner="DriverAgnosticApi">
+<msg time="2026-08-04T06:59:28.316494" level="INFO">Element found via FlaUI:AutomationId</msg>
+<arg>LoginPage.MainWindow.txtPassword</arg>
+<arg>${password}</arg>
+<doc>Sets the text/value of the element identified by `alias`.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.316345" elapsed="0.000173"/>
+</kw>
+<kw name="Click Element" owner="DriverAgnosticApi">
+<msg time="2026-08-04T06:59:28.316705" level="INFO">Element found via FlaUI:AutomationId</msg>
+<arg>LoginPage.MainWindow.btnSubmit</arg>
+<doc>Invokes (clicks) the element identified by `alias`.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.316568" elapsed="0.000178"/>
+</kw>
+<arg>user1</arg>
+<arg>Pass@123</arg>
+<doc>Logs into the application with the given credentials.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.315952" elapsed="0.000830"/>
+</kw>
+<kw name="Toggle Order Priority" owner="order_module">
+<kw name="Toggle Element" owner="DriverAgnosticApi">
+<msg time="2026-08-04T06:59:28.317148" level="INFO">Element found via FlaUI:Name</msg>
+<arg>OrdersPage.OrdersWindow.chkPriority</arg>
+<doc>Toggles a checkbox/toggle-style element identified by `alias`.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.317008" elapsed="0.000165"/>
+</kw>
+<doc>Toggles the (non-standard, custom-rendered) priority
+checkbox - demonstrates the self-healing WPFSpy XPath strategy.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.316896" elapsed="0.000306"/>
+</kw>
+<kw name="Get Last Strategy Used" owner="DriverAgnosticApi">
+<msg time="2026-08-04T06:59:28.317356" level="INFO">${strategy} = FlaUI:Name</msg>
+<var>${strategy}</var>
+<doc>Returns the name of the driver strategy that last succeeded —
+useful in assertions/logging for the self-healing demo tests.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.317290" elapsed="0.000078"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-08-04T06:59:28.317641" level="INFO">Strategy used: FlaUI:Name</msg>
+<arg>Strategy used: ${strategy}</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.317457" elapsed="0.000230"/>
+</kw>
+<kw name="Should Match Regexp" owner="BuiltIn">
+<arg>${strategy}</arg>
+<arg>(Name|Image|XPath)</arg>
+<doc>Fails if ``string`` does not match ``pattern`` as a regular expression.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.317799" elapsed="0.000248"/>
+</kw>
+<kw name="Logout From Orders" owner="order_module">
+<kw name="Click Element" owner="DriverAgnosticApi">
+<msg time="2026-08-04T06:59:28.318442" level="INFO">Element found via FlaUI:AutomationId</msg>
+<arg>OrdersPage.OrdersWindow.btnLogout</arg>
+<doc>Invokes (clicks) the element identified by `alias`.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.318284" elapsed="0.000186"/>
+</kw>
+<doc>Logs out from the Orders page and returns to the login page.</doc>
+<status status="PASS" start="2026-08-04T06:59:28.318171" elapsed="0.000329"/>
+</kw>
+<doc>Verifies the framework tries all strategies in priority order.
+For chkPriority (no AutomationId), it should fall back from:
+FlaUI:AutomationId -&gt; FlaUI:Name -&gt; WPFSpy:Name -&gt; Sikuli:Image</doc>
+<tag>reliability</tag>
+<tag>self-healing</tag>
+<status status="PASS" start="2026-08-04T06:59:28.315398" elapsed="0.003190"/>
+</test>
+<doc>Layer 1 — Demonstrates multi-driver fallback.
 PriorityCheckbox is a non-standard control that requires
-WPFSpy for interaction. In WPFSpy-only mode, the framework
-uses WPFSpy directly for all elements.</doc>
-<status status="PASS" start="2026-08-04T06:43:01.080429" elapsed="0.010468"/>
+WPFSpy (via Name) for interaction since it has no AutomationId.
+
+The framework now supports multiple strategies per driver:
+- FlaUI: AutomationId -&gt; Name -&gt; Type+Index
+- WPFSpy: XPath (AutomationId) -&gt; XPath (Name) -&gt; Type+Index
+- Sikuli: Image-based fallback</doc>
+<status status="PASS" start="2026-08-04T06:59:28.305327" elapsed="0.013486"/>
 </suite>
-<status status="PASS" start="2026-08-04T06:43:01.020824" elapsed="0.070641"/>
+<status status="PASS" start="2026-08-04T06:59:28.235622" elapsed="0.083680"/>
 </suite>
 <statistics>
 <total>
-<stat pass="6" fail="0" skip="0">All Tests</stat>
+<stat pass="7" fail="0" skip="0">All Tests</stat>
 </total>
 <tag>
 <stat pass="1" fail="0" skip="0">login</stat>
 <stat pass="1" fail="0" skip="0">negative</stat>
 <stat pass="2" fail="0" skip="0">ocr</stat>
 <stat pass="3" fail="0" skip="0">orders</stat>
-<stat pass="2" fail="0" skip="0">reliability</stat>
+<stat pass="3" fail="0" skip="0">reliability</stat>
+<stat pass="2" fail="0" skip="0">self-healing</stat>
 <stat pass="2" fail="0" skip="0">smoke</stat>
 <stat pass="1" fail="0" skip="0">verification</stat>
-<stat pass="2" fail="0" skip="0">wpfspy-only</stat>
 </tag>
 <suite>
-<stat name="Order Tests &amp; Self Healing Locators Demo" id="s1" pass="6" fail="0" skip="0">Order Tests &amp; Self Healing Locators Demo</stat>
+<stat name="Order Tests &amp; Self Healing Locators Demo" id="s1" pass="7" fail="0" skip="0">Order Tests &amp; Self Healing Locators Demo</stat>
 <stat name="Order Tests" id="s1-s1" pass="4" fail="0" skip="0">Order Tests &amp; Self Healing Locators Demo.Order Tests</stat>
-<stat name="Self Healing Locators Demo" id="s1-s2" pass="2" fail="0" skip="0">Order Tests &amp; Self Healing Locators Demo.Self Healing Locators Demo</stat>
+<stat name="Self Healing Locators Demo" id="s1-s2" pass="3" fail="0" skip="0">Order Tests &amp; Self Healing Locators Demo.Self Healing Locators Demo</stat>
 </suite>
 </statistics>
 <errors>
+<msg time="2026-08-04T06:59:28.299259" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
+<msg time="2026-08-04T06:59:28.314873" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
 </errors>
 </robot>

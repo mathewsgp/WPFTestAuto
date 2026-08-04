@@ -1,81 +1,237 @@
 # Element Repository — Orders Page
-# Aliases include full ancestor hierarchy with AutomationId or Name.
-# XPath is the primary finding strategy with priority: AutomationId -> Name -> Type
-# Updated to use Name for mock app compatibility
+#
+# Multi-Strategy Format: Each driver (FlaUI, WPFSpy) supports multiple strategies
+# with priority order: AutomationId -> Name -> Type+Index
+#
+# Note: chkPriority has NO AutomationId - it uses Name-based matching or Sikuli
+# This simulates a custom control not properly exposed via UIA Automation.
+#
 elements:
   OrdersPage.OrdersWindow.cmbSku:
     displayName: "SKU Combo Box"
     controlType: "ComboBox"
-    parentAlias: "OrdersPage.OrdersWindow"
+    parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "critical"]
     strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "cmbSku"
+          priority: 1
+        - searchBy: "Name"
+          value: "SkuCombo"
+          priority: 2
+        - searchBy: "TypeAndIndex"
+          value: "ComboBox[1]"
+          priority: 3
       WPFSpy:
-        searchBy: "XPath"
-        value: "/Window[@Name='MainWindow']/ComboBox[@Name='SkuCombo']"
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/ComboBox[@AutomationId='cmbSku']"
+          priority: 1
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/ComboBox[@Name='SkuCombo']"
+          priority: 2
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/ComboBox[1]"
+          priority: 3
+      Sikuli:
+        - searchBy: "Image"
+          value: "sku_combo.png"
+          priority: 4
 
   OrdersPage.OrdersWindow.txtQty:
     displayName: "Quantity Text Box"
     controlType: "TextBox"
-    parentAlias: "OrdersPage.OrdersWindow"
+    parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "critical"]
     strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "txtQty"
+          priority: 1
+        - searchBy: "Name"
+          value: "QtyInput"
+          priority: 2
+        - searchBy: "TypeAndIndex"
+          value: "TextBox[1]"
+          priority: 3
       WPFSpy:
-        searchBy: "XPath"
-        value: "/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']"
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/TextBox[@AutomationId='txtQty']"
+          priority: 1
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/TextBox[@Name='QtyInput']"
+          priority: 2
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/TextBox[1]"
+          priority: 3
+      Sikuli:
+        - searchBy: "Image"
+          value: "qty_box.png"
+          priority: 4
 
   OrdersPage.OrdersWindow.chkPriority:
-    displayName: "Priority Checkbox"
-    controlType: "PriorityToggleControl"
-    parentAlias: "OrdersPage.OrdersWindow"
+    displayName: "Priority Checkbox (No AutomationId)"
+    controlType: "CheckBox"
+    parentWindow: "OrdersWindow"
     defaultTimeout: 10
-    tags: ["orders", "non-standard"]
+    tags: ["orders", "non-standard", "no-automationid"]
+    hasAutomationId: false
     strategies:
+      # NOTE: No AutomationId strategy - only Name or Type+Index
+      FlaUI:
+        - searchBy: "Name"
+          value: "PriorityToggle"
+          priority: 1
+        - searchBy: "TypeAndIndex"
+          value: "CheckBox[1]"
+          priority: 2
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/CheckBox[@Name='PriorityToggle']"
+          priority: 1
       WPFSpy:
-        searchBy: "XPath"
-        value: "/Window[@Name='MainWindow']/CheckBox[@Name='PriorityToggle']"
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/CheckBox[@Name='PriorityToggle']"
+          priority: 1
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/CheckBox[@Name='PriorityToggle']"
+          priority: 2
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/CheckBox[1]"
+          priority: 3
+      Sikuli:
+        - searchBy: "Image"
+          value: "priority_checkbox.png"
+          priority: 1
 
   OrdersPage.OrdersWindow.btnCreateOrder:
     displayName: "Create Order Button"
     controlType: "Button"
-    parentAlias: "OrdersPage.OrdersWindow"
+    parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "critical"]
     strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnCreateOrder"
+          priority: 1
+        - searchBy: "Name"
+          value: "CreateOrderBtn"
+          priority: 2
+        - searchBy: "TypeAndIndex"
+          value: "Button[1]"
+          priority: 3
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnCreateOrder']"
+          priority: 1
       WPFSpy:
-        searchBy: "XPath"
-        value: "/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnCreateOrder']"
+          priority: 1
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/Button[@Name='CreateOrderBtn']"
+          priority: 2
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/Button[1]"
+          priority: 3
+      Sikuli:
+        - searchBy: "Image"
+          value: "create_order_button.png"
+          priority: 4
 
   OrdersPage.OrdersWindow.btnLogout:
     displayName: "Logout Button"
     controlType: "Button"
-    parentAlias: "OrdersPage.OrdersWindow"
+    parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "navigation"]
     strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnLogout"
+          priority: 1
+        - searchBy: "Name"
+          value: "LogoutBtn"
+          priority: 2
+        - searchBy: "TypeAndIndex"
+          value: "Button[2]"
+          priority: 3
       WPFSpy:
-        searchBy: "XPath"
-        value: "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnLogout']"
+          priority: 1
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/Button[@Name='LogoutBtn']"
+          priority: 2
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/Button[2]"
+          priority: 3
+      Sikuli:
+        - searchBy: "Image"
+          value: "logout_button.png"
+          priority: 4
 
   OrdersPage.OrdersWindow.lblConfirmation:
     displayName: "Confirmation Label"
     controlType: "Label"
-    parentAlias: "OrdersPage.OrdersWindow"
+    parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "verification"]
     strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "lblConfirmation"
+          priority: 1
+        - searchBy: "Name"
+          value: "ConfirmationLabel"
+          priority: 2
+        - searchBy: "TypeAndIndex"
+          value: "Label[1]"
+          priority: 3
       WPFSpy:
-        searchBy: "XPath"
-        value: "/Window[@Name='MainWindow']/Label[@Name='ConfirmationLabel']"
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/Label[@AutomationId='lblConfirmation']"
+          priority: 1
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/Label[@Name='ConfirmationLabel']"
+          priority: 2
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/Label[1]"
+          priority: 3
+      Sikuli:
+        - searchBy: "Image"
+          value: "confirmation_label.png"
+          priority: 4
 
   OrdersPage.OrdersWindow.gridOrders:
     displayName: "Orders Grid"
     controlType: "DataGrid"
-    parentAlias: "OrdersPage.OrdersWindow"
+    parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "verification"]
     strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "gridOrders"
+          priority: 1
+        - searchBy: "Name"
+          value: "OrdersGrid"
+          priority: 2
+        - searchBy: "TypeAndIndex"
+          value: "DataGrid[1]"
+          priority: 3
       WPFSpy:
-        searchBy: "XPath"
-        value: "/Window[@Name='MainWindow']/DataGrid[@Name='OrdersGrid']"
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/DataGrid[@AutomationId='gridOrders']"
+          priority: 1
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/DataGrid[@Name='OrdersGrid']"
+          priority: 2
+        - searchBy: "XPath"
+          value: "/Window[@Name='OrdersWindow']/DataGrid[1]"
+          priority: 3
+      Sikuli:
+        - searchBy: "Image"
+          value: "orders_grid.png"
+          priority: 4

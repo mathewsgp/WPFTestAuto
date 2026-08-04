@@ -213,9 +213,16 @@ class DriverAgnosticApi:
     def _resolve_and_execute(self, alias: str, action_name: str, *args):
         """Resolve element and execute action with self-healing fallback.
         
-        Tries each configured driver strategy in order (FlaUI -> WPFSpy -> Sikuli),
-        automatically falling back if one fails. This provides runtime self-healing
-        for elements that may be locatable by different strategies.
+        Tries each configured driver in order (FlaUI -> WPFSpy -> Sikuli),
+        and for each driver, tries all strategies in priority order.
+        Automatically falls back if one strategy or driver fails.
+        
+        Strategy Priority per Driver:
+        1. AutomationId (most reliable)
+        2. Name (second choice)
+        3. Type + Index (sibling fallback)
+        4. XPath (full path)
+        5. Image (Sikuli fallback)
         
         Args:
             alias: Element alias from repository.
@@ -226,9 +233,10 @@ class DriverAgnosticApi:
             Driver-specific result.
         
         Raises:
-            AllStrategiesFailedError: If all configured strategies fail.
+            AllStrategiesFailedError: If all strategies across all drivers fail.
         """
-        strategies = repo.get_strategies(alias)
+        # Get all strategies for this element, sorted by priority
+        all_strategies = repo.get_all_driver_strategies_sorted(alias)
         wpfspy_mode = os.environ.get("WPFSPY_MODE", "mock")
         
         logger.debug(
@@ -236,10 +244,10 @@ class DriverAgnosticApi:
             alias=alias,
             action=action_name,
             wpfspy_mode=wpfspy_mode,
-            available_strategies=list(strategies.keys())
+            available_drivers=list(all_strategies.keys())
         )
         
-        if not strategies:
+        if not all_strategies:
             raise AllStrategiesFailedError(
                 alias=alias,
                 attempts=[],
@@ -251,11 +259,11 @@ class DriverAgnosticApi:
         attempts = []
         
         for driver_name in driver_order:
-            if driver_name not in strategies:
+            if driver_name not in all_strategies:
                 # This driver is not configured for this element
                 continue
             
-            locator = strategies[driver_name]
+            driver_strategies = all_strategies[driver_name]
             driver = self._drivers.get(driver_name)
             
             if driver is None:
@@ -274,108 +282,81 @@ class DriverAgnosticApi:
                     alias=alias,
                     driver=driver_name
                 )
-                attempts.append((driver_name, "CIRCUIT_OPEN"))
+                attempts.append((f"{driver_name}:*", "CIRCUIT_OPEN"))
                 continue
             
-            start_time = time.time()
-            logger.debug(
-                f"Trying {driver_name} driver",
-                alias=alias,
-                driver=driver_name,
-                locator=locator
-            )
+            # Try each strategy for this driver in priority order
+            for strategy in driver_strategies:
+                search_by = strategy.get("searchBy", "")
+                strategy_value = strategy.get("value", "")
+                priority = strategy.get("priority", 99)
+                strategy_desc = f"{driver_name}:{search_by}"
+                
+                start_time = time.time()
+                logger.debug(
+                    f"Trying {strategy_desc}",
+                    alias=alias,
+                    driver=driver_name,
+                    searchBy=search_by,
+                    value=strategy_value,
+                    priority=priority
+                )
+                
+                try:
+                    # Find element using this driver's strategy
+                    element = driver.find_element(strategy)
+                    
+                    # Execute the action
+                    result = getattr(driver, action_name)(element, *args)
+                    
+                    duration_ms = (time.time() - start_time) * 1000
+                    
+                    # Success
+                    breaker.record_success()
+                    self.last_strategy_used = strategy_desc
+                    self.attempt_log = [(strategy_desc, "SUCCESS")]
+                    
+                    logger.info(
+                        f"Element found via {strategy_desc}",
+                        alias=alias,
+                        driver=driver_name,
+                        searchBy=search_by,
+                        duration_ms=round(duration_ms, 2)
+                    )
+                    
+                    return result
+                    
+                except Exception as e:
+                    duration_ms = (time.time() - start_time) * 1000
+                    error_msg = str(e)[:100]
+                    attempts.append((strategy_desc, f"FAILED: {error_msg}"))
+                    
+                    logger.debug(
+                        f"Strategy failed, trying next",
+                        alias=alias,
+                        driver=driver_name,
+                        searchBy=search_by,
+                        error=error_msg,
+                        duration_ms=round(duration_ms, 2)
+                    )
+                    
+                    # Record failure for circuit breaker
+                    breaker.record_failure()
+                    continue
             
-            try:
-                # Find element using this driver's strategy
-                element = driver.find_element(locator)
-                
-                # Execute the action
-                result = getattr(driver, action_name)(element, *args)
-                
-                duration_ms = (time.time() - start_time) * 1000
-                
-                # Success
-                breaker.record_success()
-                self.last_strategy_used = driver_name
-                self.attempt_log = [(driver_name, "SUCCESS")]
-                
-                logger.info(
-                    f"Element action succeeded",
-                    alias=alias,
-                    driver=driver_name,
-                    action=action_name,
-                    duration_ms=round(duration_ms, 2)
-                )
-                
-                # Log to execution logger for metrics
-                execution_logger.log_strategy_attempt(
-                    alias=alias,
-                    driver=driver_name,
-                    strategy=locator,
-                    result="success",
-                    duration_ms=duration_ms
-                )
-                
-                return result
-                
-            except (MockElementNotFoundError, MockElementNotInteractableError, 
-                    ElementNotFoundError, ElementNotInteractableError,
-                    KeyError) as exc:
-                duration_ms = (time.time() - start_time) * 1000
-                error_msg = str(exc)
-                
-                breaker.record_failure()
-                attempts.append((driver_name, f"FAILED: {error_msg}"))
-                
-                logger.warning(
-                    f"Strategy failed, trying next",
-                    alias=alias,
-                    driver=driver_name,
-                    error=error_msg,
-                    duration_ms=round(duration_ms, 2)
-                )
-                
-                # Log to execution logger
-                execution_logger.log_strategy_attempt(
-                    alias=alias,
-                    driver=driver_name,
-                    strategy=locator,
-                    result="failed",
-                    duration_ms=duration_ms,
-                    error=error_msg
-                )
-                
-            except CircuitBreakerOpenError:
-                attempts.append((driver_name, "CIRCUIT_OPEN"))
-                logger.warning(
-                    f"Circuit breaker open for {driver_name}",
-                    alias=alias,
-                    driver=driver_name
-                )
-                
-            except Exception as exc:
-                duration_ms = (time.time() - start_time) * 1000
-                error_msg = f"{type(exc).__name__}: {exc}"
-                
-                breaker.record_failure()
-                attempts.append((driver_name, f"ERROR: {error_msg}"))
-                
-                logger.error(
-                    f"Unexpected error in {driver_name}",
-                    alias=alias,
-                    driver=driver_name,
-                    error=error_msg,
-                    duration_ms=round(duration_ms, 2)
-                )
+            # All strategies for this driver failed
+            logger.debug(
+                f"All {driver_name} strategies failed, trying next driver",
+                alias=alias,
+                driver=driver_name
+            )
         
-        # All strategies failed
-        error = AllStrategiesFailedError(
-            alias=alias,
-            attempts=attempts,
-            details={"action": action_name, "args": args}
-        )
-        self.attempt_log = attempts
-        self.last_strategy_used = None
+        # All drivers and strategies failed
+        error_details = {
+            "attempts": attempts,
+            "total_attempts": len(attempts),
+            "driver_order": driver_order
+        }
         
         logger.error(
             f"All strategies failed for {alias}",
@@ -383,7 +364,11 @@ class DriverAgnosticApi:
             attempts=attempts
         )
         
-        raise error
+        raise AllStrategiesFailedError(
+            alias=alias,
+            attempts=attempts,
+            details=error_details
+        )
 
     # ------------------------------------------------------------------
     # Public keywords

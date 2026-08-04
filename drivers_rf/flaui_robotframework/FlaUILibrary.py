@@ -30,17 +30,59 @@ from mock_app import APP_INSTANCE, ElementNotFoundError, ElementNotInteractableE
 
 
 class FlaUIDriver:
-    """FlaUI driver — locates elements by AutomationId (UI Automation)."""
+    """FlaUI driver — locates elements by AutomationId, Name, or Type+Index.
+    
+    Strategy Priority:
+    1. AutomationId (most reliable)
+    2. Name (second choice)
+    3. Type + Index (sibling fallback)
+    """
 
     name = "FlaUI"
 
-    def find_element(self, locator: dict):
-        """locator: {"searchBy": "AutomationId", "value": "...", "scope": "..."}"""
-        automation_id = locator.get("value")
-        ctrl = APP_INSTANCE.find_by_automation_id(automation_id)
-        if ctrl is None:
-            raise ElementNotFoundError(f"FlaUI: no element with AutomationId='{automation_id}'")
-        return ctrl
+    def find_element(self, strategy: dict):
+        """Locates an element using FlaUI strategy.
+        
+        Args:
+            strategy: Dict with searchBy and value keys.
+                     Supports: AutomationId, Name, TypeAndIndex, XPath
+        """
+        search_by = strategy.get("searchBy", "AutomationId")
+        value = strategy.get("value")
+        
+        if search_by == "AutomationId":
+            ctrl = APP_INSTANCE.find_by_automation_id(value)
+            if ctrl is None:
+                raise ElementNotFoundError(f"FlaUI: no element with AutomationId='{value}'")
+            return ctrl
+        
+        elif search_by == "Name":
+            ctrl = APP_INSTANCE.find_by_name(value)
+            if ctrl is None:
+                raise ElementNotFoundError(f"FlaUI: no element with Name='{value}'")
+            return ctrl
+        
+        elif search_by == "TypeAndIndex":
+            # Parse "ControlType[index]" format
+            import re
+            match = re.match(r"(\w+)\[(\d+)\]", value)
+            if match:
+                ctrl_type = match.group(1)
+                index = int(match.group(2))
+                ctrl = APP_INSTANCE.find_by_control_type_and_index(ctrl_type, index)
+                if ctrl is None:
+                    raise ElementNotFoundError(f"FlaUI: no element {ctrl_type}[{index}]")
+                return ctrl
+            raise ElementNotFoundError(f"Invalid TypeAndIndex format: {value}")
+        
+        elif search_by == "XPath":
+            ctrl = APP_INSTANCE.find_by_xpath(value)
+            if ctrl is None:
+                raise ElementNotFoundError(f"FlaUI: no element found for XPath '{value}'")
+            return ctrl
+        
+        else:
+            raise ElementNotFoundError(f"Unsupported FlaUI searchBy: {search_by}")
 
     def invoke(self, element):
         APP_INSTANCE.invoke(element)

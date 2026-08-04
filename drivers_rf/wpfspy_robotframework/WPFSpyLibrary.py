@@ -220,21 +220,46 @@ class WPFSpyMockDriver:
     def _log_ipc(self, command: str, **payload):
         print(f"[WPFSpy IPC] -> {command}({payload})")
 
-    def find_element(self, locator: dict):
-        search_by = locator.get("searchBy", "XPath")
-        value = locator.get("value")
+    def find_element(self, strategy: dict):
+        """Locates an element using WPFSpy strategy.
+        
+        Args:
+            strategy: Dict with searchBy and value keys.
+                    Supports: XPath, AutomationId, Name, TypeAndIndex
+        """
+        search_by = strategy.get("searchBy", "XPath")
+        value = strategy.get("value")
+        
         if search_by == "XPath":
             self._log_ipc("FindByXPath", xpath=value)
             ctrl = APP_INSTANCE.find_by_xpath(value)
             if ctrl is None:
                 raise ElementNotFoundError(f"WPFSpy: no element found for XPath '{value}'")
             return ctrl
-        target_name = value
-        self._log_ipc("Find", name=target_name)
-        ctrl = APP_INSTANCE.find_by_name(target_name)
-        if ctrl is None:
-            raise ElementNotFoundError(f"WPFSpy: no element with Name='{target_name}'")
-        return ctrl
+        
+        elif search_by == "Name":
+            self._log_ipc("Find", name=value)
+            ctrl = APP_INSTANCE.find_by_name(value)
+            if ctrl is None:
+                raise ElementNotFoundError(f"WPFSpy: no element with Name='{value}'")
+            return ctrl
+        
+        elif search_by == "TypeAndIndex":
+            # Parse "ControlType[index]" format
+            import re
+            match = re.match(r"(\w+)\[(\d+)\]", value)
+            if match:
+                ctrl_type = match.group(1)
+                index = int(match.group(2))
+                self._log_ipc("FindByTypeAndIndex", type=ctrl_type, index=index)
+                ctrl = APP_INSTANCE.find_by_control_type_and_index(ctrl_type, index)
+                if ctrl is None:
+                    raise ElementNotFoundError(f"WPFSpy: no element {ctrl_type}[{index}]")
+                return ctrl
+            raise ElementNotFoundError(f"Invalid TypeAndIndex format: {value}")
+        
+        else:
+            raise ElementNotFoundError(f"Unsupported WPFSpy searchBy: {search_by}")
 
     def invoke(self, element):
         if hasattr(element, "xpath") and element.xpath:
