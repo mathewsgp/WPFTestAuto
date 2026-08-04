@@ -362,14 +362,19 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
                 if (props != null && props.Count > 0)
                 {
                     var alias = dialog.SelectedAlias ?? "NewElement";
+                    props.TryGetValue("Name", out var name);
+                    props.TryGetValue("ControlType", out var controlType);
+                    props.TryGetValue("AutomationId", out var automationId);
+                    props.TryGetValue("XPath", out var xpath);
+                    
                     var newElement = new ElementEntry
                     {
                         Alias = alias,
-                        DisplayName = props.GetValueOrDefault("Name", alias),
-                        ControlType = props.GetValueOrDefault("ControlType", "Unknown"),
-                        AutomationId = props.GetValueOrDefault("AutomationId", ""),
-                        Name = props.GetValueOrDefault("Name", ""),
-                        XPath = props.GetValueOrDefault("XPath", "")
+                        DisplayName = name ?? alias,
+                        ControlType = controlType ?? "Unknown",
+                        AutomationId = automationId ?? "",
+                        Name = name ?? "",
+                        XPath = xpath ?? ""
                     };
                     Elements.Add(newElement);
                     StatusText = $"Added element: {alias}";
