@@ -18,8 +18,24 @@ import os
 import subprocess
 import time
 import signal
+from typing import Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Import framework modules
+from config import config, FrameworkConfig  # noqa: E402
+from exceptions import (  # noqa: E402
+    AllStrategiesFailedError,
+    ElementNotFoundError,
+    ElementNotInteractableError,
+    ElementNotVisibleError,
+    ElementDisabledError,
+    CircuitBreakerOpenError,
+)
+from circuit_breaker import CircuitBreakerManager  # noqa: E402
+from logging_utils import get_api_logger, execution_logger  # noqa: E402
+from base_driver import ElementHandle  # noqa: E402
+
 import repository_access as repo  # noqa: E402
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -32,13 +48,22 @@ from FlaUILibrary import FlaUIDriver          # noqa: E402
 from WPFSpyLibrary import WPFSpyDriver        # noqa: E402
 from SikuliLibrary import SikuliDriver        # noqa: E402
 from mock_app import (                        # noqa: E402
-    ElementNotFoundError,
-    ElementNotInteractableError,
+    ElementNotFoundError as MockElementNotFoundError,
+    ElementNotInteractableError as MockElementNotInteractableError,
     reset_app,
 )
 
 _WPFSPY_MODE = os.environ.get("WPFSPY_MODE", "mock").lower()
 _SAMPLE_WPF_APP_PROCESS = None
+
+# Initialize logger
+logger = get_api_logger()
+
+# Circuit breaker manager
+_breaker_manager = CircuitBreakerManager(
+    threshold=config.CIRCUIT_BREAKER_THRESHOLD,
+    timeout=config.CIRCUIT_BREAKER_TIMEOUT
+)
 
 def _get_sample_wpf_app_path():
     """Returns the path to the SampleWpfApp executable."""
@@ -138,18 +163,33 @@ def _reset_real_app():
         time.sleep(2)
         _start_sample_wpf_app()
 
-_DRIVERS = {
-    "FlaUI": FlaUIDriver(),
-    "WPFSpy": WPFSpyDriver(),
-    "Sikuli": SikuliDriver(),
-}
+# Lazy driver initialization
+_DRIVERS: dict = {}
+_DRIVERS_INITIALIZED: bool = False
 
 
-class AllStrategiesFailedError(Exception):
-    """Raised when every configured driver strategy failed to locate or
-    act on an element. Carries the full attempt log for diagnosis.
-    """
-    pass
+def _get_drivers() -> dict:
+    """Lazy initialization of drivers. Returns cached drivers dict."""
+    global _DRIVERS, _DRIVERS_INITIALIZED
+    if not _DRIVERS_INITIALIZED:
+        _DRIVERS = {
+            "FlaUI": FlaUIDriver(),
+            "WPFSpy": WPFSpyDriver(),
+            "Sikuli": SikuliDriver(),
+        }
+        _DRIVERS_INITIALIZED = True
+        logger.info("Drivers initialized", drivers=list(_DRIVERS.keys()))
+    return _DRIVERS
+
+
+def _reload_drivers():
+    """Reload drivers (useful for testing or config changes)."""
+    global _DRIVERS, _DRIVERS_INITIALIZED
+    for driver in _DRIVERS.values():
+        if hasattr(driver, 'close'):
+            driver.close()
+    _DRIVERS = {}
+    _DRIVERS_INITIALIZED = False
 
 
 class DriverAgnosticApi:
@@ -163,40 +203,187 @@ class DriverAgnosticApi:
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
 
     def __init__(self):
-        self.last_strategy_used = None
-        self.attempt_log = []
+        self.last_strategy_used: Optional[str] = None
+        self.attempt_log: list = []
+        self._drivers = _get_drivers()
 
     # ------------------------------------------------------------------
     # Core resolution + self-healing fallback
     # ------------------------------------------------------------------
     def _resolve_and_execute(self, alias: str, action_name: str, *args):
+        """Resolve element and execute action with self-healing fallback.
+        
+        Tries each configured driver strategy in order (FlaUI -> WPFSpy -> Sikuli),
+        automatically falling back if one fails. This provides runtime self-healing
+        for elements that may be locatable by different strategies.
+        
+        Args:
+            alias: Element alias from repository.
+            action_name: Method name on driver (invoke, set_value, get_text, etc.).
+            *args: Action-specific arguments.
+        
+        Returns:
+            Driver-specific result.
+        
+        Raises:
+            AllStrategiesFailedError: If all configured strategies fail.
+        """
         strategies = repo.get_strategies(alias)
         wpfspy_mode = os.environ.get("WPFSPY_MODE", "mock")
-        print(f"[DEBUG] _resolve_and_execute: alias={alias}, action={action_name}, WPFSPY_MODE={wpfspy_mode}, strategies={list(strategies.keys())}")
-        if not strategies:
-            raise AllStrategiesFailedError(f"No strategies configured for alias '{alias}'")
-
-        # WPFSpy-only mode: only try WPFSpy driver
-        wpfspy_locator = strategies.get("WPFSpy")
-        if wpfspy_locator:
-            driver = _DRIVERS["WPFSpy"]
-            try:
-                print(f"[DEBUG] Trying WPFSpy driver with locator {wpfspy_locator}")
-                element = driver.find_element(wpfspy_locator)
-                result = getattr(driver, action_name)(element, *args)
-                self.last_strategy_used = "WPFSpy"
-                self.attempt_log = [("WPFSpy", "SUCCESS")]
-                print(f"[Layer3] '{alias}' -> strategy 'WPFSpy' succeeded")
-                return result
-            except (ElementNotFoundError, ElementNotInteractableError, KeyError) as exc:
-                self.attempt_log = [("WPFSpy", f"FAILED: {exc}")]
-                raise AllStrategiesFailedError(
-                    f"WPFSpy strategy failed for alias '{alias}': {exc}"
-                )
-
-        raise AllStrategiesFailedError(
-            f"No WPFSpy strategy configured for alias '{alias}'"
+        
+        logger.debug(
+            "Resolving element",
+            alias=alias,
+            action=action_name,
+            wpfspy_mode=wpfspy_mode,
+            available_strategies=list(strategies.keys())
         )
+        
+        if not strategies:
+            raise AllStrategiesFailedError(
+                alias=alias,
+                attempts=[],
+                details={"reason": "No strategies configured"}
+            )
+        
+        # Build ordered strategy list from config and available strategies
+        driver_order = config.DRIVER_ORDER
+        attempts = []
+        
+        for driver_name in driver_order:
+            if driver_name not in strategies:
+                # This driver is not configured for this element
+                continue
+            
+            locator = strategies[driver_name]
+            driver = self._drivers.get(driver_name)
+            
+            if driver is None:
+                logger.warning(
+                    f"Driver {driver_name} not available",
+                    alias=alias,
+                    driver=driver_name
+                )
+                continue
+            
+            # Check circuit breaker
+            breaker = _breaker_manager.get_breaker(driver_name)
+            if not breaker.allow_request():
+                logger.warning(
+                    f"Circuit breaker open for {driver_name}, skipping",
+                    alias=alias,
+                    driver=driver_name
+                )
+                attempts.append((driver_name, "CIRCUIT_OPEN"))
+                continue
+            
+            start_time = time.time()
+            logger.debug(
+                f"Trying {driver_name} driver",
+                alias=alias,
+                driver=driver_name,
+                locator=locator
+            )
+            
+            try:
+                # Find element using this driver's strategy
+                element = driver.find_element(locator)
+                
+                # Execute the action
+                result = getattr(driver, action_name)(element, *args)
+                
+                duration_ms = (time.time() - start_time) * 1000
+                
+                # Success
+                breaker.record_success()
+                self.last_strategy_used = driver_name
+                self.attempt_log = [(driver_name, "SUCCESS")]
+                
+                logger.info(
+                    f"Element action succeeded",
+                    alias=alias,
+                    driver=driver_name,
+                    action=action_name,
+                    duration_ms=round(duration_ms, 2)
+                )
+                
+                # Log to execution logger for metrics
+                execution_logger.log_strategy_attempt(
+                    alias=alias,
+                    driver=driver_name,
+                    strategy=locator,
+                    result="success",
+                    duration_ms=duration_ms
+                )
+                
+                return result
+                
+            except (MockElementNotFoundError, MockElementNotInteractableError, 
+                    ElementNotFoundError, ElementNotInteractableError,
+                    KeyError) as exc:
+                duration_ms = (time.time() - start_time) * 1000
+                error_msg = str(exc)
+                
+                breaker.record_failure()
+                attempts.append((driver_name, f"FAILED: {error_msg}"))
+                
+                logger.warning(
+                    f"Strategy failed, trying next",
+                    alias=alias,
+                    driver=driver_name,
+                    error=error_msg,
+                    duration_ms=round(duration_ms, 2)
+                )
+                
+                # Log to execution logger
+                execution_logger.log_strategy_attempt(
+                    alias=alias,
+                    driver=driver_name,
+                    strategy=locator,
+                    result="failed",
+                    duration_ms=duration_ms,
+                    error=error_msg
+                )
+                
+            except CircuitBreakerOpenError:
+                attempts.append((driver_name, "CIRCUIT_OPEN"))
+                logger.warning(
+                    f"Circuit breaker open for {driver_name}",
+                    alias=alias,
+                    driver=driver_name
+                )
+                
+            except Exception as exc:
+                duration_ms = (time.time() - start_time) * 1000
+                error_msg = f"{type(exc).__name__}: {exc}"
+                
+                breaker.record_failure()
+                attempts.append((driver_name, f"ERROR: {error_msg}"))
+                
+                logger.error(
+                    f"Unexpected error in {driver_name}",
+                    alias=alias,
+                    driver=driver_name,
+                    error=error_msg,
+                    duration_ms=round(duration_ms, 2)
+                )
+        
+        # All strategies failed
+        error = AllStrategiesFailedError(
+            alias=alias,
+            attempts=attempts,
+            details={"action": action_name, "args": args}
+        )
+        self.attempt_log = attempts
+        self.last_strategy_used = None
+        
+        logger.error(
+            f"All strategies failed for {alias}",
+            alias=alias,
+            attempts=attempts
+        )
+        
+        raise error
 
     # ------------------------------------------------------------------
     # Public keywords
@@ -205,8 +392,23 @@ class DriverAgnosticApi:
         """Invokes (clicks) the element identified by `alias`."""
         self._resolve_and_execute(alias, "invoke")
 
+    def click_element_with_wait(self, alias: str, timeout: float = 10.0):
+        """Clicks element after waiting for it to be actionable."""
+        self.wait_until_element_actionable(alias, timeout)
+        self._resolve_and_execute(alias, "invoke")
+
     def set_element_value(self, alias: str, value: str):
         """Sets the text/value of the element identified by `alias`."""
+        self._resolve_and_execute(alias, "set_value", value)
+
+    def set_element_value_with_wait(
+        self, 
+        alias: str, 
+        value: str, 
+        timeout: float = 10.0
+    ):
+        """Sets element value after waiting for it to be actionable."""
+        self.wait_until_element_actionable(alias, timeout)
         self._resolve_and_execute(alias, "set_value", value)
 
     def get_element_text(self, alias: str) -> str:
@@ -219,6 +421,12 @@ class DriverAgnosticApi:
         if actual != expected:
             raise AssertionError(f"'{alias}' text mismatch: expected '{expected}', got '{actual}'")
 
+    def verify_element_contains_text(self, alias: str, expected: str):
+        """Fails the test unless the element's text contains `expected`."""
+        actual = self.get_element_text(alias)
+        if expected not in actual:
+            raise AssertionError(f"'{alias}' text does not contain '{expected}': got '{actual}'")
+
     def get_data_grid_content_ocr(self, alias: str) -> str:
         """Captures a DataGrid element screenshot and returns
         its content as CSV text using OCR."""
@@ -228,25 +436,188 @@ class DriverAgnosticApi:
         """Toggles a checkbox/toggle-style element identified by `alias`."""
         self._resolve_and_execute(alias, "toggle")
 
-    def wait_until_element_visible(self, alias: str, timeout: float = 5.0):
-        """Polls until the element is visible, or raises after `timeout`
-        seconds. (In the mock this resolves immediately since state
-        changes are synchronous; kept for API completeness / real-world
-        parity where WPF UI updates can be asynchronous.)
-        """
+    def is_element_visible(self, alias: str) -> bool:
+        """Check if element is visible without failing."""
         strategies = repo.get_strategies(alias)
-        last_exc = None
-        for driver_name, locator in strategies.items():
-            driver = _DRIVERS[driver_name]
-            try:
-                element = driver.find_element(locator)
-                if driver.is_visible(element):
-                    return True
-            except (ElementNotFoundError, KeyError) as exc:
-                last_exc = exc
+        for driver_name in config.DRIVER_ORDER:
+            if driver_name not in strategies:
                 continue
-        raise AllStrategiesFailedError(
-            f"'{alias}' not visible via any configured strategy (last error: {last_exc})"
+            driver = self._drivers.get(driver_name)
+            if driver is None:
+                continue
+            try:
+                element = driver.find_element(strategies[driver_name])
+                return driver.is_visible(element)
+            except Exception:
+                continue
+        return False
+
+    def is_element_enabled(self, alias: str) -> bool:
+        """Check if element is enabled without failing."""
+        strategies = repo.get_strategies(alias)
+        for driver_name in config.DRIVER_ORDER:
+            if driver_name not in strategies:
+                continue
+            driver = self._drivers.get(driver_name)
+            if driver is None:
+                continue
+            try:
+                element = driver.find_element(strategies[driver_name])
+                return driver.is_enabled(element)
+            except Exception:
+                continue
+        return False
+
+    def is_element_actionable(self, alias: str) -> bool:
+        """Check if element is both visible and enabled."""
+        strategies = repo.get_strategies(alias)
+        for driver_name in config.DRIVER_ORDER:
+            if driver_name not in strategies:
+                continue
+            driver = self._drivers.get(driver_name)
+            if driver is None:
+                continue
+            try:
+                element = driver.find_element(strategies[driver_name])
+                return driver.is_actionable(element)
+            except Exception:
+                continue
+        return False
+
+    def wait_until_element_visible(
+        self, 
+        alias: str, 
+        timeout: float = 10.0,
+        poll_interval: float = 0.5
+    ):
+        """Polls until the element is visible, or raises after `timeout` seconds.
+        
+        Uses exponential backoff on poll interval for better performance.
+        """
+        from wait_utils import Wait
+        from exceptions import WaitTimeoutError
+        
+        start_time = time.time()
+        strategies = repo.get_strategies(alias)
+        
+        if not strategies:
+            raise AllStrategiesFailedError(
+                alias=alias,
+                attempts=[],
+                details={"reason": "No strategies configured"}
+            )
+        
+        while time.time() - start_time < timeout:
+            for driver_name in config.DRIVER_ORDER:
+                if driver_name not in strategies:
+                    continue
+                driver = self._drivers.get(driver_name)
+                if driver is None:
+                    continue
+                try:
+                    element = driver.find_element(strategies[driver_name])
+                    if driver.is_visible(element):
+                        return True
+                except Exception:
+                    continue
+            
+            # Exponential backoff
+            remaining = timeout - (time.time() - start_time)
+            if remaining > 0:
+                time.sleep(min(poll_interval, remaining))
+        
+        raise WaitTimeoutError(
+            condition="element visible",
+            timeout=timeout
+        )
+
+    def wait_until_element_actionable(
+        self,
+        alias: str,
+        timeout: float = 10.0,
+        poll_interval: float = 0.5
+    ):
+        """Wait for element to be visible and enabled.
+        
+        Raises WaitTimeoutError if element is not actionable within timeout.
+        """
+        start_time = time.time()
+        strategies = repo.get_strategies(alias)
+        
+        if not strategies:
+            raise AllStrategiesFailedError(
+                alias=alias,
+                attempts=[],
+                details={"reason": "No strategies configured"}
+            )
+        
+        while time.time() - start_time < timeout:
+            for driver_name in config.DRIVER_ORDER:
+                if driver_name not in strategies:
+                    continue
+                driver = self._drivers.get(driver_name)
+                if driver is None:
+                    continue
+                try:
+                    element = driver.find_element(strategies[driver_name])
+                    if driver.is_actionable(element):
+                        return True
+                except Exception:
+                    continue
+            
+            remaining = timeout - (time.time() - start_time)
+            if remaining > 0:
+                time.sleep(min(poll_interval, remaining))
+        
+        raise WaitTimeoutError(
+            condition="element actionable",
+            timeout=timeout
+        )
+
+    def wait_until_element_text_contains(
+        self,
+        alias: str,
+        expected: str,
+        timeout: float = 10.0,
+        case_sensitive: bool = True
+    ):
+        """Wait for element's text to contain the expected value."""
+        from exceptions import WaitTimeoutError
+        
+        start_time = time.time()
+        strategies = repo.get_strategies(alias)
+        
+        if not strategies:
+            raise AllStrategiesFailedError(
+                alias=alias,
+                attempts=[],
+                details={"reason": "No strategies configured"}
+            )
+        
+        while time.time() - start_time < timeout:
+            for driver_name in config.DRIVER_ORDER:
+                if driver_name not in strategies:
+                    continue
+                driver = self._drivers.get(driver_name)
+                if driver is None:
+                    continue
+                try:
+                    element = driver.find_element(strategies[driver_name])
+                    text = driver.get_text(element)
+                    if case_sensitive:
+                        if expected in text:
+                            return True
+                    else:
+                        if expected.lower() in text.lower():
+                            return True
+                except Exception:
+                    continue
+            
+            time.sleep(0.5)
+        
+        raise WaitTimeoutError(
+            condition=f"text contains '{expected}'",
+            timeout=timeout
         )
 
     def reset_application(self):
@@ -258,8 +629,11 @@ class DriverAgnosticApi:
             _reset_real_app()
         else:
             reset_app()
+        
+        # Reset circuit breakers
+        _breaker_manager.reset_all()
 
-    def get_last_strategy_used(self) -> str:
+    def get_last_strategy_used(self) -> Optional[str]:
         """Returns the name of the driver strategy that last succeeded —
         useful in assertions/logging for the self-healing demo tests.
         """

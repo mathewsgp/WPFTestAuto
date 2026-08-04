@@ -21,6 +21,7 @@ by Name (WPFSpy) or image (Sikuli). This is used by the self-healing
 locator demo test to prove the FlaUI -> WPFSpy -> Sikuli fallback chain.
 """
 
+import threading
 from dataclasses import dataclass
 from typing import Dict, Optional
 
@@ -44,6 +45,11 @@ class ElementNotFoundError(Exception):
 
 class ElementNotInteractableError(Exception):
     pass
+
+
+# Thread-local storage for parallel test execution support
+_thread_local = threading.local()
+_lock = threading.RLock()  # Reentrant lock for thread-safe operations
 
 
 class MockWpfApp:
@@ -239,16 +245,71 @@ class MockWpfApp:
         self._build_login_page()
 
 
-# A single shared instance simulates "the application under test" being a
-# long-running process that all drivers connect to.
-APP_INSTANCE = MockWpfApp()
+# Thread-local storage for parallel test execution support
+# Each thread gets its own app instance when using thread-local mode
+_use_thread_local = False  # Default: use global instance for backwards compatibility
+
+
+def _get_app_instance() -> MockWpfApp:
+    """Get the current thread's app instance.
+    
+    If thread-local mode is enabled, returns thread-specific instance.
+    Otherwise returns the global shared instance.
+    """
+    global _use_thread_local
+    if _use_thread_local:
+        if not hasattr(_thread_local, 'instance') or _thread_local.instance is None:
+            _thread_local.instance = MockWpfApp()
+        return _thread_local.instance
+    return _global_app_instance
+
+
+def enable_thread_local_mode():
+    """Enable thread-local mode for parallel test execution.
+    
+    When enabled, each thread gets its own MockWpfApp instance,
+    preventing race conditions in parallel test execution.
+    """
+    global _use_thread_local
+    _use_thread_local = True
+
+
+def disable_thread_local_mode():
+    """Disable thread-local mode (default behavior).
+    
+    Uses a single shared instance across all threads.
+    Note: This may cause race conditions in parallel execution.
+    """
+    global _use_thread_local
+    _use_thread_local = False
+
+
+# Global shared instance for backwards compatibility
+_global_app_instance = MockWpfApp()
+
+
+# Alias for backwards compatibility
+APP_INSTANCE = _global_app_instance
 
 
 def reset_app():
     """Test isolation helper — restarts the mock app at the Login page.
-    Mutates the existing APP_INSTANCE in place rather than rebinding the
-    module-level name, since driver wrapper modules imported APP_INSTANCE
-    by reference at import time (`from mock_app import APP_INSTANCE`).
+    
+    In thread-local mode: resets the current thread's app instance.
+    In shared mode: resets the global app instance.
+    
+    Mutates the existing instance in place rather than rebinding,
+    since driver wrapper modules import APP_INSTANCE by reference.
     """
-    APP_INSTANCE.reset()
-    return APP_INSTANCE
+    app = _get_app_instance()
+    app.reset()
+    return app
+
+
+def get_current_app() -> MockWpfApp:
+    """Get the current app instance (thread-aware).
+    
+    Returns:
+        The MockWpfApp instance for the current thread or global.
+    """
+    return _get_app_instance()

@@ -10,6 +10,9 @@ The WPF Test Automation Framework is a driver-agnostic, layered automation syste
 - **Self-Healing**: Automatic fallback to alternative drivers when primary strategies fail
 - **Cross-Platform Execution**: Supports running tests on non-Windows platforms via mock drivers
 - **Recording & Playback**: IDE for recording user interactions and auto-generating test artifacts
+- **Thread-Safe**: Supports parallel test execution with thread-local app instances
+- **Circuit Breaker Protection**: Prevents cascading failures from failing drivers
+- **Structured Logging**: Comprehensive logging with metrics for observability
 
 ---
 
@@ -43,10 +46,16 @@ The WPF Test Automation Framework is a driver-agnostic, layered automation syste
 |-----------|----------|-------|-------------|
 | `api/DriverAgnosticApi.py` | Python | 3 | Central resolution engine with self-healing |
 | `api/repository_access.py` | Python | 3 | YAML repository loader and cache |
+| `api/config.py` | Python | 3 | Centralized configuration management |
+| `api/exceptions.py` | Python | 3 | Custom exception hierarchy |
+| `api/base_driver.py` | Python | 3 | Abstract base driver interface |
+| `api/circuit_breaker.py` | Python | 3 | Circuit breaker pattern implementation |
+| `api/wait_utils.py` | Python | 3 | Explicit wait utilities |
+| `api/logging_utils.py` | Python | 3 | Structured logging framework |
 | `drivers_rf/flaui_robotframework/` | Python | 4 | FlaUI driver wrapper |
 | `drivers_rf/wpfspy_robotframework/` | Python | 4 | WPFSpy driver wrapper |
 | `drivers_rf/sikuli_robotframework/` | Python | 4 | Sikuli driver wrapper |
-| `drivers/mock_wpf_app/` | Python | 5 | Cross-platform mock application |
+| `drivers/mock_wpf_app/` | Python | 5 | Cross-platform mock application (thread-safe) |
 | `WpfSpyAgent/` | C# (.NET) | 5 | In-process automation agent |
 | `WpfSpyAgent.StartupHook/` | C# (.NET) | 5 | Modern .NET injection loader |
 | `WpfSpyAgent.FrameworkHook/` | C# (.NET) | 5 | .NET Framework injection loader |
@@ -56,7 +65,96 @@ The WPF Test Automation Framework is a driver-agnostic, layered automation syste
 
 ## 3. Component Specifications
 
-### 3.1 Layer 3: Driver-Agnostic API
+### 3.1 Framework Infrastructure
+
+#### 3.1.1 Configuration Management (`api/config.py`)
+
+```python
+from api.config import config, FrameworkConfig
+
+# Access configuration values
+config.DRIVER_ORDER        # List of drivers in fallback order
+config.DEFAULT_TIMEOUT      # Default timeout for operations
+config.CIRCUIT_BREAKER_THRESHOLD  # Failures before circuit opens
+
+# Environment variable overrides
+# DRIVER_ORDER=FlaUI,WPFSpy,Sikuli
+# DEFAULT_TIMEOUT=30
+# MAX_RETRIES=3
+# RETRY_DELAY=0.5
+# CIRCUIT_BREAKER_THRESHOLD=3
+# LOG_LEVEL=DEBUG
+```
+
+#### 3.1.2 Exception Hierarchy (`api/exceptions.py`)
+
+All framework exceptions inherit from `WpfAutomationError`:
+
+| Exception | Description |
+|-----------|-------------|
+| `ElementNotFoundError` | Element cannot be found |
+| `ElementNotInteractableError` | Element found but not interactable |
+| `AllStrategiesFailedError` | All driver strategies failed (with attempt log) |
+| `CircuitBreakerOpenError` | Circuit breaker preventing calls |
+| `WaitTimeoutError` | Wait operation timed out |
+| `RepositoryAliasNotFoundError` | Alias not in repository |
+
+#### 3.1.3 Circuit Breaker (`api/circuit_breaker.py`)
+
+Prevents cascading failures from failing drivers:
+
+```python
+from api.circuit_breaker import CircuitBreakerManager
+
+manager = CircuitBreakerManager()
+breaker = manager.get_breaker("WPFSpy", threshold=3, timeout=60)
+
+try:
+    result = breaker.call(driver.find_element, locator)
+except CircuitBreakerOpenError:
+    # Driver temporarily unavailable
+    pass
+```
+
+#### 3.1.4 Wait Utilities (`api/wait_utils.py`)
+
+Explicit wait utilities for reliable element interaction:
+
+```python
+from api.wait_utils import Wait, ElementWait
+
+# Simple wait
+wait = Wait(timeout=10, interval=0.5)
+wait.until(lambda: driver.is_visible(element))
+
+# Element-specific waits
+elem_wait = ElementWait(driver, timeout=10)
+elem_wait.for_visible(element)
+elem_wait.for_actionable(element)
+elem_wait.for_text(element, "expected")
+```
+
+#### 3.1.5 Structured Logging (`api/logging_utils.py`)
+
+```python
+from api.logging_utils import get_logger, execution_logger
+
+# Get a context logger
+logger = get_logger(__name__)
+logger.info("Element found", alias="Login.btn", driver="WPFSpy")
+
+# Execution metrics
+execution_logger.log_strategy_attempt(
+    alias="Login.btn",
+    driver="WPFSpy",
+    result="success",
+    duration_ms=45.2
+)
+```
+
+---
+
+### 3.2 Layer 3: Driver-Agnostic API
 
 **File**: `api/DriverAgnosticApi.py`
 
@@ -75,9 +173,10 @@ Output: Driver-specific result or raises AllStrategiesFailedError
 
 Behavior:
 1. Retrieve strategies from Element Repository for alias
-2. Check WPFSPY_MODE environment variable
-3. Execute WPFSpy strategy with configured locator
-4. On failure, raise AllStrategiesFailedError with attempt log
+2. Check circuit breaker for each driver
+3. Try each driver in configured order (FlaUI → WPFSpy → Sikuli)
+4. On failure, record attempt and try next driver (self-healing)
+5. On all failures, raise AllStrategiesFailedError with complete attempt log
 ```
 
 ##### Public Keywords
@@ -85,28 +184,30 @@ Behavior:
 | Keyword | Description |
 |---------|-------------|
 | `Click Element` | Invokes (clicks) element by alias |
+| `Click Element With Wait` | Click after waiting for element to be actionable |
 | `Set Element Value` | Sets text/value on element by alias |
+| `Set Element Value With Wait` | Set value after waiting for element to be actionable |
 | `Get Element Text` | Returns element's current text |
 | `Verify Element Text` | Asserts element text equals expected |
+| `Verify Element Contains Text` | Asserts element text contains expected substring |
 | `Toggle Element` | Toggles checkbox/toggle element |
+| `Is Element Visible` | Check if element is visible (returns bool) |
+| `Is Element Enabled` | Check if element is enabled (returns bool) |
+| `Is Element Actionable` | Check if element is visible and enabled |
 | `Wait Until Element Visible` | Polls until element visible or timeout |
-| `Reset Application` | Restarts app for test isolation |
+| `Wait Until Element Actionable` | Polls until element is actionable |
+| `Wait Until Element Text Contains` | Wait for element text to contain value |
+| `Reset Application` | Restarts app and resets circuit breakers |
 | `Get Data Grid Content OCR` | Captures DataGrid screenshot, returns CSV via OCR |
+| `Get Last Strategy Used` | Returns driver that succeeded for last action |
 
-##### Environment Variables
+##### Key Features
 
-| Variable | Values | Default | Description |
-|----------|--------|---------|-------------|
-| `WPFSPY_MODE` | `mock`, `real` | `mock` | Use mock app or real WPFSpy agent |
-| `WPFSPY_IDE_RUN` | `1`, unset | unset | IDE mode (keeps app running between tests) |
-
-#### Class: `AllStrategiesFailedError`
-
-Raised when all configured driver strategies fail. Carries the complete attempt log for diagnosis.
-
-```python
-AllStrategiesFailedError: "WPFSpy strategy failed for alias 'OrdersPage.PriorityCheckbox': ..."
-```
+- **Self-Healing Fallback**: Automatically tries next driver on failure
+- **Circuit Breaker Protection**: Tracks failures, opens circuit after threshold
+- **Structured Logging**: All operations logged with context
+- **Metrics Collection**: Strategy attempts tracked in execution logger
+- **Lazy Driver Initialization**: Drivers loaded on first use
 
 ---
 
@@ -301,6 +402,22 @@ Cross-platform simulation of a two-screen WPF application (Login, Orders).
 ```
 [Login Page] --valid credentials--> [Orders Page]
 [Orders Page] --logout button----> [Login Page]
+```
+
+**Thread Safety for Parallel Execution**:
+
+```python
+from mock_app import (
+    enable_thread_local_mode,
+    disable_thread_local_mode,
+    get_current_app
+)
+
+# Enable thread-local mode for Pabot/parallel execution
+enable_thread_local_mode()
+
+# Each thread now gets its own app instance
+# disable_thread_local_mode()  # Back to shared instance
 ```
 
 **Mock Controls**:
