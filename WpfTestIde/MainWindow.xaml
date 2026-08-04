@@ -68,6 +68,8 @@
                 <Button Style="{StaticResource ToolbarButton}" Content="Save Script" Command="{Binding SaveScriptCommand}"/>
                 <Separator Margin="8,0"/>
                 <Button Style="{StaticResource ToolbarButton}" Content="OCR DataGrid" Command="{Binding GetDataGridContentOcrCommand}"/>
+                <Separator Margin="8,0"/>
+                <Button Style="{StaticResource ToolbarButton}" Content="🗗 Checkpoint Wizard" Command="{Binding OpenCheckpointWizardCommand}"/>
             </StackPanel>
         </Border>
 

@@ -110,9 +110,10 @@ namespace WpfTestIde.ViewModels
         public ICommand SaveElementCommand { get; }
         public ICommand DeleteElementCommand { get; }
         public ICommand CancelEditElementCommand { get; }
-public ICommand PreviewElementCommand { get; }
+	public ICommand PreviewElementCommand { get; }
         public ICommand PickElementCommand { get; }
         public ICommand GetDataGridContentOcrCommand { get; }
+        public ICommand OpenCheckpointWizardCommand { get; }
 
         public MainViewModel()
         {
@@ -135,6 +136,7 @@ public ICommand PreviewElementCommand { get; }
 PreviewElementCommand = new RelayCommand(_ => PreviewElement());
             PickElementCommand = new RelayCommand(_ => TogglePickMode(), _ => IsAttached);
             GetDataGridContentOcrCommand = new RelayCommand(async _ => await GetDataGridContentOcr(), _ => IsAttached);
+            OpenCheckpointWizardCommand = new RelayCommand(_ => OpenCheckpointWizard());
 
             Steps.CollectionChanged += (_, __) => RegenerateScript();
             Elements.CollectionChanged += (_, __) => RegenerateRepository();
@@ -312,6 +314,33 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
 
             int index = afterStep is null ? Steps.Count : Steps.IndexOf(afterStep) + 1;
             Steps.Insert(index, verifyStep);
+        }
+
+        private void OpenCheckpointWizard()
+        {
+            if (!IsAttached)
+            {
+                MessageBox.Show("Please attach to a process first.", "Checkpoint Wizard",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new Dialogs.CheckpointWizardDialog(Elements.ToList(), PipeName);
+            if (dialog.ShowDialog() == true && dialog.CreatedCheckpoint != null)
+            {
+                var checkpoint = dialog.CreatedCheckpoint;
+                
+                // Add as a verification step
+                var verifyStep = new RecordedStep
+                {
+                    Kind = StepKind.Verify,
+                    Alias = checkpoint.ElementAlias ?? "",
+                    Value = checkpoint.ExpectedValue,
+                };
+                Steps.Add(verifyStep);
+                
+                StatusText = $"Checkpoint created: {checkpoint.Id} - {checkpoint.Type}";
+            }
         }
 
         private void DeleteStep(RecordedStep? step)
