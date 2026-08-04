@@ -318,17 +318,17 @@ case "GetDataGridContent":
                 }
                 case "CaptureArea":
                 {
-                    var x = request.X ?? 0;
-                    var y = request.Y ?? 0;
-                    var width = request.Width ?? 100;
-                    var height = request.Height ?? 100;
+                    var x = (int)(request.X ?? 0);
+                    var y = (int)(request.Y ?? 0);
+                    var width = (int)(request.Width ?? 100);
+                    var height = (int)(request.Height ?? 100);
                     
                     try
                     {
-                        // Capture screenshot of the specified area
+                        // Use System.Drawing for screen capture
                         using var bitmap = new System.Drawing.Bitmap(width, height);
                         using var graphics = System.Drawing.Graphics.FromImage(bitmap);
-                        graphics.CopyFromScreen((int)x, (int)y, 0, 0, new System.Drawing.Size(width, height));
+                        graphics.CopyFromScreen(x, y, 0, 0, new System.Drawing.Size(width, height));
                         
                         using var ms = new System.IO.MemoryStream();
                         bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);

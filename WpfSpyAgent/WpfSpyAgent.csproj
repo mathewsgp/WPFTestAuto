@@ -21,9 +21,12 @@
       <!-- System.Text.Json 8.x is not compatible with .NET Framework;
            use Newtonsoft.Json for the net461 agent build. -->
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+      <!-- System.Drawing.Common for screen capture -->
+      <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
     </ItemGroup>
 
-   <ItemGroup>
+   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
      <PackageReference Include="Tesseract" Version="4.1.1" />
    </ItemGroup>
 
