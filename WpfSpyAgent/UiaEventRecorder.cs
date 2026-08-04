@@ -288,10 +288,11 @@ namespace WpfSpyAgent
 
             try
             {
-                var element = e.Element;
+                // Use TreeWalker to get the focused element
+                var element = TreeWalker.RawViewWalker.GetFocusedElement();
                 if (element == null) return;
 
-                var props = GetElementProperties(element);
+                var props = GetElementPropertiesFromElement(element);
                 if (props == null) return;
 
                 var recordedEvent = new RecordedEvent
@@ -302,7 +303,7 @@ namespace WpfSpyAgent
                     Name = props.Name,
                     ControlType = props.ControlType,
                     Xpath = props.Xpath,
-                    PageName = InferPageName(element)
+                    PageName = InferPageNameFromElement(element)
                 };
 
                 lock (_lock)
@@ -406,13 +407,22 @@ namespace WpfSpyAgent
         {
             try
             {
-                if (element.TryGetCurrentPattern(SelectionItemPattern.Pattern, out var selectionItem))
+                // Try SelectionItemPattern first (for single selection)
+                if (element.TryGetCurrentPattern(SelectionItemPattern.Pattern, out var selectionItemPattern))
                 {
-                    return ((SelectionItemPattern)selectionItem).Current.Name;
+                    var selectionItem = (SelectionItemPattern)selectionItemPattern;
+                    // Check if this item is selected
+                    if (selectionItem.Current.IsSelected)
+                    {
+                        // Try to get the name from the element itself
+                        return element.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
+                    }
                 }
 
-                if (element.TryGetCurrentPattern(SelectionPattern.Pattern, out var selection))
+                // Try SelectionPattern (for containers)
+                if (element.TryGetCurrentPattern(SelectionPattern.Pattern, out var selectionPatternObj))
                 {
+                    var selection = (SelectionPattern)selectionPatternObj;
                     var selected = selection.Current.GetSelection();
                     if (selected.Length > 0)
                     {
@@ -440,6 +450,73 @@ namespace WpfSpyAgent
                         if (!string.IsNullOrEmpty(name))
                         {
                             // Convert window name to page name format
+                            return name.Replace(" ", "").Replace("-", "") + "Page";
+                        }
+                    }
+                    window = TreeWalker.ControlViewWalker.GetParent(window);
+                }
+            }
+            catch { }
+
+            return "RecordedPage";
+        }
+
+        /// <summary>
+        /// Helper method to get element properties from AutomationElement.
+        /// This works for all elements including those without FrameworkElement backing.
+        /// </summary>
+        private ElementProperties? GetElementPropertiesFromElement(AutomationElement element)
+        {
+            try
+            {
+                string? automationId = null;
+                string name = "";
+                string controlType = "";
+
+                // Get AutomationId
+                automationId = element.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
+
+                // Get Name
+                name = element.GetCurrentPropertyValue(AutomationElement.NameProperty) as string ?? "";
+
+                // Get ControlType
+                var ct = element.GetCurrentPropertyValue(AutomationElement.ControlTypeProperty) as ControlType;
+                controlType = ct?.ProgrammaticName ?? "Unknown";
+
+                // Skip if we don't have identifying information
+                if (string.IsNullOrEmpty(automationId) && string.IsNullOrEmpty(name))
+                    return null;
+
+                return new ElementProperties
+                {
+                    AutomationId = automationId,
+                    Name = name,
+                    ControlType = controlType,
+                    Xpath = null  // XPath not available for non-FrameworkElement
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Helper method to infer page name from AutomationElement.
+        /// </summary>
+        private string InferPageNameFromElement(AutomationElement element)
+        {
+            try
+            {
+                var window = TreeWalker.ControlViewWalker.GetParent(element);
+                while (window != null)
+                {
+                    var ct = window.GetCurrentPropertyValue(AutomationElement.ControlTypeProperty) as ControlType;
+                    if (ct == ControlType.Window)
+                    {
+                        var name = window.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
+                        if (!string.IsNullOrEmpty(name))
+                        {
                             return name.Replace(" ", "").Replace("-", "") + "Page";
                         }
                     }
