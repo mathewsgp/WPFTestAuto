@@ -10,7 +10,10 @@ from enum import Enum
 from typing import Callable, Any, Optional
 from functools import wraps
 
-from .exceptions import CircuitBreakerOpenError
+try:
+    from .exceptions import CircuitBreakerOpenError
+except ImportError:
+    from exceptions import CircuitBreakerOpenError
 
 
 class CircuitState(Enum):
@@ -202,31 +205,38 @@ class CircuitBreakerManager:
     _instance = None
     _lock = threading.RLock()
     
-    def __new__(cls):
+    def __new__(cls, threshold=3, timeout=60):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
                     cls._instance._breakers = {}
                     cls._instance._lock = threading.RLock()
+                    cls._instance._default_threshold = threshold
+                    cls._instance._default_timeout = timeout
         return cls._instance
     
     def get_breaker(
         self,
         name: str,
-        threshold: int = 3,
-        timeout: int = 60
+        threshold: int = None,
+        timeout: int = None
     ) -> CircuitBreaker:
         """Get or create a circuit breaker for a service.
         
         Args:
             name: Service/driver name.
-            threshold: Failure threshold.
-            timeout: Recovery timeout in seconds.
+            threshold: Failure threshold (uses default if not specified).
+            timeout: Recovery timeout in seconds (uses default if not specified).
         
         Returns:
             CircuitBreaker instance.
         """
+        if threshold is None:
+            threshold = self._default_threshold
+        if timeout is None:
+            timeout = self._default_timeout
+            
         with self._lock:
             if name not in self._breakers:
                 self._breakers[name] = CircuitBreaker(

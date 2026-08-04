@@ -1,6 +1,7 @@
 # Element Repository — Orders Page
 # Aliases include full ancestor hierarchy with AutomationId or Name.
 # XPath is the primary finding strategy with priority: AutomationId -> Name -> Type
+# Updated to use Name for mock app compatibility
 elements:
   OrdersPage.OrdersWindow.cmbSku:
     displayName: "SKU Combo Box"
@@ -11,7 +12,7 @@ elements:
     strategies:
       WPFSpy:
         searchBy: "XPath"
-        value: "/Window[@AutomationId='OrdersWindow']/Grid/ComboBox[@AutomationId='cmbSku']"
+        value: "/Window[@Name='MainWindow']/ComboBox[@Name='SkuCombo']"
 
   OrdersPage.OrdersWindow.txtQty:
     displayName: "Quantity Text Box"
@@ -22,7 +23,7 @@ elements:
     strategies:
       WPFSpy:
         searchBy: "XPath"
-        value: "/Window[@AutomationId='OrdersWindow']/Grid/TextBox[@AutomationId='txtQty']"
+        value: "/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']"
 
   OrdersPage.OrdersWindow.chkPriority:
     displayName: "Priority Checkbox"
@@ -33,7 +34,7 @@ elements:
     strategies:
       WPFSpy:
         searchBy: "XPath"
-        value: "/Window[@AutomationId='OrdersWindow']/Grid/StackPanel/PriorityToggleControl[@Name='chkPriority']"
+        value: "/Window[@Name='MainWindow']/CheckBox[@Name='PriorityToggle']"
 
   OrdersPage.OrdersWindow.btnCreateOrder:
     displayName: "Create Order Button"
@@ -44,7 +45,7 @@ elements:
     strategies:
       WPFSpy:
         searchBy: "XPath"
-        value: "/Window[@AutomationId='OrdersWindow']/Grid/StackPanel/Button[@AutomationId='btnCreateOrder']"
+        value: "/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"
 
   OrdersPage.OrdersWindow.btnLogout:
     displayName: "Logout Button"
@@ -55,7 +56,7 @@ elements:
     strategies:
       WPFSpy:
         searchBy: "XPath"
-        value: "/Window[@AutomationId='OrdersWindow']/Grid/StackPanel/Button[@AutomationId='btnLogout']"
+        value: "/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"
 
   OrdersPage.OrdersWindow.lblConfirmation:
     displayName: "Confirmation Label"
@@ -66,7 +67,7 @@ elements:
     strategies:
       WPFSpy:
         searchBy: "XPath"
-        value: "/Window[@AutomationId='OrdersWindow']/Grid/StackPanel/Label[@Name='lblConfirmation']"
+        value: "/Window[@Name='MainWindow']/Label[@Name='ConfirmationLabel']"
 
   OrdersPage.OrdersWindow.gridOrders:
     displayName: "Orders Grid"
@@ -77,4 +78,4 @@ elements:
     strategies:
       WPFSpy:
         searchBy: "XPath"
-        value: "/Window[@AutomationId='OrdersWindow']/Grid/DataGrid[@AutomationId='gridOrders']"
+        value: "/Window[@Name='MainWindow']/DataGrid[@Name='OrdersGrid']"

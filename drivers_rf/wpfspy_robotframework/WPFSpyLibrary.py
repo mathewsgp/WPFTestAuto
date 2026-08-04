@@ -272,9 +272,19 @@ class WPFSpyMockDriver:
         APP_INSTANCE.invoke(element)
 
     def get_data_grid_content_ocr(self, element) -> str:
-        """Mock OCR driver — returns mock CSV data for demo/testing."""
+        """Mock OCR driver — returns CSV data based on mock app state."""
         self._log_ipc("GetDataGridContentOcr", name=getattr(element, "name", None))
-        return "Column1,Column2,Column3\nValue1,Value2,Value3\n"
+        
+        # Get the actual grid content from mock app
+        from mock_app import APP_INSTANCE
+        
+        # Find the DataGrid control
+        grid = APP_INSTANCE.find_by_name("OrdersGrid")
+        if grid:
+            # Return the grid's text content as CSV
+            return f"{grid.text}\n"
+        
+        return "SKU,Qty\n"
 
 
 def _make_driver():

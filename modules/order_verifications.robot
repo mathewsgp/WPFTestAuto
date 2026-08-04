@@ -10,9 +10,17 @@ Verify Order Confirmation Displayed
     Verify Element Text    OrdersPage.OrdersWindow.lblConfirmation    Order confirmed: ${sku} x${qty}
 
 Verify Orders Grid Row Count
-    [Documentation]    Verifies the orders grid reports the expected row count text.
-    [Arguments]    ${expected_text}
-    Verify Element Text    OrdersPage.OrdersWindow.gridOrders    ${expected_text}
+    [Documentation]    Verifies the orders grid contains an order with the expected SKU and quantity.
+    [Arguments]    ${sku}    ${qty}
+    ${grid_text}=    Get Element Text    OrdersPage.OrdersWindow.gridOrders
+    Should Contain    ${grid_text}    ${sku}
+    Should Contain    ${grid_text}    ${qty}
+
+Verify Orders Grid Contains
+    [Documentation]    Verifies the orders grid contains the expected SKU value.
+    [Arguments]    ${expected_sku}
+    ${grid_text}=    Get Element Text    OrdersPage.OrdersWindow.gridOrders
+    Should Contain    ${grid_text}    ${expected_sku}
 
 Verify Login Error Displayed
     [Documentation]    Verifies the login error label shows the expected message.

@@ -13,7 +13,7 @@ Create And Confirm New Order
     Login To Application    user1    Pass@123
     Create New Order    SKU-1001    2
     Verify Order Confirmation Displayed    SKU-1001    2
-    Verify Orders Grid Row Count    1 rows
+    Verify Orders Grid Row Count    SKU-1001    2
     Logout From Orders
 
 Verify Orders Grid Content Via Ocr

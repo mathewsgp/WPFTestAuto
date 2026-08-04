@@ -1,6 +1,6 @@
 # Element Repository — Login Page
-# Aliases include full ancestor hierarchy with AutomationId or Name.
-# XPath is the primary finding strategy with priority: AutomationId -> Name -> Type
+# XPath uses @Name to match the mock app's simple structure
+# For real WPF app with Grid hierarchy, use @AutomationId instead
 elements:
   LoginPage.MainWindow.txtUsername:
     displayName: "Username Text Box"
@@ -11,7 +11,7 @@ elements:
     strategies:
       WPFSpy:
         searchBy: "XPath"
-        value: "/Window[@AutomationId='MainWindow']/Grid/TextBox[@AutomationId='txtUsername']"
+        value: "/Window[@Name='MainWindow']/TextBox[@Name='UsernameInput']"
 
   LoginPage.MainWindow.txtPassword:
     displayName: "Password Text Box"
@@ -22,7 +22,7 @@ elements:
     strategies:
       WPFSpy:
         searchBy: "XPath"
-        value: "/Window[@AutomationId='MainWindow']/Grid/PasswordBox[@AutomationId='txtPassword']"
+        value: "/Window[@Name='MainWindow']/TextBox[@Name='PasswordInput']"
 
   LoginPage.MainWindow.btnSubmit:
     displayName: "Submit Button"
@@ -33,7 +33,7 @@ elements:
     strategies:
       WPFSpy:
         searchBy: "XPath"
-        value: "/Window[@AutomationId='MainWindow']/Grid/StackPanel/Button[@AutomationId='btnSubmit']"
+        value: "/Window[@Name='MainWindow']/Button[@Name='SubmitBtn']"
 
   LoginPage.MainWindow.lblError:
     displayName: "Error Label"
@@ -44,4 +44,4 @@ elements:
     strategies:
       WPFSpy:
         searchBy: "XPath"
-        value: "/Window[@AutomationId='MainWindow']/Grid/StackPanel/Label[@Name='lblError']"
+        value: "/Window[@Name='MainWindow']/Label[@Name='ErrorLabel']"

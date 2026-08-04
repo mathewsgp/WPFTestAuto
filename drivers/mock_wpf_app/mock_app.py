@@ -58,6 +58,7 @@ class MockWpfApp:
     def __init__(self):
         self.current_page = "Login"
         self.controls: Dict[str, Control] = {}
+        self.orders: list = []  # Track actual orders for OCR
         self._build_login_page()
 
     # ------------------------------------------------------------------
@@ -67,38 +68,54 @@ class MockWpfApp:
         self.controls = {
             "txtUsername": Control("txtUsername", "txtUsername", "UsernameInput", "TextBox",
                                     image_tag="username_box",
-                                    xpath="/Window[@Name='Login']/TextBox[@Name='UsernameInput']"),
+                                    xpath="/Window[@Name='MainWindow']/Grid/TextBox[@Name='UsernameInput']"),
             "txtPassword": Control("txtPassword", "txtPassword", "PasswordInput", "TextBox",
                                    image_tag="password_box",
-                                   xpath="/Window[@Name='Login']/TextBox[@Name='PasswordInput']"),
+                                   xpath="/Window[@Name='MainWindow']/Grid/TextBox[@Name='PasswordInput']"),
             "btnSubmit": Control("btnSubmit", "btnSubmit", "SubmitBtn", "Button", text="Login",
                                   image_tag="login_button",
-                                  xpath="/Window[@Name='Login']/Button[@Name='SubmitBtn']"),
+                                  xpath="/Window[@Name='MainWindow']/Grid/Button[@Name='SubmitBtn']"),
             "lblError": Control("lblError", "lblError", "ErrorLabel", "Label", text="", visible=False,
-                                 xpath="/Window[@Name='Login']/Label[@Name='ErrorLabel']"),
+                                 xpath="/Window[@Name='MainWindow']/Grid/Label[@Name='ErrorLabel']"),
         }
 
     def _build_orders_page(self):
         self.controls = {
-            "cmbSku": Control("cmbSku", "cmbSku", "SkuCombo", "ComboBox", image_tag="sku_combo",
-                               xpath="/Window[@Name='Orders']/ComboBox[@Name='SkuCombo']"),
+            "cmbSku": Control("cmbSku", "cmbSku", "SkuCombo", "ComboBox", text="", image_tag="sku_combo",
+                               xpath="/Window[@Name='MainWindow']/ComboBox[@Name='SkuCombo']"),
             "txtQty": Control("txtQty", "txtQty", "QtyInput", "TextBox", text="1", image_tag="qty_box",
-                               xpath="/Window[@Name='Orders']/TextBox[@Name='QtyInput']"),
+                               xpath="/Window[@Name='MainWindow']/TextBox[@Name='QtyInput']"),
             "btnCreateOrder": Control("btnCreateOrder", "btnCreateOrder", "CreateOrderBtn", "Button",
                                        text="Create Order", image_tag="create_order_button",
-                                       xpath="/Window[@Name='Orders']/Button[@Name='CreateOrderBtn']"),
+                                       xpath="/Window[@Name='MainWindow']/Button[@Name='CreateOrderBtn']"),
             "lblConfirmation": Control("lblConfirmation", "lblConfirmation", "ConfirmationLabel", "Label",
                                          text="", visible=False,
-                                         xpath="/Window[@Name='Orders']/Label[@Name='ConfirmationLabel']"),
-            "gridOrders": Control("gridOrders", "gridOrders", "OrdersGrid", "DataGrid", text="0 rows",
-                                   xpath="/Window[@Name='Orders']/DataGrid[@Name='OrdersGrid']"),
+                                         xpath="/Window[@Name='MainWindow']/Label[@Name='ConfirmationLabel']"),
+            "gridOrders": Control("gridOrders", "gridOrders", "OrdersGrid", "DataGrid", text="SKU,Qty\n",
+                                   xpath="/Window[@Name='MainWindow']/DataGrid[@Name='OrdersGrid']"),
             # Non-standard control: NO reliable AutomationId (simulates a
             # custom-rendered WPF control not properly exposed via UIA).
             # Only findable by Name (WPFSpy) or image (Sikuli).
             "chkPriority": Control("chkPriority", None, "PriorityToggle", "CheckBox", text="Off",
                                     image_tag="priority_checkbox",
-                                    xpath="/Window[@Name='Orders']/CheckBox[@Name='PriorityToggle']"),
+                                    xpath="/Window[@Name='MainWindow']/CheckBox[@Name='PriorityToggle']"),
+            "btnLogout": Control("btnLogout", "btnLogout", "LogoutBtn", "Button", text="Logout",
+                                  image_tag="logout_button",
+                                  xpath="/Window[@Name='MainWindow']/Button[@Name='LogoutBtn']"),
         }
+        # Rebuild grid text from orders
+        self._update_grid_text()
+
+    # ------------------------------------------------------------------
+    # Grid management
+    # ------------------------------------------------------------------
+    def _update_grid_text(self):
+        """Update grid text from orders list."""
+        if "gridOrders" in self.controls:
+            lines = ["SKU,Qty"]
+            for order in self.orders:
+                lines.append(f"{order['sku']},{order['qty']}")
+            self.controls["gridOrders"].text = "\n".join(lines) if lines else "SKU,Qty\n"
 
     # ------------------------------------------------------------------
     # Locate (what each driver calls to resolve an element)
@@ -133,33 +150,52 @@ class MockWpfApp:
         return self._match_xpath_segments(segments, 0, self._build_virtual_tree())
 
     def _parse_xpath_segments(self, xpath: str):
+        """Parse XPath into segments for matching."""
+        import re
         segments = []
-        for part in xpath.split("/")[1:]:  # skip empty leading segment
+        # Pattern to match: tag[@attr='value'] or tag[index] or just tag
+        pattern = r'([^[]+)(?:\[([^\]]+)\])?'
+        
+        # Skip the leading /
+        xpath = xpath.lstrip('/')
+        parts = xpath.split('/')
+        
+        for part in parts:
             if not part:
                 continue
             tag = part
             name_predicate = None
             index_predicate = None
-            if "[" in part and part.endswith("]"):
-                bracket_start = part.index("[")
-                tag = part[:bracket_start]
-                predicate = part[bracket_start+1:-1]
-                if predicate.startswith("@Name='") and predicate.endswith("'"):
-                    name_predicate = predicate[8:-1]
-                elif predicate.isdigit():
-                    index_predicate = int(predicate)
+            
+            # Parse the predicate
+            match = re.match(pattern, part)
+            if match:
+                tag = match.group(1)
+                pred = match.group(2)
+                if pred:
+                    # Check for @Name='value' pattern
+                    name_match = re.match(r"@Name='([^']+)'", pred)
+                    if name_match:
+                        name_predicate = name_match.group(1)
+                    # Check for numeric index
+                    elif pred.isdigit():
+                        index_predicate = int(pred)
+            
             segments.append((tag, name_predicate, index_predicate))
         return segments
 
     def _build_virtual_tree(self):
-        """Builds a simple tree: root -> Window -> controls."""
-        window_name = "Login" if self.current_page == "Login" else "Orders"
+        """Builds a simple tree: root -> Window -> controls.
+        
+        The Window always uses 'MainWindow' as Name to match the repository XPath.
+        The actual page state (Login vs Orders) is determined by which controls are present.
+        """
         return {
             "tag": "Root",
             "children": [
                 {
                     "tag": "Window",
-                    "attrs": {"Name": window_name},
+                    "attrs": {"Name": "MainWindow"},
                     "children": [
                         {"tag": ctrl.control_type, "attrs": {"Name": ctrl.name}, "control_key": key}
                         for key, ctrl in self.controls.items()
@@ -218,7 +254,9 @@ class MockWpfApp:
             else:
                 self.controls["lblConfirmation"].text = f"Order confirmed: {sku} x{qty}"
                 self.controls["lblConfirmation"].visible = True
-                self.controls["gridOrders"].text = "1 rows"
+                # Add order to tracking list
+                self.orders.append({"sku": sku, "qty": qty})
+                self._update_grid_text()
 
         elif ctrl.key == "chkPriority":
             ctrl.text = "On" if ctrl.text == "Off" else "Off"
@@ -242,6 +280,7 @@ class MockWpfApp:
         """
         self.current_page = "Login"
         self.controls = {}
+        self.orders = []
         self._build_login_page()
 
 
