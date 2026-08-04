@@ -82,9 +82,9 @@ namespace WpfTestIde.Dialogs
                     Height = 24,
                     Margin = new Thickness(0, 2, 8, 2),
                     Tag = properties[i].Item2,
-                    Click = CopyProperty_Click,
                     ToolTip = "Copy to clipboard"
                 };
+                copyBtn.Click += CopyProperty_Click;
                 Grid.SetRow(copyBtn, i);
                 Grid.SetColumn(copyBtn, 2);
                 PropertyGrid.Children.Add(copyBtn);
