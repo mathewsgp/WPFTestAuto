@@ -1,0 +1,178 @@
+<Window x:Class="WpfTestIde.Dialogs.CheckpointWizardDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Checkpoint Wizard" 
+        Height="520" Width="550"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Step indicator -->
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" x:Name="StepIndicator" 
+                   FontSize="14" FontWeight="Bold" Margin="0,0,0,16"
+                   Text="Step 1: Select Element"/>
+
+        <!-- Element Selection -->
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Element:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+        <ComboBox Grid.Row="1" Grid.Column="1" x:Name="ElementCombo" Margin="0,0,0,8"
+                  SelectionChanged="ElementCombo_SelectionChanged"/>
+        
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Checkpoint Type:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+        <ComboBox Grid.Row="2" Grid.Column="1" x:Name="TypeCombo" Margin="0,0,0,8"
+                  SelectionChanged="TypeCombo_SelectionChanged">
+            <ComboBoxItem Content="Property Checkpoint" IsSelected="True"/>
+            <ComboBoxItem Content="Area Checkpoint (OCR)"/>
+            <ComboBoxItem Content="Image Checkpoint"/>
+            <ComboBoxItem Content="DataGrid Checkpoint"/>
+            <ComboBoxItem Content="Attribute Checkpoint"/>
+            <ComboBoxItem Content="Count Checkpoint"/>
+        </ComboBox>
+
+        <!-- Property Options -->
+        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" x:Name="PropertyPanel" Margin="0,8,0,8">
+            <TextBlock Text="Property:" Margin="0,0,0,4"/>
+            <ComboBox x:Name="PropertyCombo" Margin="0,0,0,8">
+                <ComboBoxItem Content="Text" IsSelected="True"/>
+                <ComboBoxItem Content="IsEnabled"/>
+                <ComboBoxItem Content="IsVisible"/>
+                <ComboBoxItem Content="AutomationId"/>
+                <ComboBoxItem Content="Name"/>
+                <ComboBoxItem Content="ControlType"/>
+            </ComboBox>
+            
+            <TextBlock Text="Expected Value:" Margin="0,0,0,4"/>
+            <TextBox x:Name="ExpectedValueBox" Height="60" TextWrapping="Wrap" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"/>
+            
+            <Button Content="Get Current Value" Click="GetCurrentValue_Click" 
+                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4"/>
+        </StackPanel>
+
+        <!-- Area Options -->
+        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" x:Name="AreaPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Area Selection" FontWeight="Bold" Margin="0,0,0,8"/>
+            <TextBlock Text="Click 'Select Area' then draw on screen to capture area." 
+                       Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="X:" VerticalAlignment="Center" Margin="0,0,8,4"/>
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="XBox" Margin="0,0,16,4"/>
+                
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="Y:" VerticalAlignment="Center" Margin="0,0,8,4"/>
+                <TextBox Grid.Row="0" Grid.Column="3" x:Name="YBox" Margin="0,0,0,4"/>
+                
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Width:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox Grid.Row="1" Grid.Column="1" x:Name="WidthBox" Margin="0,0,16,0"/>
+                
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="Height:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox Grid.Row="1" Grid.Column="3" x:Name="HeightBox"/>
+            </Grid>
+            
+            <Button Content="Select Area on Screen" Click="SelectArea_Click" 
+                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4"/>
+            
+            <TextBlock Text="Expected Text (from OCR):" Margin="0,16,0,4"/>
+            <TextBox x:Name="OcrTextBox" Height="60" TextWrapping="Wrap" IsReadOnly="True"
+                     VerticalScrollBarVisibility="Auto" Background="#F5F5F5"/>
+        </StackPanel>
+
+        <!-- Image Options -->
+        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" x:Name="ImagePanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Image Capture" FontWeight="Bold" Margin="0,0,0,8"/>
+            <TextBlock Text="Capture a baseline image for visual comparison." 
+                       Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="X:" VerticalAlignment="Center" Margin="0,0,8,4"/>
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="ImageXBox" Margin="0,0,0,4"/>
+                
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Y:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox Grid.Row="1" Grid.Column="1" x:Name="ImageYBox"/>
+            </Grid>
+            
+            <Button Content="Capture Area" Click="CaptureArea_Click" 
+                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4"/>
+            
+            <TextBlock Text="Baseline Image Path:" Margin="0,16,0,4"/>
+            <TextBox x:Name="BaselinePathBox" IsReadOnly="True" Background="#F5F5F5"/>
+        </StackPanel>
+
+        <!-- DataGrid Options -->
+        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" x:Name="DataGridPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="DataGrid Content Verification" FontWeight="Bold" Margin="0,0,0,8"/>
+            <TextBlock Text="Verifies the content of a DataGrid control." 
+                       Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
+            
+            <TextBlock Text="Expected Content (CSV):" Margin="0,0,0,4"/>
+            <TextBox x:Name="DataGridContentBox" Height="100" TextWrapping="Wrap" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"/>
+            
+            <Button Content="Get Current Content" Click="GetDataGridContent_Click" 
+                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4"/>
+        </StackPanel>
+
+        <!-- Attribute Options -->
+        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" x:Name="AttributePanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Attribute Verification" FontWeight="Bold" Margin="0,0,0,8"/>
+            
+            <TextBlock Text="Attribute Name:" Margin="0,0,0,4"/>
+            <TextBox x:Name="AttributeNameBox" Margin="0,0,0,8"/>
+            
+            <TextBlock Text="Expected Value:" Margin="0,0,0,4"/>
+            <TextBox x:Name="AttributeValueBox" Margin="0,0,0,8"/>
+        </StackPanel>
+
+        <!-- Count Options -->
+        <StackPanel Grid.Row="3" Grid.ColumnSpan="2" x:Name="CountPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Element Count Verification" FontWeight="Bold" Margin="0,0,0,8"/>
+            
+            <TextBlock Text="Expected Count:" Margin="0,0,0,4"/>
+            <TextBox x:Name="CountBox" Width="100" HorizontalAlignment="Left"/>
+        </StackPanel>
+
+        <!-- Description -->
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Description:" VerticalAlignment="Top" Margin="0,8,8,0"/>
+        <TextBox Grid.Row="4" Grid.Column="1" x:Name="DescriptionBox" Margin="0,8,0,0" 
+                 Height="40" TextWrapping="Wrap"/>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Orientation="Horizontal" 
+                    HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click"/>
+            <Button Content="Back" Width="80" Margin="0,0,8,0" Click="Back_Click" x:Name="BackButton"/>
+            <Button Content="Next / Add" Width="100" Click="Next_Click" IsDefault="True"/>
+        </StackPanel>
+    </Grid>
+</Window>
