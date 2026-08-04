@@ -1,0 +1,3 @@
+BaseDirectory: D:\testpgms\WPFTestAutoClaudeNew\WpfTestFramework\TestAppDomainManager\App\bin\Debug\net461\
+ConfigFile: D:\testpgms\WPFTestAutoClaudeNew\WpfTestFramework\TestAppDomainManager\App\bin\Debug\net461\App.exe.config
+DomainManager: TestHook.Hook

@@ -1,0 +1,58 @@
+# Step Repository — maps each alias to a step type + its parameters.
+# Step names map conceptually onto standard UI Automation control patterns
+# (Invoke, Value, Toggle, RangeValue, ...) but are driver-neutral.
+steps:
+  LoginPage.UsernameTextBox:
+    step: "ValueStep"
+    parameters:
+      - name: "text"
+        type: "string"
+        required: true
+
+  LoginPage.PasswordTextBox:
+    step: "ValueStep"
+    parameters:
+      - name: "text"
+        type: "string"
+        required: true
+
+  LoginPage.SubmitButton:
+    step: "InvokeStep"
+    parameters: []
+
+  LoginPage.ErrorLabel:
+    step: "TextStep"
+    parameters: []
+
+  OrdersPage.SkuComboBox:
+    step: "ValueStep"
+    parameters:
+      - name: "text"
+        type: "string"
+        required: true
+
+  OrdersPage.QuantityTextBox:
+    step: "ValueStep"
+    parameters:
+      - name: "text"
+        type: "string"
+        required: true
+
+  OrdersPage.CreateOrderButton:
+    step: "InvokeStep"
+    parameters: []
+
+  OrdersPage.ConfirmationLabel:
+    step: "TextStep"
+    parameters: []
+
+  OrdersPage.OrdersGrid:
+    step: "TextStep"
+    parameters: []
+
+  OrdersPage.PriorityCheckbox:
+    step: "ToggleStep"
+    parameters:
+      - name: "state"
+        type: "boolean"
+        required: false

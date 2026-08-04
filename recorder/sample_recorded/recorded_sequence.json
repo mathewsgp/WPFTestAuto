@@ -1,0 +1,38 @@
+[
+  {
+    "alias": "LoginPage.txtUsername",
+    "step": "ValueStep",
+    "value": "user1",
+    "timestamp": 1784685433.665
+  },
+  {
+    "alias": "LoginPage.txtPassword",
+    "step": "ValueStep",
+    "value": "Pass@123",
+    "timestamp": 1784685434.165
+  },
+  {
+    "alias": "LoginPage.btnSubmit",
+    "step": "InvokeStep",
+    "value": null,
+    "timestamp": 1784685434.665
+  },
+  {
+    "alias": "OrdersPage.cmbSku",
+    "step": "ValueStep",
+    "value": "SKU-2002",
+    "timestamp": 1784685435.165
+  },
+  {
+    "alias": "OrdersPage.txtQty",
+    "step": "ValueStep",
+    "value": "3",
+    "timestamp": 1784685435.665
+  },
+  {
+    "alias": "OrdersPage.btnCreateOrder",
+    "step": "InvokeStep",
+    "value": null,
+    "timestamp": 1784685436.165
+  }
+]

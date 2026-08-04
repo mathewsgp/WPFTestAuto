@@ -1,0 +1,42 @@
+namespace WpfTestIde.Models
+{
+    /// <summary>
+    /// One Element Repository entry, discovered automatically during
+    /// recording. Mirrors repository/elements/*.yaml's schema in the
+    /// Python framework (see RepositoryWriter for the exact YAML shape).
+    /// </summary>
+    public class ElementEntry
+    {
+        public string Alias { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string ControlType { get; set; } = "";
+
+        /// <summary>Null/empty means "no reliable AutomationId" — a
+        /// custom-rendered control that needs the WPFSpy fallback
+        /// strategy. See docs/SELF_HEALING_LOCATORS.md.</summary>
+        public string? AutomationId { get; set; }
+
+        /// <summary>WPF Name — always present, used as the WPFSpy strategy's locator.</summary>
+        public string Name { get; set; } = "";
+
+        /// <summary>XPath from the root window to this element. Used when
+        /// AutomationId/Name alone are not unique enough in a deep
+        /// hierarchy. Populated during recording by WPFSpy's ProbeAt.</summary>
+        public string? XPath { get; set; }
+
+        public bool NonStandard => string.IsNullOrEmpty(AutomationId);
+
+        public ElementEntry Clone()
+        {
+            return new ElementEntry
+            {
+                Alias = Alias,
+                DisplayName = DisplayName,
+                ControlType = ControlType,
+                AutomationId = AutomationId,
+                Name = Name,
+                XPath = XPath
+            };
+        }
+    }
+}

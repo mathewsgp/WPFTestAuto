@@ -1,0 +1,79 @@
+elements:
+  LoginPage.txtUsername:
+    displayName: txtUsername
+    controlType: TextBox
+    parentAlias: LoginPage.MainWindow
+    defaultTimeout: 10
+    tags:
+    - recorded
+    - needs-review
+    strategies:
+      FlaUI:
+        searchBy: AutomationId
+        value: txtUsername
+        scope: Descendant
+  LoginPage.txtPassword:
+    displayName: txtPassword
+    controlType: TextBox
+    parentAlias: LoginPage.MainWindow
+    defaultTimeout: 10
+    tags:
+    - recorded
+    - needs-review
+    strategies:
+      FlaUI:
+        searchBy: AutomationId
+        value: txtPassword
+        scope: Descendant
+  LoginPage.btnSubmit:
+    displayName: btnSubmit
+    controlType: Button
+    parentAlias: LoginPage.MainWindow
+    defaultTimeout: 10
+    tags:
+    - recorded
+    - needs-review
+    strategies:
+      FlaUI:
+        searchBy: AutomationId
+        value: btnSubmit
+        scope: Descendant
+  OrdersPage.cmbSku:
+    displayName: cmbSku
+    controlType: ComboBox
+    parentAlias: OrdersPage.MainWindow
+    defaultTimeout: 10
+    tags:
+    - recorded
+    - needs-review
+    strategies:
+      FlaUI:
+        searchBy: AutomationId
+        value: cmbSku
+        scope: Descendant
+  OrdersPage.txtQty:
+    displayName: txtQty
+    controlType: TextBox
+    parentAlias: OrdersPage.MainWindow
+    defaultTimeout: 10
+    tags:
+    - recorded
+    - needs-review
+    strategies:
+      FlaUI:
+        searchBy: AutomationId
+        value: txtQty
+        scope: Descendant
+  OrdersPage.btnCreateOrder:
+    displayName: btnCreateOrder
+    controlType: Button
+    parentAlias: OrdersPage.MainWindow
+    defaultTimeout: 10
+    tags:
+    - recorded
+    - needs-review
+    strategies:
+      FlaUI:
+        searchBy: AutomationId
+        value: btnCreateOrder
+        scope: Descendant

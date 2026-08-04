@@ -1,0 +1,320 @@
+"""
+WPFSpy.RobotFramework — Layer 4 driver wrapper for WPFSpy.
+
+Two implementations live in this file, selected by the WPFSPY_MODE
+environment variable:
+
+  WPFSPY_MODE=real (Windows only)
+    WPFSpyRealDriver — a REAL Named Pipe IPC client that talks to the
+    actual in-process Spy Agent (WpfSpyAgent/, a .NET class library)
+    hosted by the real SampleWpfApp/ (a .NET/WPF application). This is
+    the genuine implementation: driver -> Named Pipe -> injected agent ->
+    live WPF visual tree. Requires pywin32 and a running SampleWpfApp
+    built with WPFSPY_AGENT_ENABLED=1. See docs/WPFSPY_MODULE.md and
+    docs/PROTOCOL.md for the full wire protocol and build/run steps.
+
+  WPFSPY_MODE=mock (default)
+    WPFSpyMockDriver — talks to the in-repo Python mock WPF application
+    (drivers/mock_wpf_app/) instead, so the rest of the framework (Layers
+    1-3, the repositories, the reusable modules, the recorder) stays
+    runnable and demonstrable on any OS, including this Linux sandbox,
+    without requiring Windows/.NET/a real injected agent.
+
+Both classes expose IDENTICAL method signatures
+(find_element/invoke/set_value/get_text/is_visible/toggle) — the same
+"API parity" contract FlaUIDriver implements — so Layer 3 never needs to
+know or care which one is active.
+"""
+
+import sys
+import time
+import os
+import json
+import base64
+import csv
+import io
+
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(_THIS_DIR, "..", "..", "drivers", "mock_wpf_app"))
+from mock_app import APP_INSTANCE, ElementNotFoundError, ElementNotInteractableError  # noqa: E402
+
+
+PIPE_NAME = os.environ.get("WPFSPY_PIPE_NAME", "WPFSpyAgentPipe")
+
+
+# ---------------------------------------------------------------------------
+# REAL driver — Named Pipe client talking to the actual injected Spy Agent
+# ---------------------------------------------------------------------------
+class WPFSpyRealDriver:
+    """Real WPFSpy driver: sends line-delimited JSON commands over a
+    Windows Named Pipe to the in-process Spy Agent hosted by
+    SampleWpfApp (see WpfSpyAgent/SpyAgentHost.cs). Requires pywin32 and
+    Windows — only imported/used when WPFSPY_MODE=real.
+
+    The agent re-resolves the target element fresh from the live visual
+    tree on every call (by Name), so `find_element` here just confirms
+    the element currently exists and returns a lightweight handle; it
+    does not cache a live object reference across calls. This avoids
+    stale-element issues across page/window navigation.
+    """
+
+    name = "WPFSpy"
+
+    def __init__(self, pipe_name: str = PIPE_NAME):
+        self.pipe_name = pipe_name
+
+    def _send(self, command: str, **params) -> dict:
+        import win32file  # pywin32 — Windows only
+
+        pipe_path = rf"\\.\pipe\{self.pipe_name}"
+        request = json.dumps({"command": command, **params}) + "\n"
+        print(f"[WPFSpyReal] _send: command={command}, params={params}")
+
+        handle = win32file.CreateFile(
+            pipe_path,
+            win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+            0, None,
+            win32file.OPEN_EXISTING,
+            0, None,
+        )
+        try:
+            win32file.WriteFile(handle, request.encode("utf-8"))
+            buffer = b""
+            while not buffer.endswith(b"\n"):
+                _, chunk = win32file.ReadFile(handle, 4096)
+                if not chunk:
+                    break
+                buffer += chunk
+            result = json.loads(buffer.decode("utf-8"))
+            print(f"[WPFSpyReal] _send: response={result}")
+            return result
+        finally:
+            win32file.CloseHandle(handle)
+
+    def find_element(self, locator: dict):
+        """locator: {"searchBy": "XPath", "value": "..."} or {"searchBy": "Name", "value": "..."}"""
+        search_by = locator.get("searchBy", "XPath")
+        value = locator.get("value")
+        
+        # Retry logic to handle timing after ResetState or window transitions
+        max_retries = 15
+        retry_delay = 0.5
+        
+        for attempt in range(max_retries):
+            if search_by == "XPath":
+                response = self._send("FindByXPath", xpath=value)
+                if response.get("success"):
+                    return {"xpath": value}
+            else:
+                response = self._send("Find", name=value)
+                if response.get("success"):
+                    return {"name": value}
+            
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+        
+        # All retries failed
+        if search_by == "XPath":
+            raise ElementNotFoundError(
+                f"WPFSpy: no element found for XPath '{value}' after {max_retries} attempts"
+            )
+        raise ElementNotFoundError(
+            f"WPFSpy: no element with Name='{value}' after {max_retries} attempts"
+        )
+
+    def invoke(self, element):
+        if "xpath" in element:
+            response = self._send("Invoke", xpath=element["xpath"])
+        else:
+            response = self._send("Invoke", name=element["name"])
+        if not response.get("success"):
+            raise ElementNotInteractableError(response.get("error"))
+
+    def set_value(self, element, value: str):
+        if "xpath" in element:
+            response = self._send("SetValue", xpath=element["xpath"], value=value)
+        else:
+            response = self._send("SetValue", name=element["name"], value=value)
+        if not response.get("success"):
+            raise ElementNotInteractableError(response.get("error"))
+
+    def get_text(self, element) -> str:
+        if "xpath" in element:
+            response = self._send("GetText", xpath=element["xpath"])
+        else:
+            response = self._send("GetText", name=element["name"])
+        if not response.get("success"):
+            raise ElementNotInteractableError(response.get("error"))
+        return response.get("data", "")
+
+    def is_visible(self, element) -> bool:
+        if "xpath" in element:
+            response = self._send("IsVisible", xpath=element["xpath"])
+        else:
+            response = self._send("IsVisible", name=element["name"])
+        return response.get("data") == "true"
+
+    def toggle(self, element, state: bool = None):
+        if "xpath" in element:
+            response = self._send("Toggle", xpath=element["xpath"])
+        else:
+            response = self._send("Toggle", name=element["name"])
+        if not response.get("success"):
+            raise ElementNotInteractableError(response.get("error"))
+
+    def get_data_grid_content_ocr(self, element) -> str:
+        """Captures a screenshot of the DataGrid element and
+        runs OCR on it to extract cell content as CSV text."""
+        if "xpath" in element:
+            response = self._send("GetDataGridContentOcr", xpath=element["xpath"])
+        else:
+            response = self._send("GetDataGridContentOcr", name=element["name"])
+        if not response.get("success"):
+            raise ElementNotInteractableError(response.get("error"))
+        base64_image = response.get("data", "")
+        if not base64_image:
+            return ""
+        try:
+            import pytesseract
+            from PIL import Image
+        except ImportError:
+            raise RuntimeError(
+                "OCR requires pytesseract and Pillow. "
+                "Install with: pip install pytesseract Pillow"
+            )
+        image_bytes = base64.b64decode(base64_image)
+        image = Image.open(io.BytesIO(image_bytes))
+        ocr_text = pytesseract.image_to_string(image)
+        return self._parse_ocr_to_csv(ocr_text)
+
+    @staticmethod
+    def _parse_ocr_to_csv(ocr_text: str) -> str:
+        """Parses OCR text into CSV format. Assumes the OCR output
+        is a tabular layout where rows are separated by newlines
+        and columns are separated by whitespace or tabs."""
+        lines = [line.strip() for line in ocr_text.strip().splitlines() if line.strip()]
+        if not lines:
+            return ""
+        output = io.StringIO()
+        writer = csv.writer(output)
+        for line in lines:
+            # Split on whitespace for column detection;
+            # preserve quoted fields if they exist.
+            cells = line.split()
+            writer.writerow(cells)
+        return output.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# MOCK driver — talks to the in-repo Python mock app (default, cross-platform)
+# ---------------------------------------------------------------------------
+class WPFSpyMockDriver:
+    """Cross-platform stand-in used when WPFSPY_MODE is not 'real'. Talks
+    directly to drivers/mock_wpf_app/ instead of a real IPC channel, but
+    logs each call as `[WPFSpy IPC]` so the round trip is visible in test
+    output the same way the real driver's Named Pipe traffic would be.
+    """
+
+    name = "WPFSpy"
+
+    def _log_ipc(self, command: str, **payload):
+        print(f"[WPFSpy IPC] -> {command}({payload})")
+
+    def find_element(self, locator: dict):
+        search_by = locator.get("searchBy", "XPath")
+        value = locator.get("value")
+        if search_by == "XPath":
+            self._log_ipc("FindByXPath", xpath=value)
+            ctrl = APP_INSTANCE.find_by_xpath(value)
+            if ctrl is None:
+                raise ElementNotFoundError(f"WPFSpy: no element found for XPath '{value}'")
+            return ctrl
+        target_name = value
+        self._log_ipc("Find", name=target_name)
+        ctrl = APP_INSTANCE.find_by_name(target_name)
+        if ctrl is None:
+            raise ElementNotFoundError(f"WPFSpy: no element with Name='{target_name}'")
+        return ctrl
+
+    def invoke(self, element):
+        if hasattr(element, "xpath") and element.xpath:
+            self._log_ipc("Invoke", xpath=element.xpath)
+        else:
+            self._log_ipc("Invoke", name=element.name)
+        APP_INSTANCE.invoke(element)
+
+    def set_value(self, element, value: str):
+        if hasattr(element, "xpath") and element.xpath:
+            self._log_ipc("SetValue", xpath=element.xpath, value=value)
+        else:
+            self._log_ipc("SetValue", name=element.name, value=value)
+        APP_INSTANCE.set_value(element, value)
+
+    def get_text(self, element) -> str:
+        if hasattr(element, "xpath") and element.xpath:
+            self._log_ipc("GetText", xpath=element.xpath)
+        else:
+            self._log_ipc("GetText", name=element.name)
+        return APP_INSTANCE.get_text(element)
+
+    def is_visible(self, element) -> bool:
+        if hasattr(element, "xpath") and element.xpath:
+            self._log_ipc("IsVisible", xpath=element.xpath)
+        else:
+            self._log_ipc("IsVisible", name=element.name)
+        return APP_INSTANCE.is_visible(element)
+
+    def toggle(self, element, state: bool = None):
+        if hasattr(element, "xpath") and element.xpath:
+            self._log_ipc("Toggle", xpath=element.xpath)
+        else:
+            self._log_ipc("Toggle", name=element.name)
+        APP_INSTANCE.invoke(element)
+
+    def get_data_grid_content_ocr(self, element) -> str:
+        """Mock OCR driver — returns mock CSV data for demo/testing."""
+        self._log_ipc("GetDataGridContentOcr", name=getattr(element, "name", None))
+        return "Column1,Column2,Column3\nValue1,Value2,Value3\n"
+
+
+def _make_driver():
+    mode = os.environ.get("WPFSPY_MODE", "mock").lower()
+    if mode == "real":
+        return WPFSpyRealDriver()
+    return WPFSpyMockDriver()
+
+
+# Backwards-compatible name used by api/DriverAgnosticApi.py — resolved at
+# import time based on WPFSPY_MODE (defaults to the mock for portability).
+WPFSpyDriver = _make_driver
+
+
+class WPFSpyLibrary:
+    """Robot Framework library exposing WPFSpy keywords directly (rarely
+    used directly by test authors — Layer 3 is the normal entry point).
+    """
+    ROBOT_LIBRARY_SCOPE = "GLOBAL"
+
+    def __init__(self):
+        self.driver = _make_driver()
+
+    def wpfspy_find_element(self, name):
+        return self.driver.find_element({"searchBy": "Name", "value": name})
+
+    def wpfspy_invoke(self, name):
+        el = self.wpfspy_find_element(name)
+        self.driver.invoke(el)
+
+    def wpfspy_set_value(self, name, value):
+        el = self.wpfspy_find_element(name)
+        self.driver.set_value(el, value)
+
+    def wpfspy_get_text(self, name):
+        el = self.wpfspy_find_element(name)
+        return self.driver.get_text(el)
+
+    def wpfspy_get_data_grid_content_ocr(self, name):
+        """Captures a DataGrid screenshot and returns its
+        content as CSV text using OCR."""
+        el = self.wpfspy_find_element(name)
+        return self.driver.get_data_grid_content_ocr(el)

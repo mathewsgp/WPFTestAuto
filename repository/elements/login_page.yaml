@@ -1,0 +1,47 @@
+# Element Repository — Login Page
+# Aliases include full ancestor hierarchy with AutomationId or Name.
+# XPath is the primary finding strategy with priority: AutomationId -> Name -> Type
+elements:
+  LoginPage.MainWindow.txtUsername:
+    displayName: "Username Text Box"
+    controlType: "TextBox"
+    parentAlias: "LoginPage.MainWindow"
+    defaultTimeout: 10
+    tags: ["login", "critical"]
+    strategies:
+      WPFSpy:
+        searchBy: "XPath"
+        value: "/Window[@AutomationId='MainWindow']/Grid/TextBox[@AutomationId='txtUsername']"
+
+  LoginPage.MainWindow.txtPassword:
+    displayName: "Password Text Box"
+    controlType: "PasswordBox"
+    parentAlias: "LoginPage.MainWindow"
+    defaultTimeout: 10
+    tags: ["login", "critical"]
+    strategies:
+      WPFSpy:
+        searchBy: "XPath"
+        value: "/Window[@AutomationId='MainWindow']/Grid/PasswordBox[@AutomationId='txtPassword']"
+
+  LoginPage.MainWindow.btnSubmit:
+    displayName: "Submit Button"
+    controlType: "Button"
+    parentAlias: "LoginPage.MainWindow"
+    defaultTimeout: 10
+    tags: ["login", "critical"]
+    strategies:
+      WPFSpy:
+        searchBy: "XPath"
+        value: "/Window[@AutomationId='MainWindow']/Grid/StackPanel/Button[@AutomationId='btnSubmit']"
+
+  LoginPage.MainWindow.lblError:
+    displayName: "Error Label"
+    controlType: "Label"
+    parentAlias: "LoginPage.MainWindow"
+    defaultTimeout: 5
+    tags: ["login", "verification"]
+    strategies:
+      WPFSpy:
+        searchBy: "XPath"
+        value: "/Window[@AutomationId='MainWindow']/Grid/StackPanel/Label[@Name='lblError']"

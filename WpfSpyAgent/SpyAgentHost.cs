@@ -1,0 +1,160 @@
+using System;
+using System.IO;
+using System.IO.Pipes;
+using System.Text;
+using System.Threading;
+using System.Windows.Threading;
+using WpfSpyAgent.Protocol;
+
+namespace WpfSpyAgent
+{
+    /// <summary>
+    /// The IPC server side of WPFSpy. Hosts a Named Pipe and, for every
+    /// connected client (the WPFSpy driver's Python client on the
+    /// test-runner side — see drivers_rf/wpfspy_robotframework/WPFSpyLibrary.py),
+    /// reads one JSON request per line, dispatches it onto the WPF UI
+    /// thread, and writes back one JSON response per line.
+    ///
+    /// This class is started IN-PROCESS by the WPF application itself
+    /// (see SampleWpfApp/App.xaml.cs OnStartup) when built/launched in
+    /// test mode — it is not injected into an arbitrary external process.
+    /// This "cooperative, built-in test hook" pattern is the standard,
+    /// safe way in-process test/diagnostic agents are hosted (the same
+    /// approach APM and profiling agents use), and is what "injected Spy
+    /// Agent" means throughout this repository's docs and architecture
+    /// slides. Attaching an agent to an already-running, unmodified
+    /// third-party process is a materially different (and much more
+    /// invasive) technique — using OS-level hooking/profiling APIs — and
+    /// is intentionally out of scope here.
+    /// </summary>
+    public static class SpyAgentHost
+    {
+        private static Thread? _listenerThread;
+        private static volatile bool _running;
+
+        public static void Start(string pipeName = "WPFSpyAgentPipe")
+        {
+            if (_running)
+            {
+                return;
+            }
+            _running = true;
+            try
+            {
+                string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_probe_log.txt");
+                System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] SpyAgentHost.Start called, pipe={pipeName}{Environment.NewLine}");
+            }
+            catch { }
+
+            _listenerThread = new Thread(() => ListenLoop(pipeName))
+            {
+                IsBackground = true,
+                Name = "WpfSpyAgent-Listener",
+            };
+            _listenerThread.Start();
+        }
+
+        public static void Stop() => _running = false;
+
+        private static void ListenLoop(string pipeName)
+        {
+            while (_running)
+            {
+                try
+                {
+                    // Do NOT wrap server in `using` here — ownership transfers
+                    // to the client thread below, which disposes it when the
+                    // connection ends.
+                    var server = new NamedPipeServerStream(
+                        pipeName,
+                        PipeDirection.InOut,
+                        maxNumberOfServerInstances: 5,
+                        PipeTransmissionMode.Byte,
+                        PipeOptions.Asynchronous);
+
+                    server.WaitForConnection();
+                    // Handle each client on its own thread so the listen
+                    // loop can accept the next connection immediately.
+                    var clientThread = new Thread(() => HandleClient(server))
+                    {
+                        IsBackground = true,
+                        Name = "WpfSpyAgent-Client",
+                    };
+                    clientThread.Start();
+                }
+                catch (IOException)
+                {
+                    // Client disconnected mid-stream — loop and accept the next connection.
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Stop() was called while WaitForConnection was blocked.
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    // Log unexpected errors but keep listening
+                    System.Diagnostics.Debug.WriteLine($"WpfSpyAgent ListenLoop error: {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+        }
+
+        private static void HandleClient(NamedPipeServerStream server)
+        {
+            var reader = new StreamReader(server, Encoding.UTF8, false, 4096, leaveOpen: true);
+            var writer = new StreamWriter(server, new UTF8Encoding(false), 4096, leaveOpen: true)
+            {
+                AutoFlush = true,
+                NewLine = "\n",
+            };
+
+            try
+            {
+                while (server.IsConnected)
+                {
+                    string? line = reader.ReadLine();
+                    if (line is null)
+                    {
+                        break;
+                    }
+
+                    try
+                    {
+                        string responseJson = DispatchOnUiThread(line);
+                        writer.WriteLine(responseJson);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"WpfSpyAgent HandleClient error: {ex.GetType().Name}: {ex.Message}");
+                        try
+                        {
+                            writer.WriteLine(JsonHelper.Serialize(SpyResponse.Fail($"Server error: {ex.GetType().Name}: {ex.Message}")));
+                        }
+                        catch { /* pipe may already be closed */ }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"WpfSpyAgent HandleClient outer error: {ex.GetType().Name}: {ex.Message}");
+            }
+            finally
+            {
+                try { writer.Dispose(); } catch { /* ignore disposal errors */ }
+                try { reader.Dispose(); } catch { /* ignore disposal errors */ }
+                server.Dispose();
+            }
+        }
+
+        private static string DispatchOnUiThread(string requestJson)
+        {
+            // All visual-tree access (finding elements, reading/setting
+            // properties, raising events) must happen on the WPF UI
+            // (dispatcher) thread — this listener runs on its own
+            // background thread, so every request is marshalled over.
+            Dispatcher dispatcher = System.Windows.Application.Current?.Dispatcher
+                                     ?? Dispatcher.CurrentDispatcher;
+            return dispatcher.Invoke(() => CommandDispatcher.Dispatch(requestJson));
+        }
+    }
+}

@@ -1,0 +1,80 @@
+# Element Repository — Orders Page
+# Aliases include full ancestor hierarchy with AutomationId or Name.
+# XPath is the primary finding strategy with priority: AutomationId -> Name -> Type
+elements:
+  OrdersPage.OrdersWindow.cmbSku:
+    displayName: "SKU Combo Box"
+    controlType: "ComboBox"
+    parentAlias: "OrdersPage.OrdersWindow"
+    defaultTimeout: 10
+    tags: ["orders", "critical"]
+    strategies:
+      WPFSpy:
+        searchBy: "XPath"
+        value: "/Window[@AutomationId='OrdersWindow']/Grid/ComboBox[@AutomationId='cmbSku']"
+
+  OrdersPage.OrdersWindow.txtQty:
+    displayName: "Quantity Text Box"
+    controlType: "TextBox"
+    parentAlias: "OrdersPage.OrdersWindow"
+    defaultTimeout: 10
+    tags: ["orders", "critical"]
+    strategies:
+      WPFSpy:
+        searchBy: "XPath"
+        value: "/Window[@AutomationId='OrdersWindow']/Grid/TextBox[@AutomationId='txtQty']"
+
+  OrdersPage.OrdersWindow.chkPriority:
+    displayName: "Priority Checkbox"
+    controlType: "PriorityToggleControl"
+    parentAlias: "OrdersPage.OrdersWindow"
+    defaultTimeout: 10
+    tags: ["orders", "non-standard"]
+    strategies:
+      WPFSpy:
+        searchBy: "XPath"
+        value: "/Window[@AutomationId='OrdersWindow']/Grid/StackPanel/PriorityToggleControl[@Name='chkPriority']"
+
+  OrdersPage.OrdersWindow.btnCreateOrder:
+    displayName: "Create Order Button"
+    controlType: "Button"
+    parentAlias: "OrdersPage.OrdersWindow"
+    defaultTimeout: 10
+    tags: ["orders", "critical"]
+    strategies:
+      WPFSpy:
+        searchBy: "XPath"
+        value: "/Window[@AutomationId='OrdersWindow']/Grid/StackPanel/Button[@AutomationId='btnCreateOrder']"
+
+  OrdersPage.OrdersWindow.btnLogout:
+    displayName: "Logout Button"
+    controlType: "Button"
+    parentAlias: "OrdersPage.OrdersWindow"
+    defaultTimeout: 10
+    tags: ["orders", "navigation"]
+    strategies:
+      WPFSpy:
+        searchBy: "XPath"
+        value: "/Window[@AutomationId='OrdersWindow']/Grid/StackPanel/Button[@AutomationId='btnLogout']"
+
+  OrdersPage.OrdersWindow.lblConfirmation:
+    displayName: "Confirmation Label"
+    controlType: "Label"
+    parentAlias: "OrdersPage.OrdersWindow"
+    defaultTimeout: 10
+    tags: ["orders", "verification"]
+    strategies:
+      WPFSpy:
+        searchBy: "XPath"
+        value: "/Window[@AutomationId='OrdersWindow']/Grid/StackPanel/Label[@Name='lblConfirmation']"
+
+  OrdersPage.OrdersWindow.gridOrders:
+    displayName: "Orders Grid"
+    controlType: "DataGrid"
+    parentAlias: "OrdersPage.OrdersWindow"
+    defaultTimeout: 10
+    tags: ["orders", "verification"]
+    strategies:
+      WPFSpy:
+        searchBy: "XPath"
+        value: "/Window[@AutomationId='OrdersWindow']/Grid/DataGrid[@AutomationId='gridOrders']"

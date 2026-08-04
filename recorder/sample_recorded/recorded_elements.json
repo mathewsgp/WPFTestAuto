@@ -1,0 +1,32 @@
+{
+  "LoginPage.txtUsername": {
+    "automationId": "txtUsername",
+    "name": "UsernameInput",
+    "controlType": "TextBox"
+  },
+  "LoginPage.txtPassword": {
+    "automationId": "txtPassword",
+    "name": "PasswordInput",
+    "controlType": "TextBox"
+  },
+  "LoginPage.btnSubmit": {
+    "automationId": "btnSubmit",
+    "name": "SubmitBtn",
+    "controlType": "Button"
+  },
+  "OrdersPage.cmbSku": {
+    "automationId": "cmbSku",
+    "name": "SkuCombo",
+    "controlType": "ComboBox"
+  },
+  "OrdersPage.txtQty": {
+    "automationId": "txtQty",
+    "name": "QtyInput",
+    "controlType": "TextBox"
+  },
+  "OrdersPage.btnCreateOrder": {
+    "automationId": "btnCreateOrder",
+    "name": "CreateOrderBtn",
+    "controlType": "Button"
+  }
+}

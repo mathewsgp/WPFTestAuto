@@ -1,0 +1,26 @@
+{
+  "LoginPage.txtUsername": {
+    "step": "ValueStep",
+    "value": "user1"
+  },
+  "LoginPage.txtPassword": {
+    "step": "ValueStep",
+    "value": "Pass@123"
+  },
+  "LoginPage.btnSubmit": {
+    "step": "InvokeStep",
+    "value": null
+  },
+  "OrdersPage.cmbSku": {
+    "step": "ValueStep",
+    "value": "SKU-2002"
+  },
+  "OrdersPage.txtQty": {
+    "step": "ValueStep",
+    "value": "3"
+  },
+  "OrdersPage.btnCreateOrder": {
+    "step": "InvokeStep",
+    "value": null
+  }
+}

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- .NET Framework only — AppDomainManager-based startup injection is
+         a .NET Framework CLR concept; it does not apply to modern .NET
+         (Core), which has no meaningful AppDomains and uses
+         DOTNET_STARTUP_HOOKS instead (see ../WpfSpyAgent.StartupHook). -->
+     <TargetFramework>net461</TargetFramework>
+     <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>WpfSpyAgent.FrameworkHook</AssemblyName>
+    <RootNamespace>WpfSpyAgent.FrameworkHook</RootNamespace>
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+  </PropertyGroup>
+
+   <ItemGroup>
+     <!-- Reuses the exact same in-process agent as every other injection
+          mechanism in this repo — picks up WpfSpyAgent's net461 build
+          (see the TargetFrameworks change in WpfSpyAgent.csproj). -->
+     <ProjectReference Include="..\WpfSpyAgent\WpfSpyAgent.csproj" />
+   </ItemGroup>
+
+</Project>

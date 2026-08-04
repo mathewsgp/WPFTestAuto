@@ -1,0 +1,31 @@
+steps:
+  LoginPage.txtUsername:
+    step: ValueStep
+    parameters:
+    - name: text
+      type: string
+      required: true
+  LoginPage.txtPassword:
+    step: ValueStep
+    parameters:
+    - name: text
+      type: string
+      required: true
+  LoginPage.btnSubmit:
+    step: InvokeStep
+    parameters: []
+  OrdersPage.cmbSku:
+    step: ValueStep
+    parameters:
+    - name: text
+      type: string
+      required: true
+  OrdersPage.txtQty:
+    step: ValueStep
+    parameters:
+    - name: text
+      type: string
+      required: true
+  OrdersPage.btnCreateOrder:
+    step: InvokeStep
+    parameters: []
