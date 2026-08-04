@@ -284,6 +284,70 @@ class WPFSpyRealDriver:
         """Clean up driver resources."""
         pass  # Named pipe connections are stateless
 
+    # -------------------------------------------------------------------------
+    # UIA Event Recording Methods
+    # -------------------------------------------------------------------------
+    def start_recording(self) -> dict:
+        """Start recording UI Automation events.
+        
+        Hooks into the WPF application to capture user interactions
+        (clicks, text input, focus changes, selections) in real-time.
+        
+        Returns:
+            dict with status message.
+        """
+        response = self._send("StartRecording")
+        if response.get("success"):
+            print("[WPFSpy] UIA Event Recording started")
+        return response
+
+    def stop_recording(self) -> dict:
+        """Stop recording UI Automation events.
+        
+        Returns:
+            dict with status message.
+        """
+        response = self._send("StopRecording")
+        if response.get("success"):
+            print("[WPFSpy] UIA Event Recording stopped")
+        return response
+
+    def get_recording_status(self) -> dict:
+        """Get the current recording status.
+        
+        Returns:
+            dict with isRecording (bool) and eventCount (int).
+        """
+        response = self._send("GetRecordingStatus")
+        if response.get("success"):
+            import json
+            return json.loads(response.get("data", "{}"))
+        return {"isRecording": False, "eventCount": 0}
+
+    def get_recorded_events(self) -> dict:
+        """Get all recorded events from the current recording session.
+        
+        Returns:
+            dict with elements, steps, and sequence arrays.
+        """
+        response = self._send("GetRecordedEvents")
+        if not response.get("success"):
+            raise RuntimeError(f"Failed to get recorded events: {response.get('error')}")
+        
+        import json
+        return json.loads(response.get("data", "{}"))
+
+    def clear_recording(self) -> dict:
+        """Clear all recorded events.
+        
+        Returns:
+            dict with status message.
+        """
+        response = self._send("ClearRecording")
+        if response.get("success"):
+            print("[WPFSpy] Recording events cleared")
+        return response
+
 
 # ---------------------------------------------------------------------------
 # MOCK driver — talks to the in-repo Python mock app (default, cross-platform)
@@ -459,6 +523,84 @@ class WPFSpyMockDriver:
     def close(self):
         """Clean up driver resources."""
         pass  # Mock driver doesn't need cleanup
+
+    # -------------------------------------------------------------------------
+    # UIA Event Recording Methods (Mock implementation)
+    # -------------------------------------------------------------------------
+    def start_recording(self) -> dict:
+        """Start recording UI Automation events (mock).
+        
+        In production with real WPF app, this hooks into the application.
+        In mock mode, this is a no-op that returns success.
+        """
+        self._log_ipc("StartRecording")
+        self._recording_events = []
+        self._is_recording = True
+        print("[WPFSpy Mock] UIA Event Recording started (mock mode)")
+        return {"success": True, "data": "Recording started"}
+
+    def stop_recording(self) -> dict:
+        """Stop recording UI Automation events (mock)."""
+        self._log_ipc("StopRecording")
+        self._is_recording = False
+        print("[WPFSpy Mock] UIA Event Recording stopped")
+        return {"success": True, "data": "Recording stopped"}
+
+    def get_recording_status(self) -> dict:
+        """Get the current recording status (mock)."""
+        self._log_ipc("GetRecordingStatus")
+        return {
+            "isRecording": getattr(self, '_is_recording', False),
+            "eventCount": len(getattr(self, '_recording_events', []))
+        }
+
+    def get_recorded_events(self) -> dict:
+        """Get recorded events (mock).
+        
+        In mock mode, this simulates recorded events from the scripted interactions.
+        """
+        self._log_ipc("GetRecordedEvents")
+        
+        # Return simulated recorded events
+        return {
+            "elements": {
+                "LoginPage.txtUsername": {
+                    "automationId": "txtUsername",
+                    "name": "UsernameInput",
+                    "controlType": "TextBox",
+                    "xpath": "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtUsername']"
+                },
+                "LoginPage.txtPassword": {
+                    "automationId": "txtPassword",
+                    "name": "PasswordInput",
+                    "controlType": "TextBox",
+                    "xpath": "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtPassword']"
+                },
+                "LoginPage.btnSubmit": {
+                    "automationId": "btnSubmit",
+                    "name": "SubmitBtn",
+                    "controlType": "Button",
+                    "xpath": "/Window[@AutomationId='MainWindow']/Button[@AutomationId='btnSubmit']"
+                }
+            },
+            "steps": [
+                {"alias": "LoginPage.txtUsername", "stepType": "ValueStep", "value": "user1", "timestamp": "2025-01-01T10:00:00"},
+                {"alias": "LoginPage.txtPassword", "stepType": "ValueStep", "value": "Pass@123", "timestamp": "2025-01-01T10:00:01"},
+                {"alias": "LoginPage.btnSubmit", "stepType": "InvokeStep", "value": None, "timestamp": "2025-01-01T10:00:02"}
+            ],
+            "sequence": [
+                {"timestamp": "2025-01-01T10:00:00", "eventType": "TextChanged", "automationId": "txtUsername", "name": "UsernameInput", "controlType": "TextBox", "value": "user1", "pageName": "LoginPage"},
+                {"timestamp": "2025-01-01T10:00:01", "eventType": "TextChanged", "automationId": "txtPassword", "name": "PasswordInput", "controlType": "TextBox", "value": "Pass@123", "pageName": "LoginPage"},
+                {"timestamp": "2025-01-01T10:00:02", "eventType": "Invoke", "automationId": "btnSubmit", "name": "SubmitBtn", "controlType": "Button", "value": None, "pageName": "LoginPage"}
+            ]
+        }
+
+    def clear_recording(self) -> dict:
+        """Clear recorded events (mock)."""
+        self._log_ipc("ClearRecording")
+        self._recording_events = []
+        print("[WPFSpy Mock] Recording events cleared")
+        return {"success": True, "data": "Recording cleared"}
 
 
 def _make_driver():

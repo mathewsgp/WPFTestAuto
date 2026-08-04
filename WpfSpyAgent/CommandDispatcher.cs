@@ -18,6 +18,7 @@ namespace WpfSpyAgent
     public static class CommandDispatcher
     {
         private static readonly string _logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_probe_log.txt");
+        private static UiaEventRecorder? _recorder;
 
         private static void Log(string message)
         {
@@ -267,6 +268,55 @@ case "GetDataGridContent":
                     ResetAppState();
                     return SpyResponse.Ok();
                 }
+                // --- UIA Event Recording Commands ---
+                case "StartRecording":
+                {
+                    if (_recorder == null)
+                    {
+                        _recorder = new UiaEventRecorder();
+                    }
+                    _recorder.StartRecording();
+                    return SpyResponse.Ok("Recording started");
+                }
+                case "StopRecording":
+                {
+                    if (_recorder != null)
+                    {
+                        _recorder.StopRecording();
+                    }
+                    return SpyResponse.Ok("Recording stopped");
+                }
+                case "GetRecordedEvents":
+                {
+                    if (_recorder == null)
+                    {
+                        return SpyResponse.Fail("No recorder initialized. Call StartRecording first.");
+                    }
+                    var export = _recorder.Export();
+                    return SpyResponse.Ok(JsonHelper.Serialize(export));
+                }
+                case "GetRecordingStatus":
+                {
+                    if (_recorder == null)
+                    {
+                        return SpyResponse.Ok(JsonHelper.Serialize(new { isRecording = false, eventCount = 0 }));
+                    }
+                    var status = new
+                    {
+                        isRecording = _recorder.IsRecording,
+                        eventCount = _recorder.EventCount
+                    };
+                    return SpyResponse.Ok(JsonHelper.Serialize(status));
+                }
+                case "ClearRecording":
+                {
+                    if (_recorder != null)
+                    {
+                        _recorder.ClearEvents();
+                    }
+                    return SpyResponse.Ok("Recording cleared");
+                }
+                // --- End UIA Event Recording Commands ---
                 default:
                     return SpyResponse.Fail($"Unknown command '{request.Command}'");
             }

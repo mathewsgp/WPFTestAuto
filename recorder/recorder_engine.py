@@ -12,13 +12,14 @@ against the mock app and produces the exact same three JSON artifacts a
 real recorder would — so the rest of the authoring pipeline (Converter,
 draft-script generation, Playback) is fully demonstrable end-to-end.
 
-Swap `_scripted_interactions()` for a real UIA event subscriber to make
-this a genuine recorder against a real WPF app.
+For real WPF recording, use the LiveRecorder class from live_recorder.py
+or run with WPFSPY_MODE=real.
 """
 
 import json
 import os
 import time
+from typing import Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _OUT_DIR = os.path.join(_THIS_DIR, "sample_recorded")
@@ -48,12 +49,29 @@ def _scripted_interactions():
 _LOGIN_CONTROLS = {"txtUsername", "txtPassword", "btnSubmit"}
 
 
-def record(page_prefix=None):
+def record(page_prefix: Optional[str] = None, mode: str = "mock"):
     """Runs the scripted interaction list and writes the three recorder
     output files, exactly as a live UIA-event recorder would. Page prefix
     is inferred per control (Login vs Orders) the way a real recorder
     would infer it from the active window at the time of the interaction.
+    
+    Args:
+        page_prefix: Optional page prefix for element aliases.
+        mode: Recording mode - "mock" for simulated, "live" for real UIA events.
+        
+    Returns:
+        Tuple of (recorded_elements, recorded_steps, recorded_sequence)
     """
+    if mode == "live":
+        # Use live recording
+        return _record_live(page_prefix)
+    else:
+        # Use simulated recording
+        return _record_simulated(page_prefix)
+
+
+def _record_simulated(page_prefix: Optional[str] = None):
+    """Simulated recording using scripted interactions."""
     os.makedirs(_OUT_DIR, exist_ok=True)
     interactions = _scripted_interactions()
 
@@ -98,5 +116,102 @@ def record(page_prefix=None):
     return recorded_elements, recorded_steps, recorded_sequence
 
 
+def _record_live(page_prefix: Optional[str] = None):
+    """Live recording using UIA event hooks.
+    
+    Requires WPF application running with Spy Agent enabled.
+    """
+    from live_recorder import LiveRecorder
+    
+    print("[Recorder] Live recording mode")
+    print("[Recorder] Starting recording - interact with the WPF application...")
+    print("[Recorder] Press Ctrl+C or call stop_recording() when done")
+    
+    recorder = LiveRecorder(mode="real")
+    recorder.start_recording()
+    
+    # Wait for user to interact with app
+    input("Press Enter when recording is complete...")
+    
+    recorder.stop_recording()
+    recorded_data = recorder.get_recorded_events()
+    
+    # Convert to legacy format
+    recorded_elements = recorded_data.get("elements", {})
+    recorded_steps = recorded_data.get("steps", [])
+    recorded_sequence = recorded_data.get("sequence", [])
+    
+    # Convert steps to dict format
+    steps_dict = {}
+    for step in recorded_steps:
+        alias = step.get("alias", "")
+        steps_dict[alias] = {
+            "step": step.get("stepType", ""),
+            "value": step.get("value")
+        }
+    
+    # Export
+    recorder.export_to_json(_OUT_DIR)
+    
+    print(f"[Recorder] Live recording complete: {len(recorded_elements)} elements, "
+          f"{len(steps_dict)} steps")
+    
+    return recorded_elements, steps_dict, recorded_sequence
+
+
+def record_interactive():
+    """Interactive recording mode.
+    
+    Allows user to start/stop recording and see status.
+    """
+    from live_recorder import LiveRecorder, RecordingContext
+    
+    print("=" * 60)
+    print("WPFTestAuto Interactive Recorder")
+    print("=" * 60)
+    print()
+    print("1. Simulated recording (mock mode)")
+    print("2. Live recording (requires real WPF app with Spy Agent)")
+    print("3. Exit")
+    print()
+    
+    choice = input("Select mode (1/2/3): ").strip()
+    
+    if choice == "1":
+        print("\nRunning simulated recording...")
+        record(mode="mock")
+    elif choice == "2":
+        print("\nStarting live recording...")
+        print("Start the WPF application with Spy Agent enabled first!")
+        print()
+        
+        try:
+            recorder = LiveRecorder(mode="real")
+            recorder.start_recording()
+            
+            print("Recording... Press Enter when done.")
+            input()
+            
+            recorder.stop_recording()
+            recorder.get_recorded_events()
+            recorder.export_to_json(_OUT_DIR)
+            
+            print(f"\nRecording complete! Files in: {_OUT_DIR}")
+        except Exception as e:
+            print(f"Error: {e}")
+            print("Make sure the WPF application is running with Spy Agent enabled.")
+    else:
+        print("Exiting...")
+
+
 if __name__ == "__main__":
-    record()
+    import sys
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--interactive":
+            record_interactive()
+        elif sys.argv[1] == "--live":
+            record(mode="live")
+        else:
+            record(mode="mock")
+    else:
+        record(mode="mock")

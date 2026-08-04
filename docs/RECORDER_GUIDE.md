@@ -10,39 +10,92 @@
 5. Finalize           Clean Layer 1 script committed; repository entries reviewed
 ```
 
-## What's real vs simulated here
+## Recording Modes
 
-Real UI Automation event hooking requires a live WPF process on Windows.
-`recorder/recorder_engine.py` instead replays a **scripted list of
-interactions** (`_scripted_interactions()`) standing in for "what a
-tester actually clicked/typed", and produces the exact same three JSON
-artifacts a real UIA-event recorder would. Everything downstream —
-the Converter, the generated repository entries, the generated test
-script — is exactly what you'd get from a real recording.
+### Mock Mode (Current Default)
+The recorder replays a **scripted list of interactions** against the mock app.
+Use this for testing and development without a Windows/WPF environment.
 
-To make this a genuine recorder against a real WPF app, replace
-`_scripted_interactions()` with a real UI Automation event subscriber
-(FlaUI exposes `Automation.RegisterEventHandler` and friends for this).
+```bash
+python3 recorder/recorder_engine.py     # Mock mode
+```
+
+### Live Mode (Windows + WPF Required)
+For real WPF applications, use the LiveRecorder to capture actual UI Automation events:
+
+```bash
+python3 recorder/recorder_engine.py --live
+```
+
+Or use the LiveRecorder class directly:
+
+```python
+from recorder.live_recorder import LiveRecorder, RecordingContext
+
+# Simple usage
+recorder = LiveRecorder(mode="real")
+recorder.start_recording()
+# ... interact with WPF app ...
+recorder.stop_recording()
+events = recorder.get_recorded_events()
+recorder.export_to_json()
+
+# Context manager usage
+with RecordingContext(mode="real", output_dir="recording") as recorder:
+    # Recording starts automatically
+    # ... interact with WPF app ...
+# Recording stops and exports automatically
+```
 
 ## Step 1 & 2: Record + Auto-generate
 
 ```bash
-python3 recorder/recorder_engine.py     # writes recorder/sample_recorded/*.json
-python3 recorder/converter.py           # writes draft repository entries + test script
+# Mock mode (simulated)
+python3 recorder/recorder_engine.py
+
+# Live mode (real WPF app with Spy Agent)
+python3 recorder/recorder_engine.py --live
+
+# Interactive mode
+python3 recorder/recorder_engine.py --interactive
+
+# Then run converter
+python3 recorder/converter.py
 ```
 
-Output (see `recorder/example_draft_output/` for a checked-in example):
+### What Gets Recorded
 
-- `recorded_draft_elements.yaml` — one entry per recorded control, **FlaUI
-  strategy only**. A human adds `WPFSpy`/`Sikuli` strategies later if the
-  control turns out to need a fallback.
-- `recorded_draft_steps.yaml` — step type inferred from the recorded
-  action (`Invoke` → `InvokeStep`, `SetValue` → `ValueStep`).
-- `draft_recorded_test.robot` — a Layer 1 script calling Layer 3
-  (`Click Element` / `Set Element Value`) directly, in the exact recorded
-  order. **This is intentionally raw** — no verifications, no reuse.
+The live recorder captures:
+- **Invoke events** (button clicks, menu selections)
+- **TextChanged events** (text input in text boxes)
+- **Selection events** (combo box selections, list box selections)
+- **FocusChanged events** (navigation between fields)
 
-This draft script is fully runnable as-is:
+Each event includes:
+- Timestamp
+- Element properties (AutomationId, Name, ControlType)
+- XPath for reliable identification
+- Event value (for text input, selections)
+
+### Output Files
+
+- `recorded_elements.json` — Element definitions with properties
+- `recorded_steps.json` — Step definitions (InvokeStep, ValueStep, SelectionStep)
+- `recorded_sequence.json` — Full event sequence with timestamps
+
+See `recorder/example_draft_output/` for checked-in examples.
+
+### Converter Output
+
+The converter creates:
+
+- `recorded_draft_elements.yaml` — Element repository entries with **FlaUI
+  strategy only**. Add `WPFSpy`/`Sikuli` strategies later if needed.
+- `recorded_draft_steps.yaml` — Step definitions inferred from actions.
+- `draft_recorded_test.robot` — Layer 1 script calling Layer 3 keywords
+  directly in recorded order. **Intentionally raw** — no verifications, no reuse.
+
+This draft script is fully runnable:
 
 ```bash
 python3 -m robot recorder/example_draft_output/draft_recorded_test.robot
@@ -50,35 +103,36 @@ python3 -m robot recorder/example_draft_output/draft_recorded_test.robot
 
 ## Step 3: Add Verifications
 
-Open the generated `.robot` file and insert calls to existing (or new)
-Layer 2 verification keywords between action steps, e.g. after the
-generated `Click Element    OrdersPage.btnCreateOrder` line, add:
+Open the generated `.robot` file and insert Layer 2 verification keywords:
 
 ```robotframework
+    Click Element    OrdersPage.btnCreateOrder
+    
+    # Add verification
     Verify Order Confirmation Displayed    SKU-2002    3
 ```
 
 ## Step 4: Refactor to Reusable Modules
 
-Replace repeated raw Layer 3 calls with existing Layer 2 keywords where
-they match (e.g. the generated username/password/submit sequence becomes
-a single `Login To Application    user1    Pass@123` call), or promote a
-new repeating sequence into a new Layer 2 keyword in `modules/`.
+Replace raw Layer 3 calls with Layer 2 keywords:
+
+```robotframework
+# Before (raw Layer 3)
+Set Element Value    LoginPage.txtUsername    user1
+Set Element Value    LoginPage.txtPassword    Pass@123
+Click Element       LoginPage.btnSubmit
+
+# After (refactored to Layer 2)
+Login To Application    user1    Pass@123
+```
 
 ## Step 5: Finalize
 
-- Move the cleaned-up script from wherever it was drafted into `tests/`.
-- Merge the draft repository YAML into the real
-  `repository/elements/<page>.yaml` / `repository/steps/steps.yaml` files
-  (rename aliases to the project's convention if the auto-generated ones
-  were too literal, e.g. `OrdersPage.txtQty` → `OrdersPage.QuantityTextBox`
-  to match the existing style).
-- Run `./run_tests.sh` to confirm everything still passes.
+1. Move script from draft to `tests/`
+2. Merge draft repository YAML into real files
+3. Run `./run_tests.sh`
 
-## Regenerating the example output
-
-`recorder/example_draft_output/` is checked in as a worked example. To
-regenerate it from scratch:
+## Regenerating the Example Output
 
 ```bash
 rm -f recorder/example_draft_output/*.yaml recorder/example_draft_output/*.robot
@@ -89,7 +143,76 @@ mv repository/steps/recorded_draft_steps.yaml recorder/example_draft_output/
 mv tests/draft_recorded_test.robot recorder/example_draft_output/
 ```
 
-(The converter writes directly into the live `repository/` and `tests/`
-folders by design — that's where a real draft belongs during Steps 3–4 —
-so the commands above move the freshly generated files back into the
-example folder afterward.)
+## Live Recording with Spy Agent
+
+For live recording, the WPF application must be running with the Spy Agent enabled:
+
+1. Start the WPF application with `WPFSPY_AGENT_ENABLED=1`
+2. Ensure the named pipe is accessible
+3. Run the recorder with `mode="real"` or `--live`
+
+The Spy Agent (`WpfSpyAgent/UiaEventRecorder.cs`) hooks into UI Automation events:
+
+```csharp
+// Events captured by UiaEventRecorder
+Automation.AddAutomationEventHandler(
+    InvokePattern.InvokedEvent,
+    AutomationElement.RootElement,
+    TreeScope.Descendants,
+    handler);
+
+Automation.AddAutomationEventHandler(
+    TextPattern.TextChangedEvent,
+    AutomationElement.RootElement,
+    TreeScope.Descendants,
+    handler);
+```
+
+## Architecture
+
+```
+Python (recorder/live_recorder.py)
+    └── WPFSpyRealDriver (drivers_rf/wpfspy_robotframework/)
+            └── Named Pipe IPC (Windows)
+                    └── WpfSpyAgent (C#)
+                            └── UiaEventRecorder
+                                    └── UI Automation Events
+                                            └── WPF Application
+```
+
+## API Reference
+
+### LiveRecorder
+
+```python
+from recorder.live_recorder import LiveRecorder
+
+recorder = LiveRecorder(mode="real")  # or "mock"
+
+# Recording control
+recorder.start_recording()           # Start capturing events
+recorder.stop_recording()            # Stop capturing
+recorder.get_recording_status()     # Get status (isRecording, eventCount)
+
+# Get recorded data
+recorder.get_recorded_events()      # Get all events
+recorder.get_element_count()         # Number of unique elements
+recorder.get_step_count()           # Number of steps
+recorder.get_sequence_count()       # Number of sequence events
+
+# Export
+recorder.export_to_json()            # Export to JSON files
+recorder.export_for_converter()      # Get data for converter
+recorder.clear_recording()          # Clear recorded data
+```
+
+### RecordingContext
+
+```python
+from recorder.live_recorder import RecordingContext
+
+with RecordingContext(mode="real", output_dir="recording") as recorder:
+    # Recording starts automatically
+    pass
+# Recording stops and exports automatically
+```
