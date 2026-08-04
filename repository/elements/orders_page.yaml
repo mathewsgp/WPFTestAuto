@@ -3,21 +3,24 @@
 # Multi-Strategy Format with Hierarchical Support
 # ================================================
 #
-# Structure:
+# IMPORTANT: Only include containers with AutomationId or Name.
+# Layout containers (Grid, StackPanel, Panel) WITHOUT identifiers are SKIPPED.
+#
+# Structure (only identifiable containers shown):
 # Window (OrdersWindow)
 # └── TabControl (MainTabs)
-#     ├── TabItem (General) - Tab 0
+#     ├── TabItem (General)
 #     │   └── GroupBox (OrderInfo)
 #     │       ├── ComboBox (cmbSku)
 #     │       ├── TextBox (txtQty)
 #     │       ├── CheckBox (chkPriority) - NO AutomationId!
 #     │       ├── Button (btnCreateOrder)
 #     │       └── Label (lblConfirmation)
-#     └── TabItem (History) - Tab 1
+#     └── TabItem (History)
 #         └── DataGrid (gridOrders)
 #             └── Button (btnLogout)
 #
-# NOTE: chkPriority has NO AutomationId - simulates custom control
+# NOTE: chkPriority has NO AutomationId - falls back to Name
 #
 elements:
   OrdersPage.OrdersWindow.cmbSku:
@@ -26,10 +29,6 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "critical"]
-    containerPath:
-      - {type: "TabControl", automationId: "MainTabs"}
-      - {type: "TabItem", name: "General", index: 0}
-      - {type: "GroupBox", automationId: "OrderInfo"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -38,9 +37,6 @@ elements:
         - searchBy: "Name"
           value: "SkuCombo"
           priority: 2
-        - searchBy: "TypeAndIndex"
-          value: "ComboBox[1]"
-          priority: 3
         - searchBy: "XPath"
           value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/ComboBox[@AutomationId='cmbSku']"
           priority: 1
@@ -62,10 +58,6 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "critical"]
-    containerPath:
-      - {type: "TabControl", automationId: "MainTabs"}
-      - {type: "TabItem", name: "General", index: 0}
-      - {type: "GroupBox", automationId: "OrderInfo"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -74,9 +66,6 @@ elements:
         - searchBy: "Name"
           value: "QtyInput"
           priority: 2
-        - searchBy: "TypeAndIndex"
-          value: "TextBox[1]"
-          priority: 3
         - searchBy: "XPath"
           value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/TextBox[@AutomationId='txtQty']"
           priority: 1
@@ -99,19 +88,12 @@ elements:
     defaultTimeout: 10
     tags: ["orders", "non-standard", "no-automationid"]
     hasAutomationId: false
-    containerPath:
-      - {type: "TabControl", automationId: "MainTabs"}
-      - {type: "TabItem", name: "General", index: 0}
-      - {type: "GroupBox", automationId: "OrderInfo"}
     strategies:
-      # NOTE: No AutomationId strategy - only Name or Type+Index
+      # NOTE: No AutomationId - only Name or XPath-based fallback
       FlaUI:
         - searchBy: "Name"
           value: "PriorityToggle"
           priority: 1
-        - searchBy: "TypeAndIndex"
-          value: "CheckBox[1]"
-          priority: 2
         - searchBy: "XPath"
           value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/CheckBox[@Name='PriorityToggle']"
           priority: 1
@@ -133,10 +115,6 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "critical"]
-    containerPath:
-      - {type: "TabControl", automationId: "MainTabs"}
-      - {type: "TabItem", name: "General", index: 0}
-      - {type: "GroupBox", automationId: "OrderInfo"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -145,9 +123,6 @@ elements:
         - searchBy: "Name"
           value: "CreateOrderBtn"
           priority: 2
-        - searchBy: "TypeAndIndex"
-          value: "Button[1]"
-          priority: 3
         - searchBy: "XPath"
           value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/Button[@AutomationId='btnCreateOrder']"
           priority: 1
@@ -169,10 +144,6 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "navigation"]
-    containerPath:
-      - {type: "TabControl", automationId: "MainTabs"}
-      - {type: "TabItem", name: "History", index: 1}
-      - {type: "Grid", automationId: "OrdersGrid"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -181,18 +152,16 @@ elements:
         - searchBy: "Name"
           value: "LogoutBtn"
           priority: 2
-        - searchBy: "TypeAndIndex"
-          value: "Button[1]"
-          priority: 3
+        # Note: DataGrid has no AutomationId, so path ends at TabItem
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/Grid[@AutomationId='OrdersGrid']/Button[@AutomationId='btnLogout']"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/Button[@AutomationId='btnLogout']"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/Grid[@AutomationId='OrdersGrid']/Button[@AutomationId='btnLogout']"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/Button[@AutomationId='btnLogout']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/TabControl[@Name='MainTabs']/TabItem[@Name='History']/Grid[@Name='OrdersGrid']/Button[@Name='LogoutBtn']"
+          value: "/Window[@Name='OrdersWindow']/TabControl[@Name='MainTabs']/TabItem[@Name='History']/Button[@Name='LogoutBtn']"
           priority: 2
       Sikuli:
         - searchBy: "Image"
@@ -205,10 +174,6 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "verification"]
-    containerPath:
-      - {type: "TabControl", automationId: "MainTabs"}
-      - {type: "TabItem", name: "General", index: 0}
-      - {type: "GroupBox", automationId: "OrderInfo"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -217,9 +182,6 @@ elements:
         - searchBy: "Name"
           value: "ConfirmationLabel"
           priority: 2
-        - searchBy: "TypeAndIndex"
-          value: "Label[1]"
-          priority: 3
         - searchBy: "XPath"
           value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/Label[@AutomationId='lblConfirmation']"
           priority: 1
@@ -241,9 +203,6 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "verification"]
-    containerPath:
-      - {type: "TabControl", automationId: "MainTabs"}
-      - {type: "TabItem", name: "History", index: 1}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -252,9 +211,6 @@ elements:
         - searchBy: "Name"
           value: "OrdersGrid"
           priority: 2
-        - searchBy: "TypeAndIndex"
-          value: "DataGrid[1]"
-          priority: 3
         - searchBy: "XPath"
           value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/DataGrid[@AutomationId='gridOrders']"
           priority: 1

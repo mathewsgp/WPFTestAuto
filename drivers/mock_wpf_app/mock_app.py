@@ -109,7 +109,8 @@ class MockWpfApp:
     def _build_hierarchical_path(self, control: Control) -> str:
         """Build full hierarchical XPath for a control.
         
-        Returns XPath with all container ancestors.
+        Only includes containers that have AutomationId or Name.
+        Layout containers without identifiers are skipped.
         """
         path_parts = []
         
@@ -122,23 +123,26 @@ class MockWpfApp:
         
         path_parts.append(f"Window[@AutomationId='{window_aid}']")
         
-        # Add container chain
+        # Add container chain (only identifiable containers)
         for container in control.container_chain:
             ctype = container.get("type", "")
             if ctype == "Window":
                 continue  # Already added
+            
             aid = container.get("automationId")
             name = container.get("name")
             cindex = container.get("index", 0)
             
+            # Only include containers with AutomationId or Name
+            # Skip layout-only containers (Grid, StackPanel, etc.) without identifiers
             if aid:
                 path_parts.append(f"{ctype}[@AutomationId='{aid}']")
             elif name:
                 path_parts.append(f"{ctype}[@Name='{name}']")
-            elif cindex > 0:
+            elif cindex is not None and cindex >= 0:
+                # Only include by index if it's meaningful (first item is index 0)
                 path_parts.append(f"{ctype}[{cindex + 1}]")
-            else:
-                path_parts.append(ctype)
+            # else: skip this container - no identifier
         
         return "/" + "/".join(path_parts)
 
@@ -197,16 +201,19 @@ class MockWpfApp:
         
         Structure:
         Window (MainWindow)
-        └── Grid
+        └── [Layout containers without names - skipped]
             ├── TextBox (txtUsername)
             ├── TextBox (txtPassword)
             ├── Button (btnSubmit)
             └── Label (lblError)
+        
+        Note: Grid/StackPanel without AutomationId or Name are SKIPPED in paths.
+        Only identifiable containers (Window, TabControl, GroupBox, etc.) are included.
         """
-        # Container chain for controls: Window -> Grid
+        # Container chain - only identifiable ones
         base_chain = [
-            {"type": "Window", "automationId": "MainWindow"},
-            {"type": "Grid", "automationId": None, "name": "LoginGrid", "index": 0}
+            {"type": "Window", "automationId": "MainWindow"}
+            # Grid is skipped - no AutomationId or Name
         ]
         
         self.controls = {
@@ -214,28 +221,28 @@ class MockWpfApp:
                 self._set_container_chain(
                     Control("txtUsername", "txtUsername", "UsernameInput", "TextBox",
                             image_tag="username_box"),
-                    base_chain + [{"type": "Grid", "automationId": None, "name": "LoginGrid"}]
+                    base_chain
                 )
             ),
             "txtPassword": self._build_control_paths(
                 self._set_container_chain(
                     Control("txtPassword", "txtPassword", "PasswordInput", "TextBox",
                             image_tag="password_box"),
-                    base_chain + [{"type": "Grid", "automationId": None, "name": "LoginGrid"}]
+                    base_chain
                 )
             ),
             "btnSubmit": self._build_control_paths(
                 self._set_container_chain(
                     Control("btnSubmit", "btnSubmit", "SubmitBtn", "Button", text="Login",
                             image_tag="login_button"),
-                    base_chain + [{"type": "Grid", "automationId": None, "name": "LoginGrid"}]
+                    base_chain
                 )
             ),
             "lblError": self._build_control_paths(
                 self._set_container_chain(
                     Control("lblError", "lblError", "ErrorLabel", "Label", text="", visible=False,
                             image_tag="error_label"),
-                    base_chain + [{"type": "Grid", "automationId": None, "name": "LoginGrid"}]
+                    base_chain
                 )
             ),
         }
@@ -249,33 +256,37 @@ class MockWpfApp:
         Structure:
         Window (OrdersWindow)
         └── TabControl (MainTabs)
-            ├── TabItem (General)
-            │   └── GroupBox (OrderInfo)
+            ├── TabItem (General) [by name]
+            │   └── GroupBox (OrderInfo) [by AutomationId]
             │       ├── ComboBox (cmbSku)
             │       ├── TextBox (txtQty)
-            │       ├── CheckBox (chkPriority) - no AutomationId
-            │       └── Button (btnCreateOrder)
-            └── TabItem (History)
+            │       ├── CheckBox (chkPriority) - NO AutomationId
+            │       ├── Button (btnCreateOrder)
+            │       └── Label (lblConfirmation)
+            └── TabItem (History) [by name]
                 └── DataGrid (gridOrders)
                     └── Button (btnLogout)
+        
+        Note: StackPanel/Grid without names are SKIPPED in paths.
         """
-        button_count = 3  # btnCreateOrder, btnLogout (in different tabs)
         tab_index = 0  # General tab
         history_tab_index = 1  # History tab
         
-        # General tab controls
+        # General tab controls - only identifiable containers
         general_tab_chain = [
             {"type": "Window", "automationId": "OrdersWindow"},
             {"type": "TabControl", "automationId": "MainTabs"},
-            {"type": "TabItem", "name": "General", "index": tab_index},
+            {"type": "TabItem", "name": "General"},  # Index only if needed
             {"type": "GroupBox", "automationId": "OrderInfo"}
+            # StackPanel skipped - no identifier
         ]
         
         # History tab controls
         history_tab_chain = [
             {"type": "Window", "automationId": "OrdersWindow"},
             {"type": "TabControl", "automationId": "MainTabs"},
-            {"type": "TabItem", "name": "History", "index": history_tab_index},
+            {"type": "TabItem", "name": "History"},
+            # Grid/StackPanel skipped - no identifier
         ]
         
         self.controls = {
@@ -329,7 +340,7 @@ class MockWpfApp:
                 self._set_container_chain(
                     Control("btnLogout", "btnLogout", "LogoutBtn", "Button", text="Logout",
                             image_tag="logout_button", sibling_index=0, sibling_count=1),
-                    history_tab_chain + [{"type": "Grid", "automationId": "OrdersGrid"}]
+                    history_tab_chain
                 )
             ),
         }
