@@ -1,10 +1,23 @@
 # Element Repository — Orders Page
 #
-# Multi-Strategy Format: Each driver (FlaUI, WPFSpy) supports multiple strategies
-# with priority order: AutomationId -> Name -> Type+Index
+# Multi-Strategy Format with Hierarchical Support
+# ================================================
 #
-# Note: chkPriority has NO AutomationId - it uses Name-based matching or Sikuli
-# This simulates a custom control not properly exposed via UIA Automation.
+# Structure:
+# Window (OrdersWindow)
+# └── TabControl (MainTabs)
+#     ├── TabItem (General) - Tab 0
+#     │   └── GroupBox (OrderInfo)
+#     │       ├── ComboBox (cmbSku)
+#     │       ├── TextBox (txtQty)
+#     │       ├── CheckBox (chkPriority) - NO AutomationId!
+#     │       ├── Button (btnCreateOrder)
+#     │       └── Label (lblConfirmation)
+#     └── TabItem (History) - Tab 1
+#         └── DataGrid (gridOrders)
+#             └── Button (btnLogout)
+#
+# NOTE: chkPriority has NO AutomationId - simulates custom control
 #
 elements:
   OrdersPage.OrdersWindow.cmbSku:
@@ -13,6 +26,10 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "critical"]
+    containerPath:
+      - {type: "TabControl", automationId: "MainTabs"}
+      - {type: "TabItem", name: "General", index: 0}
+      - {type: "GroupBox", automationId: "OrderInfo"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -24,20 +41,20 @@ elements:
         - searchBy: "TypeAndIndex"
           value: "ComboBox[1]"
           priority: 3
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/ComboBox[@AutomationId='cmbSku']"
+          priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='OrdersWindow']/ComboBox[@AutomationId='cmbSku']"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/ComboBox[@AutomationId='cmbSku']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/ComboBox[@Name='SkuCombo']"
+          value: "/Window[@Name='OrdersWindow']/TabControl[@Name='MainTabs']/TabItem[@Name='General']/GroupBox[@Name='OrderInfo']/ComboBox[@Name='SkuCombo']"
           priority: 2
-        - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/ComboBox[1]"
-          priority: 3
       Sikuli:
         - searchBy: "Image"
           value: "sku_combo.png"
-          priority: 4
+          priority: 3
 
   OrdersPage.OrdersWindow.txtQty:
     displayName: "Quantity Text Box"
@@ -45,6 +62,10 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "critical"]
+    containerPath:
+      - {type: "TabControl", automationId: "MainTabs"}
+      - {type: "TabItem", name: "General", index: 0}
+      - {type: "GroupBox", automationId: "OrderInfo"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -56,20 +77,20 @@ elements:
         - searchBy: "TypeAndIndex"
           value: "TextBox[1]"
           priority: 3
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/TextBox[@AutomationId='txtQty']"
+          priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='OrdersWindow']/TextBox[@AutomationId='txtQty']"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/TextBox[@AutomationId='txtQty']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/TextBox[@Name='QtyInput']"
+          value: "/Window[@Name='OrdersWindow']/TabControl[@Name='MainTabs']/TabItem[@Name='General']/GroupBox[@Name='OrderInfo']/TextBox[@Name='QtyInput']"
           priority: 2
-        - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/TextBox[1]"
-          priority: 3
       Sikuli:
         - searchBy: "Image"
           value: "qty_box.png"
-          priority: 4
+          priority: 3
 
   OrdersPage.OrdersWindow.chkPriority:
     displayName: "Priority Checkbox (No AutomationId)"
@@ -78,6 +99,10 @@ elements:
     defaultTimeout: 10
     tags: ["orders", "non-standard", "no-automationid"]
     hasAutomationId: false
+    containerPath:
+      - {type: "TabControl", automationId: "MainTabs"}
+      - {type: "TabItem", name: "General", index: 0}
+      - {type: "GroupBox", automationId: "OrderInfo"}
     strategies:
       # NOTE: No AutomationId strategy - only Name or Type+Index
       FlaUI:
@@ -88,18 +113,15 @@ elements:
           value: "CheckBox[1]"
           priority: 2
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='OrdersWindow']/CheckBox[@Name='PriorityToggle']"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/CheckBox[@Name='PriorityToggle']"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='OrdersWindow']/CheckBox[@Name='PriorityToggle']"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/CheckBox[@Name='PriorityToggle']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/CheckBox[@Name='PriorityToggle']"
+          value: "/Window[@Name='OrdersWindow']/TabControl[@Name='MainTabs']/TabItem[@Name='General']/GroupBox[@Name='OrderInfo']/CheckBox[@Name='PriorityToggle']"
           priority: 2
-        - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/CheckBox[1]"
-          priority: 3
       Sikuli:
         - searchBy: "Image"
           value: "priority_checkbox.png"
@@ -111,6 +133,10 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "critical"]
+    containerPath:
+      - {type: "TabControl", automationId: "MainTabs"}
+      - {type: "TabItem", name: "General", index: 0}
+      - {type: "GroupBox", automationId: "OrderInfo"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -123,22 +149,19 @@ elements:
           value: "Button[1]"
           priority: 3
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnCreateOrder']"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/Button[@AutomationId='btnCreateOrder']"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnCreateOrder']"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/Button[@AutomationId='btnCreateOrder']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/Button[@Name='CreateOrderBtn']"
+          value: "/Window[@Name='OrdersWindow']/TabControl[@Name='MainTabs']/TabItem[@Name='General']/GroupBox[@Name='OrderInfo']/Button[@Name='CreateOrderBtn']"
           priority: 2
-        - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/Button[1]"
-          priority: 3
       Sikuli:
         - searchBy: "Image"
           value: "create_order_button.png"
-          priority: 4
+          priority: 3
 
   OrdersPage.OrdersWindow.btnLogout:
     displayName: "Logout Button"
@@ -146,6 +169,10 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "navigation"]
+    containerPath:
+      - {type: "TabControl", automationId: "MainTabs"}
+      - {type: "TabItem", name: "History", index: 1}
+      - {type: "Grid", automationId: "OrdersGrid"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -155,22 +182,22 @@ elements:
           value: "LogoutBtn"
           priority: 2
         - searchBy: "TypeAndIndex"
-          value: "Button[2]"
+          value: "Button[1]"
           priority: 3
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/Grid[@AutomationId='OrdersGrid']/Button[@AutomationId='btnLogout']"
+          priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnLogout']"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/Grid[@AutomationId='OrdersGrid']/Button[@AutomationId='btnLogout']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/Button[@Name='LogoutBtn']"
+          value: "/Window[@Name='OrdersWindow']/TabControl[@Name='MainTabs']/TabItem[@Name='History']/Grid[@Name='OrdersGrid']/Button[@Name='LogoutBtn']"
           priority: 2
-        - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/Button[2]"
-          priority: 3
       Sikuli:
         - searchBy: "Image"
           value: "logout_button.png"
-          priority: 4
+          priority: 3
 
   OrdersPage.OrdersWindow.lblConfirmation:
     displayName: "Confirmation Label"
@@ -178,6 +205,10 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "verification"]
+    containerPath:
+      - {type: "TabControl", automationId: "MainTabs"}
+      - {type: "TabItem", name: "General", index: 0}
+      - {type: "GroupBox", automationId: "OrderInfo"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -189,20 +220,20 @@ elements:
         - searchBy: "TypeAndIndex"
           value: "Label[1]"
           priority: 3
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/Label[@AutomationId='lblConfirmation']"
+          priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='OrdersWindow']/Label[@AutomationId='lblConfirmation']"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='General']/GroupBox[@AutomationId='OrderInfo']/Label[@AutomationId='lblConfirmation']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/Label[@Name='ConfirmationLabel']"
+          value: "/Window[@Name='OrdersWindow']/TabControl[@Name='MainTabs']/TabItem[@Name='General']/GroupBox[@Name='OrderInfo']/Label[@Name='ConfirmationLabel']"
           priority: 2
-        - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/Label[1]"
-          priority: 3
       Sikuli:
         - searchBy: "Image"
           value: "confirmation_label.png"
-          priority: 4
+          priority: 3
 
   OrdersPage.OrdersWindow.gridOrders:
     displayName: "Orders Grid"
@@ -210,6 +241,9 @@ elements:
     parentWindow: "OrdersWindow"
     defaultTimeout: 10
     tags: ["orders", "verification"]
+    containerPath:
+      - {type: "TabControl", automationId: "MainTabs"}
+      - {type: "TabItem", name: "History", index: 1}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -221,17 +255,17 @@ elements:
         - searchBy: "TypeAndIndex"
           value: "DataGrid[1]"
           priority: 3
+        - searchBy: "XPath"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/DataGrid[@AutomationId='gridOrders']"
+          priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='OrdersWindow']/DataGrid[@AutomationId='gridOrders']"
+          value: "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/DataGrid[@AutomationId='gridOrders']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/DataGrid[@Name='OrdersGrid']"
+          value: "/Window[@Name='OrdersWindow']/TabControl[@Name='MainTabs']/TabItem[@Name='History']/DataGrid[@Name='OrdersGrid']"
           priority: 2
-        - searchBy: "XPath"
-          value: "/Window[@Name='OrdersWindow']/DataGrid[1]"
-          priority: 3
       Sikuli:
         - searchBy: "Image"
           value: "orders_grid.png"
-          priority: 4
+          priority: 3

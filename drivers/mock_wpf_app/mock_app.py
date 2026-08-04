@@ -1,18 +1,25 @@
 """
 Mock WPF Application
 =====================
-Simulates a WPF application's visual tree with comprehensive path support
-for multiple automation strategies: FlaUI, WPFSpy, and Sikuli.
+Simulates a WPF application's visual tree with hierarchical structure support
+for complex automation scenarios.
 
-Path Priority Hierarchy:
+Hierarchy Support:
+- Window
+  - TabControl (container)
+    - TabItem (container)
+      - GroupBox (container)
+        - StackPanel (container)
+          - TextBox (leaf control)
+          - Button (leaf control)
+
+Container Types: TabControl, TabItem, TabItem+Name, GroupBox, StackPanel, 
+                 Panel, Grid, DockPanel, ScrollViewer, etc.
+
+Path Priority per Level:
 1. AutomationId (most reliable)
 2. Name (second choice)
 3. Type + Index/Siblings (fallback when no unique identifier)
-
-Each driver uses its native path format:
-- FlaUI: XPath with AutomationId, Name, or Type+Index
-- WPFSpy: Similar XPath format with @AutomationId='...' or @Name='...'
-- Sikuli: Image-based matching via image_tag
 
 Fallback Chain: FlaUI -> WPFSpy -> Sikuli
 """
@@ -20,7 +27,14 @@ Fallback Chain: FlaUI -> WPFSpy -> Sikuli
 import threading
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
+
+# Container types that can hold other controls
+CONTAINER_TYPES = {
+    "Window", "TabControl", "TabItem", "GroupBox", "StackPanel", 
+    "Panel", "Grid", "DockPanel", "ScrollViewer", "Border",
+    "Canvas", "WrapPanel", "UniformGrid"
+}
 
 
 @dataclass
@@ -37,9 +51,20 @@ class Control:
     flaui_paths: List[str] = field(default_factory=list)  # FlaUI XPath variants
     wpfspy_paths: List[str] = field(default_factory=list) # WPFSpy XPath variants
     # Path building blocks (for dynamic path construction)
-    parent_automation_id: Optional[str] = None
     sibling_index: int = 0            # Index among siblings of same type
     sibling_count: int = 1             # Total siblings of same type
+    # Hierarchical path
+    container_chain: List[Dict] = field(default_factory=list)  # List of {type, automationId, name}
+
+
+@dataclass 
+class Container:
+    """Represents a container element in the hierarchy."""
+    automation_id: Optional[str] = None
+    name: str = ""
+    container_type: str = ""
+    index: int = 0  # Position among siblings of same type
+    children: List[Any] = field(default_factory=list)
 
 
 class ElementNotFoundError(Exception):
@@ -53,15 +78,23 @@ class ElementNotInteractableError(Exception):
 
 
 class MockWpfApp:
-    """A WPF application simulation with comprehensive path support.
+    """A WPF application simulation with hierarchical structure support.
     
-    Supports multiple automation strategies with path priority:
+    Supports complex WPF hierarchies with containers:
+    - Window
+      - TabControl
+        - TabItem (with optional Name)
+          - GroupBox
+            - StackPanel
+              - Controls
+    
+    Path Priority per Level:
     - AutomationId (highest priority)
     - Name (second priority)
     - Type + Index/Siblings (fallback)
     
     Driver path formats:
-    - FlaUI: UIAutomation XPath
+    - FlaUI: UIAutomation XPath with full hierarchy
     - WPFSpy: XPath with @AutomationId/@Name
     - Sikuli: Image-based matching
     """
@@ -70,123 +103,241 @@ class MockWpfApp:
         self.current_page = "Login"
         self.controls: Dict[str, Control] = {}
         self.orders: list = []  # Track actual orders for OCR
+        self.root_container: Optional[Container] = None
         self._build_login_page()
 
-    def _build_control_paths(self, control: Control, parent_aid: str = "MainWindow") -> Control:
-        """Build comprehensive paths for all drivers.
+    def _build_hierarchical_path(self, control: Control) -> str:
+        """Build full hierarchical XPath for a control.
         
-        Path priority: AutomationId -> Name -> Type+Index
+        Returns XPath with all container ancestors.
         """
-        control.parent_automation_id = parent_aid
+        path_parts = []
+        
+        # Add Window first
+        window_aid = "MainWindow"
+        if control.container_chain:
+            # Get window from first container
+            if control.container_chain[0].get("type") == "Window":
+                window_aid = control.container_chain[0].get("automationId") or "MainWindow"
+        
+        path_parts.append(f"Window[@AutomationId='{window_aid}']")
+        
+        # Add container chain
+        for container in control.container_chain:
+            ctype = container.get("type", "")
+            if ctype == "Window":
+                continue  # Already added
+            aid = container.get("automationId")
+            name = container.get("name")
+            cindex = container.get("index", 0)
+            
+            if aid:
+                path_parts.append(f"{ctype}[@AutomationId='{aid}']")
+            elif name:
+                path_parts.append(f"{ctype}[@Name='{name}']")
+            elif cindex > 0:
+                path_parts.append(f"{ctype}[{cindex + 1}]")
+            else:
+                path_parts.append(ctype)
+        
+        return "/" + "/".join(path_parts)
+
+    def _build_control_paths(self, control: Control) -> Control:
+        """Build comprehensive paths for all drivers including hierarchical paths."""
+        
+        # Build hierarchical path (without control type)
+        hierarchical_path = self._build_hierarchical_path(control)
+        
+        # Get control type for path (handle special cases like DataGrid)
+        ctrl_type = control.control_type
         
         # FlaUI paths (UIAutomation XPath format)
-        # Path 1: AutomationId-based (most reliable)
+        # Path 1: Hierarchical AutomationId-based (most reliable)
         if control.automation_id:
             control.flaui_paths.append(
-                f"/Window[@AutomationId='{parent_aid}']/{control.control_type}[@AutomationId='{control.automation_id}']"
+                f"{hierarchical_path}/{ctrl_type}[@AutomationId='{control.automation_id}']"
             )
-        # Path 2: Name-based
+        # Path 2: Hierarchical Name-based
         control.flaui_paths.append(
-            f"/Window[@AutomationId='{parent_aid}']/{control.control_type}[@Name='{control.name}']"
+            f"{hierarchical_path}/{ctrl_type}[@Name='{control.name}']"
         )
         # Path 3: Type + Index (sibling position)
         if control.sibling_count > 1:
             control.flaui_paths.append(
-                f"/Window[@AutomationId='{parent_aid}']/{control.control_type}[{control.sibling_index + 1}]"
+                f"{hierarchical_path}/{ctrl_type}[{control.sibling_index + 1}]"
             )
         
         # WPFSpy paths (similar XPath format)
-        # Path 1: AutomationId-based
+        # Path 1: Hierarchical AutomationId-based
         if control.automation_id:
             control.wpfspy_paths.append(
-                f"/Window[@AutomationId='{parent_aid}']/{control.control_type}[@AutomationId='{control.automation_id}']"
+                f"{hierarchical_path}/{ctrl_type}[@AutomationId='{control.automation_id}']"
             )
-        # Path 2: Name-based
+        # Path 2: Hierarchical Name-based (use @Name for window)
+        wpfspy_path = hierarchical_path.replace("[@AutomationId=", "[@Name=")
+        wpfspy_path = wpfspy_path.replace("Window[@Name='", "Window[@Name='")
         control.wpfspy_paths.append(
-            f"/Window[@Name='{parent_aid}']/{control.control_type}[@Name='{control.name}']"
+            f"{wpfspy_path}/{ctrl_type}[@Name='{control.name}']"
         )
         # Path 3: Type + Index
         if control.sibling_count > 1:
             control.wpfspy_paths.append(
-                f"/Window[@Name='{parent_aid}']/{control.control_type}[{control.sibling_index + 1}]"
+                f"{hierarchical_path}/{ctrl_type}[{control.sibling_index + 1}]"
             )
         
         return control
 
+    def _set_container_chain(self, control: Control, container_chain: List[Dict]) -> Control:
+        """Set the container chain for a control and rebuild paths."""
+        control.container_chain = container_chain
+        return self._build_control_paths(control)
+
     def _build_login_page(self):
-        """Build Login page with comprehensive path support."""
+        """Build Login page with hierarchical container support.
+        
+        Structure:
+        Window (MainWindow)
+        └── Grid
+            ├── TextBox (txtUsername)
+            ├── TextBox (txtPassword)
+            ├── Button (btnSubmit)
+            └── Label (lblError)
+        """
+        # Container chain for controls: Window -> Grid
+        base_chain = [
+            {"type": "Window", "automationId": "MainWindow"},
+            {"type": "Grid", "automationId": None, "name": "LoginGrid", "index": 0}
+        ]
+        
         self.controls = {
             "txtUsername": self._build_control_paths(
-                Control("txtUsername", "txtUsername", "UsernameInput", "TextBox",
-                        image_tag="username_box"),
-                "MainWindow"
+                self._set_container_chain(
+                    Control("txtUsername", "txtUsername", "UsernameInput", "TextBox",
+                            image_tag="username_box"),
+                    base_chain + [{"type": "Grid", "automationId": None, "name": "LoginGrid"}]
+                )
             ),
             "txtPassword": self._build_control_paths(
-                Control("txtPassword", "txtPassword", "PasswordInput", "TextBox",
-                        image_tag="password_box"),
-                "MainWindow"
+                self._set_container_chain(
+                    Control("txtPassword", "txtPassword", "PasswordInput", "TextBox",
+                            image_tag="password_box"),
+                    base_chain + [{"type": "Grid", "automationId": None, "name": "LoginGrid"}]
+                )
             ),
             "btnSubmit": self._build_control_paths(
-                Control("btnSubmit", "btnSubmit", "SubmitBtn", "Button", text="Login",
-                        image_tag="login_button"),
-                "MainWindow"
+                self._set_container_chain(
+                    Control("btnSubmit", "btnSubmit", "SubmitBtn", "Button", text="Login",
+                            image_tag="login_button"),
+                    base_chain + [{"type": "Grid", "automationId": None, "name": "LoginGrid"}]
+                )
             ),
             "lblError": self._build_control_paths(
-                Control("lblError", "lblError", "ErrorLabel", "Label", text="", visible=False,
-                        image_tag="error_label"),
-                "MainWindow"
+                self._set_container_chain(
+                    Control("lblError", "lblError", "ErrorLabel", "Label", text="", visible=False,
+                            image_tag="error_label"),
+                    base_chain + [{"type": "Grid", "automationId": None, "name": "LoginGrid"}]
+                )
             ),
         }
+        
+        # Build hierarchical tree for XPath matching
+        self._build_hierarchical_tree()
 
     def _build_orders_page(self):
-        """Build Orders page with comprehensive path support and sibling indexes."""
-        # Calculate sibling counts for type-based paths
-        button_count = 3  # btnCreateOrder, chkPriority, btnLogout
-        textbox_count = 2  # txtQty, txtSku (in combo)
+        """Build Orders page with hierarchical container support.
+        
+        Structure:
+        Window (OrdersWindow)
+        └── TabControl (MainTabs)
+            ├── TabItem (General)
+            │   └── GroupBox (OrderInfo)
+            │       ├── ComboBox (cmbSku)
+            │       ├── TextBox (txtQty)
+            │       ├── CheckBox (chkPriority) - no AutomationId
+            │       └── Button (btnCreateOrder)
+            └── TabItem (History)
+                └── DataGrid (gridOrders)
+                    └── Button (btnLogout)
+        """
+        button_count = 3  # btnCreateOrder, btnLogout (in different tabs)
+        tab_index = 0  # General tab
+        history_tab_index = 1  # History tab
+        
+        # General tab controls
+        general_tab_chain = [
+            {"type": "Window", "automationId": "OrdersWindow"},
+            {"type": "TabControl", "automationId": "MainTabs"},
+            {"type": "TabItem", "name": "General", "index": tab_index},
+            {"type": "GroupBox", "automationId": "OrderInfo"}
+        ]
+        
+        # History tab controls
+        history_tab_chain = [
+            {"type": "Window", "automationId": "OrdersWindow"},
+            {"type": "TabControl", "automationId": "MainTabs"},
+            {"type": "TabItem", "name": "History", "index": history_tab_index},
+        ]
         
         self.controls = {
             "cmbSku": self._build_control_paths(
-                Control("cmbSku", "cmbSku", "SkuCombo", "ComboBox", text="",
-                        image_tag="sku_combo"),
-                "OrdersWindow"
+                self._set_container_chain(
+                    Control("cmbSku", "cmbSku", "SkuCombo", "ComboBox", text="",
+                            image_tag="sku_combo"),
+                    general_tab_chain
+                )
             ),
             "txtQty": self._build_control_paths(
-                Control("txtQty", "txtQty", "QtyInput", "TextBox", text="1",
-                        image_tag="qty_box", sibling_index=0, sibling_count=1),
-                "OrdersWindow"
+                self._set_container_chain(
+                    Control("txtQty", "txtQty", "QtyInput", "TextBox", text="1",
+                            image_tag="qty_box", sibling_index=0, sibling_count=2),
+                    general_tab_chain
+                )
             ),
             "btnCreateOrder": self._build_control_paths(
-                Control("btnCreateOrder", "btnCreateOrder", "CreateOrderBtn", "Button",
-                        text="Create Order", image_tag="create_order_button",
-                        sibling_index=0, sibling_count=button_count),
-                "OrdersWindow"
+                self._set_container_chain(
+                    Control("btnCreateOrder", "btnCreateOrder", "CreateOrderBtn", "Button",
+                            text="Create Order", image_tag="create_order_button",
+                            sibling_index=0, sibling_count=2),
+                    general_tab_chain
+                )
             ),
             "lblConfirmation": self._build_control_paths(
-                Control("lblConfirmation", "lblConfirmation", "ConfirmationLabel", "Label",
-                        text="", visible=False, image_tag="confirmation_label"),
-                "OrdersWindow"
+                self._build_control_paths(
+                    self._set_container_chain(
+                        Control("lblConfirmation", "lblConfirmation", "ConfirmationLabel", "Label",
+                                text="", visible=False, image_tag="confirmation_label"),
+                        general_tab_chain
+                    )
+                )
             ),
             "gridOrders": self._build_control_paths(
-                Control("gridOrders", "gridOrders", "OrdersGrid", "DataGrid", text="SKU,Qty\n",
-                        image_tag="orders_grid"),
-                "OrdersWindow"
+                self._set_container_chain(
+                    Control("gridOrders", "gridOrders", "OrdersGrid", "DataGrid", text="SKU,Qty\n",
+                            image_tag="orders_grid"),
+                    history_tab_chain
+                )
             ),
-            # Non-standard control: NO reliable AutomationId (simulates a
-            # custom-rendered WPF control not properly exposed via UIA).
-            # Only findable by Name (WPFSpy) or image (Sikuli).
+            # Non-standard control: NO reliable AutomationId
             "chkPriority": self._build_control_paths(
-                Control("chkPriority", None, "PriorityToggle", "CheckBox", text="Off",
-                        image_tag="priority_checkbox", sibling_index=1, sibling_count=button_count),
-                "OrdersWindow"
+                self._set_container_chain(
+                    Control("chkPriority", None, "PriorityToggle", "CheckBox", text="Off",
+                            image_tag="priority_checkbox", sibling_index=1, sibling_count=2),
+                    general_tab_chain
+                )
             ),
             "btnLogout": self._build_control_paths(
-                Control("btnLogout", "btnLogout", "LogoutBtn", "Button", text="Logout",
-                        image_tag="logout_button", sibling_index=2, sibling_count=button_count),
-                "OrdersWindow"
+                self._set_container_chain(
+                    Control("btnLogout", "btnLogout", "LogoutBtn", "Button", text="Logout",
+                            image_tag="logout_button", sibling_index=0, sibling_count=1),
+                    history_tab_chain + [{"type": "Grid", "automationId": "OrdersGrid"}]
+                )
             ),
         }
         # Rebuild grid text from orders
         self._update_grid_text()
+        
+        # Build hierarchical tree for XPath matching
+        self._build_hierarchical_tree()
 
     # ------------------------------------------------------------------
     # Grid management
@@ -353,39 +504,101 @@ class MockWpfApp:
             return self.controls.get(match.get("control_key", "")) if "control_key" in match else None
         return self._match_xpath_segments(segments, index + 1, match)
 
-    def _build_virtual_tree(self):
-        """Builds a virtual tree: root -> Window -> controls.
-        
-        Uses the parent automation_id for both Window's AutomationId and Name.
-        Each control includes both its automation_id and name for flexible matching.
-        """
-        # Determine window ID based on current controls
-        window_aid = "MainWindow"
-        if self.controls:
-            first_ctrl = next(iter(self.controls.values()))
-            if first_ctrl.parent_automation_id:
-                window_aid = first_ctrl.parent_automation_id
-        
-        return {
+    def _build_hierarchical_tree(self):
+        """Build the hierarchical virtual tree based on container chains."""
+        # Group controls by their container chain
+        self.root_container = {
             "tag": "Root",
-            "children": [
-                {
-                    "tag": "Window",
-                    "attrs": {"AutomationId": window_aid, "Name": window_aid},
-                    "children": [
-                        {
-                            "tag": ctrl.control_type, 
-                            "attrs": {
-                                "AutomationId": ctrl.automation_id or "", 
-                                "Name": ctrl.name
-                            }, 
-                            "control_key": key
-                        }
-                        for key, ctrl in self.controls.items()
-                    ],
-                }
-            ],
+            "children": [],
+            "attrs": {}
         }
+        
+        if not self.controls:
+            return
+        
+        # Build tree from container chains
+        for key, ctrl in self.controls.items():
+            # Start from root and traverse/create path
+            self._add_control_to_tree(self.root_container, ctrl, key)
+    
+    def _add_control_to_tree(self, parent_node: dict, ctrl: Control, control_key: str):
+        """Add a control to the tree based on its container chain."""
+        if not ctrl.container_chain:
+            # No container chain, add directly to parent
+            parent_node["children"].append({
+                "tag": ctrl.control_type,
+                "attrs": {
+                    "AutomationId": ctrl.automation_id or "",
+                    "Name": ctrl.name
+                },
+                "control_key": control_key
+            })
+            return
+        
+        # Navigate/create path based on container chain
+        current_node = parent_node
+        
+        for i, container in enumerate(ctrl.container_chain):
+            ctype = container.get("type", "")
+            aid = container.get("automationId")
+            name = container.get("name", "")
+            is_last = (i == len(ctrl.container_chain) - 1)
+            
+            # Find or create this container node
+            child = self._find_or_create_container(
+                current_node["children"],
+                ctype,
+                aid,
+                name
+            )
+            
+            if child is None:
+                # Create new container
+                child = {
+                    "tag": ctype,
+                    "attrs": {
+                        "AutomationId": aid or "",
+                        "Name": name
+                    },
+                    "children": []
+                }
+                current_node["children"].append(child)
+            
+            current_node = child
+        
+        # Add the actual control
+        current_node["children"].append({
+            "tag": ctrl.control_type,
+            "attrs": {
+                "AutomationId": ctrl.automation_id or "",
+                "Name": ctrl.name
+            },
+            "control_key": control_key
+        })
+    
+    def _find_or_create_container(self, children: list, ctype: str, aid: Optional[str], name: str) -> Optional[dict]:
+        """Find an existing container or return None to create new."""
+        for child in children:
+            if child["tag"] != ctype:
+                continue
+            # Match by AutomationId or Name
+            if aid and child["attrs"].get("AutomationId") == aid:
+                return child
+            if name and child["attrs"].get("Name") == name:
+                return child
+            # Match by type only if no identifier
+            if not aid and not name:
+                return child
+        return None
+
+    def _build_virtual_tree(self) -> dict:
+        """Builds the virtual tree for XPath matching.
+        
+        Returns the root node with hierarchical structure.
+        """
+        if self.root_container is None:
+            self._build_hierarchical_tree()
+        return self.root_container
 
     # ------------------------------------------------------------------
     # Act (what each driver calls once it has resolved a Control)

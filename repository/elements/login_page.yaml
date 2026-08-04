@@ -1,15 +1,28 @@
 # Element Repository — Login Page
-# 
-# Multi-Strategy Format: Each driver (FlaUI, WPFSpy) supports multiple strategies
-# with priority order: AutomationId -> Name -> Type+Index
 #
-# For real WPF app: Use @AutomationId for highest reliability
-# For mock app: Use @Name since mock doesn't have real AutomationId
+# Multi-Strategy Format with Hierarchical Support
+# ================================================
 #
-# Path Priority:
-# 1. AutomationId (most reliable, unique)
-# 2. Name (second choice, usually unique)
-# 3. Type + Index/Siblings (fallback when no unique identifier)
+# Each element defines:
+# - containerPath: List of containers from Window to parent
+# - strategies: Per-driver strategies with priority
+#
+# Container Path Format:
+#   - type: Container type (TabControl, TabItem, GroupBox, StackPanel, Grid, etc.)
+#   - automationId: (optional) AutomationId of container
+#   - name: (optional) Name of container
+#   - index: (optional) Index among siblings if no unique identifier
+#
+# Strategy Priority per Level:
+#   1. AutomationId (most reliable)
+#   2. Name (second choice)
+#   3. Type + Index (fallback)
+#
+# Element Path Priority:
+#   1. AutomationId (control's own AutomationId)
+#   2. Name (control's own Name)
+#   3. Type + Index (sibling position)
+#
 elements:
   LoginPage.MainWindow.txtUsername:
     displayName: "Username Text Box"
@@ -17,6 +30,8 @@ elements:
     parentWindow: "MainWindow"
     defaultTimeout: 10
     tags: ["login", "critical"]
+    containerPath:
+      - {type: "Grid", automationId: null, name: "LoginGrid"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -29,17 +44,17 @@ elements:
           value: "TextBox[1]"
           priority: 3
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtUsername']"
+          value: "/Window[@AutomationId='MainWindow']/Grid[@Name='LoginGrid']/TextBox[@AutomationId='txtUsername']"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtUsername']"
+          value: "/Window[@AutomationId='MainWindow']/Grid[@Name='LoginGrid']/TextBox[@AutomationId='txtUsername']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/TextBox[@Name='UsernameInput']"
+          value: "/Window[@Name='MainWindow']/Grid[@Name='LoginGrid']/TextBox[@Name='UsernameInput']"
           priority: 2
         - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/TextBox[1]"
+          value: "/Window[@Name='MainWindow']/Grid[@Name='LoginGrid']/TextBox[1]"
           priority: 3
       Sikuli:
         - searchBy: "Image"
@@ -52,6 +67,8 @@ elements:
     parentWindow: "MainWindow"
     defaultTimeout: 10
     tags: ["login", "critical"]
+    containerPath:
+      - {type: "Grid", automationId: null, name: "LoginGrid"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -64,17 +81,17 @@ elements:
           value: "TextBox[2]"
           priority: 3
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtPassword']"
+          value: "/Window[@AutomationId='MainWindow']/Grid[@Name='LoginGrid']/TextBox[@AutomationId='txtPassword']"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtPassword']"
+          value: "/Window[@AutomationId='MainWindow']/Grid[@Name='LoginGrid']/TextBox[@AutomationId='txtPassword']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/TextBox[@Name='PasswordInput']"
+          value: "/Window[@Name='MainWindow']/Grid[@Name='LoginGrid']/TextBox[@Name='PasswordInput']"
           priority: 2
         - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/TextBox[2]"
+          value: "/Window[@Name='MainWindow']/Grid[@Name='LoginGrid']/TextBox[2]"
           priority: 3
       Sikuli:
         - searchBy: "Image"
@@ -87,6 +104,8 @@ elements:
     parentWindow: "MainWindow"
     defaultTimeout: 10
     tags: ["login", "critical"]
+    containerPath:
+      - {type: "Grid", automationId: null, name: "LoginGrid"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -99,17 +118,17 @@ elements:
           value: "Button[1]"
           priority: 3
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/Button[@AutomationId='btnSubmit']"
+          value: "/Window[@AutomationId='MainWindow']/Grid[@Name='LoginGrid']/Button[@AutomationId='btnSubmit']"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/Button[@AutomationId='btnSubmit']"
+          value: "/Window[@AutomationId='MainWindow']/Grid[@Name='LoginGrid']/Button[@AutomationId='btnSubmit']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/Button[@Name='SubmitBtn']"
+          value: "/Window[@Name='MainWindow']/Grid[@Name='LoginGrid']/Button[@Name='SubmitBtn']"
           priority: 2
         - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/Button[1]"
+          value: "/Window[@Name='MainWindow']/Grid[@Name='LoginGrid']/Button[1]"
           priority: 3
       Sikuli:
         - searchBy: "Image"
@@ -122,6 +141,8 @@ elements:
     parentWindow: "MainWindow"
     defaultTimeout: 5
     tags: ["login", "verification"]
+    containerPath:
+      - {type: "Grid", automationId: null, name: "LoginGrid"}
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -134,17 +155,17 @@ elements:
           value: "Label[1]"
           priority: 3
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblError']"
+          value: "/Window[@AutomationId='MainWindow']/Grid[@Name='LoginGrid']/Label[@AutomationId='lblError']"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblError']"
+          value: "/Window[@AutomationId='MainWindow']/Grid[@Name='LoginGrid']/Label[@AutomationId='lblError']"
           priority: 1
         - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/Label[@Name='ErrorLabel']"
+          value: "/Window[@Name='MainWindow']/Grid[@Name='LoginGrid']/Label[@Name='ErrorLabel']"
           priority: 2
         - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/Label[1]"
+          value: "/Window[@Name='MainWindow']/Grid[@Name='LoginGrid']/Label[1]"
           priority: 3
       Sikuli:
         - searchBy: "Image"

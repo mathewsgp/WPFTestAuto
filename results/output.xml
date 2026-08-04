@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<robot generator="Robot 7.4.2 (Python 3.13.14 on linux)" generated="2026-08-04T06:59:28.234899" rpa="false" schemaversion="5">
+<robot generator="Robot 7.4.2 (Python 3.13.14 on linux)" generated="2026-08-04T07:20:59.752925" rpa="false" schemaversion="5">
 <suite id="s1" name="Order Tests &amp; Self Healing Locators Demo">
 <suite id="s1-s1" name="Order Tests" source="/workspace/project/WPFTestAuto/tests/order_tests.robot">
 <test id="s1-s1-t1" name="Create And Confirm New Order" line="10">
@@ -7,343 +7,343 @@
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.268771" elapsed="0.000116"/>
+<status status="PASS" start="2026-08-04T07:20:59.790943" elapsed="0.000141"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.290508" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.816975" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.269312" elapsed="0.021254"/>
+<status status="PASS" start="2026-08-04T07:20:59.791497" elapsed="0.025535"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.290933" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.817350" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.290662" elapsed="0.000304"/>
+<status status="PASS" start="2026-08-04T07:20:59.817127" elapsed="0.000253"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.291218" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.817671" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.291043" elapsed="0.000205"/>
+<status status="PASS" start="2026-08-04T07:20:59.817441" elapsed="0.000259"/>
 </kw>
 <arg>user1</arg>
 <arg>Pass@123</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.269114" elapsed="0.022175"/>
+<status status="PASS" start="2026-08-04T07:20:59.791303" elapsed="0.026457"/>
 </kw>
 <kw name="Create New Order" owner="order_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.291829" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.818307" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.cmbSku</arg>
 <arg>${sku}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.291634" elapsed="0.000225"/>
+<status status="PASS" start="2026-08-04T07:20:59.818115" elapsed="0.000220"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.292084" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.818569" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.txtQty</arg>
 <arg>${qty}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.291920" elapsed="0.000190"/>
+<status status="PASS" start="2026-08-04T07:20:59.818395" elapsed="0.000202"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.292302" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.818809" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnCreateOrder</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.292164" elapsed="0.000162"/>
+<status status="PASS" start="2026-08-04T07:20:59.818655" elapsed="0.000180"/>
 </kw>
 <arg>SKU-1001</arg>
 <arg>2</arg>
 <doc>Creates a new order for the given SKU and quantity.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.291457" elapsed="0.000901"/>
+<status status="PASS" start="2026-08-04T07:20:59.817936" elapsed="0.000932"/>
 </kw>
 <kw name="Verify Order Confirmation Displayed" owner="order_verifications">
 <kw name="Verify Element Text" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.292839" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.819358" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.lblConfirmation</arg>
 <arg>Order confirmed: ${sku} x${qty}</arg>
 <doc>Fails the test unless the element's text equals `expected`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.292630" elapsed="0.000236"/>
+<status status="PASS" start="2026-08-04T07:20:59.819140" elapsed="0.000246"/>
 </kw>
 <arg>SKU-1001</arg>
 <arg>2</arg>
 <doc>Verifies the confirmation label shows the expected
 SKU and quantity after an order is created.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.292486" elapsed="0.000416"/>
+<status status="PASS" start="2026-08-04T07:20:59.818994" elapsed="0.000426"/>
 </kw>
 <kw name="Verify Orders Grid Row Count" owner="order_verifications">
 <kw name="Get Element Text" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.293333" level="INFO">Element found via FlaUI:AutomationId</msg>
-<msg time="2026-08-04T06:59:28.293388" level="INFO">${grid_text} = SKU,Qty
+<msg time="2026-08-04T07:20:59.819854" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.819907" level="INFO">${grid_text} = SKU,Qty
 SKU-1001,2</msg>
 <var>${grid_text}</var>
 <arg>OrdersPage.OrdersWindow.gridOrders</arg>
 <doc>Returns the current text of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.293183" elapsed="0.000217"/>
+<status status="PASS" start="2026-08-04T07:20:59.819694" elapsed="0.000226"/>
 </kw>
 <kw name="Should Contain" owner="BuiltIn">
 <arg>${grid_text}</arg>
 <arg>${sku}</arg>
 <doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.293458" elapsed="0.000351"/>
+<status status="PASS" start="2026-08-04T07:20:59.819978" elapsed="0.000336"/>
 </kw>
 <kw name="Should Contain" owner="BuiltIn">
 <arg>${grid_text}</arg>
 <arg>${qty}</arg>
 <doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.293877" elapsed="0.000196"/>
+<status status="PASS" start="2026-08-04T07:20:59.820378" elapsed="0.000185"/>
 </kw>
 <arg>SKU-1001</arg>
 <arg>2</arg>
 <doc>Verifies the orders grid contains an order with the expected SKU and quantity.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.293036" elapsed="0.001074"/>
+<status status="PASS" start="2026-08-04T07:20:59.819551" elapsed="0.001046"/>
 </kw>
 <kw name="Logout From Orders" owner="order_module">
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.294533" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.821024" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnLogout</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.294369" elapsed="0.000192"/>
+<status status="PASS" start="2026-08-04T07:20:59.820870" elapsed="0.000183"/>
 </kw>
 <doc>Logs out from the Orders page and returns to the login page.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.294238" elapsed="0.000354"/>
+<status status="PASS" start="2026-08-04T07:20:59.820737" elapsed="0.000346"/>
 </kw>
 <doc>Happy-path: log in, create an order, verify confirmation.</doc>
 <tag>orders</tag>
 <tag>smoke</tag>
-<status status="PASS" start="2026-08-04T06:59:28.268144" elapsed="0.026564"/>
+<status status="PASS" start="2026-08-04T07:20:59.790315" elapsed="0.030873"/>
 </test>
 <test id="s1-s1-t2" name="Verify Orders Grid Content Via Ocr" line="19">
 <kw name="Reset Application" owner="DriverAgnosticApi" type="SETUP">
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.295180" elapsed="0.000073"/>
+<status status="PASS" start="2026-08-04T07:20:59.821660" elapsed="0.000124"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.295702" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.822241" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.295512" elapsed="0.000234"/>
+<status status="PASS" start="2026-08-04T07:20:59.822066" elapsed="0.000202"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.295962" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.822470" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.295805" elapsed="0.000182"/>
+<status status="PASS" start="2026-08-04T07:20:59.822323" elapsed="0.000170"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.296198" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.822756" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.296048" elapsed="0.000176"/>
+<status status="PASS" start="2026-08-04T07:20:59.822543" elapsed="0.000247"/>
 </kw>
 <arg>user1</arg>
 <arg>Pass@123</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.295369" elapsed="0.000886"/>
+<status status="PASS" start="2026-08-04T07:20:59.821917" elapsed="0.000904"/>
 </kw>
 <kw name="Create New Order" owner="order_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.296673" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.823245" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.cmbSku</arg>
 <arg>${sku}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.296497" elapsed="0.000202"/>
+<status status="PASS" start="2026-08-04T07:20:59.823091" elapsed="0.000179"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.296981" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.823519" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.txtQty</arg>
 <arg>${qty}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.296769" elapsed="0.000237"/>
+<status status="PASS" start="2026-08-04T07:20:59.823321" elapsed="0.000223"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.297205" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.823738" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnCreateOrder</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.297070" elapsed="0.000159"/>
+<status status="PASS" start="2026-08-04T07:20:59.823599" elapsed="0.000164"/>
 </kw>
 <arg>SKU-1001</arg>
 <arg>2</arg>
 <doc>Creates a new order for the given SKU and quantity.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.296363" elapsed="0.000895"/>
+<status status="PASS" start="2026-08-04T07:20:59.822949" elapsed="0.000851"/>
 </kw>
 <kw name="Get Data Grid Content Ocr" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.297909" level="INFO">Element found via WPFSpy:XPath</msg>
-<msg time="2026-08-04T06:59:28.297947" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/DataGrid[@AutomationId='gridOrders']"})
+<msg time="2026-08-04T07:20:59.824558" level="INFO">Element found via WPFSpy:XPath</msg>
+<msg time="2026-08-04T07:20:59.824591" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/DataGrid[@AutomationId='gridOrders']"})
 [WPFSpy IPC] -&gt; GetDataGridContentOcr({'name': 'OrdersGrid'})</msg>
-<msg time="2026-08-04T06:59:28.297999" level="INFO">${ocr_csv} = SKU,Qty
+<msg time="2026-08-04T07:20:59.824645" level="INFO">${ocr_csv} = SKU,Qty
 SKU-1001,2
 </msg>
 <var>${ocr_csv}</var>
 <arg>OrdersPage.OrdersWindow.gridOrders</arg>
 <doc>Captures a DataGrid element screenshot and returns
 its content as CSV text using OCR.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.297341" elapsed="0.000672"/>
+<status status="PASS" start="2026-08-04T07:20:59.823897" elapsed="0.000761"/>
 </kw>
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-04T06:59:28.298405" level="INFO">DataGrid OCR CSV content:SKU,Qty
+<msg time="2026-08-04T07:20:59.825004" level="INFO">DataGrid OCR CSV content:SKU,Qty
 SKU-1001,2
 </msg>
 <arg>DataGrid OCR CSV content:${ocr_csv}</arg>
 <arg>console=True</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.298119" elapsed="0.000349"/>
+<status status="PASS" start="2026-08-04T07:20:59.824784" elapsed="0.000274"/>
 </kw>
 <kw name="Should Contain" owner="BuiltIn">
 <arg>${ocr_csv}</arg>
 <arg>SKU-1001</arg>
 <doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.298584" elapsed="0.000264"/>
+<status status="PASS" start="2026-08-04T07:20:59.825159" elapsed="0.000183"/>
 </kw>
 <kw name="Logout From Orders" owner="order_module">
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.299259" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
-<msg time="2026-08-04T06:59:28.299420" level="INFO">Element found via WPFSpy:XPath</msg>
-<msg time="2026-08-04T06:59:28.299453" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnLogout']"})
+<msg time="2026-08-04T07:20:59.825710" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
+<msg time="2026-08-04T07:20:59.825928" level="INFO">Element found via WPFSpy:XPath</msg>
+<msg time="2026-08-04T07:20:59.825956" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/Grid[@AutomationId='OrdersGrid']/Button[@AutomationId='btnLogout']"})
 [WPFSpy IPC] -&gt; Invoke({'name': 'LogoutBtn'})</msg>
 <arg>OrdersPage.OrdersWindow.btnLogout</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.299126" elapsed="0.000348"/>
+<status status="PASS" start="2026-08-04T07:20:59.825586" elapsed="0.000393"/>
 </kw>
 <doc>Logs out from the Orders page and returns to the login page.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.298991" elapsed="0.000516"/>
+<status status="PASS" start="2026-08-04T07:20:59.825466" elapsed="0.000546"/>
 </kw>
 <doc>Extracts DataGrid content via OCR and verifies it contains expected data.</doc>
 <tag>ocr</tag>
 <tag>orders</tag>
 <tag>verification</tag>
-<status status="PASS" start="2026-08-04T06:59:28.294904" elapsed="0.004683"/>
+<status status="PASS" start="2026-08-04T07:20:59.821379" elapsed="0.004727"/>
 </test>
 <test id="s1-s1-t3" name="Reject Invalid Login" line="29">
 <kw name="Reset Application" owner="DriverAgnosticApi" type="SETUP">
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.300022" elapsed="0.000079"/>
+<status status="PASS" start="2026-08-04T07:20:59.826498" elapsed="0.000101"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.300559" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.827063" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.300382" elapsed="0.000203"/>
+<status status="PASS" start="2026-08-04T07:20:59.826887" elapsed="0.000203"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.300823" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.827290" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.300642" elapsed="0.000213"/>
+<status status="PASS" start="2026-08-04T07:20:59.827144" elapsed="0.000169"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.301047" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.827516" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.300911" elapsed="0.000160"/>
+<status status="PASS" start="2026-08-04T07:20:59.827380" elapsed="0.000159"/>
 </kw>
 <arg>user1</arg>
 <arg>WrongPassword</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.300236" elapsed="0.000865"/>
+<status status="PASS" start="2026-08-04T07:20:59.826741" elapsed="0.000827"/>
 </kw>
 <kw name="Verify Login Error Displayed" owner="order_verifications">
 <kw name="Verify Element Text" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.301568" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.827991" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.lblError</arg>
 <arg>${expected_message}</arg>
 <doc>Fails the test unless the element's text equals `expected`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.301351" elapsed="0.000247"/>
+<status status="PASS" start="2026-08-04T07:20:59.827837" elapsed="0.000178"/>
 </kw>
 <arg>Invalid username or password</arg>
 <doc>Verifies the login error label shows the expected message.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.301216" elapsed="0.000415"/>
+<status status="PASS" start="2026-08-04T07:20:59.827685" elapsed="0.000362"/>
 </kw>
 <doc>Negative path: wrong password shows the error label.</doc>
 <tag>login</tag>
 <tag>smoke</tag>
-<status status="PASS" start="2026-08-04T06:59:28.299788" elapsed="0.001954"/>
+<status status="PASS" start="2026-08-04T07:20:59.826279" elapsed="0.001857"/>
 </test>
 <test id="s1-s1-t4" name="Create Order Without Sku Shows Prompt" line="35">
 <kw name="Reset Application" owner="DriverAgnosticApi" type="SETUP">
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.302181" elapsed="0.000075"/>
+<status status="PASS" start="2026-08-04T07:20:59.828591" elapsed="0.000097"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.302686" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.829141" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.302519" elapsed="0.000193"/>
+<status status="PASS" start="2026-08-04T07:20:59.828975" elapsed="0.000192"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.302958" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.829369" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.302794" elapsed="0.000193"/>
+<status status="PASS" start="2026-08-04T07:20:59.829221" elapsed="0.000172"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.303197" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.829648" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.303047" elapsed="0.000175"/>
+<status status="PASS" start="2026-08-04T07:20:59.829446" elapsed="0.000228"/>
 </kw>
 <arg>user1</arg>
 <arg>Pass@123</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.302379" elapsed="0.000874"/>
+<status status="PASS" start="2026-08-04T07:20:59.828836" elapsed="0.000868"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.303494" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.829967" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.txtQty</arg>
 <arg>2</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.303348" elapsed="0.000170"/>
+<status status="PASS" start="2026-08-04T07:20:59.829815" elapsed="0.000176"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.303770" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.830216" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnCreateOrder</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.303607" elapsed="0.000191"/>
+<status status="PASS" start="2026-08-04T07:20:59.830084" elapsed="0.000183"/>
 </kw>
 <kw name="Verify Element Text" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.304076" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.830496" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.lblConfirmation</arg>
 <arg>Please select a SKU</arg>
 <doc>Fails the test unless the element's text equals `expected`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.303918" elapsed="0.000183"/>
+<status status="PASS" start="2026-08-04T07:20:59.830357" elapsed="0.000163"/>
 </kw>
 <kw name="Logout From Orders" owner="order_module">
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.304501" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.830912" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnLogout</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.304347" elapsed="0.000180"/>
+<status status="PASS" start="2026-08-04T07:20:59.830772" elapsed="0.000164"/>
 </kw>
 <doc>Logs out from the Orders page and returns to the login page.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.304218" elapsed="0.000339"/>
+<status status="PASS" start="2026-08-04T07:20:59.830637" elapsed="0.000328"/>
 </kw>
 <doc>Negative path: creating an order with no SKU selected
 shows a prompt instead of a confirmation.</doc>
 <tag>negative</tag>
 <tag>orders</tag>
-<status status="PASS" start="2026-08-04T06:59:28.301912" elapsed="0.002731"/>
+<status status="PASS" start="2026-08-04T07:20:59.828294" elapsed="0.002760"/>
 </test>
 <doc>Layer 1 — Test Scripts: Order creation &amp; login flows.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.256833" elapsed="0.048119"/>
+<status status="PASS" start="2026-08-04T07:20:59.775229" elapsed="0.056112"/>
 </suite>
 <suite id="s1-s2" name="Self Healing Locators Demo" source="/workspace/project/WPFTestAuto/tests/self_healing_locators_demo.robot">
 <test id="s1-s2-t1" name="Toggle Priority Checkbox With WPFSpy" line="16">
@@ -351,74 +351,74 @@ shows a prompt instead of a confirmation.</doc>
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.307494" elapsed="0.000075"/>
+<status status="PASS" start="2026-08-04T07:20:59.833799" elapsed="0.000114"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.308063" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.834387" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.307869" elapsed="0.000228"/>
+<status status="PASS" start="2026-08-04T07:20:59.834208" elapsed="0.000207"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.308408" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.834640" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.308155" elapsed="0.000282"/>
+<status status="PASS" start="2026-08-04T07:20:59.834470" elapsed="0.000194"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.308665" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.834963" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.308500" elapsed="0.000192"/>
+<status status="PASS" start="2026-08-04T07:20:59.834733" elapsed="0.000258"/>
 </kw>
 <arg>user1</arg>
 <arg>Pass@123</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.307704" elapsed="0.001038"/>
+<status status="PASS" start="2026-08-04T07:20:59.834056" elapsed="0.000967"/>
 </kw>
 <kw name="Toggle Order Priority" owner="order_module">
 <kw name="Toggle Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.309158" level="INFO">Element found via FlaUI:Name</msg>
+<msg time="2026-08-04T07:20:59.835407" level="INFO">Element found via FlaUI:Name</msg>
 <arg>OrdersPage.OrdersWindow.chkPriority</arg>
 <doc>Toggles a checkbox/toggle-style element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.309000" elapsed="0.000184"/>
+<status status="PASS" start="2026-08-04T07:20:59.835263" elapsed="0.000169"/>
 </kw>
 <doc>Toggles the (non-standard, custom-rendered) priority
 checkbox - demonstrates the self-healing WPFSpy XPath strategy.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.308878" elapsed="0.000336"/>
+<status status="PASS" start="2026-08-04T07:20:59.835145" elapsed="0.000317"/>
 </kw>
 <kw name="Get Last Strategy Used" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.309375" level="INFO">${strategy} = FlaUI:Name</msg>
+<msg time="2026-08-04T07:20:59.835619" level="INFO">${strategy} = FlaUI:Name</msg>
 <var>${strategy}</var>
 <doc>Returns the name of the driver strategy that last succeeded —
 useful in assertions/logging for the self-healing demo tests.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.309306" elapsed="0.000081"/>
+<status status="PASS" start="2026-08-04T07:20:59.835552" elapsed="0.000080"/>
 </kw>
 <kw name="Should Contain" owner="BuiltIn">
 <arg>${strategy}</arg>
 <arg>Name</arg>
 <doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.309477" elapsed="0.000197"/>
+<status status="PASS" start="2026-08-04T07:20:59.835733" elapsed="0.000206"/>
 </kw>
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-04T06:59:28.309981" level="INFO">Fallback confirmed: PriorityCheckbox toggled via FlaUI:Name</msg>
+<msg time="2026-08-04T07:20:59.836219" level="INFO">Fallback confirmed: PriorityCheckbox toggled via FlaUI:Name</msg>
 <arg>Fallback confirmed: PriorityCheckbox toggled via ${strategy}</arg>
 <arg>console=True</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.309791" elapsed="0.000240"/>
+<status status="PASS" start="2026-08-04T07:20:59.836039" elapsed="0.000230"/>
 </kw>
 <kw name="Logout From Orders" owner="order_module">
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.310432" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.836657" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnLogout</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.310278" elapsed="0.000180"/>
+<status status="PASS" start="2026-08-04T07:20:59.836504" elapsed="0.000179"/>
 </kw>
 <doc>Logs out from the Orders page and returns to the login page.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.310154" elapsed="0.000335"/>
+<status status="PASS" start="2026-08-04T07:20:59.836387" elapsed="0.000327"/>
 </kw>
 <doc>Proves the framework can interact with non-standard controls
 like PriorityToggle that are not exposed via UI Automation (no AutomationId).
@@ -426,193 +426,193 @@ Strategy format is "Driver:SearchBy" (e.g., "FlaUI:Name" or "WPFSpy:Name").
 The framework finds the element using Name-based matching when AutomationId is absent.</doc>
 <tag>reliability</tag>
 <tag>self-healing</tag>
-<status status="PASS" start="2026-08-04T06:59:28.307019" elapsed="0.003560"/>
+<status status="PASS" start="2026-08-04T07:20:59.833317" elapsed="0.003507"/>
 </test>
 <test id="s1-s2-t2" name="Verify Orders Grid Content Via Ocr With WPFSpy" line="31">
 <kw name="Reset Application" owner="DriverAgnosticApi" type="SETUP">
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.311004" elapsed="0.000075"/>
+<status status="PASS" start="2026-08-04T07:20:59.837194" elapsed="0.000099"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.311508" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.837734" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.311339" elapsed="0.000196"/>
+<status status="PASS" start="2026-08-04T07:20:59.837542" elapsed="0.000219"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.311752" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.837981" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.311587" elapsed="0.000202"/>
+<status status="PASS" start="2026-08-04T07:20:59.837821" elapsed="0.000188"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.312297" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.838287" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.311843" elapsed="0.000485"/>
+<status status="PASS" start="2026-08-04T07:20:59.838060" elapsed="0.000258"/>
 </kw>
 <arg>user1</arg>
 <arg>Pass@123</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.311205" elapsed="0.001156"/>
+<status status="PASS" start="2026-08-04T07:20:59.837402" elapsed="0.000948"/>
 </kw>
 <kw name="Create New Order" owner="order_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.312817" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.838817" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.cmbSku</arg>
 <arg>${sku}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.312632" elapsed="0.000212"/>
+<status status="PASS" start="2026-08-04T07:20:59.838596" elapsed="0.000247"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.313054" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.839080" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.txtQty</arg>
 <arg>${qty}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.312899" elapsed="0.000184"/>
+<status status="PASS" start="2026-08-04T07:20:59.838898" elapsed="0.000206"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.313302" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.839303" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnCreateOrder</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.313170" elapsed="0.000155"/>
+<status status="PASS" start="2026-08-04T07:20:59.839155" elapsed="0.000172"/>
 </kw>
 <arg>SKU-2002</arg>
 <arg>3</arg>
 <doc>Creates a new order for the given SKU and quantity.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.312490" elapsed="0.000864"/>
+<status status="PASS" start="2026-08-04T07:20:59.838460" elapsed="0.000896"/>
 </kw>
 <kw name="Get Data Grid Content Ocr" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.313803" level="INFO">Element found via WPFSpy:XPath</msg>
-<msg time="2026-08-04T06:59:28.313829" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/DataGrid[@AutomationId='gridOrders']"})
+<msg time="2026-08-04T07:20:59.839827" level="INFO">Element found via WPFSpy:XPath</msg>
+<msg time="2026-08-04T07:20:59.839853" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/DataGrid[@AutomationId='gridOrders']"})
 [WPFSpy IPC] -&gt; GetDataGridContentOcr({'name': 'OrdersGrid'})</msg>
-<msg time="2026-08-04T06:59:28.313871" level="INFO">${ocr_csv} = SKU,Qty
+<msg time="2026-08-04T07:20:59.839896" level="INFO">${ocr_csv} = SKU,Qty
 SKU-2002,3
 </msg>
 <var>${ocr_csv}</var>
 <arg>OrdersPage.OrdersWindow.gridOrders</arg>
 <doc>Captures a DataGrid element screenshot and returns
 its content as CSV text using OCR.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.313449" elapsed="0.000433"/>
+<status status="PASS" start="2026-08-04T07:20:59.839435" elapsed="0.000473"/>
 </kw>
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-04T06:59:28.314171" level="INFO">DataGrid OCR CSV content:SKU,Qty
+<msg time="2026-08-04T07:20:59.840182" level="INFO">DataGrid OCR CSV content:SKU,Qty
 SKU-2002,3
 </msg>
 <arg>DataGrid OCR CSV content:${ocr_csv}</arg>
 <arg>console=True</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.313981" elapsed="0.000239"/>
+<status status="PASS" start="2026-08-04T07:20:59.839991" elapsed="0.000232"/>
 </kw>
 <kw name="Should Contain" owner="BuiltIn">
 <arg>${ocr_csv}</arg>
 <arg>SKU-2002</arg>
 <doc>Fails if ``container`` does not contain ``item`` one or more times.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.314319" elapsed="0.000169"/>
+<status status="PASS" start="2026-08-04T07:20:59.840297" elapsed="0.000169"/>
 </kw>
 <kw name="Logout From Orders" owner="order_module">
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.314873" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
-<msg time="2026-08-04T06:59:28.315059" level="INFO">Element found via WPFSpy:XPath</msg>
-<msg time="2026-08-04T06:59:28.315084" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnLogout']"})
+<msg time="2026-08-04T07:20:59.841156" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
+<msg time="2026-08-04T07:20:59.841309" level="INFO">Element found via WPFSpy:XPath</msg>
+<msg time="2026-08-04T07:20:59.841334" level="INFO">[WPFSpy IPC] -&gt; FindByXPath({'xpath': "/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='MainTabs']/TabItem[@Name='History']/Grid[@AutomationId='OrdersGrid']/Button[@AutomationId='btnLogout']"})
 [WPFSpy IPC] -&gt; Invoke({'name': 'LogoutBtn'})</msg>
 <arg>OrdersPage.OrdersWindow.btnLogout</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.314746" elapsed="0.000359"/>
+<status status="PASS" start="2026-08-04T07:20:59.841030" elapsed="0.000324"/>
 </kw>
 <doc>Logs out from the Orders page and returns to the login page.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.314606" elapsed="0.000531"/>
+<status status="PASS" start="2026-08-04T07:20:59.840567" elapsed="0.000820"/>
 </kw>
 <doc>Proves OCR-based DataGrid extraction works.</doc>
 <tag>ocr</tag>
 <tag>reliability</tag>
-<status status="PASS" start="2026-08-04T06:59:28.310760" elapsed="0.004465"/>
+<status status="PASS" start="2026-08-04T07:20:59.836972" elapsed="0.004490"/>
 </test>
 <test id="s1-s2-t3" name="Verify Multi-Strategy Fallback" line="41">
 <kw name="Reset Application" owner="DriverAgnosticApi" type="SETUP">
 <doc>Test-isolation keyword — restarts the application at the
 Login page. In mock mode, resets the in-memory mock app.
 In real mode, restarts the actual SampleWpfApp process.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.315746" elapsed="0.000074"/>
+<status status="PASS" start="2026-08-04T07:20:59.841959" elapsed="0.000099"/>
 </kw>
 <kw name="Login To Application" owner="login_module">
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.316265" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.842472" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtUsername</arg>
 <arg>${username}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.316089" elapsed="0.000203"/>
+<status status="PASS" start="2026-08-04T07:20:59.842307" elapsed="0.000191"/>
 </kw>
 <kw name="Set Element Value" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.316494" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.842695" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.txtPassword</arg>
 <arg>${password}</arg>
 <doc>Sets the text/value of the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.316345" elapsed="0.000173"/>
+<status status="PASS" start="2026-08-04T07:20:59.842551" elapsed="0.000182"/>
 </kw>
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.316705" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.842982" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>LoginPage.MainWindow.btnSubmit</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.316568" elapsed="0.000178"/>
+<status status="PASS" start="2026-08-04T07:20:59.842788" elapsed="0.000219"/>
 </kw>
 <arg>user1</arg>
 <arg>Pass@123</arg>
 <doc>Logs into the application with the given credentials.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.315952" elapsed="0.000830"/>
+<status status="PASS" start="2026-08-04T07:20:59.842172" elapsed="0.000863"/>
 </kw>
 <kw name="Toggle Order Priority" owner="order_module">
 <kw name="Toggle Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.317148" level="INFO">Element found via FlaUI:Name</msg>
+<msg time="2026-08-04T07:20:59.843370" level="INFO">Element found via FlaUI:Name</msg>
 <arg>OrdersPage.OrdersWindow.chkPriority</arg>
 <doc>Toggles a checkbox/toggle-style element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.317008" elapsed="0.000165"/>
+<status status="PASS" start="2026-08-04T07:20:59.843243" elapsed="0.000150"/>
 </kw>
 <doc>Toggles the (non-standard, custom-rendered) priority
 checkbox - demonstrates the self-healing WPFSpy XPath strategy.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.316896" elapsed="0.000306"/>
+<status status="PASS" start="2026-08-04T07:20:59.843135" elapsed="0.000286"/>
 </kw>
 <kw name="Get Last Strategy Used" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.317356" level="INFO">${strategy} = FlaUI:Name</msg>
+<msg time="2026-08-04T07:20:59.843551" level="INFO">${strategy} = FlaUI:Name</msg>
 <var>${strategy}</var>
 <doc>Returns the name of the driver strategy that last succeeded —
 useful in assertions/logging for the self-healing demo tests.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.317290" elapsed="0.000078"/>
+<status status="PASS" start="2026-08-04T07:20:59.843490" elapsed="0.000072"/>
 </kw>
 <kw name="Log" owner="BuiltIn">
-<msg time="2026-08-04T06:59:28.317641" level="INFO">Strategy used: FlaUI:Name</msg>
+<msg time="2026-08-04T07:20:59.843827" level="INFO">Strategy used: FlaUI:Name</msg>
 <arg>Strategy used: ${strategy}</arg>
 <arg>console=True</arg>
 <doc>Logs the given message with the given level.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.317457" elapsed="0.000230"/>
+<status status="PASS" start="2026-08-04T07:20:59.843629" elapsed="0.000235"/>
 </kw>
 <kw name="Should Match Regexp" owner="BuiltIn">
 <arg>${strategy}</arg>
 <arg>(Name|Image|XPath)</arg>
 <doc>Fails if ``string`` does not match ``pattern`` as a regular expression.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.317799" elapsed="0.000248"/>
+<status status="PASS" start="2026-08-04T07:20:59.843936" elapsed="0.000226"/>
 </kw>
 <kw name="Logout From Orders" owner="order_module">
 <kw name="Click Element" owner="DriverAgnosticApi">
-<msg time="2026-08-04T06:59:28.318442" level="INFO">Element found via FlaUI:AutomationId</msg>
+<msg time="2026-08-04T07:20:59.844518" level="INFO">Element found via FlaUI:AutomationId</msg>
 <arg>OrdersPage.OrdersWindow.btnLogout</arg>
 <doc>Invokes (clicks) the element identified by `alias`.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.318284" elapsed="0.000186"/>
+<status status="PASS" start="2026-08-04T07:20:59.844373" elapsed="0.000169"/>
 </kw>
 <doc>Logs out from the Orders page and returns to the login page.</doc>
-<status status="PASS" start="2026-08-04T06:59:28.318171" elapsed="0.000329"/>
+<status status="PASS" start="2026-08-04T07:20:59.844263" elapsed="0.000308"/>
 </kw>
 <doc>Verifies the framework tries all strategies in priority order.
 For chkPriority (no AutomationId), it should fall back from:
 FlaUI:AutomationId -&gt; FlaUI:Name -&gt; WPFSpy:Name -&gt; Sikuli:Image</doc>
 <tag>reliability</tag>
 <tag>self-healing</tag>
-<status status="PASS" start="2026-08-04T06:59:28.315398" elapsed="0.003190"/>
+<status status="PASS" start="2026-08-04T07:20:59.841615" elapsed="0.003028"/>
 </test>
 <doc>Layer 1 — Demonstrates multi-driver fallback.
 PriorityCheckbox is a non-standard control that requires
@@ -622,9 +622,9 @@ The framework now supports multiple strategies per driver:
 - FlaUI: AutomationId -&gt; Name -&gt; Type+Index
 - WPFSpy: XPath (AutomationId) -&gt; XPath (Name) -&gt; Type+Index
 - Sikuli: Image-based fallback</doc>
-<status status="PASS" start="2026-08-04T06:59:28.305327" elapsed="0.013486"/>
+<status status="PASS" start="2026-08-04T07:20:59.831744" elapsed="0.013086"/>
 </suite>
-<status status="PASS" start="2026-08-04T06:59:28.235622" elapsed="0.083680"/>
+<status status="PASS" start="2026-08-04T07:20:59.753616" elapsed="0.091689"/>
 </suite>
 <statistics>
 <total>
@@ -647,7 +647,7 @@ The framework now supports multiple strategies per driver:
 </suite>
 </statistics>
 <errors>
-<msg time="2026-08-04T06:59:28.299259" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
-<msg time="2026-08-04T06:59:28.314873" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
+<msg time="2026-08-04T07:20:59.825710" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
+<msg time="2026-08-04T07:20:59.841156" level="WARN">Circuit breaker open for FlaUI, skipping</msg>
 </errors>
 </robot>
