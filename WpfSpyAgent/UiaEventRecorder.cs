@@ -288,8 +288,8 @@ namespace WpfSpyAgent
 
             try
             {
-                // Use TreeWalker to get the focused element
-                var element = TreeWalker.RawViewWalker.GetFocusedElement();
+                // Use AutomationElement.FocusedElement to get the focused element
+                var element = AutomationElement.FocusedElement;
                 if (element == null) return;
 
                 var props = GetElementPropertiesFromElement(element);
@@ -353,11 +353,12 @@ namespace WpfSpyAgent
                 if (string.IsNullOrEmpty(automationId) && string.IsNullOrEmpty(name))
                     return null;
 
-                // Build XPath
+                // Build XPath (only for FrameworkElement)
                 string? xpath = null;
                 try
                 {
-                    if (element is FrameworkElement fe)
+                    var fe = element as FrameworkElement;
+                    if (fe != null)
                     {
                         xpath = VisualTreeInspector.BuildXPath(fe);
                     }
