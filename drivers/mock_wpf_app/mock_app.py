@@ -147,38 +147,45 @@ class MockWpfApp:
         return "/" + "/".join(path_parts)
 
     def _build_control_paths(self, control: Control) -> Control:
-        """Build comprehensive paths for all drivers including hierarchical paths."""
+        """Build comprehensive paths for all drivers.
         
-        # Build hierarchical path (without control type)
-        hierarchical_path = self._build_hierarchical_path(control)
+        Paths are constructed by walking the parent chain to build full XPath.
+        Each element can specify:
+        - parentAlias: Reference to another element alias (e.g., "LoginPage.MainWindow")
+        - relativeXPath: XPath relative to parent (e.g., "TextBox[@AutomationId='txtUsername']")
         
-        # Get control type for path (handle special cases like DataGrid)
+        If parentAlias is not set, relativeXPath is used as-is (absolute or relative to Window).
+        """
+        
         ctrl_type = control.control_type
         
+        # Build full path by walking parent chain
+        full_path = self._build_full_path_from_chain(control)
+        
         # FlaUI paths (UIAutomation XPath format)
-        # Path 1: Hierarchical AutomationId-based (most reliable)
+        # Path 1: Full path with AutomationId
         if control.automation_id:
             control.flaui_paths.append(
-                f"{hierarchical_path}/{ctrl_type}[@AutomationId='{control.automation_id}']"
+                f"{full_path}/{ctrl_type}[@AutomationId='{control.automation_id}']"
             )
-        # Path 2: Hierarchical Name-based
+        # Path 2: Full path with Name
         control.flaui_paths.append(
-            f"{hierarchical_path}/{ctrl_type}[@Name='{control.name}']"
+            f"{full_path}/{ctrl_type}[@Name='{control.name}']"
         )
         # Path 3: Type + Index (sibling position)
         if control.sibling_count > 1:
             control.flaui_paths.append(
-                f"{hierarchical_path}/{ctrl_type}[{control.sibling_index + 1}]"
+                f"{full_path}/{ctrl_type}[{control.sibling_index + 1}]"
             )
         
         # WPFSpy paths (similar XPath format)
-        # Path 1: Hierarchical AutomationId-based
+        # Path 1: Full path with AutomationId
         if control.automation_id:
             control.wpfspy_paths.append(
-                f"{hierarchical_path}/{ctrl_type}[@AutomationId='{control.automation_id}']"
+                f"{full_path}/{ctrl_type}[@AutomationId='{control.automation_id}']"
             )
-        # Path 2: Hierarchical Name-based (use @Name for window)
-        wpfspy_path = hierarchical_path.replace("[@AutomationId=", "[@Name=")
+        # Path 2: Full path with Name (use @Name for window)
+        wpfspy_path = full_path.replace("[@AutomationId=", "[@Name=")
         wpfspy_path = wpfspy_path.replace("Window[@Name='", "Window[@Name='")
         control.wpfspy_paths.append(
             f"{wpfspy_path}/{ctrl_type}[@Name='{control.name}']"
@@ -186,10 +193,14 @@ class MockWpfApp:
         # Path 3: Type + Index
         if control.sibling_count > 1:
             control.wpfspy_paths.append(
-                f"{hierarchical_path}/{ctrl_type}[{control.sibling_index + 1}]"
+                f"{full_path}/{ctrl_type}[{control.sibling_index + 1}]"
             )
         
         return control
+    
+    def _build_full_path_from_chain(self, control: Control) -> str:
+        """Build full XPath by walking container chain."""
+        return self._build_hierarchical_path(control)
 
     def _set_container_chain(self, control: Control, container_chain: List[Dict]) -> Control:
         """Set the container chain for a control and rebuild paths."""

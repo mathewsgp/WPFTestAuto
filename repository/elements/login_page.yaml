@@ -1,24 +1,43 @@
 # Element Repository — Login Page
 #
-# Multi-Strategy Format with Hierarchical Support
-# ================================================
+# Hierarchical Element Format with parentAlias
+# ============================================
 #
-# IMPORTANT: Only include CONTAINER elements that have AutomationId or Name.
-# Layout containers (Grid, StackPanel, Panel) WITHOUT identifiers are SKIPPED
-# and should NOT be included in containerPath.
+# Each element specifies:
+# - parentAlias: Parent element alias (or null for root/Window)
+# - relativeXPath: XPath relative to parent element
+# - strategies: Per-driver strategies with priority
 #
-# Example - DO include (has AutomationId):
-#   containerPath:
-#     - {type: "GroupBox", automationId: "CustomerGroup"}
+# Structure:
+# LoginPage.MainWindow (parentAlias: null, window element)
+# └── LoginPage.LoginForm (optional GroupBox if present)
+#     ├── LoginPage.txtUsername
+#     ├── LoginPage.txtPassword
+#     ├── LoginPage.btnSubmit
+#     └── LoginPage.lblError
 #
-# Example - DON'T include (no identifier):
-#   containerPath: []  # Grid/StackPanel without name are skipped
+# NOTE: Controls directly under Window (no GroupBox) have relativeXPath from Window.
 #
 elements:
+  # Root window - parent is null (this is the top-level element)
+  LoginPage.MainWindow:
+    displayName: "Main Window"
+    controlType: "Window"
+    windowAutomationId: "MainWindow"
+    parentAlias: null  # This is the root
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "MainWindow"
+          priority: 1
+
+  # Username TextBox - parent is MainWindow (direct child of Window)
   LoginPage.MainWindow.txtUsername:
     displayName: "Username Text Box"
     controlType: "TextBox"
-    parentWindow: "MainWindow"
+    automationId: "txtUsername"
+    parentAlias: "LoginPage.MainWindow"
+    relativeXPath: "TextBox[@AutomationId='txtUsername']"
     defaultTimeout: 10
     tags: ["login", "critical"]
     strategies:
@@ -26,34 +45,22 @@ elements:
         - searchBy: "AutomationId"
           value: "txtUsername"
           priority: 1
-        - searchBy: "Name"
-          value: "UsernameInput"
-          priority: 2
-        - searchBy: "TypeAndIndex"
-          value: "TextBox[1]"
-          priority: 3
-        - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtUsername']"
-          priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtUsername']"
+          value: "TextBox[@AutomationId='txtUsername']"
           priority: 1
-        - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/TextBox[@Name='UsernameInput']"
-          priority: 2
-        - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/TextBox[1]"
-          priority: 3
       Sikuli:
         - searchBy: "Image"
           value: "username_box.png"
-          priority: 4
+          priority: 2
 
+  # Password TextBox - parent is MainWindow
   LoginPage.MainWindow.txtPassword:
     displayName: "Password Text Box"
     controlType: "TextBox"
-    parentWindow: "MainWindow"
+    automationId: "txtPassword"
+    parentAlias: "LoginPage.MainWindow"
+    relativeXPath: "TextBox[@AutomationId='txtPassword']"
     defaultTimeout: 10
     tags: ["login", "critical"]
     strategies:
@@ -61,34 +68,22 @@ elements:
         - searchBy: "AutomationId"
           value: "txtPassword"
           priority: 1
-        - searchBy: "Name"
-          value: "PasswordInput"
-          priority: 2
-        - searchBy: "TypeAndIndex"
-          value: "TextBox[2]"
-          priority: 3
-        - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtPassword']"
-          priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtPassword']"
+          value: "TextBox[@AutomationId='txtPassword']"
           priority: 1
-        - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/TextBox[@Name='PasswordInput']"
-          priority: 2
-        - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/TextBox[2]"
-          priority: 3
       Sikuli:
         - searchBy: "Image"
           value: "password_box.png"
-          priority: 4
+          priority: 2
 
+  # Submit Button - parent is MainWindow
   LoginPage.MainWindow.btnSubmit:
     displayName: "Submit Button"
     controlType: "Button"
-    parentWindow: "MainWindow"
+    automationId: "btnSubmit"
+    parentAlias: "LoginPage.MainWindow"
+    relativeXPath: "Button[@AutomationId='btnSubmit']"
     defaultTimeout: 10
     tags: ["login", "critical"]
     strategies:
@@ -96,34 +91,22 @@ elements:
         - searchBy: "AutomationId"
           value: "btnSubmit"
           priority: 1
-        - searchBy: "Name"
-          value: "SubmitBtn"
-          priority: 2
-        - searchBy: "TypeAndIndex"
-          value: "Button[1]"
-          priority: 3
-        - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/Button[@AutomationId='btnSubmit']"
-          priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/Button[@AutomationId='btnSubmit']"
+          value: "Button[@AutomationId='btnSubmit']"
           priority: 1
-        - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/Button[@Name='SubmitBtn']"
-          priority: 2
-        - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/Button[1]"
-          priority: 3
       Sikuli:
         - searchBy: "Image"
           value: "login_button.png"
-          priority: 4
+          priority: 2
 
+  # Error Label - parent is MainWindow
   LoginPage.MainWindow.lblError:
     displayName: "Error Label"
     controlType: "Label"
-    parentWindow: "MainWindow"
+    automationId: "lblError"
+    parentAlias: "LoginPage.MainWindow"
+    relativeXPath: "Label[@AutomationId='lblError']"
     defaultTimeout: 5
     tags: ["login", "verification"]
     strategies:
@@ -131,26 +114,11 @@ elements:
         - searchBy: "AutomationId"
           value: "lblError"
           priority: 1
-        - searchBy: "Name"
-          value: "ErrorLabel"
-          priority: 2
-        - searchBy: "TypeAndIndex"
-          value: "Label[1]"
-          priority: 3
-        - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblError']"
-          priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblError']"
+          value: "Label[@AutomationId='lblError']"
           priority: 1
-        - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/Label[@Name='ErrorLabel']"
-          priority: 2
-        - searchBy: "XPath"
-          value: "/Window[@Name='MainWindow']/Label[1]"
-          priority: 3
       Sikuli:
         - searchBy: "Image"
           value: "error_label.png"
-          priority: 4
+          priority: 2

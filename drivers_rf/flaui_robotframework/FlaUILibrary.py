@@ -99,6 +99,20 @@ class FlaUIDriver:
     def toggle(self, element, state: bool = None):
         APP_INSTANCE.invoke(element)  # mock: toggle behaves as invoke
 
+    def get_data_grid_content_ocr(self, element) -> str:
+        """OCR-based DataGrid content extraction.
+        
+        Returns grid text in CSV format: SKU,Qty
+        """
+        # Get grid element text
+        grid_text = APP_INSTANCE.get_text(element)
+        
+        # Parse grid text (format: "SKU,Qty\nSKU-1001,2\n...")
+        if not grid_text or grid_text.strip() == "SKU,Qty":
+            return "SKU,Qty"
+        
+        return grid_text
+
 
 class FlaUILibrary:
     """Robot Framework library exposing FlaUI keywords directly (rarely

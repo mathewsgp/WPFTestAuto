@@ -217,12 +217,10 @@ class DriverAgnosticApi:
         and for each driver, tries all strategies in priority order.
         Automatically falls back if one strategy or driver fails.
         
-        Strategy Priority per Driver:
-        1. AutomationId (most reliable)
-        2. Name (second choice)
-        3. Type + Index (sibling fallback)
-        4. XPath (full path)
-        5. Image (Sikuli fallback)
+        Path Resolution:
+        - If element has parentAlias, walks parent chain to build full XPath
+        - Relative XPath is appended to parent's full XPath
+        - Elements can define: parentAlias, relativeXPath, and strategies
         
         Args:
             alias: Element alias from repository.
@@ -292,19 +290,22 @@ class DriverAgnosticApi:
                 priority = strategy.get("priority", 99)
                 strategy_desc = f"{driver_name}:{search_by}"
                 
+                # Resolve full XPath from parent chain if needed
+                resolved_strategy = self._resolve_strategy_with_parent(strategy, alias)
+                
                 start_time = time.time()
                 logger.debug(
                     f"Trying {strategy_desc}",
                     alias=alias,
                     driver=driver_name,
                     searchBy=search_by,
-                    value=strategy_value,
+                    value=resolved_strategy.get("value", ""),
                     priority=priority
                 )
                 
                 try:
                     # Find element using this driver's strategy
-                    element = driver.find_element(strategy)
+                    element = driver.find_element(resolved_strategy)
                     
                     # Execute the action
                     result = getattr(driver, action_name)(element, *args)
@@ -369,6 +370,86 @@ class DriverAgnosticApi:
             attempts=attempts,
             details=error_details
         )
+    
+    def _resolve_strategy_with_parent(self, strategy: dict, alias: str) -> dict:
+        """Resolve strategy by building full XPath from parent chain.
+        
+        If strategy value is a relative XPath, walks up parent chain to build
+        the full XPath from Window.
+        
+        Args:
+            strategy: Strategy dict with searchBy and value
+            alias: Element alias for parent chain lookup
+        
+        Returns:
+            Strategy dict with resolved full XPath
+        """
+        resolved = strategy.copy()
+        value = strategy.get("value", "")
+        
+        # Only resolve XPath values
+        if strategy.get("searchBy") != "XPath":
+            return resolved
+        
+        # If value already starts with /, it's a full path
+        if value.startswith("/"):
+            return resolved
+        
+        # Build full path by walking parent chain
+        full_path = self._build_full_path_from_alias(alias)
+        
+        # Append relative XPath
+        resolved["value"] = f"{full_path}/{value}"
+        
+        return resolved
+    
+    def _build_full_path_from_alias(self, alias: str) -> str:
+        """Build full XPath by walking parent chain.
+        
+        Walks up the parent chain (parentAlias references) to build
+        the complete XPath from Window to the parent element.
+        
+        Args:
+            alias: Element alias to resolve
+        
+        Returns:
+            Full XPath from Window (e.g., "/Window[@AutomationId='Main']/TabControl/...")
+        """
+        path_parts = []
+        current_alias = alias
+        visited = set()  # Prevent infinite loops
+        
+        while current_alias:
+            if current_alias in visited:
+                logger.warning(f"Circular parent reference detected for alias: {current_alias}")
+                break
+            visited.add(current_alias)
+            
+            element = repo.get_element(current_alias)
+            
+            # Get the parent alias
+            parent_alias = repo.get_parent_alias(current_alias)
+            
+            # Build XPath prefix for this element
+            control_type = element.get("controlType", "")
+            window_id = element.get("windowAutomationId", "MainWindow")
+            
+            if control_type == "Window":
+                # This is the root Window
+                path_parts.insert(0, f"Window[@AutomationId='{window_id}']")
+                break
+            elif "automationId" in element:
+                path_parts.insert(0, f"{control_type}[@AutomationId='{element['automationId']}']")
+            elif "name" in element:
+                path_parts.insert(0, f"{control_type}[@Name='{element['name']}']")
+            
+            # Move to parent
+            if parent_alias is None:
+                # Reached root (Window)
+                break
+            current_alias = parent_alias
+        
+        return "/" + "/".join(path_parts)
 
     # ------------------------------------------------------------------
     # Public keywords
