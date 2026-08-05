@@ -202,7 +202,15 @@ namespace WpfSpyAgent
                 }
                 case "GetMainWindowTitle":
                 {
-                    string title = Application.Current.MainWindow?.Title ?? "(no main window)";
+                    string title = "(no main window)";
+                    foreach (Window w in Application.Current.Windows)
+                    {
+                        if (w.IsVisible && !string.IsNullOrEmpty(w.Title))
+                        {
+                            title = w.Title;
+                            break;
+                        }
+                    }
                     return SpyResponse.Ok(title);
                 }
                 case "GetBounds":
