@@ -873,9 +873,14 @@ namespace WpfSpyAgent
                 Log($"BuildXPath {current?.GetType().Name} ");
                 if (current is Window window)
                 {
+                    string? windowAutoId = AutomationProperties.GetAutomationId(window);
                     if (!string.IsNullOrEmpty(window.Name))
                     {
                         segments.Insert(0, $"Window[@Name='{window.Name}']");
+                    }
+                    else if (!string.IsNullOrEmpty(windowAutoId))
+                    {
+                        segments.Insert(0, $"Window[@AutomationId='{windowAutoId}']");
                     }
                     else
                     {
