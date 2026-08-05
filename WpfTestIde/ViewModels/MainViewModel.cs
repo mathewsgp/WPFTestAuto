@@ -115,6 +115,7 @@ namespace WpfTestIde.ViewModels
         public ICommand GetDataGridContentOcrCommand { get; }
         public ICommand OpenCheckpointWizardCommand { get; }
         public ICommand OpenSpyToolCommand { get; }
+        public ICommand OpenVisualTestBuilderCommand { get; }
 
         public MainViewModel()
         {
@@ -139,6 +140,7 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
             GetDataGridContentOcrCommand = new RelayCommand(async _ => await GetDataGridContentOcr(), _ => IsAttached);
             OpenCheckpointWizardCommand = new RelayCommand(_ => OpenCheckpointWizard());
             OpenSpyToolCommand = new RelayCommand(_ => OpenSpyTool());
+            OpenVisualTestBuilderCommand = new RelayCommand(_ => OpenVisualTestBuilder());
 
             Steps.CollectionChanged += (_, __) => RegenerateScript();
             Elements.CollectionChanged += (_, __) => RegenerateRepository();
@@ -380,6 +382,67 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
                     StatusText = $"Added element: {alias}";
                 }
             }
+        }
+
+        private void OpenVisualTestBuilder()
+        {
+            // Create visual test builder with current elements and steps
+            var dialog = new Views.TestFlowDialog(Elements);
+            
+            // Load existing steps if any
+            foreach (var step in Steps)
+            {
+                var flowStep = new ViewModels.FlowStep
+                {
+                    StepNumber = dialog.Steps.Steps.Count + 1,
+                    ActionType = MapActionType(step.Action),
+                    ElementAlias = step.Alias ?? "",
+                    Value = step.Value ?? "",
+                    CheckpointType = step.CheckpointType ?? "",
+                    ExpectedValue = step.ExpectedValue ?? ""
+                };
+                dialog.Steps.Steps.Add(flowStep);
+            }
+            
+            if (dialog.ShowDialog() == true)
+            {
+                // Import steps back from visual builder
+                Steps.Clear();
+                foreach (var flowStep in dialog.Steps.Steps)
+                {
+                    var recordedStep = new RecordedStep
+                    {
+                        Action = flowStep.ActionType,
+                        Alias = flowStep.ElementAlias,
+                        Value = flowStep.Value,
+                        CheckpointType = flowStep.CheckpointType,
+                        ExpectedValue = flowStep.ExpectedValue
+                    };
+                    Steps.Add(recordedStep);
+                }
+                StatusText = $"Imported {Steps.Count} steps from Visual Test Builder";
+            }
+        }
+
+        private string MapActionType(string? action)
+        {
+            return action switch
+            {
+                "Click" or "LeftClick" => "Click",
+                "DoubleClick" => "DoubleClick",
+                "RightClick" or "ContextClick" => "RightClick",
+                "Hover" or "MouseOver" => "Hover",
+                "SetText" or "Type" or "Input" => "SetText",
+                "GetText" or "Read" => "GetText",
+                "Select" or "SelectItem" => "Select",
+                "Check" or "CheckBox" => "Check",
+                "Uncheck" or "UncheckBox" => "Uncheck",
+                "Verify" or "Assert" => "Verify",
+                "Wait" or "Sleep" => "Wait",
+                "Screenshot" or "Capture" => "Screenshot",
+                "KeyPress" or "PressKey" => "KeyPress",
+                _ => "Click"
+            };
         }
 
         private void DeleteStep(RecordedStep? step)

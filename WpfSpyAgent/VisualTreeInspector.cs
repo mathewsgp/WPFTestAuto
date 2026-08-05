@@ -1109,6 +1109,9 @@ namespace WpfSpyAgent
             string? automationIdPredicate = null;
             string? namePredicate = null;
             int? indexPredicate = null;
+            bool isWildcardAutomationId = false;
+            bool isWildcardName = false;
+            string? regexPattern = null;
 
             foreach (var predicate in predicates)
             {
@@ -1116,28 +1119,52 @@ namespace WpfSpyAgent
                 {
                     int start = "@AutomationId='".Length;
                     int end = predicate.LastIndexOf('\'');
-                    if (end > start) automationIdPredicate = predicate.Substring(start, end - start);
+                    if (end > start) 
+                    {
+                        automationIdPredicate = predicate.Substring(start, end - start);
+                        // Check for wild-card pattern
+                        if (automationIdPredicate.Contains("*") || automationIdPredicate.Contains("?"))
+                        {
+                            isWildcardAutomationId = true;
+                        }
+                    }
                 }
                 else if (predicate.StartsWith("@Name='", StringComparison.Ordinal))
                 {
                     int start = "@Name='".Length;
                     int end = predicate.LastIndexOf('\'');
-                    if (end > start) namePredicate = predicate.Substring(start, end - start);
+                    if (end > start)
+                    {
+                        namePredicate = predicate.Substring(start, end - start);
+                        // Check for wild-card pattern
+                        if (namePredicate.Contains("*") || namePredicate.Contains("?"))
+                        {
+                            isWildcardName = true;
+                        }
+                    }
                 }
                 else if (int.TryParse(predicate, out int parsedIndex))
                 {
                     indexPredicate = parsedIndex;
+                }
+                else if (predicate.StartsWith("regex:", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Regex pattern matching: [regex:pattern]
+                    regexPattern = predicate.Substring(6);
                 }
             }
 
             var elementType = element.GetType();
             TypeProfile profile = GetProfile(elementType);
 
-            // DevExpressRow/DevExpressCell are synthetic family tokens (not
-            // real CLR type names) standing in for several DevExpress
-            // classes that all count as one logical row/cell concept.
+            // Wild-card type matching: * or ? matches any element
             bool typeMatches;
-            if (typeToken == "DevExpressRow")
+            if (typeToken == "*" || typeToken == "?")
+            {
+                // Wild-card matches any type
+                typeMatches = true;
+            }
+            else if (typeToken == "DevExpressRow")
             {
                 typeMatches = profile.Kind == SegmentKind.DevExpressRow;
             }
@@ -1161,7 +1188,32 @@ namespace WpfSpyAgent
 
             if (!typeMatches) return false;
 
-            if (automationIdPredicate != null)
+            if (isWildcardAutomationId && automationIdPredicate != null)
+            {
+                // Wild-card matching for AutomationId
+                if (!(element is FrameworkElement fe))
+                {
+                    return false;
+                }
+                string? actualId = AutomationProperties.GetAutomationId(fe);
+                if (!MatchesWildcard(actualId, automationIdPredicate))
+                {
+                    return false;
+                }
+            }
+            else if (isWildcardName && namePredicate != null)
+            {
+                // Wild-card matching for Name
+                if (!(element is FrameworkElement fe))
+                {
+                    return false;
+                }
+                if (!MatchesWildcard(fe.Name, namePredicate))
+                {
+                    return false;
+                }
+            }
+            else if (automationIdPredicate != null)
             {
                 if (!(element is FrameworkElement fe) ||
                     AutomationProperties.GetAutomationId(fe) != automationIdPredicate)
@@ -1172,6 +1224,15 @@ namespace WpfSpyAgent
             else if (namePredicate != null)
             {
                 if (!(element is FrameworkElement fe) || fe.Name != namePredicate)
+                {
+                    return false;
+                }
+            }
+
+            if (regexPattern != null)
+            {
+                // Regex pattern matching - match against all element properties
+                if (!MatchesRegex(element, regexPattern))
                 {
                     return false;
                 }
@@ -1192,6 +1253,103 @@ namespace WpfSpyAgent
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Matches a string against a wild-card pattern.
+        /// Supports: * (any characters), ? (single character)
+        /// </summary>
+        private static bool MatchesWildcard(string? value, string pattern)
+        {
+            if (value == null) return false;
+            if (pattern == "*" || pattern == "?") return true;
+
+            // Convert wild-card pattern to regex
+            var regexPattern = "^" + System.Text.RegularExpressions.Regex.Escape(pattern)
+                .Replace("\\*", ".*")
+                .Replace("\\?", ".") + "$";
+
+            return System.Text.RegularExpressions.Regex.IsMatch(value, regexPattern);
+        }
+
+        /// <summary>
+        /// Matches an element against a regex pattern.
+        /// The regex is matched against all element properties (Name, AutomationId, ClassName, Text).
+        /// </summary>
+        private static bool MatchesRegex(DependencyObject element, string pattern)
+        {
+            try
+            {
+                var regex = new System.Text.RegularExpressions.Regex(pattern, 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                // Check Name
+                if (element is FrameworkElement fe)
+                {
+                    if (!string.IsNullOrEmpty(fe.Name) && regex.IsMatch(fe.Name))
+                        return true;
+
+                    var automationId = AutomationProperties.GetAutomationId(fe);
+                    if (!string.IsNullOrEmpty(automationId) && regex.IsMatch(automationId))
+                        return true;
+
+                    // Check Text property for text controls
+                    if (fe is System.Windows.Controls.TextBlock tb && !string.IsNullOrEmpty(tb.Text))
+                        if (regex.IsMatch(tb.Text)) return true;
+                    if (fe is System.Windows.Controls.TextBox txt && !string.IsNullOrEmpty(txt.Text))
+                        if (regex.IsMatch(txt.Text)) return true;
+                }
+
+                // Check class name
+                if (regex.IsMatch(element.GetType().Name))
+                    return true;
+
+                return false;
+            }
+            catch (System.Text.RegularExpressions.RegexParseException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Generates a flexible XPath with wild-card alternatives.
+        /// Useful for creating resilient locators that can survive UI changes.
+        /// </summary>
+        public static string BuildFlexibleXPath(FrameworkElement element)
+        {
+            var sb = new System.Text.StringBuilder();
+            
+            // Start with exact XPath
+            string exactXPath = BuildXPath(element);
+            sb.AppendLine("Exact: " + exactXPath);
+            
+            // Get element properties
+            var automationId = AutomationProperties.GetAutomationId(element);
+            var name = element.Name;
+            
+            // Generate prefix wild-card version
+            if (!string.IsNullOrEmpty(automationId))
+            {
+                sb.AppendLine($"Prefix: //{element.GetType().Name}[@AutomationId='*{automationId}']");
+            }
+            
+            // Generate suffix wild-card version
+            if (!string.IsNullOrEmpty(automationId))
+            {
+                sb.AppendLine($"Suffix: //{element.GetType().Name}[@AutomationId='{automationId}*']");
+            }
+            
+            // Generate contains version
+            if (!string.IsNullOrEmpty(automationId))
+            {
+                sb.AppendLine($"Contains: //{element.GetType().Name}[contains(@AutomationId,'{automationId}')]");
+            }
+            
+            // Generate any-matching version
+            sb.AppendLine($"Any: //{element.GetType().Name}[@AutomationId='*']");
+            
+            return sb.ToString();
         }
 
         /// <summary>
