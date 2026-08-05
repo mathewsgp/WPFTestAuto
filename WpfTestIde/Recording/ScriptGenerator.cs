@@ -22,7 +22,7 @@ namespace WpfTestIde.Recording
             sb.AppendLine("...              refactoring repeated sequences into Layer 2 reusable modules");
             sb.AppendLine("...              before committing to the suite (see docs/RECORDER_GUIDE.md).");
             sb.AppendLine("Library          ../api/DriverAgnosticApi.py");
-            //sb.AppendLine("Test Setup       Reset Application");
+            sb.AppendLine("Test Setup       Reset Application");
             sb.AppendLine();
             sb.AppendLine("*** Test Cases ***");
             sb.AppendLine(testCaseName);
