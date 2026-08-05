@@ -13,8 +13,6 @@ Recorded Session Playback
     Set Element Value    LoginPage.MainWindow.txtPassword    Pass@123
     Click Element    LoginPage.MainWindow.btnSubmit
     Click Element    OrdersPage.OrdersWindow.cmbSku
-    Click Element    OrdersPage.OrdersWindow.cmbSku
-    Set Element Value    OrdersPage.OrdersWindow.txtQty    2
-    Click Element    OrdersPage.OrdersWindow.btnCreateOrder
+    Click Element    OrdersPage.OrdersWindow.txtQty
     Click Element    OrdersPage.OrdersWindow.btnCreateOrder
     Click Element    OrdersPage.OrdersWindow.btnLogout
