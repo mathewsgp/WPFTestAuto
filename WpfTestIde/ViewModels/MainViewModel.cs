@@ -543,17 +543,25 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
         // ------------------------------------------------------------
         // Run
         // ------------------------------------------------------------
-        private async System.Threading.Tasks.Task RunAsync()
-        {
-            RunOutputLines.Clear();
-            RunSummaryText = "Running...";
+         private async System.Threading.Tasks.Task RunAsync()
+         {
+             RunOutputLines.Clear();
+             RunSummaryText = "Running...";
 
-            string testsDir = Path.Combine(FrameworkRoot, "tests");
-            Directory.CreateDirectory(testsDir);
-            string scriptPath = Path.Combine(testsDir, "ide_generated_test.robot");
-            File.WriteAllText(scriptPath, GeneratedScript);
+             string testsDir = Path.Combine(FrameworkRoot, "tests");
+             Directory.CreateDirectory(testsDir);
+             string scriptPath = Path.Combine(testsDir, "ide_generated_test.robot");
+             File.WriteAllText(scriptPath, GeneratedScript);
 
-            string outputDir = Path.Combine(FrameworkRoot, "results", "ide_run");
+             // Write in-memory elements to repository so DriverAgnosticApi
+             // can resolve aliases for elements recorded in this session
+             // that may not yet exist in the static YAML files.
+             string elementsDir = Path.Combine(FrameworkRoot, "repository", "elements");
+             Directory.CreateDirectory(elementsDir);
+             string ideElementsPath = Path.Combine(elementsDir, "_ide_recorded.yaml");
+             File.WriteAllText(ideElementsPath, RepositoryYaml);
+
+             string outputDir = Path.Combine(FrameworkRoot, "results", "ide_run");
 
             var summary = await RobotRunner.RunAsync(
                 scriptPath,
