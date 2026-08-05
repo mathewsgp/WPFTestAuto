@@ -14,5 +14,6 @@ Recorded Session Playback
     Click Element    LoginPage.MainWindow.btnSubmit
     Click Element    OrdersPage.OrdersWindow.cmbSku
     Click Element    OrdersPage.OrdersWindow.txtQty
+    Set Element Value    OrdersPage.OrdersWindow.txtQty    2
     Click Element    OrdersPage.OrdersWindow.btnCreateOrder
     Click Element    OrdersPage.OrdersWindow.btnLogout
