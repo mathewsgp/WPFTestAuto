@@ -48,7 +48,7 @@ namespace WpfTestIde.ViewModels
          private string _runSummaryText = "";
         public string RunSummaryText { get => _runSummaryText; set { _runSummaryText = value; OnPropertyChanged(); } }
 
-        // Driver selection for test execution
+         // Driver selection for test execution
         private string _selectedDriver = "Auto";
         public string SelectedDriver
         {
@@ -56,6 +56,15 @@ namespace WpfTestIde.ViewModels
             set { _selectedDriver = value; OnPropertyChanged(); RegenerateScript(); }
         }
         public string[] AvailableDrivers { get; } = { "Auto", "FlaUI", "WPFSpy", "Sikuli" };
+
+        // Mode selection for test execution
+        private string _selectedMode = "Auto";
+        public string SelectedMode
+        {
+            get => _selectedMode;
+            set { _selectedMode = value; OnPropertyChanged(); RegenerateScript(); }
+        }
+        public string[] AvailableModes { get; } = { "Auto", "mock", "real" };
 
         private bool _lastRunSuccess;
         public bool LastRunSuccess { get => _lastRunSuccess; set { _lastRunSuccess = value; OnPropertyChanged(); } }
@@ -490,7 +499,12 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
         // ------------------------------------------------------------
         // Generation
         // ------------------------------------------------------------
-         private void RegenerateScript() => GeneratedScript = ScriptGenerator.Generate(Steps, _selectedDriver != "Auto" ? _selectedDriver : null);
+         private void RegenerateScript()
+        {
+            var driver = _selectedDriver != "Auto" ? _selectedDriver : null;
+            var mode = _selectedMode != "Auto" ? _selectedMode : null;
+            GeneratedScript = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode);
+        }
         private void RegenerateRepository() => RepositoryYaml = RepositoryWriter.GenerateYaml(Elements);
 
         // ------------------------------------------------------------

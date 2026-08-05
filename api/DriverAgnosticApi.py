@@ -65,6 +65,9 @@ _SAMPLE_WPF_APP_PROCESS = None
 # Active driver override (None = use default DRIVER_ORDER)
 _ACTIVE_DRIVER = None
 
+# Active mode override (None = use WPFSPY_MODE env var)
+_ACTIVE_MODE = None
+
 # Initialize logger
 logger = get_api_logger()
 
@@ -153,11 +156,12 @@ def _reset_real_app():
         pass
     
     ide_mode = os.environ.get('WPFSPY_IDE_RUN') == '1'
-    print(f'[DriverAgnosticApi] _reset_real_app called, mode={_WPFSPY_MODE}, ide_mode={ide_mode}')
-    
+    effective_mode = _ACTIVE_MODE if _ACTIVE_MODE is not None else _WPFSPY_MODE
+    print(f'[DriverAgnosticApi] _reset_real_app called, mode={effective_mode}, ide_mode={ide_mode}')
+
     if ide_mode:
         # IDE mode: keep app running, just reset state
-        if _WPFSPY_MODE == 'real' and _SAMPLE_WPF_APP_PROCESS is not None and _SAMPLE_WPF_APP_PROCESS.poll() is None:
+        if effective_mode == 'real' and _SAMPLE_WPF_APP_PROCESS is not None and _SAMPLE_WPF_APP_PROCESS.poll() is None:
             try:
                 driver = WPFSpyDriver()
                 result = driver._send('ResetState')
@@ -175,10 +179,19 @@ def _reset_real_app():
             _start_sample_wpf_app()
     else:
         # CLI/CI mode: always close and reopen app between tests
-        print('[DriverAgnosticApi] CLI mode: closing and reopening SampleWpfApp')
-        _kill_sample_wpf_app()
-        time.sleep(2)
-        _start_sample_wpf_app()
+        if effective_mode == 'real':
+            print('[DriverAgnosticApi] CLI mode: closing and reopening SampleWpfApp')
+            _kill_sample_wpf_app()
+            time.sleep(2)
+            _start_sample_wpf_app()
+        else:
+            # Mock mode: reset the mock app
+            print('[DriverAgnosticApi] Mock mode: resetting mock app')
+            try:
+                from mock_app import reset_app
+                reset_app()
+            except Exception:
+                pass
 
 # Lazy driver initialization
 _DRIVERS: dict = {}
@@ -646,14 +659,14 @@ class DriverAgnosticApi:
     # ------------------------------------------------------------------
     def set_driver(self, driver_name: str):
         """Set the active driver for subsequent element operations.
-        
+
         When set, only the specified driver will be used for element
         resolution and interaction. This overrides the default
         driver order (FlaUI -> WPFSpy -> Sikuli).
-        
+
         Args:
             driver_name: One of 'FlaUI', 'WPFSpy', 'Sikuli' (case-insensitive).
-        
+
         Example:
             | Set Driver | WPFSpy |
         """
@@ -666,12 +679,51 @@ class DriverAgnosticApi:
             )
         _ACTIVE_DRIVER = normalized
         logger.info("Driver set", driver=_ACTIVE_DRIVER)
-    
+
     def reset_drivers(self):
         """Reset to default driver order (FlaUI -> WPFSpy -> Sikuli)."""
         global _ACTIVE_DRIVER
         _ACTIVE_DRIVER = None
         logger.info("Driver reset to default order")
+
+    def set_mode(self, mode: str):
+        """Set the execution mode for subsequent operations.
+
+        When set to 'mock', the mock app is used for all element
+        operations (no real application needed). When set to 'real',
+        the real SampleWpfApp is used via the spy agent or FlaUI.
+
+        Args:
+            mode: One of 'mock', 'real' (case-insensitive).
+
+        Example:
+            | Set Mode | real |
+        """
+        global _ACTIVE_MODE
+        normalized = mode.strip().lower()
+        if normalized not in ("mock", "real"):
+            raise ValueError(f"Invalid mode '{mode}'. Valid options: mock, real")
+        _ACTIVE_MODE = normalized
+        logger.info("Mode set", mode=_ACTIVE_MODE)
+
+    def reset_mode(self):
+        """Reset to the mode from the WPFSPY_MODE environment variable."""
+        global _ACTIVE_MODE
+        _ACTIVE_MODE = None
+        logger.info("Mode reset to WPFSPY_MODE env var")
+
+    def set_mode_and_driver(self, mode: str, driver: str):
+        """Set both execution mode and driver in one call.
+
+        Args:
+            mode: One of 'mock', 'real'.
+            driver: One of 'FlaUI', 'WPFSpy', 'Sikuli'.
+
+        Example:
+            | Set Mode And Driver | real | WPFSpy |
+        """
+        self.set_mode(mode)
+        self.set_driver(driver)
     
     def click_element(self, alias: str):
         """Invokes (clicks) the element identified by `alias`."""
@@ -910,7 +962,8 @@ class DriverAgnosticApi:
         Login page. In mock mode, resets the in-memory mock app.
         In real mode, restarts the actual SampleWpfApp process.
         """
-        if _WPFSPY_MODE == "real":
+        effective_mode = _ACTIVE_MODE if _ACTIVE_MODE is not None else _WPFSPY_MODE
+        if effective_mode == "real":
             _reset_real_app()
         else:
             reset_app()

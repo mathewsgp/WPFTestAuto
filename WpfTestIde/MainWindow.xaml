@@ -143,6 +143,9 @@
                             <TextBlock DockPanel.Dock="Left" Text="Driver:" VerticalAlignment="Center" Margin="0,0,4,0"/>
                             <ComboBox DockPanel.Dock="Left" SelectedItem="{Binding SelectedDriver}"
                                       ItemsSource="{Binding AvailableDrivers}" Width="100"/>
+                            <TextBlock DockPanel.Dock="Left" Text="  Mode:" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                            <ComboBox DockPanel.Dock="Left" SelectedItem="{Binding SelectedMode}"
+                                      ItemsSource="{Binding AvailableModes}" Width="80"/>
                         </DockPanel>
                         <TextBox Text="{Binding GeneratedScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
                                  TextWrapping="NoWrap" AcceptsReturn="True"
