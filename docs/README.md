@@ -1,158 +1,94 @@
 # WPF Test Automation Framework - Documentation
 
-Welcome to the documentation for the WPF Test Automation Framework.
+Welcome! This folder contains all documentation for the WPF Test Automation Framework.
 
 ---
 
-## 📚 Documentation Structure
+## Documentation Structure
 
 ```
 docs/
-├── README.md                    ← You are here
+├── README.md              ← You are here
 │
-├── guides/                      ← User Guides
-│   ├── GETTING_STARTED.md       - Quick start guide
-│   ├── IDE_GUIDE.md             - IDE interface overview
-│   ├── RECORDER_GUIDE.md         - Recording test steps
-│   └── ELEMENT_REPOSITORY_GUIDE.md - Managing elements
+├── guides/               ← User Guides (Step-by-step instructions)
+│   ├── GETTING_STARTED.md
+│   ├── IDE_GUIDE.md
+│   ├── RECORDER_GUIDE.md
+│   └── ELEMENT_REPOSITORY_GUIDE.md
 │
-├── features/                    ← Feature Documentation
-│   ├── SELF_HEALING_LOCATORS.md - Auto-heal failed locators
-│   ├── HEALING_METADATA_STORE.md - Store healing data
-│   ├── LOCATOR_STRATEGIES.md    - Element search strategies
-│   ├── WILDCARD_XPATH.md        - Flexible XPath patterns
-│   ├── SCREENSHOT_ON_FAILURE.md - Capture screenshots
-│   ├── CHECKPOINT_WIZARD.md     - Verification point wizard
-│   ├── SPY_TOOL.md              - Element inspection tool
-│   └── VISUAL_TEST_BUILDER.md   - Visual test creation
+├── features/            ← Feature Documentation (In-depth guides)
+│   ├── SELF_HEALING.md    ← Self-healing + metadata store (combined)
+│   ├── LOCATOR_STRATEGIES.md
+│   ├── WILDCARD_XPATH.md
+│   ├── SCREENSHOT_ON_FAILURE.md
+│   ├── CHECKPOINT_WIZARD.md
+│   ├── SPY_TOOL.md
+│   └── VISUAL_TEST_BUILDER.md
 │
-├── technical/                   ← Technical Documentation
-│   ├── ARCHITECTURE.md          - System architecture
-│   ├── TECHNICAL_DESIGN.md      - Design specifications
-│   ├── PROTOCOL.md              - Communication protocol
-│   ├── INJECTION_OPTIONS.md     - Code injection methods
-│   ├── WPFSPY_MODULE.md         - WPFSpy module details
-│   └── DRIVER_IMPLEMENTATION_ANALYSIS.md - Driver analysis
+├── technical/            ← Technical Documentation (For developers)
+│   ├── ARCHITECTURE.md
+│   ├── TECHNICAL_DESIGN.md
+│   ├── PROTOCOL.md
+│   ├── INJECTION_OPTIONS.md
+│   ├── WPFSPY_MODULE.md
+│   └── DRIVER_IMPLEMENTATION_ANALYSIS.md
 │
-├── planning/                    ← Planning & Analysis
-│   ├── GAP_ANALYSIS.md          - Feature gap analysis
-│   ├── IMPLEMENTATION_CHOICES.md - Implementation roadmap
-│   └── UI_IMPROVEMENTS.md       - UI enhancement suggestions
+├── planning/             ← Planning & Analysis
+│   └── ROADMAP.md        ← Gap analysis + priorities + UI suggestions
 │
-├── deployment/                  ← Deployment Guides
-│   ├── PRODUCTION_DEPLOYMENT.md - Production setup
-│   └── CONTRIBUTING.md          - Contribution guidelines
+├── deployment/           ← Deployment Guides
+│   ├── PRODUCTION_DEPLOYMENT.md
+│   └── CONTRIBUTING.md
 │
-└── testing/                     ← Testing Documentation
-    └── USE_CASE_TESTING.md      - Use case test scenarios
+└── testing/             ← Testing Documentation
+    └── USE_CASE_TESTING.md  ← 21 test cases
 ```
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 1. **[Getting Started](./guides/GETTING_STARTED.md)** - Set up and run your first test
-2. **[IDE Guide](./guides/IDE_GUIDE.md)** - Learn the interface
-3. **[Recorder Guide](./guides/RECORDER_GUIDE.md)** - Record test steps
-4. **[Use Case Testing](./testing/USE_CASE_TESTING.md)** - Verify functionality
+2. **[Recorder Guide](./guides/RECORDER_GUIDE.md)** - Record test steps
+3. **[IDE Guide](./guides/IDE_GUIDE.md)** - Learn the interface
 
 ---
 
-## 📖 Key Guides
-
-### For Users
-| Guide | Description |
-|-------|-------------|
-| [Getting Started](./guides/GETTING_STARTED.md) | First time setup and basics |
-| [IDE Guide](./guides/IDE_GUIDE.md) | Interface walkthrough |
-| [Recorder Guide](./guides/RECORDER_GUIDE.md) | Recording tests |
-| [Element Repository](./guides/ELEMENT_REPOSITORY_GUIDE.md) | Managing elements |
-
-### For Developers
-| Document | Description |
-|----------|-------------|
-| [Architecture](./technical/ARCHITECTURE.md) | System design |
-| [Technical Design](./technical/TECHNICAL_DESIGN.md) | Detailed specifications |
-| [Protocol](./technical/PROTOCOL.md) | IPC protocol |
-| [Gap Analysis](./planning/GAP_ANALYSIS.md) | Feature comparison |
-
----
-
-## 🔧 Features
-
-### Core Features
-- ✅ **Recording** - Capture user interactions
-- ✅ **Playback** - Execute recorded scripts
-- ✅ **Element Repository** - Manage element definitions
-- ✅ **Spy Tool** - Inspect UI elements
-- ✅ **Self-Healing** - Auto-recover from locator failures
-
-### Advanced Features
-- 🔧 **Wild-Card XPath** - Flexible element matching
-- 🔧 **Checkpoint Wizard** - Visual verification creation
-- 🔧 **Visual Test Builder** - Drag-drop test creation
-- 🔧 **Screenshot on Failure** - Debug failed tests
-- 🔧 **OCR Support** - Read custom controls
-
----
-
-## 📊 Feature Status
+## Feature Status
 
 | Feature | Status | Documentation |
 |---------|--------|---------------|
-| Recording | ✅ Complete | [Guide](./guides/RECORDER_GUIDE.md) |
-| Spy Tool | ✅ Complete | [Guide](./features/SPY_TOOL.md) |
-| Self-Healing | ✅ Complete | [Guide](./features/SELF_HEALING_LOCATORS.md) |
-| Wild-Card XPath | ✅ Complete | [Guide](./features/WILDCARD_XPATH.md) |
-| Visual Test Builder | ✅ Complete | [Guide](./features/VISUAL_TEST_BUILDER.md) |
-| Checkpoint Wizard | ✅ Complete | [Guide](./features/CHECKPOINT_WIZARD.md) |
-| Screenshot on Failure | ✅ Complete | [Guide](./features/SCREENSHOT_ON_FAILURE.md) |
-| OCR DataGrid | 🔄 In Progress | - |
+| Recording & Playback | Done | [Guide](./guides/RECORDER_GUIDE.md) |
+| Spy Tool | Done | [Guide](./features/SPY_TOOL.md) |
+| Element Tree View | Done | UI panel |
+| Self-Healing | Done | [Guide](./features/SELF_HEALING.md) |
+| Wild-Card XPath | Done | [Guide](./features/WILDCARD_XPATH.md) |
+| Visual Test Builder | Done | [Guide](./features/VISUAL_TEST_BUILDER.md) |
+| Checkpoint Wizard | Done | [Guide](./features/CHECKPOINT_WIZARD.md) |
+| Screenshot on Failure | Done | [Guide](./features/SCREENSHOT_ON_FAILURE.md) |
 
 ---
 
-## 📝 Document Categories
+## Common Tasks
 
-### 1. Guides (User-Facing)
-Step-by-step instructions for using the framework.
-
-### 2. Features (In-Depth)
-Detailed documentation of individual features.
-
-### 3. Technical (Developer-Facing)
-Architecture, design, and implementation details.
-
-### 4. Planning (Strategic)
-Gap analysis, roadmaps, and improvement suggestions.
-
-### 5. Testing (QA)
-Test scenarios and validation procedures.
-
-### 6. Deployment (Operations)
-Installation, configuration, and maintenance.
+| Task | Documentation |
+|------|---------------|
+| First time setup | [Getting Started](./guides/GETTING_STARTED.md) |
+| Recording tests | [Recorder Guide](./guides/RECORDER_GUIDE.md) |
+| Finding elements | [Spy Tool](./features/SPY_TOOL.md) |
+| Dealing with element not found | [Self-Healing](./features/SELF_HEALING.md) |
+| Creating verifications | [Checkpoint Wizard](./features/CHECKPOINT_WIZARD.md) |
+| Understanding architecture | [Architecture](./technical/ARCHITECTURE.md) |
+| Planning new features | [Roadmap](./planning/ROADMAP.md) |
 
 ---
 
-## 🔍 Search Tips
+## Contributing
 
-- **New to the framework?** Start with [Getting Started](./guides/GETTING_STARTED.md)
-- **Recording not working?** See [Recorder Guide](./guides/RECORDER_GUIDE.md)
-- **Elements not found?** Check [Self-Healing Locators](./features/SELF_HEALING_LOCATORS.md)
-- **Want to contribute?** Read [Contributing](./deployment/CONTRIBUTING.md)
-
----
-
-## 📞 Support
-
-- **Issues**: Report bugs via GitHub Issues
-- **Questions**: Use GitHub Discussions
-- **Contributing**: See [Contributing Guide](./deployment/CONTRIBUTING.md)
-
----
-
-## 📄 License
-
-This project is open source. See the main repository for license details.
+See [Contributing Guide](./deployment/CONTRIBUTING.md) for:
+- Development setup
+- Coding standards
+- Pull request process
 
 ---
 
