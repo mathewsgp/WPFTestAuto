@@ -1607,6 +1607,11 @@ return JsonHelper.Serialize(result);
         public bool? IsEnabled { get; set; }
         public bool? IsVisible { get; set; }
         public Rect? Bounds { get; set; }
+#if NET461
+        [Newtonsoft.Json.JsonIgnore]
+#else
+        [System.Text.Json.Serialization.JsonIgnore]
+#endif
         public ElementTreeNode? Parent { get; set; }
         public List<ElementTreeNode> Children { get; set; } = new();
     }

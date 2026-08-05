@@ -101,10 +101,10 @@ namespace WpfTestIde.Dialogs
             try
             {
                 _client = new SpyAgentClient(_pipeName);
-                
+
                 // Request full tree from agent
                 var response = _client.Send("GetFullTree");
-                
+
                 ElementTree.Items.Clear();
                 _allNodes.Clear();
 
@@ -119,6 +119,7 @@ namespace WpfTestIde.Dialogs
                     {
                         foreach (var node in treeData.Nodes)
                         {
+                            RebuildParentRefs(node, null);
                             var treeItem = CreateTreeItem(node);
                             ElementTree.Items.Add(treeItem);
                             _allNodes.Add(node);
@@ -145,6 +146,18 @@ namespace WpfTestIde.Dialogs
             {
                 XPathStatus.Text = $"Error: {ex.Message}";
                 XPathStatus.Foreground = Brushes.Red;
+            }
+        }
+
+        private static void RebuildParentRefs(ElementTreeNode node, ElementTreeNode? parent)
+        {
+            node.Parent = parent;
+            if (node.Children != null)
+            {
+                foreach (var child in node.Children)
+                {
+                    RebuildParentRefs(child, node);
+                }
             }
         }
 
