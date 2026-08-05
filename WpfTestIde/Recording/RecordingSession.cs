@@ -237,19 +237,47 @@ namespace WpfTestIde.Recording
                      int end = predicate.IndexOf('\'', start);
                      if (end > start)
                      {
-                         string name = predicate.Substring(start, end - start);
-                         // Skip WPF template parts (PART_*) and Adorner layers —
-                         // they are internal visuals, not user-facing elements.
-                         if (name.StartsWith("PART_") || name == "AdornerLayer")
-                             return null;
-                         return name;
+                          string name = predicate.Substring(start, end - start);
+                          // Skip WPF template internals — they are
+                          // not user-facing elements and produce
+                          // aliases that don't match the repository.
+                          // Mirrors IsLikelyTemplatePartName in
+                          // VisualTreeInspector.cs.
+                          if (IsLikelyTemplatePartName(name))
+                              return null;
+                          return name;
                      }
                  }
              }
-             return null;
-         }
+              return null;
+          }
 
-        private static ElementEntry BuildEntry(string alias, ProbedElement probed) => new()
+          /// <summary>
+          /// Checks if a name is likely a WPF template internal part
+          /// rather than a user-facing element. Mirrors the same
+          /// logic in VisualTreeInspector.IsLikelyTemplatePartName.
+          /// </summary>
+          private static bool IsLikelyTemplatePartName(string name)
+          {
+              return name.StartsWith("PART_", StringComparison.Ordinal)
+                  || name == "AdornerLayer"
+                  || name == "border"
+                  || name == "Background"
+                  || name == "contentPresenter"
+                  || name == "templateRoot"
+                  || name == "splitBorder"
+                  || name == "dropDownButton"
+                  || name == "popup"
+                  || name == "scrollViewer"
+                  || name == "itemsPresenter"
+                  || name == "grid"
+                  || name == "stackPanel"
+                  || name == "dockPanel"
+                  || name == "wrapPanel"
+                  || name == "uniformGrid";
+          }
+
+          private static ElementEntry BuildEntry(string alias, ProbedElement probed) => new()
         {
             Alias = alias,
             DisplayName = probed.Name,
