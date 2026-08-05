@@ -114,23 +114,60 @@
 
             <!-- Tabs: combined element / script / run -->
             <TabControl Grid.Column="1" Margin="10">
-                <!-- Combined Element tab: raw JSON -> tree -> properties -->
+                <!-- Combined Element tab: raw JSON + tree + properties in one view -->
                 <TabItem Header="Elements">
                     <DockPanel Margin="6">
-                        <TabControl DockPanel.Dock="Top" Margin="0,0,0,6">
-                            <TabItem Header="Raw JSON">
+                        <!-- Raw JSON -->
+                        <Border DockPanel.Dock="Top" Margin="0,0,0,6" Padding="6" Background="#12161C" CornerRadius="3">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Top" Text="Raw JSON" FontSize="11" FontWeight="Bold" Foreground="#6A737D" Margin="0,0,0,4"/>
                                 <TextBox Text="{Binding RepositoryYaml, Mode=OneWay}" FontFamily="Consolas" FontSize="11"
                                          IsReadOnly="True" TextWrapping="NoWrap" AcceptsReturn="True"
                                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                         Background="#12161C" Foreground="#C9D1D9" BorderThickness="0"/>
-                            </TabItem>
-                            <TabItem Header="Element Tree">
-                                <views:ElementTreeView DataContext="{Binding ElementTree}"/>
-                            </TabItem>
-                            <TabItem Header="Properties">
+                                         Background="Transparent" Foreground="#C9D1D9" BorderThickness="0"
+                                         MaxHeight="60"/>
+                            </DockPanel>
+                        </Border>
+
+                        <!-- Tree + Properties side by side -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="1.2*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Element Tree -->
+                            <Border Grid.Column="0" Margin="0,0,6,0" Padding="6" Background="#F8F9FA" BorderBrush="#E1E4E8" BorderThickness="1" CornerRadius="3">
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Top" Margin="0,0,0,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="🌳" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <TextBlock Text="Element Tree" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button Content="+" ToolTip="Add Element" Padding="6,2" FontSize="12"
+                                                        Command="{Binding ElementTree.AddElementCommand}" Background="#28A745" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                                                <Button Content="👁 Preview" ToolTip="Preview Element" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                                                        Command="{Binding PreviewElementCommand}" Background="#E8A33D" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                                                <Button Content="🔍 Pick" ToolTip="Pick Element" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                                                        Command="{Binding PickElementCommand}" Background="#0366D6" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                    <views:ElementTreeView DataContext="{Binding ElementTree}"/>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Properties -->
+                            <Border Grid.Column="1" Padding="6" Background="White" BorderBrush="#DDD" BorderThickness="1" CornerRadius="3">
                                 <views:ElementEditorView/>
-                            </TabItem>
-                        </TabControl>
+                            </Border>
+                        </Grid>
                     </DockPanel>
                 </TabItem>
 

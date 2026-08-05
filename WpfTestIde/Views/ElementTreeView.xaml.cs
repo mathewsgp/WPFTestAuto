@@ -14,9 +14,15 @@ namespace WpfTestIde.Views
 
         private void ElementTreeViewControl_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (DataContext is ElementTreeViewModel vm && e.NewValue is ElementTreeNode node)
+            if (DataContext is not ElementTreeViewModel vm || e.NewValue is not ElementTreeNode node)
+                return;
+
+            vm.SelectedNode = node;
+
+            // Propagate selection to MainViewModel so the Properties panel updates.
+            if (Window.GetWindow(this)?.DataContext is MainViewModel mainVm)
             {
-                vm.SelectedNode = node;
+                mainVm.SelectedElement = node.Element;
             }
         }
 
