@@ -152,7 +152,7 @@
                                 Background="{Binding LastRunSuccess, Converter={StaticResource BoolToStatusBrushConverter}}">
                             <TextBlock Text="{Binding RunSummaryText}" FontFamily="Consolas" FontWeight="Bold"/>
                         </Border>
-                         <TextBox Text="{Binding RunOutputText}" FontFamily="Consolas" FontSize="11.5"
+                         <TextBox Text="{Binding RunOutputText, Mode=OneWay}" FontFamily="Consolas" FontSize="11.5"
                                  Background="#12161C" Foreground="#C9D1D9" BorderThickness="0"
                                  IsReadOnly="True" IsReadOnlyCaretVisible="False"
                                  VerticalScrollBarVisibility="Auto"
