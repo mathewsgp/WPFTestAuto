@@ -45,8 +45,17 @@ namespace WpfTestIde.ViewModels
         private string _pipeStatusText = "";
         public string PipeStatusText { get => _pipeStatusText; set { _pipeStatusText = value; OnPropertyChanged(); } }
 
-        private string _runSummaryText = "";
+         private string _runSummaryText = "";
         public string RunSummaryText { get => _runSummaryText; set { _runSummaryText = value; OnPropertyChanged(); } }
+
+        // Driver selection for test execution
+        private string _selectedDriver = "Auto";
+        public string SelectedDriver
+        {
+            get => _selectedDriver;
+            set { _selectedDriver = value; OnPropertyChanged(); RegenerateScript(); }
+        }
+        public string[] AvailableDrivers { get; } = { "Auto", "FlaUI", "WPFSpy", "Sikuli" };
 
         private bool _lastRunSuccess;
         public bool LastRunSuccess { get => _lastRunSuccess; set { _lastRunSuccess = value; OnPropertyChanged(); } }
@@ -481,7 +490,7 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
         // ------------------------------------------------------------
         // Generation
         // ------------------------------------------------------------
-        private void RegenerateScript() => GeneratedScript = ScriptGenerator.Generate(Steps);
+         private void RegenerateScript() => GeneratedScript = ScriptGenerator.Generate(Steps, _selectedDriver != "Auto" ? _selectedDriver : null);
         private void RegenerateRepository() => RepositoryYaml = RepositoryWriter.GenerateYaml(Elements);
 
         // ------------------------------------------------------------

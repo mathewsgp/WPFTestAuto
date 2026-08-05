@@ -135,10 +135,15 @@
                     <views:ElementEditorView/>
                 </TabItem>
 
-                <TabItem Header="Generated Script">
+                 <TabItem Header="Generated Script">
                     <DockPanel Margin="6">
                         <TextBlock DockPanel.Dock="Top" Text="Raw Layer 3 calls - review/refactor before committing to the suite."
                                    FontSize="11" Foreground="Gray" Margin="0,0,0,6"/>
+                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                            <TextBlock DockPanel.Dock="Left" Text="Driver:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <ComboBox DockPanel.Dock="Left" SelectedItem="{Binding SelectedDriver}"
+                                      ItemsSource="{Binding AvailableDrivers}" Width="100"/>
+                        </DockPanel>
                         <TextBox Text="{Binding GeneratedScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
                                  TextWrapping="NoWrap" AcceptsReturn="True"
                                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"

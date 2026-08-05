@@ -62,6 +62,9 @@ from mock_app import (                        # noqa: E402
 _WPFSPY_MODE = os.environ.get("WPFSPY_MODE", "mock").lower()
 _SAMPLE_WPF_APP_PROCESS = None
 
+# Active driver override (None = use default DRIVER_ORDER)
+_ACTIVE_DRIVER = None
+
 # Initialize logger
 logger = get_api_logger()
 
@@ -279,7 +282,11 @@ class DriverAgnosticApi:
             )
         
         # Build ordered strategy list from config and available strategies
-        driver_order = config.DRIVER_ORDER
+        # If a specific driver is set via Set Driver, use only that driver
+        if _ACTIVE_DRIVER is not None:
+            driver_order = [_ACTIVE_DRIVER]
+        else:
+            driver_order = config.DRIVER_ORDER
         attempts = []
         
         # Track healing info: first failure and subsequent success
@@ -637,6 +644,35 @@ class DriverAgnosticApi:
     # ------------------------------------------------------------------
     # Public keywords
     # ------------------------------------------------------------------
+    def set_driver(self, driver_name: str):
+        """Set the active driver for subsequent element operations.
+        
+        When set, only the specified driver will be used for element
+        resolution and interaction. This overrides the default
+        driver order (FlaUI -> WPFSpy -> Sikuli).
+        
+        Args:
+            driver_name: One of 'FlaUI', 'WPFSpy', 'Sikuli' (case-insensitive).
+        
+        Example:
+            | Set Driver | WPFSpy |
+        """
+        global _ACTIVE_DRIVER
+        valid_drivers = {"FlaUI", "WPFSpy", "Sikuli"}
+        normalized = driver_name.strip()
+        if normalized.lower() not in {d.lower() for d in valid_drivers}:
+            raise ValueError(
+                f"Invalid driver '{driver_name}'. Valid options: {', '.join(sorted(valid_drivers))}"
+            )
+        _ACTIVE_DRIVER = normalized
+        logger.info("Driver set", driver=_ACTIVE_DRIVER)
+    
+    def reset_drivers(self):
+        """Reset to default driver order (FlaUI -> WPFSpy -> Sikuli)."""
+        global _ACTIVE_DRIVER
+        _ACTIVE_DRIVER = None
+        logger.info("Driver reset to default order")
+    
     def click_element(self, alias: str):
         """Invokes (clicks) the element identified by `alias`."""
         self._resolve_and_execute(alias, "invoke")
