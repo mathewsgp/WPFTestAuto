@@ -1306,7 +1306,7 @@ namespace WpfSpyAgent
 
                 return false;
             }
-            catch (System.Text.RegularExpressions.RegexParseException)
+            catch (ArgumentException)
             {
                 return false;
             }
