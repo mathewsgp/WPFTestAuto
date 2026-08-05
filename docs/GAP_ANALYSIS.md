@@ -423,8 +423,8 @@ This is the **most important gap** for reducing rework when UIs change between v
 
 ## 9. Quick Wins (Minimal Effort, High Impact)
 
-1. **Enable automatic screenshot on failure** — Add 5-10 lines of code to capture screen on exception
-2. **Add more locator strategies per element** — Expand beyond (AutomationId, XPath, Image) to include Name, ClassName, Index, RelativePosition
+1. **Enable automatic screenshot on failure** — ✅ Implemented via `screenshot_manager.py`
+2. **Add more locator strategies per element** — ✅ Implemented via `expand_strategies_cli.py` with Name, ClassName, Index
 3. **Improve test documentation** — Auto-generate test documentation from keyword documentation
 4. **Add baseline update command** — One-click to update expected values when they legitimately change
 5. **Enhance logging** — Include element screenshots in logs for every interaction

@@ -271,3 +271,219 @@ def has_automation_id(alias: str) -> bool:
         if strategy.get("searchBy") == "AutomationId":
             return True
     return False
+
+
+# Supported search methods across all drivers
+SUPPORTED_SEARCH_METHODS = {
+    "FlaUI": [
+        "AutomationId",    # Primary - most stable
+        "Name",            # Secondary - usually stable
+        "XPath",          # Fallback - can break with UI changes
+        "ClassName",      # Additional - useful for custom controls
+        "Index",          # Position-based - last resort
+        "Text",           # Content-based - for text controls
+    ],
+    "WPFSpy": [
+        "AutomationId",
+        "Name",
+        "XPath",
+        "ClassName",
+        "Index",
+    ],
+    "Sikuli": [
+        "ImageTag",       # Image-based fallback
+        "Name",           # Name-based as alternative
+    ]
+}
+
+
+def expand_strategies(alias: str) -> dict:
+    """Expand element strategies to include all available search methods.
+    
+    This function analyzes an element's properties and generates additional
+    strategies that could be used as fallbacks.
+    
+    Args:
+        alias: Element alias in repository
+    
+    Returns:
+        Dict mapping driver name -> list of strategies
+    """
+    element = get_element(alias)
+    
+    # Get existing strategies
+    existing_strategies = get_all_driver_strategies_sorted(alias)
+    
+    # Extract element properties that can be used for strategies
+    automation_id = element.get("automationId") or element.get("AutomationId")
+    name = element.get("name") or element.get("Name")
+    class_name = element.get("className") or element.get("ClassName")
+    control_type = element.get("controlType") or element.get("ControlType")
+    display_name = element.get("displayName")
+    
+    expanded = {}
+    
+    for driver, methods in SUPPORTED_SEARCH_METHODS.items():
+        driver_strategies = []
+        priority = 1
+        
+        # Collect existing strategy values to avoid duplicates
+        existing_values = set()
+        if driver in existing_strategies:
+            for s in existing_strategies[driver]:
+                existing_values.add(s.get("searchBy", "").lower() + ":" + s.get("value", "").lower())
+        
+        for method in methods:
+            # Check if this method should be added
+            if method == "AutomationId" and automation_id:
+                value = automation_id
+                if f"automationid:{value.lower()}" not in existing_values:
+                    driver_strategies.append({
+                        "searchBy": "AutomationId",
+                        "value": value,
+                        "priority": priority,
+                        "source": "expanded"
+                    })
+                    priority += 1
+            
+            elif method == "Name" and name and name != automation_id:
+                value = name
+                if f"name:{value.lower()}" not in existing_values:
+                    driver_strategies.append({
+                        "searchBy": "Name",
+                        "value": value,
+                        "priority": priority,
+                        "source": "expanded"
+                    })
+                    priority += 1
+            
+            elif method == "ClassName" and class_name:
+                value = class_name
+                if f"classname:{value.lower()}" not in existing_values:
+                    driver_strategies.append({
+                        "searchBy": "ClassName",
+                        "value": value,
+                        "priority": priority,
+                        "source": "expanded"
+                    })
+                    priority += 1
+            
+            elif method == "Text" and display_name:
+                value = display_name
+                if f"text:{value.lower()}" not in existing_values:
+                    driver_strategies.append({
+                        "searchBy": "Text",
+                        "value": value,
+                        "priority": priority,
+                        "source": "expanded"
+                    })
+                    priority += 1
+        
+        # Merge with existing strategies (existing take priority)
+        if driver in existing_strategies:
+            # Add expanded strategies after existing ones
+            driver_strategies = existing_strategies[driver] + driver_strategies
+        
+        if driver_strategies:
+            expanded[driver] = driver_strategies
+    
+    return expanded
+
+
+def add_index_strategies(alias: str, parent_xpath: str, sibling_count: int) -> list:
+    """Generate Index-based strategies for elements with many siblings.
+    
+    Args:
+        alias: Element alias
+        parent_xpath: XPath of parent element
+        sibling_count: Number of siblings of the same type
+    
+    Returns:
+        List of index-based strategies
+    """
+    element = get_element(alias)
+    control_type = element.get("controlType", "Unknown")
+    
+    strategies = []
+    
+    # Only add index strategy if element has siblings of same type
+    if sibling_count > 1:
+        # Find position among siblings (1-based)
+        # This would need runtime info, so we provide a template
+        strategies.append({
+            "searchBy": "Index",
+            "value": control_type,  # Template: find Nth control of this type
+            "priority": 99,  # Lowest priority - last resort
+            "source": "auto_generated",
+            "note": "Use when all other strategies fail"
+        })
+    
+    return strategies
+
+
+def suggest_additional_strategies(alias: str) -> dict:
+    """Suggest additional strategies that could be added to an element.
+    
+    Useful for repository maintenance and improving element stability.
+    
+    Args:
+        alias: Element alias in repository
+    
+    Returns:
+        Dict mapping driver -> list of suggested strategies
+    """
+    element = get_element(alias)
+    current_strategies = get_strategies(alias)
+    
+    suggestions = {}
+    
+    automation_id = element.get("automationId") or element.get("AutomationId")
+    name = element.get("name") or element.get("Name")
+    class_name = element.get("className") or element.get("ClassName")
+    display_name = element.get("displayName")
+    
+    for driver, methods in SUPPORTED_SEARCH_METHODS.items():
+        driver_current = current_strategies.get(driver, [])
+        current_by = set(s.get("searchBy", "") for s in driver_current)
+        
+        driver_suggestions = []
+        
+        for method in methods:
+            if method not in current_by:
+                # This method is not yet configured
+                if method == "AutomationId" and automation_id:
+                    driver_suggestions.append({
+                        "searchBy": "AutomationId",
+                        "value": automation_id,
+                        "reason": "Primary locator - most stable",
+                        "priority": 1
+                    })
+                
+                elif method == "Name" and name:
+                    driver_suggestions.append({
+                        "searchBy": "Name",
+                        "value": name,
+                        "reason": "Secondary locator - good fallback",
+                        "priority": 2
+                    })
+                
+                elif method == "ClassName" and class_name:
+                    driver_suggestions.append({
+                        "searchBy": "ClassName",
+                        "value": class_name,
+                        "reason": "Useful for custom controls",
+                        "priority": 3
+                    })
+                
+                elif method == "Text" and display_name:
+                    driver_suggestions.append({
+                        "searchBy": "Text",
+                        "value": display_name,
+                        "reason": "Content-based - for text controls",
+                        "priority": 4
+                    })
+        
+        if driver_suggestions:
+            suggestions[driver] = driver_suggestions
+    
+    return suggestions

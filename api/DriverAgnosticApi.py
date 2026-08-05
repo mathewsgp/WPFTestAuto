@@ -41,6 +41,9 @@ import repository_access as repo  # noqa: E402
 # Import healing metadata store (Phase 1 feature)
 from healing_metadata_store import get_healing_store  # noqa: E402
 
+# Import screenshot manager for automatic failure screenshots
+from screenshot_manager import get_screenshot_manager  # noqa: E402
+
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "flaui_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "wpfspy_robotframework"))
@@ -466,6 +469,29 @@ class DriverAgnosticApi:
             alias=alias,
             attempts=attempts
         )
+        
+        # Quick fix: capture screenshot on failure using first available driver
+        try:
+            screenshot_mgr = get_screenshot_manager()
+            # Try to capture with any available driver
+            for driver_name, driver in self._drivers.items():
+                try:
+                    screenshot_data = driver.capture_screenshot()
+                    if screenshot_data:
+                        screenshot_mgr.capture(
+                            image_data=screenshot_data,
+                            alias=alias,
+                            error_type="AllStrategiesFailedError",
+                            error_message=f"All strategies failed. Last error: {healing_info['primary_error']}",
+                            driver_used=healing_info['primary_driver'],
+                            prefix="failure"
+                        )
+                        logger.info(f"Screenshot captured: {screenshot_mgr.get_latest_screenshot_path()}")
+                        break
+                except Exception:
+                    continue
+        except Exception:
+            pass  # Screenshot capture is non-critical
         
         raise AllStrategiesFailedError(
             alias=alias,
