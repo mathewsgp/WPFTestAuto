@@ -21,6 +21,9 @@ namespace WpfTestIde.ViewModels
         public ObservableCollection<RecordedStep> Steps { get; } = new();
         public ObservableCollection<ElementEntry> Elements { get; } = new();
         public ObservableCollection<string> RunOutputLines { get; } = new();
+        
+        // Element Tree ViewModel
+        public ElementTreeViewModel ElementTree { get; } = new();
 
         private string _generatedScript = "";
         public string GeneratedScript { get => _generatedScript; set { _generatedScript = value; OnPropertyChanged(); } }
@@ -143,7 +146,15 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
             OpenVisualTestBuilderCommand = new RelayCommand(_ => OpenVisualTestBuilder());
 
             Steps.CollectionChanged += (_, __) => RegenerateScript();
-            Elements.CollectionChanged += (_, __) => RegenerateRepository();
+            Elements.CollectionChanged += (_, __) => { RegenerateRepository(); RefreshElementTree(); };
+            
+            // Initialize element tree
+            RefreshElementTree();
+        }
+        
+        private void RefreshElementTree()
+        {
+            ElementTree.LoadFromElements(Elements);
         }
 
         // ------------------------------------------------------------
