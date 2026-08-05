@@ -1,55 +1,30 @@
 # WpfTestIde — Script Development IDE
 
-A real WPF desktop application (its own project, `WpfTestIde/`) that
-implements the full authoring loop as a GUI tool: **attach → record →
-auto-generate Element Repository + script → add verifications → run**.
-
-## Why this exists
-
-Everything in `recorder/` (Python) proves the record → auto-generate
-pipeline works, but it replays a scripted interaction list rather than
-capturing a live user session, and has no UI. `WpfTestIde` is the real
-thing: it attaches to an actual running WPF process, hooks real user
-interaction, and gives you an editable, runnable authoring surface —
-built in WPF, per your request, as a genuine desktop application rather
-than a script.
+A real WPF desktop application that implements the full authoring loop as a GUI tool: **attach → record → auto-generate Element Repository + script → add verifications → run**.
 
 ## What it does
 
 | Feature | How |
 |---|---|
 | **Attach** | Pick a running process by window title; configure the Spy Agent's pipe name and a window-title → page-alias map |
-| **Record** | A global mouse hook detects clicks on the attached app; each click is resolved to an element via the **same FlaUI-first, WPFSpy-fallback logic used at test-execution time** (see below) |
+| **Record** | A global mouse hook detects clicks on the attached app; each click is resolved to an element via the **same FlaUI-first, WPFSpy-fallback logic used at test-execution time** |
 | **Auto-generate Element Repository** | Every newly-seen element becomes a `repository/elements/*.yaml`-shaped entry, live, in the "Element Repository" tab |
 | **Auto-generate Script** | Every recorded step becomes a line in a Layer 1 `.robot` script, live, in the "Generated Script" tab |
-| **Add verification steps** | Click "+ verify after" on any recorded step; pick an element, and the expected value is pre-filled from that element's **current on-screen value** (queried live via the Spy Agent) |
-| **Run scripts** | Shells out to `python -m robot`, streaming console output and a PASS/FAIL summary, exactly like `run_tests.sh` |
+| **Add verification steps** | Click "+ verify after" on any recorded step; pick an element, and the expected value is pre-filled from that element's **current on-screen value** |
+| **Run scripts** | Shells out to `python -m robot`, streaming console output and a PASS/FAIL summary |
+| **Spy Tool** | Inspect UI elements with visual tree, property grid, and XPath editor |
+| **Checkpoint Wizard** | Point-and-click creation of verification points |
+| **Visual Test Builder** | Drag-and-drop test creation with Robot code generation |
+| **Element Tree View** | Hierarchical view of all elements with search and filtering |
 
 ## Recording uses the framework's own self-healing philosophy
 
 Every click during recording is resolved by `Recording/ElementProbe.cs`:
 
-1. Try **FlaUI** first (`UIA3Automation.FromPoint`) — if it finds a
-   usable `AutomationId` at that screen point, use it.
-2. If not — the same signal that means "this needs the WPFSpy fallback"
-   at test-execution time (see `docs/SELF_HEALING_LOCATORS.md`) — fall
-   back to asking the attached app's **live in-process Spy Agent**
-   directly, over the same Named Pipe protocol (`docs/PROTOCOL.md`'s new
-   `ProbeAt` command), which can hit-test *any* control, standard or
-   custom-rendered.
+1. Try **FlaUI** first (`UIA3Automation.FromPoint`) — if it finds a usable `AutomationId` at that screen point, use it.
+2. If not — fall back to asking the attached app's **live in-process Spy Agent** directly, over the same Named Pipe protocol, which can hit-test *any* control, standard or custom-rendered.
 
-This means recording a click on `SampleWpfApp`'s custom
-`PriorityToggleControl` (no `AutomationId`, see
-`SampleWpfApp/CustomControls/PriorityToggleControl.cs`) works exactly
-the same as recording a click on a normal button — the IDE automatically
-flags it as "non-standard, resolved via WPFSpy" in both the Recorded
-Steps list and the generated Element Repository YAML.
-
-Typed text is captured via a **focus-lost commit**: FlaUI's
-`RegisterFocusChangedEventHandler` fires when focus leaves a text-entry
-control, at which point its final value is read (via FlaUI's `ValuePattern`,
-or via the Spy Agent's `GetText` for non-standard controls) and recorded
-as a `SetValue` step — not per keystroke.
+See [Self-Healing Locators](../features/SELF_HEALING.md) for more details.
 
 ## Project layout
 
@@ -57,22 +32,31 @@ as a `SetValue` step — not per keystroke.
 WpfTestIde/
 ├── WpfTestIde.csproj          References: FlaUI.Core, FlaUI.UIA3, YamlDotNet
 ├── App.xaml(.cs)               Registers value converters
-├── MainWindow.xaml(.cs)        Toolbar + Recorded Steps + tabbed panels
-├── ViewModels/MainViewModel.cs Wires everything together (MVVM, no external toolkit)
+├── MainWindow.xaml(.cs)        Toolbar + Element Tree + Steps + tabbed panels
+├── ViewModels/
+│   ├── MainViewModel.cs       Main application logic (MVVM)
+│   ├── ElementTreeViewModel.cs Hierarchical element tree management
+│   └── TestFlowViewModel.cs   Visual test builder logic
 ├── Models/
 │   ├── RecordedStep.cs
 │   └── ElementEntry.cs
+├── Views/
+│   ├── ElementTreeView.xaml   Hierarchical element tree panel
+│   ├── ElementEditorView.xaml Element editing panel
+│   └── TestFlowDialog.xaml   Visual test builder dialog
+├── Dialogs/
+│   ├── AttachToProcessDialog.xaml(.cs)
+│   ├── SpyToolDialog.xaml(.cs)       Element inspection tool
+│   ├── CheckpointWizardDialog.xaml(.cs)  Verification wizard
+│   └── AddVerificationDialog.xaml(.cs)
 ├── Recording/
 │   ├── GlobalMouseHook.cs      Win32 WH_MOUSE_LL — sees clicks in OTHER processes
-│   ├── SpyAgentClient.cs       C# Named Pipe client (same protocol as the Python driver)
+│   ├── SpyAgentClient.cs       C# Named Pipe client
 │   ├── ElementProbe.cs         FlaUI-first, WPFSpy-fallback element resolution
 │   ├── RecordingSession.cs     Orchestrates the above into RecordedStep events
 │   ├── ScriptGenerator.cs      RecordedStep list -> .robot text
-│   └── RepositoryWriter.cs     ElementEntry list -> repository YAML (via YamlDotNet)
-├── Execution/RobotRunner.cs    Shells out to `python -m robot`, parses PASS/FAIL summary
-├── Dialogs/
-│   ├── AttachToProcessDialog.xaml(.cs)
-│   └── AddVerificationDialog.xaml(.cs)
+│   └── RepositoryWriter.cs     ElementEntry list -> repository YAML
+├── Execution/RobotRunner.cs    Shells out to `python -m robot`
 ├── Converters/Converters.cs
 └── RelayCommand.cs
 ```

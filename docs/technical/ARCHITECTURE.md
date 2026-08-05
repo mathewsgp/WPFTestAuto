@@ -43,7 +43,7 @@ WPFSpy, or Sikuli exist.
   fails at *runtime* (not just because a different control type was
   chosen at design time), Layer 3 automatically retries the next
   configured strategy before failing the step. See
-  `docs/SELF_HEALING_LOCATORS.md`.
+  `docs/SELF_HEALING.md`.
 
 ## Data flow for one keyword call
 
@@ -90,7 +90,7 @@ to it via a Named Pipes / gRPC channel. See `docs/WPFSPY_MODULE.md`.
 
 Layer 3's `_resolve_and_execute` tries every strategy configured for an
 alias, in order, and only fails the step if *all* of them fail — logging
-the full attempt chain either way. See `docs/SELF_HEALING_LOCATORS.md`
+the full attempt chain either way. See `docs/SELF_HEALING.md`
 for the design rationale and a live demo test.
 
 ## Recording & playback

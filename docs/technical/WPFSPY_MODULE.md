@@ -89,7 +89,7 @@ controls via the opt-in `ISpyInteractable` interface, never via
 Because `OrdersPage.PriorityCheckbox`'s `FlaUI` strategy in
 `repository/elements/orders_page.yaml` is intentionally pointed at an
 AutomationId the app doesn't expose (simulating a real custom control gap),
-runtime self-healing (`docs/SELF_HEALING_LOCATORS.md`) automatically falls
+runtime self-healing (`docs/SELF_HEALING.md`) automatically falls
 back to WPFSpy for that one element — in both mock mode (proven by the
 existing passing test suite) and real mode (proven by running against
 `SampleWpfApp` as above) — without the test author needing to know in

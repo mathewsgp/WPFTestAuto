@@ -149,4 +149,4 @@ Wild-card XPath is automatically used by the self-healing engine:
 3. Best match is used if confidence > threshold
 4. Match is logged for future reference
 
-See also: [Healing Metadata Store](./HEALING_METADATA_STORE.md)
+See also: [Healing Metadata Store](./SELF_HEALING.md)

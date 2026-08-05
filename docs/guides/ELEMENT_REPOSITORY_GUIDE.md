@@ -55,7 +55,7 @@ present).
 **Strategy order = fallback order.** `api/repository_access.py`
 always tries `FlaUI` → `WPFSpy` → `Sikuli`, skipping any not configured
 for that alias. This is also the *runtime self-healing* order — see
-`docs/SELF_HEALING_LOCATORS.md`.
+`docs/SELF_HEALING.md`.
 
 ## Step Repository schema
 

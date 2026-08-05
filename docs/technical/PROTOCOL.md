@@ -87,7 +87,7 @@ A `success: false` response is treated by Layer 3
 (`api/DriverAgnosticApi.py`'s `_resolve_and_execute`) as "this strategy
 failed" and triggers the runtime self-healing fallback to the next
 configured driver, exactly like a FlaUI `ElementNotFoundError` would —
-see `docs/SELF_HEALING_LOCATORS.md`.
+see `docs/SELF_HEALING.md`.
 
 ## Threading
 

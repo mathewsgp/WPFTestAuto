@@ -749,7 +749,7 @@ To extend WPFSpy protocol:
 - [WPFSPY_MODULE.md](./WPFSPY_MODULE.md) - WPFSpy agent details
 - [PROTOCOL.md](./PROTOCOL.md) - IPC wire protocol reference
 - [INJECTION_OPTIONS.md](./INJECTION_OPTIONS.md) - Agent injection mechanisms
-- [SELF_HEALING_LOCATORS.md](./SELF_HEALING_LOCATORS.md) - Self-healing system
+- [SELF_HEALING.md](./SELF_HEALING.md) - Self-healing system
 - [ELEMENT_REPOSITORY_GUIDE.md](./ELEMENT_REPOSITORY_GUIDE.md) - Repository schema
 - [RECORDER_GUIDE.md](./RECORDER_GUIDE.md) - Recording workflow
 - [IDE_GUIDE.md](./IDE_GUIDE.md) - WpfTestIde documentation
