@@ -101,41 +101,40 @@
         <!-- ================= Main split ================= -->
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="280"/>
                 <ColumnDefinition Width="1.1*"/>
                 <ColumnDefinition Width="1.4*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Element Tree Panel -->
-            <Border Grid.Column="0" Background="#F8F9FA" BorderBrush="#E1E4E8" BorderThickness="0,0,1,0">
-                <views:ElementTreeView DataContext="{Binding ElementTree}"/>
-            </Border>
-
             <!-- Recorded steps -->
-            <DockPanel Grid.Column="1" Margin="10">
+            <DockPanel Grid.Column="0" Margin="10">
                 <TextBlock DockPanel.Dock="Top" Text="Recorded Steps" FontWeight="Bold" Margin="0,0,0,6"/>
                 <ListBox ItemsSource="{Binding Steps}" ItemTemplate="{StaticResource StepTemplate}"
                          BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
             </DockPanel>
 
-            <!-- Tabs: repository / script / run -->
-            <TabControl Grid.Column="2" Margin="10">
-                <TabItem Header="Element Repository">
+            <!-- Tabs: combined element / script / run -->
+            <TabControl Grid.Column="1" Margin="10">
+                <!-- Combined Element tab: raw JSON -> tree -> properties -->
+                <TabItem Header="Elements">
                     <DockPanel Margin="6">
-                        <TextBlock DockPanel.Dock="Top" Text="Auto-generated - FlaUI strategy by default; WPFSpy always included."
-                                   FontSize="11" Foreground="Gray" Margin="0,0,0,6"/>
-                        <TextBox Text="{Binding RepositoryYaml, Mode=OneWay}" FontFamily="Consolas" FontSize="12"
-                                 IsReadOnly="True" TextWrapping="NoWrap" AcceptsReturn="True"
-                                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                 Background="#12161C" Foreground="#C9D1D9" BorderThickness="0"/>
+                        <TabControl DockPanel.Dock="Top" Margin="0,0,0,6">
+                            <TabItem Header="Raw JSON">
+                                <TextBox Text="{Binding RepositoryYaml, Mode=OneWay}" FontFamily="Consolas" FontSize="11"
+                                         IsReadOnly="True" TextWrapping="NoWrap" AcceptsReturn="True"
+                                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                         Background="#12161C" Foreground="#C9D1D9" BorderThickness="0"/>
+                            </TabItem>
+                            <TabItem Header="Element Tree">
+                                <views:ElementTreeView DataContext="{Binding ElementTree}"/>
+                            </TabItem>
+                            <TabItem Header="Properties">
+                                <views:ElementEditorView/>
+                            </TabItem>
+                        </TabControl>
                     </DockPanel>
                 </TabItem>
 
-                <TabItem Header="Element Editor">
-                    <views:ElementEditorView/>
-                </TabItem>
-
-                 <TabItem Header="Generated Script">
+                <TabItem Header="Generated Script">
                     <DockPanel Margin="6">
                         <TextBlock DockPanel.Dock="Top" Text="Raw Layer 3 calls - review/refactor before committing to the suite."
                                    FontSize="11" Foreground="Gray" Margin="0,0,0,6"/>
