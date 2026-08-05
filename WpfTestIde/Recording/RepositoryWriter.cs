@@ -16,7 +16,14 @@ namespace WpfTestIde.Recording
     /// </summary>
     public static class RepositoryWriter
     {
-        public static string GenerateYaml(IEnumerable<ElementEntry> entries)
+        /// <summary>
+        /// Generates YAML for the element repository, including only
+        /// strategies for the selected recording modes.
+        /// </summary>
+        /// <param name="entries">Discovered element entries.</param>
+        /// <param name="recordingModes">Selected recording modes (FlaUI, WPFSpy, Sikuli).
+        /// If empty or null, all strategies are included (backward compatible).</param>
+        public static string GenerateYaml(IEnumerable<ElementEntry> entries, List<string>? recordingModes = null)
         {
             var elements = new Dictionary<string, object>();
 
@@ -24,7 +31,9 @@ namespace WpfTestIde.Recording
             {
                 var strategies = new Dictionary<string, object>();
 
-                if (!string.IsNullOrEmpty(entry.AutomationId))
+                // FlaUI strategy: AutomationId-based (most stable for standard controls)
+                if ((recordingModes == null || recordingModes.Contains("FlaUI")) &&
+                    !string.IsNullOrEmpty(entry.AutomationId))
                 {
                     strategies["FlaUI"] = new Dictionary<string, object>
                     {
@@ -34,17 +43,23 @@ namespace WpfTestIde.Recording
                     };
                 }
 
-                strategies["WPFSpy"] = new Dictionary<string, object>
+                // WPFSpy strategy: XPath-based (visual tree path from root window)
+                if (recordingModes == null || recordingModes.Contains("WPFSpy"))
                 {
-                    ["searchBy"] = "Name",
-                    ["value"] = entry.Name,
-                };
-
-                if (!string.IsNullOrEmpty(entry.XPath))
-                {
-                    strategies["XPath"] = new Dictionary<string, object>
+                    strategies["WPFSpy"] = new Dictionary<string, object>
                     {
-                        ["value"] = entry.XPath!,
+                        ["searchBy"] = "XPath",
+                        ["value"] = entry.XPath ?? $"{entry.ControlType}[@Name='{entry.Name}']",
+                    };
+                }
+
+                // Sikuli strategy: image-based (placeholder — image capture not yet implemented)
+                if (recordingModes == null || recordingModes.Contains("Sikuli"))
+                {
+                    strategies["Sikuli"] = new Dictionary<string, object>
+                    {
+                        ["searchBy"] = "Image",
+                        ["value"] = $"{entry.Alias.Split('.').Last().ToLower()}.png",
                     };
                 }
 

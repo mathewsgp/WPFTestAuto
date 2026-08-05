@@ -140,12 +140,18 @@
                         <TextBlock DockPanel.Dock="Top" Text="Raw Layer 3 calls - review/refactor before committing to the suite."
                                    FontSize="11" Foreground="Gray" Margin="0,0,0,6"/>
                         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                            <TextBlock DockPanel.Dock="Left" Text="Driver:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock DockPanel.Dock="Left" Text="Run Driver:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11"/>
                             <ComboBox DockPanel.Dock="Left" SelectedItem="{Binding SelectedDriver}"
-                                      ItemsSource="{Binding AvailableDrivers}" Width="100"/>
-                            <TextBlock DockPanel.Dock="Left" Text="  Mode:" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                      ItemsSource="{Binding AvailableDrivers}" Width="100" FontSize="11"/>
+                            <TextBlock DockPanel.Dock="Left" Text="  Mode:" VerticalAlignment="Center" Margin="8,0,4,0" FontSize="11"/>
                             <ComboBox DockPanel.Dock="Left" SelectedItem="{Binding SelectedMode}"
-                                      ItemsSource="{Binding AvailableModes}" Width="80"/>
+                                      ItemsSource="{Binding AvailableModes}" Width="80" FontSize="11"/>
+                        </DockPanel>
+                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                            <TextBlock DockPanel.Dock="Left" Text="Record:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"/>
+                            <CheckBox DockPanel.Dock="Left" Content="FlaUI" IsChecked="{Binding RecordFlaUI}" Margin="0,0,8,0" FontSize="11"/>
+                            <CheckBox DockPanel.Dock="Left" Content="WPFSpy" IsChecked="{Binding RecordWPFSpy}" Margin="0,0,8,0" FontSize="11"/>
+                            <CheckBox DockPanel.Dock="Left" Content="Sikuli" IsChecked="{Binding RecordSikuli}" FontSize="11"/>
                         </DockPanel>
                         <TextBox Text="{Binding GeneratedScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
                                  TextWrapping="NoWrap" AcceptsReturn="True"

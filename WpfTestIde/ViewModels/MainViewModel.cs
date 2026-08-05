@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -57,7 +58,7 @@ namespace WpfTestIde.ViewModels
         }
         public string[] AvailableDrivers { get; } = { "Auto", "FlaUI", "WPFSpy", "Sikuli" };
 
-        // Mode selection for test execution
+         // Mode selection for test execution
         private string _selectedMode = "Auto";
         public string SelectedMode
         {
@@ -65,6 +66,28 @@ namespace WpfTestIde.ViewModels
             set { _selectedMode = value; OnPropertyChanged(); RegenerateScript(); }
         }
         public string[] AvailableModes { get; } = { "Auto", "mock", "real" };
+
+        // Recording mode checkboxes (FlaUI, WPFSpy, Sikuli)
+        private bool _recordFlaUI = true;
+        public bool RecordFlaUI
+        {
+            get => _recordFlaUI;
+            set { _recordFlaUI = value; OnPropertyChanged(); RegenerateScript(); }
+        }
+
+        private bool _recordWPFSpy = true;
+        public bool RecordWPFSpy
+        {
+            get => _recordWPFSpy;
+            set { _recordWPFSpy = value; OnPropertyChanged(); RegenerateScript(); }
+        }
+
+        private bool _recordSikuli = false;
+        public bool RecordSikuli
+        {
+            get => _recordSikuli;
+            set { _recordSikuli = value; OnPropertyChanged(); RegenerateScript(); }
+        }
 
         private bool _lastRunSuccess;
         public bool LastRunSuccess { get => _lastRunSuccess; set { _lastRunSuccess = value; OnPropertyChanged(); } }
@@ -503,9 +526,19 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
         {
             var driver = _selectedDriver != "Auto" ? _selectedDriver : null;
             var mode = _selectedMode != "Auto" ? _selectedMode : null;
-            GeneratedScript = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode);
+            var recordingModes = GetSelectedRecordingModes();
+            GeneratedScript = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode, recordingModes: recordingModes);
         }
-        private void RegenerateRepository() => RepositoryYaml = RepositoryWriter.GenerateYaml(Elements);
+
+        private List<string> GetSelectedRecordingModes()
+        {
+            var modes = new List<string>();
+            if (RecordFlaUI) modes.Add("FlaUI");
+            if (RecordWPFSpy) modes.Add("WPFSpy");
+            if (RecordSikuli) modes.Add("Sikuli");
+            return modes;
+        }
+         private void RegenerateRepository() => RepositoryYaml = RepositoryWriter.GenerateYaml(Elements, GetSelectedRecordingModes());
 
         // ------------------------------------------------------------
         // Run

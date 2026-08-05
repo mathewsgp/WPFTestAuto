@@ -17,7 +17,8 @@ namespace WpfTestIde.Recording
             IEnumerable<RecordedStep> steps,
             string testCaseName = "Recorded Session Playback",
             string? driver = null,
-            string? mode = null)
+            string? mode = null,
+            List<string>? recordingModes = null)
         {
             var sb = new StringBuilder();
             sb.AppendLine("*** Settings ***");
@@ -25,6 +26,10 @@ namespace WpfTestIde.Recording
             sb.AppendLine("...              Functionally accurate but NOT YET production quality: consider");
             sb.AppendLine("...              refactoring repeated sequences into Layer 2 reusable modules");
             sb.AppendLine("...              before committing to the suite (see docs/RECORDER_GUIDE.md).");
+            if (recordingModes != null && recordingModes.Count > 0)
+            {
+                sb.AppendLine("...              Recording modes: " + string.Join(", ", recordingModes));
+            }
             sb.AppendLine("Library          ../api/DriverAgnosticApi.py");
 
             // If a mode is specified (mock or real), set it as active for the test
