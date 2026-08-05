@@ -117,6 +117,25 @@
                 <!-- Combined Element tab: raw JSON + tree + properties in one view -->
                 <TabItem Header="Elements">
                     <DockPanel Margin="6">
+                        <!-- Toolbar: Add folder, Add element, Pick, Preview, Expand, Collapse -->
+                        <Border DockPanel.Dock="Top" Margin="0,0,0,6" Padding="4" Background="#F0F1F3" CornerRadius="3">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="+ Folder" ToolTip="Add Folder" Padding="6,2" FontSize="11"
+                                        Command="{Binding ElementTree.AddFolderCommand}" Background="#0366D6" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                                <Button Content="+ Element" ToolTip="Add Element to selected folder" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                                        Command="{Binding ElementTree.AddElementCommand}" Background="#28A745" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                                <Button Content="🔍 Pick" ToolTip="Pick Element from target app" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                                        Command="{Binding PickElementCommand}" Background="#0366D6" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                                <Button Content="👁 Preview" ToolTip="Preview selected element" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                                        Command="{Binding PreviewElementCommand}" Background="#E8A33D" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                                <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
+                                <Button Content="⬇️ Expand All" ToolTip="Expand All" Padding="6,2" FontSize="11"
+                                        Command="{Binding ElementTree.ExpandAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand"/>
+                                <Button Content="⬆️ Collapse" ToolTip="Collapse All" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                                        Command="{Binding ElementTree.CollapseAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Raw JSON -->
                         <Border DockPanel.Dock="Top" Margin="0,0,0,6" Padding="6" Background="#12161C" CornerRadius="3">
                             <DockPanel>
@@ -139,26 +158,6 @@
                             <!-- Element Tree -->
                             <Border Grid.Column="0" Margin="0,0,6,0" Padding="6" Background="#F8F9FA" BorderBrush="#E1E4E8" BorderThickness="1" CornerRadius="3">
                                 <DockPanel>
-                                    <Border DockPanel.Dock="Top" Margin="0,0,0,6">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="🌳" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                <TextBlock Text="Element Tree" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                <Button Content="+" ToolTip="Add Element" Padding="6,2" FontSize="12"
-                                                        Command="{Binding ElementTree.AddElementCommand}" Background="#28A745" Foreground="White" BorderThickness="0" Cursor="Hand"/>
-                                                <Button Content="👁 Preview" ToolTip="Preview Element" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                                                        Command="{Binding PreviewElementCommand}" Background="#E8A33D" Foreground="White" BorderThickness="0" Cursor="Hand"/>
-                                                <Button Content="🔍 Pick" ToolTip="Pick Element" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                                                        Command="{Binding PickElementCommand}" Background="#0366D6" Foreground="White" BorderThickness="0" Cursor="Hand"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
                                     <views:ElementTreeView DataContext="{Binding ElementTree}"/>
                                 </DockPanel>
                             </Border>

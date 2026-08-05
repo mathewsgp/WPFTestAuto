@@ -363,6 +363,7 @@ namespace WpfTestIde.ViewModels
 
             var parent = SelectedNode.IsFolder ? SelectedNode : SelectedNode.Parent;
             if (parent == null) parent = RootNodes.LastOrDefault();
+            if (parent == null) return;
 
             var elementName = $"NewElement_{parent.Children.Count + 1}";
             var newElement = new ElementEntry
