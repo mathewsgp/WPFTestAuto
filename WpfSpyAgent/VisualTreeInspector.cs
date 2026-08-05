@@ -502,18 +502,24 @@ namespace WpfSpyAgent
             if (visual == null) return null;
 
             // Special-case: hit-testing a TextBox often lands on the inner
-            // TextBoxView (internal class); map that back to the parent
-            // TextBox by type name to avoid a compile-time dependency on the
-            // internal type.
-            if (visual.GetType().Name == "TextBoxView")
+            // TextBoxView (internal class) or its children (CaretElement, etc.);
+            // map that back to the parent TextBox by type name to avoid a
+            // compile-time dependency on the internal type.
+            DependencyObject? tvAncestor = visual;
+            for (int depth = 0; depth < 10 && tvAncestor != null; depth++)
             {
-                var textBox = WalkUpFromTextBoxView(visual);
-                if (textBox != null)
+                if (tvAncestor.GetType().Name == "TextBoxView")
                 {
-                    sw.Stop();
-                    Log($"TextBoxView -> {textBox.GetType().Name} name={textBox.Name} in {sw.ElapsedMilliseconds}ms");
-                    return textBox;
+                    var textBox = WalkUpFromTextBoxView(tvAncestor);
+                    if (textBox != null)
+                    {
+                        sw.Stop();
+                        Log($"TextBoxView ancestor -> {textBox.GetType().Name} name={textBox.Name} in {sw.ElapsedMilliseconds}ms");
+                        return textBox;
+                    }
+                    break;
                 }
+                tvAncestor = VisualTreeHelper.GetParent(tvAncestor);
             }
 
             var named = WalkUpToNearestNamedElement(visual);
@@ -604,17 +610,26 @@ namespace WpfSpyAgent
                     Log($"WalkUpToNearestNamedElement cycle detected after {step} steps starting from {visual.GetType().Name}");
                     return null;
                 }
-                if (current is FrameworkElement fe /*&& !string.IsNullOrEmpty(fe.Name)*/)
+                if (current is FrameworkElement fe)
                 {
-                    // Skip WPF template parts and common internal visuals --
-                    // they are not user-facing elements. Shares the same
-                    // filter BuildXPath uses for Name-anchor safety.
-                    //if (IsLikelyTemplatePartName(fe.Name))
-                    //{
-                    //    continue;
-                    //}
-                    Log($"WalkUpToNearestNamedElement returned {fe.GetType().Name} name={fe.Name} after {step} steps");
-                    return fe;
+                    // Always return text-input controls (TextBox, PasswordBox,
+                    // ComboBox) even when they have no Name — hit-testing their
+                    // template children (inner Grids, TextBoxView, etc.) must
+                    // resolve back to the user-facing control, not a nameless
+                    // template part.
+                    string typeName = fe.GetType().Name;
+                    if (typeName == "TextBox" || typeName == "PasswordBox" || typeName == "ComboBox")
+                    {
+                        Log($"WalkUpToNearestNamedElement returned {typeName} name={fe.Name} after {step} steps");
+                        return fe;
+                    }
+                }
+                if (current is FrameworkElement fe2 
+                    && !string.IsNullOrEmpty(fe2.Name) 
+                    && !IsLikelyTemplatePartName(fe2.Name))
+                {
+                    Log($"WalkUpToNearestNamedElement returned {fe2.GetType().Name} name={fe2.Name} after {step} steps");
+                    return fe2;
                 }
                 current = VisualTreeHelper.GetParent(current);
             }
