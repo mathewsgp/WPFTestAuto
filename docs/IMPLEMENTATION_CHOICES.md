@@ -318,6 +318,8 @@ These are already done - no action needed:
 - ✅ **Enhanced Spy Tool** (tree view, property grid)
 - ✅ **Checkpoint Wizard** (point-and-click)
 - ✅ **UIA Event Recording** (real Windows hooks)
+- ✅ **Wild-Card XPath Support** (flexible matching patterns)
+- ✅ **Visual Test Builder** (drag-drop test creation)
 
 ---
 
@@ -330,13 +332,13 @@ These are already done - no action needed:
 | Smart Wait | Medium | ⭐⭐⭐⭐ | 🟠 Do Next |
 | Data-Driven | Medium | ⭐⭐⭐⭐ | 🟠 Do Next |
 | Test Visualizer | Medium | ⭐⭐⭐⭐ | 🟠 Do Next |
-| Visual Builder | High | ⭐⭐⭐⭐ | 🟠 Do Next |
 | IntelliSense | Medium | ⭐⭐⭐⭐ | 🟠 Do Next |
 | CI/CD Plugin | Medium | ⭐⭐⭐⭐ | 🟡 Plan |
 | Parallel Run | Medium | ⭐⭐⭐ | 🟡 Plan |
 | Enhanced Reports | Medium | ⭐⭐⭐ | 🟡 Plan |
 | Attr. Weighting | Low | ⭐⭐⭐ | 🟢 Easy Win |
-| Wild-Card XPath | Medium | ⭐⭐⭐ | 🟢 Consider |
+| **Wild-Card XPath** | **Medium** | **⭐⭐⭐** | **✅ Done** |
+| **Visual Builder** | **High** | **⭐⭐⭐⭐** | **✅ Done** |
 
 ---
 
@@ -375,7 +377,6 @@ CRITICAL:
 HIGH:
 [ ] Data-Driven Testing
 [ ] Test Visualizer
-[ ] Visual Test Builder
 [ ] IntelliSense
 
 MEDIUM:
@@ -383,7 +384,6 @@ MEDIUM:
 [ ] Parallel Execution
 [ ] Enhanced Reporting
 [ ] Attribute Weighting
-[ ] Wild-Card XPath
 
 LOWER:
 [ ] TestRail/Jira
@@ -392,6 +392,10 @@ LOWER:
 [ ] Docker Support
 [ ] Cloud Execution
 [ ] Multi-Platform
+
+COMPLETED:
+[x] Wild-Card XPath
+[x] Visual Test Builder
 ```
 
 ---
