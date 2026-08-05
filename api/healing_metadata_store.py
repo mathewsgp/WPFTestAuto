@@ -295,6 +295,9 @@ class HealingMetadataStore:
         """
         metadata = self._get_or_create_metadata(alias)
         
+        # Preserve verification count from existing baseline
+        existing_count = metadata.baseline.verification_count if metadata.baseline else 0
+        
         baseline = ElementBaseline(
             alias=alias,
             automation_id=properties.get("automation_id"),
@@ -308,7 +311,8 @@ class HealingMetadataStore:
             is_enabled=properties.get("is_enabled", True),
             driver_used=driver,
             search_method=search_method,
-            search_value=search_value
+            search_value=search_value,
+            verification_count=existing_count + 1
         )
         
         # Only update if we don't have a baseline or this is newer
@@ -693,9 +697,9 @@ class HealingMetadataStore:
         success_rate = total_successes / total_attempts if total_attempts > 0 else 0
         
         # Determine health status
-        if metadata.consecutive_failures >= 3:
+        if success_rate == 0:
             status = "unstable"
-            reason = f"{metadata.consecutive_failures} consecutive failures"
+            reason = "No successful interactions"
         elif success_rate < 0.5:
             status = "degraded"
             reason = f"{success_rate*100:.0f}% success rate"

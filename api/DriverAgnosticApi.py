@@ -73,7 +73,7 @@ _breaker_manager = CircuitBreakerManager(
 
 def _get_sample_wpf_app_path():
     """Returns the path to the SampleWpfApp executable."""
-    base = os.path.join(_THIS_DIR, "..", "SampleWpfApp", "bin", "Debug", "net10.0-windows")
+    base = os.path.join(_THIS_DIR, "..", "SampleWpfApp", "bin", "Debug", "net8.0-windows")
     dll = os.path.join(base, "SampleWpfApp.dll")
     if os.path.exists(dll):
         return dll
@@ -140,7 +140,15 @@ def _reset_real_app():
     
     In IDE mode (WPFSPY_IDE_RUN=1): keeps the app running, uses ResetState.
     In CLI/CI mode: closes and reopens the app between tests for isolation.
+    Also resets the mock app instance so FlaUI driver state is consistent.
     """
+    # Always reset the mock app so FlaUI driver starts from a known state
+    try:
+        from mock_app import reset_app
+        reset_app()
+    except Exception:
+        pass
+    
     ide_mode = os.environ.get('WPFSPY_IDE_RUN') == '1'
     print(f'[DriverAgnosticApi] _reset_real_app called, mode={_WPFSPY_MODE}, ide_mode={ide_mode}')
     
@@ -580,16 +588,18 @@ class DriverAgnosticApi:
         """Build full XPath by walking parent chain.
         
         Walks up the parent chain (parentAlias references) to build
-        the complete XPath from Window to the parent element.
+        the complete XPath from Window to the element's PARENT.
         
         Args:
             alias: Element alias to resolve
         
         Returns:
-            Full XPath from Window (e.g., "/Window[@AutomationId='Main']/TabControl/...")
+            Full XPath from Window to the element's parent.
+            The caller should append the relative XPath.
         """
         path_parts = []
-        current_alias = alias
+        parent_alias = repo.get_parent_alias(alias)
+        current_alias = parent_alias  # Start from parent, not the element itself
         visited = set()  # Prevent infinite loops
         
         while current_alias:
@@ -601,7 +611,7 @@ class DriverAgnosticApi:
             element = repo.get_element(current_alias)
             
             # Get the parent alias
-            parent_alias = repo.get_parent_alias(current_alias)
+            parent = repo.get_parent_alias(current_alias)
             
             # Build XPath prefix for this element
             control_type = element.get("controlType", "")
@@ -617,10 +627,10 @@ class DriverAgnosticApi:
                 path_parts.insert(0, f"{control_type}[@Name='{element['name']}']")
             
             # Move to parent
-            if parent_alias is None:
+            if parent is None:
                 # Reached root (Window)
                 break
-            current_alias = parent_alias
+            current_alias = parent
         
         return "/" + "/".join(path_parts)
 

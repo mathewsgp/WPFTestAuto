@@ -138,11 +138,12 @@ def resolve_full_path(alias: str) -> Tuple[str, str]:
         Returns:
             ("/Window[@AutomationId='MainWindow']/GroupBox[@AutomationId='CustomerGroup']",
              "LoginPage.MainWindow.GroupBox")
-    
+
     The caller should append the relativeXPath to the returned full_path.
     """
     path_parts = []
-    current_alias = alias
+    parent_alias = get_parent_alias(alias)
+    current_alias = parent_alias  # Start from parent, not the element itself
     visited = set()  # Prevent infinite loops
     
     while current_alias:
@@ -151,8 +152,9 @@ def resolve_full_path(alias: str) -> Tuple[str, str]:
         visited.add(current_alias)
         
         element = get_element(current_alias)
+        parent_alias = get_parent_alias(current_alias)
         
-        # Add this element's contribution to the path
+        # Build XPath prefix for this element
         control_type = element.get("controlType", "")
         window_id = element.get("windowAutomationId") or element.get("windowId", "MainWindow")
         
@@ -166,8 +168,7 @@ def resolve_full_path(alias: str) -> Tuple[str, str]:
         elif "name" in element:
             path_parts.insert(0, f"{control_type}[@Name='{element['name']}']")
         
-        # Get parent
-        parent_alias = get_parent_alias(current_alias)
+        # Move to parent
         if parent_alias is None:
             # Reached root
             break

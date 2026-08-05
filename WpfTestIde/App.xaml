@@ -8,5 +8,10 @@
         <conv:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <conv:BoolToStatusBrushConverter x:Key="BoolToStatusBrushConverter"/>
+        <conv:EmptyStringToVisibleConverter x:Key="EmptyStringToVisibleConverter"/>
+        <conv:EmptyStringToCollapsedConverter x:Key="EmptyStringToCollapsedConverter"/>
+        <conv:EmptyToVisibleConverter x:Key="EmptyToVisibleConverter"/>
+        <conv:ZeroToVisibleConverter x:Key="ZeroToVisibleConverter"/>
+        <conv:NullToVisibleConverter x:Key="NullToVisibleConverter"/>
     </Application.Resources>
 </Application>
