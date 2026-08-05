@@ -152,8 +152,13 @@
                                 Background="{Binding LastRunSuccess, Converter={StaticResource BoolToStatusBrushConverter}}">
                             <TextBlock Text="{Binding RunSummaryText}" FontFamily="Consolas" FontWeight="Bold"/>
                         </Border>
-                        <ListBox ItemsSource="{Binding RunOutputLines}" FontFamily="Consolas" FontSize="11.5"
-                                 Background="#12161C" Foreground="#C9D1D9" BorderThickness="0"/>
+                         <TextBox Text="{Binding RunOutputText}" FontFamily="Consolas" FontSize="11.5"
+                                 Background="#12161C" Foreground="#C9D1D9" BorderThickness="0"
+                                 IsReadOnly="True" IsReadOnlyCaretVisible="False"
+                                 VerticalScrollBarVisibility="Auto"
+                                 TextOptions.TextFormattingMode="Display"
+                                 AcceptsReturn="True" TextWrapping="Wrap"
+                                 Margin="0,0,0,4"/>
                     </DockPanel>
                 </TabItem>
             </TabControl>

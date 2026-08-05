@@ -54,13 +54,13 @@ elements:
           value: "username_box.png"
           priority: 2
 
-  # Password TextBox - parent is MainWindow
+  # Password PasswordBox - parent is MainWindow
   LoginPage.MainWindow.txtPassword:
     displayName: "Password Text Box"
-    controlType: "TextBox"
+    controlType: "PasswordBox"
     automationId: "txtPassword"
     parentAlias: "LoginPage.MainWindow"
-    relativeXPath: "TextBox[@AutomationId='txtPassword']"
+    relativeXPath: "PasswordBox[@AutomationId='txtPassword']"
     defaultTimeout: 10
     tags: ["login", "critical"]
     strategies:
@@ -70,7 +70,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "TextBox[@AutomationId='txtPassword']"
+          value: "PasswordBox[@AutomationId='txtPassword']"
           priority: 1
       Sikuli:
         - searchBy: "Image"
