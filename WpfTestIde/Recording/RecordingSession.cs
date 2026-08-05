@@ -231,12 +231,20 @@ namespace WpfTestIde.Recording
                          return predicate.Substring(start, end - start);
                      }
                  }
-                 // Note: @Name predicates are intentionally not used for
-                 // ancestor path building because WPF template internals
-                 // (toggleButton, templateRoot, splitBorder, etc.) have
-                 // @Name but are not user-facing elements. Only
-                 // @AutomationId (deliberately assigned by developers)
-                 // is used as a meaningful ancestor identifier.
+                 else if (predicate.StartsWith("@Name='"))
+                 {
+                     int start = "@Name='".Length;
+                     int end = predicate.IndexOf('\'', start);
+                     if (end > start)
+                     {
+                         string name = predicate.Substring(start, end - start);
+                         // Skip WPF template parts (PART_*) and Adorner layers —
+                         // they are internal visuals, not user-facing elements.
+                         if (name.StartsWith("PART_") || name == "AdornerLayer")
+                             return null;
+                         return name;
+                     }
+                 }
              }
              return null;
          }
