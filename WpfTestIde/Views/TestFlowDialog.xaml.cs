@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using WpfTestIde.Models;
 using WpfTestIde.ViewModels;
 
 namespace WpfTestIde.Views
