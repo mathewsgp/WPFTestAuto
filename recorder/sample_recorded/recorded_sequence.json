@@ -1,38 +1,29 @@
 [
   {
-    "alias": "LoginPage.txtUsername",
-    "step": "ValueStep",
+    "timestamp": "2025-01-01T10:00:00",
+    "eventType": "TextChanged",
+    "automationId": "txtUsername",
+    "name": "UsernameInput",
+    "controlType": "TextBox",
     "value": "user1",
-    "timestamp": 1784685433.665
+    "pageName": "LoginPage"
   },
   {
-    "alias": "LoginPage.txtPassword",
-    "step": "ValueStep",
+    "timestamp": "2025-01-01T10:00:01",
+    "eventType": "TextChanged",
+    "automationId": "txtPassword",
+    "name": "PasswordInput",
+    "controlType": "TextBox",
     "value": "Pass@123",
-    "timestamp": 1784685434.165
+    "pageName": "LoginPage"
   },
   {
-    "alias": "LoginPage.btnSubmit",
-    "step": "InvokeStep",
+    "timestamp": "2025-01-01T10:00:02",
+    "eventType": "Invoke",
+    "automationId": "btnSubmit",
+    "name": "SubmitBtn",
+    "controlType": "Button",
     "value": null,
-    "timestamp": 1784685434.665
-  },
-  {
-    "alias": "OrdersPage.cmbSku",
-    "step": "ValueStep",
-    "value": "SKU-2002",
-    "timestamp": 1784685435.165
-  },
-  {
-    "alias": "OrdersPage.txtQty",
-    "step": "ValueStep",
-    "value": "3",
-    "timestamp": 1784685435.665
-  },
-  {
-    "alias": "OrdersPage.btnCreateOrder",
-    "step": "InvokeStep",
-    "value": null,
-    "timestamp": 1784685436.165
+    "pageName": "LoginPage"
   }
 ]

@@ -1,26 +1,20 @@
-{
-  "LoginPage.txtUsername": {
-    "step": "ValueStep",
-    "value": "user1"
+[
+  {
+    "alias": "LoginPage.txtUsername",
+    "stepType": "ValueStep",
+    "value": "user1",
+    "timestamp": "2025-01-01T10:00:00"
   },
-  "LoginPage.txtPassword": {
-    "step": "ValueStep",
-    "value": "Pass@123"
+  {
+    "alias": "LoginPage.txtPassword",
+    "stepType": "ValueStep",
+    "value": "Pass@123",
+    "timestamp": "2025-01-01T10:00:01"
   },
-  "LoginPage.btnSubmit": {
-    "step": "InvokeStep",
-    "value": null
-  },
-  "OrdersPage.cmbSku": {
-    "step": "ValueStep",
-    "value": "SKU-2002"
-  },
-  "OrdersPage.txtQty": {
-    "step": "ValueStep",
-    "value": "3"
-  },
-  "OrdersPage.btnCreateOrder": {
-    "step": "InvokeStep",
-    "value": null
+  {
+    "alias": "LoginPage.btnSubmit",
+    "stepType": "InvokeStep",
+    "value": null,
+    "timestamp": "2025-01-01T10:00:02"
   }
-}
+]
