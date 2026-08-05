@@ -430,11 +430,11 @@ namespace WpfTestIde.ViewModels
                 var step = new FlowStep
                 {
                     StepNumber = i++,
-                    ActionType = MapActionType(rs.Action),
+                    ActionType = MapActionType(rs.Kind, rs.Action),
                     ElementAlias = rs.Alias ?? "",
                     Value = rs.Value ?? "",
-                    CheckpointType = rs.CheckpointType ?? "",
-                    ExpectedValue = rs.ExpectedValue ?? "",
+                    CheckpointType = rs.Kind == StepKind.Verify ? "Text" : "",
+                    ExpectedValue = rs.Value ?? "",
                     Status = FlowStepStatus.Pending
                 };
                 Steps.Add(step);
@@ -442,23 +442,18 @@ namespace WpfTestIde.ViewModels
             OnPropertyChanged(nameof(FilteredSteps));
         }
 
-        private string MapActionType(string? action)
+        private string MapActionType(StepKind kind, ActionKind action)
         {
+            if (kind == StepKind.Verify)
+                return "Verify";
+            if (kind == StepKind.VerifyOcr)
+                return "GetText";
+                
             return action switch
             {
-                "Click" or "LeftClick" => "Click",
-                "DoubleClick" => "DoubleClick",
-                "RightClick" or "ContextClick" => "RightClick",
-                "Hover" or "MouseOver" => "Hover",
-                "SetText" or "Type" or "Input" => "SetText",
-                "GetText" or "Read" => "GetText",
-                "Select" or "SelectItem" => "Select",
-                "Check" or "CheckBox" => "Check",
-                "Uncheck" or "UncheckBox" => "Uncheck",
-                "Verify" or "Assert" => "Verify",
-                "Wait" or "Sleep" => "Wait",
-                "Screenshot" or "Capture" => "Screenshot",
-                "KeyPress" or "PressKey" => "KeyPress",
+                ActionKind.Invoke => "Click",
+                ActionKind.SetValue => "SetText",
+                ActionKind.Toggle => "Check",
                 _ => "Click"
             };
         }

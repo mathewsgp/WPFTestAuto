@@ -395,11 +395,9 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
                 var flowStep = new ViewModels.FlowStep
                 {
                     StepNumber = dialog.Steps.Steps.Count + 1,
-                    ActionType = MapActionType(step.Action),
+                    ActionType = MapFlowActionToString(step),
                     ElementAlias = step.Alias ?? "",
-                    Value = step.Value ?? "",
-                    CheckpointType = step.CheckpointType ?? "",
-                    ExpectedValue = step.ExpectedValue ?? ""
+                    Value = step.Value ?? ""
                 };
                 dialog.Steps.Steps.Add(flowStep);
             }
@@ -410,13 +408,13 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
                 Steps.Clear();
                 foreach (var flowStep in dialog.Steps.Steps)
                 {
+                    var (kind, action) = MapFlowActionToRecorded(flowStep.ActionType);
                     var recordedStep = new RecordedStep
                     {
-                        Action = flowStep.ActionType,
+                        Kind = kind,
+                        Action = action,
                         Alias = flowStep.ElementAlias,
-                        Value = flowStep.Value,
-                        CheckpointType = flowStep.CheckpointType,
-                        ExpectedValue = flowStep.ExpectedValue
+                        Value = flowStep.Value
                     };
                     Steps.Add(recordedStep);
                 }
@@ -424,24 +422,38 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
             }
         }
 
-        private string MapActionType(string? action)
+        private string MapFlowActionToString(RecordedStep step)
         {
-            return action switch
+            if (step.Kind == Models.StepKind.Verify)
+                return "Verify";
+            if (step.Kind == Models.StepKind.VerifyOcr)
+                return "GetText";
+                
+            return step.Action switch
             {
-                "Click" or "LeftClick" => "Click",
-                "DoubleClick" => "DoubleClick",
-                "RightClick" or "ContextClick" => "RightClick",
-                "Hover" or "MouseOver" => "Hover",
-                "SetText" or "Type" or "Input" => "SetText",
-                "GetText" or "Read" => "GetText",
-                "Select" or "SelectItem" => "Select",
-                "Check" or "CheckBox" => "Check",
-                "Uncheck" or "UncheckBox" => "Uncheck",
-                "Verify" or "Assert" => "Verify",
-                "Wait" or "Sleep" => "Wait",
-                "Screenshot" or "Capture" => "Screenshot",
-                "KeyPress" or "PressKey" => "KeyPress",
+                Models.ActionKind.Invoke => "Click",
+                Models.ActionKind.SetValue => "SetText",
+                Models.ActionKind.Toggle => "Check",
                 _ => "Click"
+            };
+        }
+
+        private (Models.StepKind kind, Models.ActionKind action) MapFlowActionToRecorded(string flowActionType)
+        {
+            return flowActionType switch
+            {
+                "Click" or "DoubleClick" or "RightClick" or "Hover" => 
+                    (Models.StepKind.Action, Models.ActionKind.Invoke),
+                "SetText" or "Select" => 
+                    (Models.StepKind.Action, Models.ActionKind.SetValue),
+                "Check" or "Uncheck" => 
+                    (Models.StepKind.Action, Models.ActionKind.Toggle),
+                "Verify" => 
+                    (Models.StepKind.Verify, Models.ActionKind.Invoke),
+                "GetText" => 
+                    (Models.StepKind.VerifyOcr, Models.ActionKind.Invoke),
+                _ => 
+                    (Models.StepKind.Action, Models.ActionKind.Invoke)
             };
         }
 
