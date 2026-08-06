@@ -51,6 +51,8 @@
   <PropertyGroup Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
+    <!-- Keep consistent DLL name across VS versions -->
+    <TargetName>WpfSpyAgent.NativeInject</TargetName>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
