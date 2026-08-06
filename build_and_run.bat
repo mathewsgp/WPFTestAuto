@@ -272,25 +272,44 @@ if "%VS2026%"=="1" (
     )
 )
 
-:: Use dotnet msbuild for C++ projects (works with VS 2022/2026)
-set "MSBUILD_CMD=dotnet"
-set "MSBUILD_USE_DOTNET=1"
+:: Use Visual Studio MSBuild for C++ projects
+set "MSBUILD_VS="
+:: VS 2026 (VS 18)
+if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" (
+    set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
+) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" (
+    set "MSBUILD_VS=C:\Program Files (x86)\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
+) else if exist "C:\Program Files\Microsoft Visual Studio\2026\Community\MSBuild\Current\Bin\MSBuild.exe" (
+    set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\2026\Community\MSBuild\Current\Bin\MSBuild.exe"
+)
+:: VS 2022 (VS 17)
+if not defined MSBUILD_VS (
+    if exist "C:\Program Files\Microsoft Visual Studio\17\Community\MSBuild\Current\Bin\MSBuild.exe" (
+        set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\17\Community\MSBuild\Current\Bin\MSBuild.exe"
+    ) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" (
+        set "MSBUILD_VS=C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+    ) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe" (
+        set "MSBUILD_VS=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+    )
+)
 
 if exist "%NATIVE_INJECT_PROJECT%" (
-    dotnet msbuild "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
-    if errorlevel 1 (
-        echo WARNING: Failed to build NativeInject DLL ^(runtime injection may not work^)
-        echo       Make sure you have C++ workload installed in Visual Studio.
-        if "%VS2026%"=="" (
-            echo       For VS 2026: set VS2026=1 before running this script
-        )
+    if defined MSBUILD_VS (
+        echo       Building NativeInject with MSBuild: !MSBUILD_VS!
+        "!MSBUILD_VS!" "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
     ) else (
+        echo       WARNING: Visual Studio MSBuild not found.
+        echo       C++ project cannot be built without VS installed.
+        echo       Install Visual Studio with C++ workload, or build in VS.
+    )
+    if defined MSBUILD_VS if not errorlevel 1 (
         echo       NativeInject DLL built for runtime injection.
         echo       Output: bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll
+    ) else (
+        echo       WARNING: NativeInject DLL build failed ^(runtime injection may not work^)
     )
 ) else (
     echo       NativeInject project not found ^(skip runtime injection setup^)
-    echo       Use WpfTestFramework.VS2022.sln or WpfTestFramework.VS2026.sln instead.
 )
 echo.
 
