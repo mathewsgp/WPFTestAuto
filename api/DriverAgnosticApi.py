@@ -145,7 +145,11 @@ def _start_sample_wpf_app():
         pass  # Fall back to inline implementation
     
     # Fallback: inline implementation
-    startup_hook = os.path.join(os.path.dirname(app_path), "WpfSpyAgent.StartupHook.dll")
+    startup_hook = os.path.join(
+        os.path.dirname(os.path.dirname(app_path)),
+        "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net8.0-windows",
+        "WpfSpyAgent.StartupHook.dll"
+    )
     
     env = os.environ.copy()
     env["WPFSPY_AGENT_ENABLED"] = "1"

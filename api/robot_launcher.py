@@ -41,11 +41,11 @@ class AppLauncher:
     - Get Startup Hook Path
     """
     
-    ROBOT_LIBRARY_SCOPE = "TEST_SUITE"
+    ROBOT_LIBRARY_SCOPE = "GLOBAL"
     
-    def __init__(self):
+    def __init__(self, startup_hook_path: Optional[str] = None):
         """Initialize the launcher."""
-        self._injector = RuntimeInjector()
+        self._injector = RuntimeInjector(startup_hook_path)
         self._processes = {}
     
     def launch_application(self, app_path, arguments=None, pipe_name="WPFSpyAgentPipe", 
