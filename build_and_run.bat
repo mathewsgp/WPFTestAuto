@@ -251,22 +251,30 @@ echo.
 :: Build native injection DLL for runtime attach
 echo [Building Native Inject DLL for runtime injection...]
 if exist "%NATIVE_INJECT_PROJECT%" (
-    :: Allow override of toolset via TOOLSET environment variable
-    :: Examples: v142 (VS 2019), v143 (VS 2022), v144 (VS 2024/2025), v145 (VS 2026+)
-    set "TOOLSET_CMD="
-    if not "%TOOLSET%"=="" set "TOOLSET_CMD=/p:PlatformToolset=%TOOLSET%"
+    :: Detect which solution/project to build based on installed VS version
+    :: Default to VS 2022 (v143). Override with VS2026 environment variable.
+    if "%VS2026%"=="1" (
+        set "NATIVE_INJECT_PROJECT=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj"
+        echo       Building for VS 2026 ^(v145^)...
+    ) else (
+        set "NATIVE_INJECT_PROJECT=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2022.vcxproj"
+        echo       Building for VS 2022 ^(v143^)...
+    )
     
-    msbuild "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal !TOOLSET_CMD!
+    msbuild "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
     if errorlevel 1 (
         echo WARNING: Failed to build NativeInject DLL ^(runtime injection may not work^)
         echo       Make sure you have C++ workload installed in Visual Studio.
-        echo       Or set TOOLSET environment variable: set TOOLSET=v143
+        if "%VS2026%"=="" (
+            echo       For VS 2026: set VS2026=1 before running this script
+        )
     ) else (
         echo       NativeInject DLL built for runtime injection.
         echo       Output: bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll
     )
 ) else (
     echo       NativeInject project not found ^(skip runtime injection setup^)
+    echo       Use WpfTestFramework.VS2022.sln or WpfTestFramework.VS2026.sln instead.
 )
 echo.
 

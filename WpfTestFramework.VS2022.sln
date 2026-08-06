@@ -12,7 +12,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleWpfApp", "SampleWpfAp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfTestIde", "WpfTestIde\WpfTestIde.csproj", "{F6A7B8C9-D0E1-2345-F123-456789012345}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WpfSpyAgent.NativeInject", "WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2022.vcxproj", "{B2C3D4E5-F6A7-8901-BCDE-F12345678902}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WpfSpyAgent.NativeInject.VS2022", "WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2022.vcxproj", "{B2C3D4E5-F6A7-8901-BCDE-F12345678902}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
