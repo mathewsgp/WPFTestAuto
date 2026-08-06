@@ -32,7 +32,17 @@ namespace WpfSpyAgent
         private static Thread? _listenerThread;
         private static volatile bool _running;
 
-        public static void Start(string pipeName = "WPFSpyAgentPipe")
+        /// <summary>
+    /// Entry point for CLR Hosting (ExecuteInDefaultAppDomain).
+    /// Returns int instead of void so it can be called via ExecuteInDefaultAppDomain.
+    /// </summary>
+    public static int StartWithPipe(string pipeName)
+    {
+        Start(pipeName);
+        return 0; // Exit code for ExecuteInDefaultAppDomain
+    }
+
+    public static void Start(string pipeName = "WPFSpyAgentPipe")
         {
             if (_running)
             {
