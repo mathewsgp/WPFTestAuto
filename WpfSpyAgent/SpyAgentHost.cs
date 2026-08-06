@@ -100,10 +100,11 @@ namespace WpfSpyAgent
                         PipeOptions.Asynchronous);
 
                     Log("ListenLoop: Waiting for connection (60s timeout)...");
-                    // Use async wait with timeout
+                    // Use async wait with timeout - compatible with .NET Framework
                     var connectTask = server.WaitForConnectionAsync();
                     bool completedInTime = connectTask.Wait(TimeSpan.FromSeconds(60));
-                    if (completedInTime && connectTask.IsCompletedSuccessfully)
+                    bool wasConnected = completedInTime && !connectTask.IsFaulted && !connectTask.IsCanceled;
+                    if (wasConnected)
                     {
                         Log("ListenLoop: Client connected!");
                         // Handle each client on its own thread so the listen
