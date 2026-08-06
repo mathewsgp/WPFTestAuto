@@ -58,16 +58,9 @@ namespace WpfSpyAgent
 
             try
             {
-                Log($"Start: Creating thread with MTA apartment...");
-                // Create thread in MTA (Multi-Threaded Apartment) - default for worker threads
-                var thread = new Thread(() => ListenLoop(pipeName));
-                thread.SetApartmentState(ApartmentState.MTA);
-                _listenerThread = thread;
-                _listenerThread.Name = "WpfSpyAgent-Listener";
-                
-                Log($"Start: Starting thread...");
-                _listenerThread.Start();
-                Log($"Start: Thread started, ID={_listenerThread.ManagedThreadId}");
+                Log($"Start: Using ThreadPool...");
+                ThreadPool.QueueUserWorkItem(_ => ListenLoop(pipeName));
+                Log($"Start: Queued to ThreadPool");
             }
             catch (Exception ex)
             {
