@@ -31,30 +31,36 @@ namespace WpfSpyAgent
     {
         private static Thread? _listenerThread;
         private static volatile bool _running;
+        private static ManualResetEvent? _readyEvent;
 
         /// <summary>
-    /// Entry point for CLR Hosting (ExecuteInDefaultAppDomain).
-    /// Returns int instead of void so it can be called via ExecuteInDefaultAppDomain.
-    /// </summary>
-    public static int StartWithPipe(string pipeName)
-    {
-        Start(pipeName);
-        return 0; // Exit code for ExecuteInDefaultAppDomain
-    }
+        /// Entry point for CLR Hosting (ExecuteInDefaultAppDomain).
+        /// Returns int instead of void so it can be called via ExecuteInDefaultAppDomain.
+        /// </summary>
+        public static int StartWithPipe(string pipeName)
+        {
+            _readyEvent = new ManualResetEvent(false);
+            Start(pipeName);
+            
+            // Wait for the ListenLoop to actually start (with timeout)
+            // This ensures the thread has begun executing before we return
+            bool ready = _readyEvent.WaitOne(5000);
+            if (!ready)
+            {
+                Log("StartWithPipe: TIMEOUT waiting for ListenLoop to start!");
+            }
+            
+            return 0; // Exit code for ExecuteInDefaultAppDomain
+        }
 
-    public static void Start(string pipeName = "WPFSpyAgentPipe")
+        public static void Start(string pipeName = "WPFSpyAgentPipe")
         {
             if (_running)
             {
                 return;
             }
             _running = true;
-            try
-            {
-                string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_probe_log.txt");
-                System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] SpyAgentHost.Start called, pipe={pipeName}{Environment.NewLine}");
-            }
-            catch { }
+            Log($"SpyAgentHost.Start called, pipe={pipeName}");
 
             _listenerThread = new Thread(() => ListenLoop(pipeName))
             {
@@ -62,12 +68,7 @@ namespace WpfSpyAgent
                 Name = "WpfSpyAgent-Listener",
             };
             _listenerThread.Start();
-            try
-            {
-                string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_probe_log.txt");
-                System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Thread started, ID={_listenerThread.ManagedThreadId}{Environment.NewLine}");
-            }
-            catch { }
+            Log($"Thread started, ID={_listenerThread.ManagedThreadId}");
         }
 
         public static void Stop() => _running = false;
@@ -75,6 +76,10 @@ namespace WpfSpyAgent
         private static void ListenLoop(string pipeName)
         {
             Log("ListenLoop started");
+            
+            // Signal that we've started
+            _readyEvent?.Set();
+            
             while (_running)
             {
                 try
@@ -122,13 +127,13 @@ namespace WpfSpyAgent
             }
             Log("ListenLoop: Exiting");
         }
-        
+
         private static void Log(string message)
         {
             try
             {
-                string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_probe_log.txt");
-                System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {message}{Environment.NewLine}");
+                string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_probe_log.txt");
+                File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {message}{Environment.NewLine}");
             }
             catch { }
         }
