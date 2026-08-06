@@ -411,36 +411,30 @@ echo.
 :: Copy native injection DLL to IDE output for runtime attach feature
 echo.
 echo [Copying DLLs for runtime injection...]
-set "NATIVE_DLL_FOUND="
+set NATIVE_DLL_FOUND=
 
-:: Source locations (C++ project can output to solution bin or project bin)
-:: Target: WpfTestIde\bin\%CONFIGURATION%\net8.0-windows\ (IDE directory)
-set "DST_DIR=%FW_ROOT%WpfTestIde\bin\%CONFIGURATION%\net8.0-windows"
-set "DST_DLL=%DST_DIR%\WpfSpyAgent.NativeInject.dll"
+:: Target: WpfTestIde\bin\Debug\net8.0-windows
+set DST_DIR=%FW_ROOT%WpfTestIde\bin\%CONFIGURATION%\net8.0-windows
 
-:: Try solution root bin first
-set "SRC_DLL=%FW_ROOT%bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll"
-echo       Trying source: %SRC_DLL%
+:: Try project bin first (where VS builds it)
+set SRC_DLL=%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll
+echo       Trying: %SRC_DLL%
 if exist "%SRC_DLL%" (
     if not exist "%DST_DIR%" mkdir "%DST_DIR%"
     copy /Y "%SRC_DLL%" "%DST_DIR%\" >nul
-    if exist "%DST_DLL%" (
-        echo       Copied NativeInject.dll to IDE directory.
-        set "NATIVE_DLL_FOUND=1"
-    )
+    echo       Copied NativeInject.dll to IDE directory.
+    set NATIVE_DLL_FOUND=1
 )
 
-:: Try project bin as fallback
+:: Try solution root bin as fallback
 if not defined NATIVE_DLL_FOUND (
-    set "SRC_DLL=%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll"
-    echo       Trying source: %SRC_DLL%
+    set SRC_DLL=%FW_ROOT%bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll
+    echo       Trying: %SRC_DLL%
     if exist "%SRC_DLL%" (
         if not exist "%DST_DIR%" mkdir "%DST_DIR%"
         copy /Y "%SRC_DLL%" "%DST_DIR%\" >nul
-        if exist "%DST_DLL%" (
-            echo       Copied NativeInject.dll to IDE directory.
-            set "NATIVE_DLL_FOUND=1"
-        )
+        echo       Copied NativeInject.dll to IDE directory.
+        set NATIVE_DLL_FOUND=1
     )
 )
 
