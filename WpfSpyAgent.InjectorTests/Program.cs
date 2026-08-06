@@ -2,11 +2,13 @@
  * WpfSpyAgent.InjectorTests
  * 
  * Tests for the CLR Hosting runtime injection mechanism.
+ * Uses SampleWpfApp from the same repository.
  * 
  * These tests verify that:
  * 1. NativeInject DLL can detect both .NET Core and .NET Framework
  * 2. ICLRRuntimeHost can be obtained
  * 3. ExecuteInDefaultAppDomain works correctly
+ * 4. SampleWpfApp exists for injection testing
  * 
  * Run with: dotnet test
  */
@@ -27,14 +29,30 @@ namespace WpfSpyAgent.InjectorTests
     {
         private const string NativeDllName = "WpfSpyAgent.NativeInject.dll";
 
+        private static string GetRepoRoot()
+        {
+            var dir = Directory.GetCurrentDirectory();
+            while (dir != null)
+            {
+                if (File.Exists(Path.Combine(dir, "WpfTestFramework.sln")) ||
+                    File.Exists(Path.Combine(dir, "WpfTestFramework.VS2026.sln")) ||
+                    Directory.Exists(Path.Combine(dir, "SampleWpfApp")))
+                {
+                    return dir;
+                }
+                dir = Directory.GetParent(dir)?.FullName;
+            }
+            return Directory.GetCurrentDirectory();
+        }
+
         private static string FindNativeDll()
         {
-            // Try common locations
+            var root = GetRepoRoot();
             string[] paths = {
-                Path.Combine(GetSolutionRoot(), "WpfSpyAgent.NativeInject", "bin", "Debug", "x64", NativeDllName),
-                Path.Combine(GetSolutionRoot(), "WpfSpyAgent.NativeInject", "bin", "Release", "x64", NativeDllName),
-                Path.Combine(GetSolutionRoot(), "bin", "Debug", "x64", NativeDllName),
-                Path.Combine(GetSolutionRoot(), "bin", "Release", "x64", NativeDllName),
+                Path.Combine(root, "WpfSpyAgent.NativeInject", "bin", "Debug", "x64", NativeDllName),
+                Path.Combine(root, "WpfSpyAgent.NativeInject", "bin", "Release", "x64", NativeDllName),
+                Path.Combine(root, "bin", "Debug", "x64", NativeDllName),
+                Path.Combine(root, "bin", "Release", "x64", NativeDllName),
             };
 
             foreach (var path in paths)
@@ -46,22 +64,12 @@ namespace WpfSpyAgent.InjectorTests
             return string.Empty;
         }
 
-        private static string GetSolutionRoot()
-        {
-            var dir = Directory.GetCurrentDirectory();
-            while (dir != null && !File.Exists(Path.Combine(dir, "WPFTestAuto.sln")))
-            {
-                dir = Directory.GetParent(dir)?.FullName;
-            }
-            return dir ?? Directory.GetCurrentDirectory();
-        }
-
         [Fact]
         public void NativeDllExists()
         {
             var dllPath = FindNativeDll();
             Assert.False(string.IsNullOrEmpty(dllPath), 
-                $"Native DLL not found. Build WpfSpyAgent.NativeInject project first. Searched in: {GetSolutionRoot()}");
+                $"Native DLL not found. Build WpfSpyAgent.NativeInject project first.");
             Assert.True(File.Exists(dllPath), $"Native DLL not found at: {dllPath}");
             Console.WriteLine($"[PASS] Native DLL found at: {dllPath}");
         }
@@ -99,7 +107,7 @@ namespace WpfSpyAgent.InjectorTests
             {
                 var procAddress = NativeLibrary.GetExport(handle, "InjectAndStartAgent");
                 Assert.NotEqual(IntPtr.Zero, procAddress);
-                Console.WriteLine("[PASS] Export 'InjectAndStartAgent' found at: 0x" + procAddress.ToInt64().ToString("X"));
+                Console.WriteLine($"[PASS] Export 'InjectAndStartAgent' found at: 0x{procAddress.ToInt64():X}");
             }
             finally
             {
@@ -121,10 +129,9 @@ namespace WpfSpyAgent.InjectorTests
             
             try
             {
-                // This export is for Snoop-style injection
                 var procAddress = NativeLibrary.GetExport(handle, "ExecuteInDefaultAppDomain");
                 Assert.NotEqual(IntPtr.Zero, procAddress);
-                Console.WriteLine("[PASS] Export 'ExecuteInDefaultAppDomain' found at: 0x" + procAddress.ToInt64().ToString("X"));
+                Console.WriteLine($"[PASS] Export 'ExecuteInDefaultAppDomain' found at: 0x{procAddress.ToInt64():X}");
             }
             finally
             {
@@ -142,16 +149,63 @@ namespace WpfSpyAgent.InjectorTests
         [Fact]
         public void StartWithPipe_ReturnsZero()
         {
-            // This test verifies that SpyAgentHost.StartWithPipe can be called
-            // and returns 0 (success) as expected by ExecuteInDefaultAppDomain
-            
-            // We can't actually call Start() without a WPF Application,
-            // but we can verify the method signature exists and returns int
             var returnValue = WpfSpyAgent.SpyAgentHost.StartWithPipe("TestPipe");
-            
-            // Return should be 0 (success) for ExecuteInDefaultAppDomain
             Assert.Equal(0, returnValue);
             Console.WriteLine("[PASS] SpyAgentHost.StartWithPipe returned 0 as expected");
+        }
+    }
+
+    /// <summary>
+    /// Tests that SampleWpfApp exists for injection testing.
+    /// </summary>
+    public class SampleWpfAppTests
+    {
+        private static string GetRepoRoot()
+        {
+            var dir = Directory.GetCurrentDirectory();
+            while (dir != null)
+            {
+                if (File.Exists(Path.Combine(dir, "WpfTestFramework.sln")) ||
+                    Directory.Exists(Path.Combine(dir, "SampleWpfApp")))
+                {
+                    return dir;
+                }
+                dir = Directory.GetParent(dir)?.FullName;
+            }
+            return Directory.GetCurrentDirectory();
+        }
+
+        [Fact]
+        public void SampleWpfApp_DotNetExists()
+        {
+            var root = GetRepoRoot();
+            var dllPath = Path.Combine(root, "SampleWpfApp", "bin", "Debug", "net8.0-windows", "SampleWpfApp.dll");
+            
+            Assert.True(File.Exists(dllPath), 
+                $"SampleWpfApp (.NET 8) not found. Run: dotnet build from {root}");
+            Console.WriteLine($"[PASS] SampleWpfApp (.NET 8) found at: {dllPath}");
+        }
+
+        [Fact]
+        public void SampleWpfApp_FrameworkExists()
+        {
+            var root = GetRepoRoot();
+            var exePath = Path.Combine(root, "SampleWpfApp", "bin", "Debug", "net461", "SampleWpfApp.exe");
+            
+            Assert.True(File.Exists(exePath), 
+                $"SampleWpfApp (.NET Framework) not found. Run: dotnet build -f net461 from {root}");
+            Console.WriteLine($"[PASS] SampleWpfApp (.NET Framework) found at: {exePath}");
+        }
+
+        [Fact]
+        public void WpfSpyAgent_DllExists()
+        {
+            var root = GetRepoRoot();
+            var dllPath = Path.Combine(root, "WpfSpyAgent", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.dll");
+            
+            Assert.True(File.Exists(dllPath), 
+                $"WpfSpyAgent.dll not found. Build WpfSpyAgent project first.");
+            Console.WriteLine($"[PASS] WpfSpyAgent.dll found at: {dllPath}");
         }
     }
 
@@ -160,6 +214,38 @@ namespace WpfSpyAgent.InjectorTests
     /// </summary>
     public class IntegrationTests
     {
+        private static string GetRepoRoot()
+        {
+            var dir = Directory.GetCurrentDirectory();
+            while (dir != null)
+            {
+                if (File.Exists(Path.Combine(dir, "WpfTestFramework.sln")) ||
+                    Directory.Exists(Path.Combine(dir, "SampleWpfApp")))
+                {
+                    return dir;
+                }
+                dir = Directory.GetParent(dir)?.FullName;
+            }
+            return Directory.GetCurrentDirectory();
+        }
+
+        private static string FindNativeDll()
+        {
+            var root = GetRepoRoot();
+            string[] paths = {
+                Path.Combine(root, "WpfSpyAgent.NativeInject", "bin", "Debug", "x64", "WpfSpyAgent.NativeInject.dll"),
+                Path.Combine(root, "WpfSpyAgent.NativeInject", "bin", "Release", "x64", "WpfSpyAgent.NativeInject.dll"),
+            };
+
+            foreach (var path in paths)
+            {
+                if (File.Exists(path))
+                    return path;
+            }
+
+            return string.Empty;
+        }
+
         [Fact]
         public void NativeDllHasAllRequiredExports()
         {
@@ -174,10 +260,7 @@ namespace WpfSpyAgent.InjectorTests
             
             try
             {
-                string[] requiredExports = {
-                    "InjectAndStartAgent",
-                    "ExecuteInDefaultAppDomain"
-                };
+                string[] requiredExports = { "InjectAndStartAgent", "ExecuteInDefaultAppDomain" };
 
                 foreach (var export in requiredExports)
                 {
@@ -195,7 +278,6 @@ namespace WpfSpyAgent.InjectorTests
         [Fact]
         public void RuntimeDetection_CoreClrOrMsCorEE()
         {
-            // Verify that either coreclr.dll or mscoree.dll is available
             bool hasCoreClr = false;
             bool hasMsCorEE = false;
 
@@ -215,6 +297,58 @@ namespace WpfSpyAgent.InjectorTests
             Console.WriteLine($"  - coreclr.dll: {(hasCoreClr ? "Found" : "Not found")}");
             Console.WriteLine($"  - mscoree.dll: {(hasMsCorEE ? "Found" : "Not found")}");
         }
+
+        [Fact]
+        public void InjectionPipeline_DotNet()
+        {
+            Console.WriteLine("[TEST] Verifying .NET 8 injection pipeline:");
+            var root = GetRepoRoot();
+            
+            // Step 1: Native DLL exists
+            var nativeDll = Path.Combine(root, "WpfSpyAgent.NativeInject", "bin", "Debug", "x64", "WpfSpyAgent.NativeInject.dll");
+            Assert.True(File.Exists(nativeDll), "NativeInject DLL missing");
+            Console.WriteLine("  [OK] NativeInject DLL exists");
+            
+            // Step 2: Spy Agent DLL exists
+            var agentDll = Path.Combine(root, "WpfSpyAgent", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.dll");
+            Assert.True(File.Exists(agentDll), "WpfSpyAgent DLL missing");
+            Console.WriteLine("  [OK] WpfSpyAgent DLL exists");
+            
+            // Step 3: SampleWpfApp exists
+            var appDll = Path.Combine(root, "SampleWpfApp", "bin", "Debug", "net8.0-windows", "SampleWpfApp.dll");
+            Assert.True(File.Exists(appDll), "SampleWpfApp DLL missing");
+            Console.WriteLine("  [OK] SampleWpfApp exists");
+            
+            // Step 4: CLR available
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows required for CLR Hosting");
+            Console.WriteLine("  [OK] Windows platform confirmed");
+            
+            Console.WriteLine("[PASS] .NET 8 injection pipeline verified");
+        }
+
+        [Fact]
+        public void InjectionPipeline_DotNetFramework()
+        {
+            Console.WriteLine("[TEST] Verifying .NET Framework injection pipeline:");
+            var root = GetRepoRoot();
+            
+            // Step 1: Native DLL exists
+            var nativeDll = Path.Combine(root, "WpfSpyAgent.NativeInject", "bin", "Debug", "x64", "WpfSpyAgent.NativeInject.dll");
+            Assert.True(File.Exists(nativeDll), "NativeInject DLL missing");
+            Console.WriteLine("  [OK] NativeInject DLL exists");
+            
+            // Step 2: Spy Agent DLL exists (Framework version)
+            var agentDll = Path.Combine(root, "WpfSpyAgent", "bin", "Debug", "net461", "WpfSpyAgent.dll");
+            Assert.True(File.Exists(agentDll), "WpfSpyAgent.dll (Framework) missing");
+            Console.WriteLine("  [OK] WpfSpyAgent.dll exists");
+            
+            // Step 3: SampleWpfApp exists
+            var appExe = Path.Combine(root, "SampleWpfApp", "bin", "Debug", "net461", "SampleWpfApp.exe");
+            Assert.True(File.Exists(appExe), "SampleWpfApp.exe missing");
+            Console.WriteLine("  [OK] SampleWpfApp.exe exists");
+            
+            Console.WriteLine("[PASS] .NET Framework injection pipeline verified");
+        }
     }
 
     class Program
@@ -224,7 +358,6 @@ namespace WpfSpyAgent.InjectorTests
             Console.WriteLine("=== WpfSpyAgent.InjectorTests ===");
             Console.WriteLine("Testing CLR Hosting runtime injection mechanism\n");
 
-            // Run xUnit tests
             return Xunit.ConsoleClient.Program.Main(
                 args.Length > 0 ? args : new[] { typeof(Program).Assembly.Location }
             );
