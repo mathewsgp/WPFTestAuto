@@ -98,86 +98,71 @@
             </DockPanel>
         </Border>
 
-        <!-- ================= Main split ================= -->
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <!-- ================= Main Tabs ================= -->
+        <TabControl Margin="10">
+            <!-- ELEMENTS Tab -->
+            <TabItem Header="ELEMENTS">
+                <DockPanel Margin="6">
+                    <!-- Toolbar -->
+                    <Border DockPanel.Dock="Top" Margin="0,6,0,6" Padding="4" Background="#F0F1F3" CornerRadius="3">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="+ Folder" ToolTip="Add Folder" Padding="6,2" FontSize="11"
+                                    Command="{Binding ElementTree.AddFolderCommand}" Background="#0366D6" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                            <Button Content="+ Element" ToolTip="Add Element to selected folder" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                                    Command="{Binding ElementTree.AddElementCommand}" Background="#28A745" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                            <Button Content="🔍 Pick" ToolTip="Pick Element from target app" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                                    Command="{Binding PickElementCommand}" Background="#0366D6" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                            <Button Content="👁 Preview" ToolTip="Preview selected element" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                                    Command="{Binding PreviewElementCommand}" Background="#E8A33D" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                            <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
+                            <Button Content="⬇️ Expand All" ToolTip="Expand All" Padding="6,2" FontSize="11"
+                                    Command="{Binding ElementTree.ExpandAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand"/>
+                            <Button Content="⬆️ Collapse" ToolTip="Collapse All" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                                    Command="{Binding ElementTree.CollapseAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand"/>
+                        </StackPanel>
+                    </Border>
 
-            <!-- ===== ELEMENTS SECTION ===== -->
-            <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="10,10,10,5" Padding="8" Background="#F8F9FA" BorderBrush="#E1E4E8" BorderThickness="1" CornerRadius="4">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="ELEMENTS" FontWeight="Bold" FontSize="11" Foreground="#444" Margin="0,0,0,6"/>
-                    <TabControl>
-                        <!-- Visual Tab: Tree + Properties -->
-                        <TabItem Header="Visual">
-                            <Grid Margin="0,6,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="1.2*"/>
-                                </Grid.ColumnDefinitions>
-                                <!-- Toolbar -->
-                                <Border Grid.Column="0" Grid.ColumnSpan="2" DockPanel.Dock="Top" Margin="0,0,0,6" Padding="4" Background="#F0F1F3" CornerRadius="3">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Button Content="+ Folder" ToolTip="Add Folder" Padding="6,2" FontSize="11"
-                                                Command="{Binding ElementTree.AddFolderCommand}" Background="#0366D6" Foreground="White" BorderThickness="0" Cursor="Hand"/>
-                                        <Button Content="+ Element" ToolTip="Add Element to selected folder" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                                                Command="{Binding ElementTree.AddElementCommand}" Background="#28A745" Foreground="White" BorderThickness="0" Cursor="Hand"/>
-                                        <Button Content="🔍 Pick" ToolTip="Pick Element from target app" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                                                Command="{Binding PickElementCommand}" Background="#0366D6" Foreground="White" BorderThickness="0" Cursor="Hand"/>
-                                        <Button Content="👁 Preview" ToolTip="Preview selected element" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                                                Command="{Binding PreviewElementCommand}" Background="#E8A33D" Foreground="White" BorderThickness="0" Cursor="Hand"/>
-                                        <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                                        <Button Content="⬇️ Expand All" ToolTip="Expand All" Padding="6,2" FontSize="11"
-                                                Command="{Binding ElementTree.ExpandAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand"/>
-                                        <Button Content="⬆️ Collapse" ToolTip="Collapse All" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                                                Command="{Binding ElementTree.CollapseAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand"/>
-                                    </StackPanel>
-                                </Border>
-                                <!-- Element Tree -->
-                                <Border Grid.Column="0" Margin="0,0,6,0" Padding="6" Background="White" BorderBrush="#DDD" BorderThickness="1" CornerRadius="3">
-                                    <views:ElementTreeView DataContext="{Binding ElementTree}"/>
-                                </Border>
-                                <!-- Properties -->
-                                <Border Grid.Column="1" Padding="6" Background="White" BorderBrush="#DDD" BorderThickness="1" CornerRadius="3">
-                                    <views:ElementEditorView/>
-                                </Border>
-                            </Grid>
-                        </TabItem>
-                        <!-- Raw Tab: JSON -->
-                        <TabItem Header="Raw">
+                    <TabControl DockPanel.Dock="Bottom" Height="200" Margin="0,6,0,0">
+                        <!-- Raw JSON -->
+                        <TabItem Header="Raw JSON">
                             <TextBox Text="{Binding RepositoryYaml, Mode=OneWay}" FontFamily="Consolas" FontSize="11"
                                      IsReadOnly="True" TextWrapping="NoWrap" AcceptsReturn="True"
                                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                     Background="#12161C" Foreground="#C9D1D9" BorderThickness="0"
-                                     Margin="0,6,0,0"/>
+                                     Background="#12161C" Foreground="#C9D1D9" BorderThickness="0"/>
                         </TabItem>
                     </TabControl>
+
+                    <!-- Tree + Properties side by side -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Element Tree -->
+                        <Border Grid.Column="0" Margin="0,0,6,0" Padding="6" Background="White" BorderBrush="#DDD" BorderThickness="1" CornerRadius="3">
+                            <views:ElementTreeView DataContext="{Binding ElementTree}"/>
+                        </Border>
+
+                        <!-- Properties -->
+                        <Border Grid.Column="1" Padding="6" Background="White" BorderBrush="#DDD" BorderThickness="1" CornerRadius="3">
+                            <views:ElementEditorView/>
+                        </Border>
+                    </Grid>
                 </DockPanel>
-            </Border>
+            </TabItem>
 
-            <GridSplitter Grid.Row="1" Grid.ColumnSpan="2" Height="5" HorizontalAlignment="Stretch" Background="#DDD"/>
-
-            <!-- ===== SCRIPTS SECTION ===== -->
-            <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="10,5,10,5" Padding="8" Background="#F8F9FA" BorderBrush="#E1E4E8" BorderThickness="1" CornerRadius="4">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="SCRIPTS" FontWeight="Bold" FontSize="11" Foreground="#444" Margin="0,0,0,6"/>
+            <!-- SCRIPTS Tab -->
+            <TabItem Header="SCRIPTS">
+                <DockPanel Margin="6">
                     <TabControl>
-                        <!-- Visual Tab: Recorded Steps -->
+                        <!-- Visual: Recorded Steps -->
                         <TabItem Header="Visual">
                             <ListBox ItemsSource="{Binding Steps}" ItemTemplate="{StaticResource StepTemplate}"
                                      BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                      Margin="0,6,0,0"/>
                         </TabItem>
-                        <!-- Raw Tab: Generated Script -->
+                        <!-- Raw: Generated Script -->
                         <TabItem Header="Raw">
                             <DockPanel Margin="0,6,0,0">
                                 <TextBlock DockPanel.Dock="Top" Text="Raw Layer 3 calls - review/refactor before committing to the suite."
@@ -204,15 +189,12 @@
                         </TabItem>
                     </TabControl>
                 </DockPanel>
-            </Border>
+            </TabItem>
 
-            <GridSplitter Grid.Row="3" Grid.ColumnSpan="2" Height="5" HorizontalAlignment="Stretch" Background="#DDD"/>
-
-            <!-- ===== RESULTS SECTION ===== -->
-            <Border Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Margin="10,5,10,10" Padding="8" Background="#F8F9FA" BorderBrush="#E1E4E8" BorderThickness="1" CornerRadius="4">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="RESULTS" FontWeight="Bold" FontSize="11" Foreground="#444" Margin="0,0,0,6"/>
-                    <Border DockPanel.Dock="Top" Padding="8" Margin="0,0,0,6" CornerRadius="3"
+            <!-- RESULTS Tab -->
+            <TabItem Header="RESULTS">
+                <DockPanel Margin="6">
+                    <Border DockPanel.Dock="Top" Padding="8" Margin="0,6,0,6" CornerRadius="3"
                             Background="{Binding LastRunSuccess, Converter={StaticResource BoolToStatusBrushConverter}}">
                         <TextBlock Text="{Binding RunSummaryText}" FontFamily="Consolas" FontWeight="Bold"/>
                     </Border>
@@ -223,7 +205,7 @@
                              TextOptions.TextFormattingMode="Display"
                              AcceptsReturn="True" TextWrapping="Wrap"/>
                 </DockPanel>
-            </Border>
-        </Grid>
+            </TabItem>
+        </TabControl>
     </DockPanel>
 </Window>
