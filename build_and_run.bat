@@ -272,36 +272,12 @@ if "%VS2026%"=="1" (
     )
 )
 
-:: Fall back to msbuild in PATH or dotnet msbuild
-if not defined MSBUILD_CMD (
-    :: Check if msbuild is in PATH
-    for %%i in (msbuild.exe) do (
-        if not "%%~$PATH:i"=="" (
-            set "MSBUILD_CMD=msbuild"
-        )
-    )
-    :: If not in PATH, try dotnet
-    if not defined MSBUILD_CMD (
-        for %%i in (dotnet.exe) do (
-            if not "%%~$PATH:i"=="" (
-                set "MSBUILD_CMD=dotnet"
-                set "MSBUILD_USE_DOTNET=1"
-            )
-        )
-    )
-    :: If nothing found, use dotnet anyway and let it fail gracefully
-    if not defined MSBUILD_CMD (
-        set "MSBUILD_CMD=dotnet"
-        set "MSBUILD_USE_DOTNET=1"
-    )
-)
+:: Use dotnet msbuild for C++ projects (works with VS 2022/2026)
+set "MSBUILD_CMD=dotnet"
+set "MSBUILD_USE_DOTNET=1"
 
 if exist "%NATIVE_INJECT_PROJECT%" (
-    if defined MSBUILD_USE_DOTNET (
-        dotnet msbuild "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
-    ) else (
-        "%MSBUILD_CMD%" "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
-    )
+    dotnet msbuild "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
     if errorlevel 1 (
         echo WARNING: Failed to build NativeInject DLL ^(runtime injection may not work^)
         echo       Make sure you have C++ workload installed in Visual Studio.
