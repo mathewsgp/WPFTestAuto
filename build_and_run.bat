@@ -1,20 +1,61 @@
-@echo on
+@echo off
 setlocal enabledelayedexpansion
 
 set "TARGET_APP=%~1"
-set "CONFIGURATION=%~2"
-set "RUN_IDE=%~3"
-set "TARGET_VERSION=%~4"
+set "INJECTION_MODE=%~2"
+set "CONFIGURATION=%~3"
+set "RUN_IDE=%~4"
+set "TARGET_VERSION=%~5"
 
 if "%TARGET_APP%"=="" (
-    echo ERROR: Target app path is required.
-    echo Usage: build_and_run.bat ^<target_app_path^> [Configuration] [RunIde] [TargetVersion]
+    echo ============================================================
+    echo WPFTestAuto - Build and Run
+    echo ============================================================
+    echo.
+    echo Usage: build_and_run.bat ^<target_app_path^> [InjectionMode] [Configuration] [RunIde] [TargetVersion]
+    echo.
+    echo Arguments:
+    echo   target_app_path    Path to the WPF application executable ^(required^)
+    echo   InjectionMode     Injection method: runtime ^(default^), launch, cooperative, attach
+    echo   Configuration      Build config: Debug ^(default^) or Release
+    echo   RunIde            Launch IDE: true or false ^(default: false^)
+    echo   TargetVersion     .NET version: net ^(default^) or framework
+    echo.
+    echo Injection Modes:
+    echo   runtime      Attach to running process via Windows Hook API ^(default^)
+    echo   launch       Launch with Startup Hook injection ^(requires restart^)
+    echo   cooperative  Cooperative hosting ^(requires app modification^)
+    echo   attach       Attach to running app via named pipe ^(existing agent^)
+    echo.
+    echo Examples:
+    echo   build_and_run.bat SampleWpfApp.exe
+    echo   build_and_run.bat SampleWpfApp.exe launch
+    echo   build_and_run.bat SampleWpfApp.exe runtime true net
+    echo.
     pause
     exit /b 1
 )
 
+:: Set defaults
+if "%INJECTION_MODE%"=="" set "INJECTION_MODE=runtime"
 if "%CONFIGURATION%"=="" set "CONFIGURATION=Debug"
 if "%RUN_IDE%"=="" set "RUN_IDE=false"
+
+:: Validate injection mode
+if /i "%INJECTION_MODE%"=="runtime" (
+    set "INJECTION_DESC=Attach to running process via Windows Hook API"
+) else if /i "%INJECTION_MODE%"=="launch" (
+    set "INJECTION_DESC=Launch with Startup Hook ^(requires restart^)"
+) else if /i "%INJECTION_MODE%"=="cooperative" (
+    set "INJECTION_DESC=Cooperative hosting ^(requires app modification^)"
+) else if /i "%INJECTION_MODE%"=="attach" (
+    set "INJECTION_DESC=Attach to existing Spy Agent via named pipe"
+) else (
+    echo ERROR: Invalid injection mode: %INJECTION_MODE%
+    echo Valid modes: runtime, launch, cooperative, attach
+    pause
+    exit /b 1
+)
 
 if /i "%TARGET_VERSION%"=="framework" (
     set "TARGET_FW=net461"
@@ -27,11 +68,13 @@ if /i "%TARGET_VERSION%"=="framework" (
 )
 
 echo ============================================================
-echo WPFSpy Build and Inject
+echo WPFTestAuto - Build and Inject
 echo ============================================================
-echo Target App: %TARGET_APP%
-echo Configuration: %CONFIGURATION%
-echo Run IDE: %RUN_IDE%
+echo Target App:     %TARGET_APP%
+echo Injection Mode: %INJECTION_MODE%
+echo Description:    %INJECTION_DESC%
+echo Configuration:  %CONFIGURATION%
+echo Run IDE:        %RUN_IDE%
 echo Target Version: %TARGET_VERSION%
 echo ============================================================
 echo.
@@ -159,49 +202,91 @@ echo       IDE built successfully.
 echo.
 
 echo ============================================================
-echo Build and injection complete
+echo Build complete - Ready for injection
 echo ============================================================
 echo.
 
-echo Launching target app: %TARGET_APP%
-echo.
+:: ============================================================
+:: Handle injection mode
+:: ============================================================
 
-set "APPDOMAIN_MANAGER_ASM=WpfSpyAgent.FrameworkHook, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
-set "APPDOMAIN_MANAGER_TYPE=WpfSpyAgent.FrameworkHook.SpyAppDomainManager"
-
-if /i "!TARGET_FW!"=="net8.0-windows" (
-    echo Injection method: StartupHook via DOTNET_STARTUP_HOOKS
-    echo   StartupHook: %TARGET_DIR%WpfSpyAgent.StartupHook.dll
-    echo   WPFSPY_AGENT_ENABLED=1
-) else (
-    echo Injection method: Framework hook via environment variables
-    echo   APPDOMAIN_MANAGER_ASM=!APPDOMAIN_MANAGER_ASM!
-    echo   APPDOMAIN_MANAGER_TYPE=!APPDOMAIN_MANAGER_TYPE!
-)
-
-echo.
-echo Waiting a few seconds for target app to initialize...
-ping 127.0.0.1 -n 4 >nul
-
-if /i "!TARGET_FW!"=="net8.0-windows" (
-    set "DOTNET_STARTUP_HOOKS=%TARGET_DIR%WpfSpyAgent.StartupHook.dll"
-    cmd.exe /c "set DOTNET_STARTUP_HOOKS=!DOTNET_STARTUP_HOOKS! && set WPFSPY_AGENT_ENABLED=1 && set WPFSPY_PIPE_NAME=WPFSpyAgentPipe && start "" /D "%TARGET_DIR%" "%TARGET_PATH%""
-) else (
-    cmd.exe /c "set APPDOMAIN_MANAGER_ASM=WpfSpyAgent.FrameworkHook, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null&& set APPDOMAIN_MANAGER_TYPE=WpfSpyAgent.FrameworkHook.SpyAppDomainManager&& set WPFSPY_PIPE_NAME=WPFSpyAgentPipe&& start "" /D "%TARGET_DIR%" "%TARGET_PATH%""
-)
-
-if /i "%RUN_IDE%"=="true" (
+if /i "%INJECTION_MODE%"=="runtime" (
+    echo [MODE: RUNTIME - Attach to running process]
     echo.
+    echo Starting target app WITHOUT Spy Agent...
+    echo The Spy Agent will be injected via Windows Hook API when you use the IDE.
+    echo.
+    start "" /D "%TARGET_DIR%" "%TARGET_PATH%"
+    echo App launched. Now use the IDE to attach to the running process.
+    echo.
+)
+
+if /i "%INJECTION_MODE%"=="launch" (
+    echo [MODE: LAUNCH - Startup Hook injection]
+    echo.
+    if /i "!TARGET_FW!"=="net8.0-windows" (
+        echo Injecting via DOTNET_STARTUP_HOOKS...
+        echo   StartupHook: %TARGET_DIR%WpfSpyAgent.StartupHook.dll
+        echo   WPFSPY_AGENT_ENABLED=1
+        echo.
+        set "DOTNET_STARTUP_HOOKS=%TARGET_DIR%WpfSpyAgent.StartupHook.dll"
+        cmd.exe /c "set DOTNET_STARTUP_HOOKS=!DOTNET_STARTUP_HOOKS! && set WPFSPY_AGENT_ENABLED=1 && set WPFSPY_PIPE_NAME=WPFSpyAgentPipe && start "" /D "%TARGET_DIR%" "%TARGET_PATH%""
+    ) else (
+        echo Injecting via APPDOMAIN_MANAGER...
+        echo   APPDOMAIN_MANAGER_ASM=WpfSpyAgent.FrameworkHook
+        echo   APPDOMAIN_MANAGER_TYPE=WpfSpyAgent.FrameworkHook.SpyAppDomainManager
+        echo.
+        cmd.exe /c "set APPDOMAIN_MANAGER_ASM=WpfSpyAgent.FrameworkHook, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null&& set APPDOMAIN_MANAGER_TYPE=WpfSpyAgent.FrameworkHook.SpyAppDomainManager&& set WPFSPY_PIPE_NAME=WPFSpyAgentPipe&& start "" /D "%TARGET_DIR%" "%TARGET_PATH%""
+    )
+)
+
+if /i "%INJECTION_MODE%"=="cooperative" (
+    echo [MODE: COOPERATIVE - App hosts Spy Agent]
+    echo.
+    echo This mode requires the app to be built with Spy Agent host code.
+    echo The app should call SpyAgentHost.Start^(^) during initialization.
+    echo.
+    echo If your app is already configured for cooperative hosting, starting it now...
+    start "" /D "%TARGET_DIR%" "%TARGET_PATH%"
+    echo.
+    echo If not configured, modify your app to call:
+    echo   WpfSpyAgent.SpyAgentHost.Start^("WPFSpyAgentPipe"^);
+)
+
+if /i "%INJECTION_MODE%"=="attach" (
+    echo [MODE: ATTACH - Connect to existing agent]
+    echo.
+    echo Starting target app WITHOUT Spy Agent...
+    echo After the app starts, use the IDE to attach to the existing Spy Agent.
+    echo.
+    start "" /D "%TARGET_DIR%" "%TARGET_PATH%"
+    echo.
+    echo Wait for the app to start, then use the IDE's Attach feature
+    echo to connect to the running process.
+)
+
+echo.
+if /i "%RUN_IDE%"=="true" (
     echo Launching WPF Test IDE...
+    echo.
+    if /i "%INJECTION_MODE%"=="attach" (
+        echo The IDE will open with the Attach dialog.
+    )
     start "" /D "%FW_ROOT%" dotnet run --project "%IDE_PROJECT%" -f net8.0-windows -c %CONFIGURATION%
 ) else (
     echo.
     echo IDE launch skipped. To run IDE manually:
     echo   dotnet run --project "%IDE_PROJECT%" -f net8.0-windows -c %CONFIGURATION%
+    echo.
+    echo To use runtime injection with the IDE:
+    echo   1. Start the app first: "%TARGET_PATH%"
+    echo   2. Then launch IDE and use Attach to Running Process
 )
 
 echo.
-echo Batch file completed. Apps are running independently.
+echo ============================================================
+echo Ready
+echo ============================================================
 echo.
 
 endlocal
