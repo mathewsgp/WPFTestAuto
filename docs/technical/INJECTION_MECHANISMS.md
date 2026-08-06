@@ -269,6 +269,59 @@ Not implemented - would require a native C++ DLL or NativeAOT component.
 
 ---
 
+## Python Integration
+
+The framework provides Python libraries for runtime injection:
+
+### api/runtime_injector.py
+
+```python
+from api.runtime_injector import RuntimeInjector, AppLauncher, launch_app
+
+# Method 1: Using AppLauncher class
+launcher = AppLauncher()
+process = launcher.launch("C:\\path\\to\\app.exe")
+
+# Method 2: Using launch_app convenience function
+process, injector = launch_app("C:\\path\\to\\app.exe")
+
+# Method 3: Direct RuntimeInjector usage
+injector = RuntimeInjector()
+result = injector.launch_with_hook("C:\\path\\to\\app.exe", pipe_name="WPFSpyAgentPipe")
+if result.success:
+    print(f"Launched PID: {result.process_id}")
+
+# Method 4: Attach to running process
+result = injector.attach_to_process(process_id=1234)
+```
+
+### api/robot_launcher.py (Robot Framework)
+
+```robot
+*** Settings ***
+Library    api.robot_launcher
+
+*** Test Cases ***
+Launch App With Spy Agent
+    ${pid}=    Launch Application    C:\\path\\to\\app.exe
+    # Run tests...
+    Terminate Application    ${pid}
+
+Attach To Running App
+    ${connected}=    Attach To Application    ${pid}
+    Should Be True    ${connected}
+```
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `WPFSPY_STARTUP_HOOK_DLL` | Path to WpfSpyAgent.StartupHook.dll |
+| `WPFSPY_AGENT_ENABLED` | Enable Spy Agent (default: 1) |
+| `WPFSPY_PIPE_NAME` | Named pipe name (default: WPFSpyAgentPipe) |
+
+---
+
 ## Comparison Matrix
 
 | Criteria | Cooperative | StartupHook | AppDomainMgr | Runtime (IDE) | WindowsHook |

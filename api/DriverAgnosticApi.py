@@ -111,10 +111,40 @@ def _kill_sample_wpf_app():
         pass
 
 def _start_sample_wpf_app():
-    """Starts SampleWpfApp with the WPFSpy agent startup hook."""
+    """Starts SampleWpfApp with the WPFSpy agent startup hook.
+    
+    Uses the RuntimeInjector for proper process launching with Spy Agent injection.
+    """
     global _SAMPLE_WPF_APP_PROCESS
     
     app_path = _get_sample_wpf_app_path()
+    
+    # Try to use RuntimeInjector if available
+    try:
+        from runtime_injector import RuntimeInjector, AppLauncher
+        injector = RuntimeInjector()
+        
+        if injector.startup_hook_path:
+            print(f'[DriverAgnosticApi] Using RuntimeInjector with hook: {injector.startup_hook_path}')
+            
+            # Build environment
+            env = os.environ.copy()
+            env["DOTNET_STARTUP_HOOKS"] = injector.startup_hook_path
+            env["WPFSPY_AGENT_ENABLED"] = "1"
+            env["WPFSPY_PIPE_NAME"] = "WPFSpyAgentPipe"
+            
+            _SAMPLE_WPF_APP_PROCESS = subprocess.Popen(
+                ["dotnet", app_path],
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            time.sleep(5)  # Give the app time to start and the agent to initialize
+            return
+    except ImportError:
+        pass  # Fall back to inline implementation
+    
+    # Fallback: inline implementation
     startup_hook = os.path.join(os.path.dirname(app_path), "WpfSpyAgent.StartupHook.dll")
     
     env = os.environ.copy()
