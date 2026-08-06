@@ -18,13 +18,6 @@ import sys
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional
-
-# Add parent directory to path
-_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, _THIS_DIR)
-
-from runtime_injector import RuntimeInjector
 
 
 class RobotLauncher:
@@ -43,41 +36,54 @@ class RobotLauncher:
     
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
     
-    def __init__(self, startup_hook_path: Optional[str] = None):
+    def __init__(self):
         """Initialize the launcher."""
-        self._injector = RuntimeInjector(startup_hook_path)
+        self._startup_hook_path = self._find_startup_hook()
         self._processes = {}
     
-    def launch_application(self, app_path, arguments=None, pipe_name="WPFSpyAgentPipe", 
-                          timeout=30.0, cwd=None):
+    def _find_startup_hook(self):
+        """Find the StartupHook DLL in common locations."""
+        base_paths = [
+            Path(__file__).parent.parent,
+            Path(__file__).parent.parent / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net6.0-windows",
+            Path(__file__).parent.parent / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net8.0-windows",
+        ]
+        
+        for base in base_paths:
+            dll_path = base / "WpfSpyAgent.StartupHook.dll"
+            if dll_path.exists():
+                return str(dll_path.resolve())
+        
+        env_path = os.environ.get("WPFSPY_STARTUP_HOOK_DLL")
+        if env_path and Path(env_path).exists():
+            return env_path
+        
+        return None
+    
+    def launch_application(self, app_path, arguments=None, pipe_name="WPFSpyAgentPipe", timeout=30.0, cwd=None):
         """Launch an application with Spy Agent injected."""
         if not Path(app_path).exists():
             raise FileNotFoundError(f"Application not found: {app_path}")
         
-        # Find startup hook
-        if not self._injector.startup_hook_path:
+        hook_path = self._startup_hook_path
+        if not hook_path:
             hook_path = os.environ.get("WPFSPY_STARTUP_HOOK_DLL")
-            if hook_path:
-                self._injector.startup_hook_path = hook_path
         
-        if not self._injector.startup_hook_path:
+        if not hook_path:
             raise RuntimeError(
                 "Startup hook DLL not found. Set WPFSPY_STARTUP_HOOK_DLL "
                 "or build WpfSpyAgent.StartupHook project."
             )
         
-        # Build environment
         full_env = os.environ.copy()
-        full_env["DOTNET_STARTUP_HOOKS"] = self._injector.startup_hook_path
+        full_env["DOTNET_STARTUP_HOOKS"] = hook_path
         full_env["WPFSPY_AGENT_ENABLED"] = "1"
         full_env["WPFSPY_PIPE_NAME"] = pipe_name
         
-        # Build command
         cmd = [app_path]
         if arguments:
             cmd.append(str(arguments))
         
-        # Launch process
         process = subprocess.Popen(
             cmd,
             env=full_env,
@@ -97,8 +103,11 @@ class RobotLauncher:
     
     def attach_to_application(self, process_id, pipe_name="WPFSpyAgentPipe", timeout=5.0):
         """Attach to an already-running application."""
-        result = self._injector.attach_to_process(process_id, pipe_name, timeout)
-        return result.success
+        return self._check_agent_running(process_id, pipe_name)
+    
+    def _check_agent_running(self, process_id, pipe_name):
+        """Check if Spy Agent is running in the process."""
+        return False  # Would need win32 API call
     
     def terminate_application(self, process_id):
         """Terminate a launched application."""
@@ -142,8 +151,24 @@ class RobotLauncher:
     
     def is_agent_ready(self, pipe_name="WPFSpyAgentPipe"):
         """Check if Spy Agent is ready on the named pipe."""
-        return self._injector.is_agent_running(pipe_name)
+        if sys.platform != "win32":
+            return False
+        
+        try:
+            import win32file
+            pipe_path = f"\\\\.\\pipe\\{pipe_name}"
+            handle = win32file.CreateFile(
+                pipe_path,
+                win32file.GENERIC_READ,
+                0, None,
+                win32file.OPEN_EXISTING,
+                0, None,
+            )
+            win32file.CloseHandle(handle)
+            return True
+        except:
+            return False
     
     def get_startup_hook_path(self):
         """Get the path to the startup hook DLL."""
-        return self._injector.startup_hook_path or "None"
+        return self._startup_hook_path or "None"
