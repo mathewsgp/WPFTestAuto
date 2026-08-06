@@ -331,12 +331,12 @@ class RuntimeInjector:
         return False
 
 
-class RobotLauncher:
+class ProcessLauncher:
     """
     High-level application launcher with Spy Agent support.
     
     Usage:
-        launcher = RobotLauncher()
+        launcher = ProcessLauncher()
         
         # Launch with automatic injection
         process = launcher.launch("C:\\path\\to\\app.exe")

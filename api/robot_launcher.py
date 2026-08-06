@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 
 
-class RobotLauncher:
+class AppLauncher:
     """
     Robot Framework library for launching WPF applications with Spy Agent.
     
