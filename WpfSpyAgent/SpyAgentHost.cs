@@ -58,10 +58,16 @@ namespace WpfSpyAgent
 
             try
             {
-                // For debugging: run synchronously first to test if pipe works
-                Log($"Start: Running ListenLoop synchronously...");
-                ListenLoop(pipeName);
-                Log($"Start: ListenLoop returned");
+                Log($"Start: Creating thread with MTA apartment...");
+                // Create thread in MTA (Multi-Threaded Apartment) - default for worker threads
+                var thread = new Thread(() => ListenLoop(pipeName));
+                thread.SetApartmentState(ApartmentState.MTA);
+                _listenerThread = thread;
+                _listenerThread.Name = "WpfSpyAgent-Listener";
+                
+                Log($"Start: Starting thread...");
+                _listenerThread.Start();
+                Log($"Start: Thread started, ID={_listenerThread.ManagedThreadId}");
             }
             catch (Exception ex)
             {
