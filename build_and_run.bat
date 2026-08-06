@@ -103,16 +103,16 @@ if /i "%ARG5%"=="true" set "RUN_IDE=true"
 if /i "%ARG5%"=="false" set "RUN_IDE=false"
 
 :: Set defaults
-if "%INJECTION_MODE%"=="" set "INJECTION_MODE=runtime"
+if "%INJECTION_MODE%"=="" set "INJECTION_MODE=launch"
 if "%CONFIGURATION%"=="" set "CONFIGURATION=Debug"
 if "%RUN_IDE%"=="" set "RUN_IDE=false"
 if "%TARGET_VERSION%"=="" set "TARGET_VERSION=net"
 
 :: Validate injection mode
 if /i "%INJECTION_MODE%"=="runtime" (
-    set "INJECTION_DESC=Attach to running process via Windows Hook API"
+    set "INJECTION_DESC=Inject DLL into running process ^(requires NativeInject.dll^)"
 ) else if /i "%INJECTION_MODE%"=="launch" (
-    set "INJECTION_DESC=Launch with Startup Hook ^(requires restart^)"
+    set "INJECTION_DESC=Launch with Startup Hook injection ^(default^)"
 ) else if /i "%INJECTION_MODE%"=="cooperative" (
     set "INJECTION_DESC=Cooperative hosting ^(requires app modification^)"
 ) else if /i "%INJECTION_MODE%"=="attach" (
@@ -200,6 +200,7 @@ set "IDE_PROJECT=%FW_ROOT%WpfTestIde\WpfTestIde.csproj"
 set "AGENT_PROJECT=%FW_ROOT%WpfSpyAgent\WpfSpyAgent.csproj"
 set "STARTUP_HOOK_PROJECT=%FW_ROOT%WpfSpyAgent.StartupHook\WpfSpyAgent.StartupHook.csproj"
 set "FRAMEWORK_HOOK_PROJECT=%FW_ROOT%WpfSpyAgent.FrameworkHook\WpfSpyAgent.FrameworkHook.csproj"
+set "NATIVE_INJECT_PROJECT=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.vcxproj"
 set "SAMPLE_APP_PROJECT=%FW_ROOT%SampleWpfApp\SampleWpfApp.csproj"
 
 echo [1/5] Target framework: !TARGET_FW!
@@ -247,6 +248,25 @@ popd
 echo       WpfSpyAgent built successfully.
 echo.
 
+:: Build native injection DLL for runtime attach
+echo [Building Native Inject DLL for runtime injection...]
+if exist "%NATIVE_INJECT_PROJECT%" (
+    msbuild "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
+    if errorlevel 1 (
+        echo WARNING: Failed to build NativeInject DLL ^(runtime injection may not work^)
+    ) else (
+        :: Copy to solution bin directory for IDE to find
+        if not exist "%FW_ROOT%bin" mkdir "%FW_ROOT%bin"
+        if not exist "%FW_ROOT%bin\%CONFIGURATION%" mkdir "%FW_ROOT%bin\%CONFIGURATION%"
+        copy /Y "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%bin\%CONFIGURATION%\" >nul
+        copy /Y "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%bin\%CONFIGURATION%\" >nul 2>&1
+        echo       NativeInject DLL built for runtime injection.
+    )
+) else (
+    echo       NativeInject project not found ^(skip runtime injection setup^)
+)
+echo.
+
 echo [3/5] Building injection hooks...
 if /i "!TARGET_FW!"=="net8.0-windows" (
     dotnet build "%STARTUP_HOOK_PROJECT%" -c %CONFIGURATION%
@@ -267,7 +287,7 @@ if /i "!TARGET_FW!"=="net8.0-windows" (
 )
 echo.
 
-echo [4/5] Injecting WpfSpyAgent into target app...
+echo [4/5] Copying DLLs to output directories...
 set "AGENT_SOURCE="
 set "HOOK_SOURCE="
 set "STARTUP_HOOK_SOURCE="
@@ -327,7 +347,7 @@ if defined STARTUP_HOOK_SOURCE (
 )
 echo.
 
-echo [5/5] Building WPF Test IDE...
+echo [5/5] Building WPF Test IDE and copying native DLL...
 dotnet build "%IDE_PROJECT%" -c %CONFIGURATION%
 if errorlevel 1 (
     echo ERROR: Failed to build IDE
@@ -335,6 +355,13 @@ if errorlevel 1 (
     exit /b 1
 )
 echo       IDE built successfully.
+echo.
+
+:: Copy native injection DLL to IDE output for runtime attach feature
+if exist "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" (
+    copy /Y "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%WpfTestIde\bin\%CONFIGURATION%\net8.0-windows\" >nul
+    echo       Copied NativeInject.dll to IDE directory.
+)
 echo.
 
 echo ============================================================

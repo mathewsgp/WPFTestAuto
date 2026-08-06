@@ -157,12 +157,13 @@ namespace WpfTestIde.Dialogs
                     var msgResult = MessageBox.Show(
                         this,
                         "Could not auto-inject Spy Agent into the running process.\n\n" +
-                        "The Spy Agent needs to be running inside the target process.\n\n" +
-                        "Options:\n" +
-                        "1. Restart the target app with DOTNET_STARTUP_HOOKS set\n" +
-                        "2. Add SpyAgentHost.Start() to the app's source code\n" +
-                        "3. Use Snoop to inspect the app directly\n\n" +
-                        "Would you like to proceed anyway (connection may fail)?",
+                        "DLL injection requires:\n" +
+                        "1. Build WpfSpyAgent.NativeInject project (C++ DLL)\n" +
+                        "2. Run as Administrator\n" +
+                        "3. Target app must have the same architecture (x64/x86)\n\n" +
+                        "Alternative - use 'launch' mode instead:\n" +
+                        "Select 'Launch New' and the app will be started with Spy Agent.\n\n" +
+                        "Would you like to proceed anyway?",
                         "Injection Failed",
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Warning);
@@ -249,12 +250,20 @@ namespace WpfTestIde.Dialogs
 
         private string? GetStartupHookDllPath()
         {
-            // Look for the startup hook DLL in common locations
+            // Look for the native injection DLL in common locations
+            // The native DLL is used for runtime injection into already-running processes
             var paths = new[]
             {
+                // Native injection DLL (for runtime attach)
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WpfSpyAgent.NativeInject.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "bin", "Debug", "WpfSpyAgent.NativeInject.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "bin", "Debug", "x64", "WpfSpyAgent.NativeInject.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "WpfSpyAgent.NativeInject", "bin", "Debug", "WpfSpyAgent.NativeInject.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "WpfSpyAgent.NativeInject", "bin", "Debug", "x64", "WpfSpyAgent.NativeInject.dll"),
+                // .NET startup hook (for launch mode)
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WpfSpyAgent.StartupHook.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net6.0-windows", "WpfSpyAgent.StartupHook.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net6.0-windows", "WpfSpyAgent.StartupHook.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.StartupHook.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.StartupHook.dll"),
             };
 
             foreach (var path in paths)
