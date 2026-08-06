@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 using WpfSpyAgent.Protocol;
 
@@ -99,8 +100,10 @@ namespace WpfSpyAgent
                         PipeOptions.Asynchronous);
 
                     Log("ListenLoop: Waiting for connection (60s timeout)...");
-                    bool connected = server.WaitForConnection(TimeSpan.FromSeconds(60));
-                    if (connected)
+                    // Use async wait with timeout
+                    var connectTask = server.WaitForConnectionAsync();
+                    bool completedInTime = connectTask.Wait(TimeSpan.FromSeconds(60));
+                    if (completedInTime && connectTask.IsCompletedSuccessfully)
                     {
                         Log("ListenLoop: Client connected!");
                         // Handle each client on its own thread so the listen
