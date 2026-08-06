@@ -9,8 +9,8 @@ set "ARG3=%~3"
 set "ARG4=%~4"
 set "ARG5=%~5"
 
-:: Detect if first argument is an injection mode or app name
-set "TARGET_APP=%ARG1%"
+:: Initialize all variables
+set "TARGET_APP="
 set "INJECTION_MODE="
 set "CONFIGURATION="
 set "RUN_IDE="
