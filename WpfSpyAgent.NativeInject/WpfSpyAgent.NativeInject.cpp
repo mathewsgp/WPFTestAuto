@@ -37,6 +37,96 @@ static void Log(const wchar_t* msg) {
     OutputDebugString(msg);
 }
 
+// Thread function for agent startup (must be static/free to convert to function pointer)
+static DWORD WINAPI AgentThreadProc(LPVOID param) {
+    const wchar_t* pipe = (const wchar_t*)param;
+    
+    // Wait a bit for the process to stabilize
+    Sleep(500);
+    
+    wchar_t msg[512];
+    swprintf(msg, 512, L"[Inject] Thread started, pipe=%s", pipe);
+    Log(msg);
+    
+    // Try to load the Spy Agent via the startup hook approach
+    // We look for WpfSpyAgent.StartupHook.dll in the same directory
+    wchar_t dllPath[MAX_PATH];
+    GetModuleFileName(nullptr, dllPath, MAX_PATH);
+    std::wstring dllDir = dllPath;
+    size_t pos = dllDir.rfind(L'\\');
+    if (pos != std::wstring::npos) {
+        dllDir = dllDir.substr(0, pos);
+    }
+    
+    std::wstring hookDllPath = dllDir + L"\\WpfSpyAgent.StartupHook.dll";
+    
+    swprintf(msg, 512, L"[Inject] Looking for: %s", hookDllPath.c_str());
+    Log(msg);
+    
+    // Check if the hook DLL exists
+    if (GetFileAttributes(hookDllPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
+        swprintf(msg, 512, L"[Inject] StartupHook DLL not found at %s", hookDllPath.c_str());
+        Log(msg);
+        
+        // Try parent directories
+        for (int i = 0; i < 3; i++) {
+            pos = dllDir.rfind(L'\\');
+            if (pos != std::wstring::npos) {
+                dllDir = dllDir.substr(0, pos);
+                hookDllPath = dllDir + L"\\WpfSpyAgent.StartupHook.dll";
+                if (GetFileAttributes(hookDllPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+                    swprintf(msg, 512, L"[Inject] Found at: %s", hookDllPath.c_str());
+                    Log(msg);
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Set environment variables
+    SetEnvironmentVariable(L"WPFSPY_PIPE_NAME", pipe);
+    SetEnvironmentVariable(L"WPFSPY_AGENT_ENABLED", L"1");
+    
+    swprintf(msg, 512, L"[Inject] Environment set. DLL path: %s", hookDllPath.c_str());
+    Log(msg);
+    
+    // Write config file for the agent to pick up
+    wchar_t configPath[MAX_PATH];
+    GetEnvironmentVariable(L"LOCALAPPDATA", configPath, MAX_PATH);
+    std::wstring configDir = configPath;
+    configDir += L"\\WpfSpyAgent";
+    CreateDirectory(configDir.c_str(), nullptr);
+    configDir += L"\\agent_config.txt";
+    
+    FILE* cfg = nullptr;
+    _wfopen_s(&cfg, configDir.c_str(), L"w");
+    if (cfg) {
+        fwprintf(cfg, L"PIPE_NAME=%s\n", pipe);
+        fwprintf(cfg, L"AGENT_ENABLED=1\n");
+        fwprintf(cfg, L"HOOK_DLL=%s\n", hookDllPath.c_str());
+        fclose(cfg);
+        swprintf(msg, 512, L"[Inject] Config written to: %s", configDir.c_str());
+        Log(msg);
+    }
+    
+    // For .NET Core/.NET 5+ apps, we need to use the startup hook approach
+    // Set DOTNET_STARTUP_HOOKS to point to our hook
+    if (GetFileAttributes(hookDllPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        SetEnvironmentVariable(L"DOTNET_STARTUP_HOOKS", hookDllPath.c_str());
+        swprintf(msg, 512, L"[Inject] DOTNET_STARTUP_HOOKS set to: %s", hookDllPath.c_str());
+        Log(msg);
+    }
+    
+    Log(L"[Inject] Agent initialization complete. The Spy Agent should be available.");
+    
+    // Note: Starting a new AppDomain or loading .NET assemblies into an already-running
+    // process requires COM/CLR hosting APIs (ICLRRuntimeHost, etc.) which is complex.
+    // The simpler approach is to set environment variables and let the user restart the app,
+    // OR to use cooperative hosting where the app itself calls SpyAgentHost.Start().
+    
+    return 0;
+}
+
 // Try to start the Spy Agent using .NET hosting
 static bool TryStartSpyAgent(const wchar_t* pipeName) {
     if (g_agentStarted.exchange(true)) {
@@ -45,100 +135,17 @@ static bool TryStartSpyAgent(const wchar_t* pipeName) {
     
     g_pipeName = pipeName;
     
-    // Store pipe name in a local variable for lambda capture
-    std::wstring pipeStr = pipeName;
+    // Allocate a buffer for the pipe name (must be valid until thread starts)
+    size_t pipeLen = wcslen(pipeName) + 1;
+    wchar_t* pipeCopy = (wchar_t*)malloc(pipeLen * sizeof(wchar_t));
+    if (pipeCopy) {
+        wcscpy_s(pipeCopy, pipeLen, pipeName);
+    }
     
     Log(L"[Inject] Starting Spy Agent thread...");
     
     // Run agent startup in a separate thread
-    g_agentThread = CreateThread(nullptr, 0, [&pipeStr](LPVOID param) -> DWORD {
-        const wchar_t* pipe = pipeStr.c_str();
-        
-        // Wait a bit for the process to stabilize
-        Sleep(500);
-        
-        wchar_t msg[512];
-        swprintf(msg, 512, L"[Inject] Thread started, pipe=%s", pipe);
-        Log(msg);
-        
-        // Try to load the Spy Agent via the startup hook approach
-        // We look for WpfSpyAgent.StartupHook.dll in the same directory
-        wchar_t dllPath[MAX_PATH];
-        GetModuleFileName(nullptr, dllPath, MAX_PATH);
-        std::wstring dllDir = dllPath;
-        size_t pos = dllDir.rfind(L'\\');
-        if (pos != std::wstring::npos) {
-            dllDir = dllDir.substr(0, pos);
-        }
-        
-        std::wstring hookDllPath = dllDir + L"\\WpfSpyAgent.StartupHook.dll";
-        
-        swprintf(msg, 512, L"[Inject] Looking for: %s", hookDllPath.c_str());
-        Log(msg);
-        
-        // Check if the hook DLL exists
-        if (GetFileAttributes(hookDllPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
-            swprintf(msg, 512, L"[Inject] StartupHook DLL not found at %s", hookDllPath.c_str());
-            Log(msg);
-            
-            // Try parent directories
-            for (int i = 0; i < 3; i++) {
-                pos = dllDir.rfind(L'\\');
-                if (pos != std::wstring::npos) {
-                    dllDir = dllDir.substr(0, pos);
-                    hookDllPath = dllDir + L"\\WpfSpyAgent.StartupHook.dll";
-                    if (GetFileAttributes(hookDllPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
-                        swprintf(msg, 512, L"[Inject] Found at: %s", hookDllPath.c_str());
-                        Log(msg);
-                        break;
-                    }
-                }
-            }
-        }
-        
-        // Set environment variables
-        SetEnvironmentVariable(L"WPFSPY_PIPE_NAME", pipe);
-        SetEnvironmentVariable(L"WPFSPY_AGENT_ENABLED", L"1");
-        
-        swprintf(msg, 512, L"[Inject] Environment set. DLL path: %s", hookDllPath.c_str());
-        Log(msg);
-        
-        // Write config file for the agent to pick up
-        wchar_t configPath[MAX_PATH];
-        GetEnvironmentVariable(L"LOCALAPPDATA", configPath, MAX_PATH);
-        std::wstring configDir = configPath;
-        configDir += L"\\WpfSpyAgent";
-        CreateDirectory(configDir.c_str(), nullptr);
-        configDir += L"\\agent_config.txt";
-        
-        FILE* cfg = nullptr;
-        _wfopen_s(&cfg, configDir.c_str(), L"w");
-        if (cfg) {
-            fwprintf(cfg, L"PIPE_NAME=%s\n", pipe);
-            fwprintf(cfg, L"AGENT_ENABLED=1\n");
-            fwprintf(cfg, L"HOOK_DLL=%s\n", hookDllPath.c_str());
-            fclose(cfg);
-            swprintf(msg, 512, L"[Inject] Config written to: %s", configDir.c_str());
-            Log(msg);
-        }
-        
-        // For .NET Core/.NET 5+ apps, we need to use the startup hook approach
-        // Set DOTNET_STARTUP_HOOKS to point to our hook
-        if (GetFileAttributes(hookDllPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
-            SetEnvironmentVariable(L"DOTNET_STARTUP_HOOKS", hookDllPath.c_str());
-            swprintf(msg, 512, L"[Inject] DOTNET_STARTUP_HOOKS set to: %s", hookDllPath.c_str());
-            Log(msg);
-        }
-        
-        Log(L"[Inject] Agent initialization complete. The Spy Agent should be available.");
-        
-        // Note: Starting a new AppDomain or loading .NET assemblies into an already-running
-        // process requires COM/CLR hosting APIs (ICLRRuntimeHost, etc.) which is complex.
-        // The simpler approach is to set environment variables and let the user restart the app,
-        // OR to use cooperative hosting where the app itself calls SpyAgentHost.Start().
-        
-        return 0;
-    }, nullptr, 0, nullptr);
+    g_agentThread = CreateThread(nullptr, 0, AgentThreadProc, pipeCopy, 0, nullptr);
     
     return g_agentThread != nullptr;
 }
