@@ -255,11 +255,11 @@ echo [Building Native Inject DLL for runtime injection...]
 if "%VS2026%"=="1" (
     set "NATIVE_INJECT_PROJECT=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj"
     echo       Building for VS 2026 ^(v145^)...
-    :: Try to find VS 2026 msbuild
-    if exist "C:\Program Files\Microsoft Visual Studio\2026\Community\MSBuild\Current\Bin\MSBuild.exe" (
+    :: Try to find VS 2026 msbuild (VS 18 uses folder "18")
+    if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" (
+        set "MSBUILD_CMD=C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
+    ) else if exist "C:\Program Files\Microsoft Visual Studio\2026\Community\MSBuild\Current\Bin\MSBuild.exe" (
         set "MSBUILD_CMD=C:\Program Files\Microsoft Visual Studio\2026\Community\MSBuild\Current\Bin\MSBuild.exe"
-    ) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2026\BuildTools\MSBuild\Current\Bin\MSBuild.exe" (
-        set "MSBUILD_CMD=C:\Program Files (x86)\Microsoft Visual Studio\2026\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
     )
 ) else (
     set "NATIVE_INJECT_PROJECT=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2022.vcxproj"
