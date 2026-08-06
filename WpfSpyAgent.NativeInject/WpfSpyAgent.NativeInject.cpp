@@ -213,26 +213,59 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
     Log(msg);
     
     HMODULE mscoree = LoadLibrary(L"mscoree.dll");
-    if (mscoree) {
+    if (!mscoree) {
+        DWORD err = GetLastError();
+        swprintf(msg, 512, L"[Inject] FAILED: mscoree.dll not found, error=%u", err);
+        Log(msg);
+    } else {
         swprintf(msg, 512, L"[Inject] mscoree.dll loaded");
         Log(msg);
         
         // Get CLRCreateInstance function
-        typedef HRESULT (STDAPICALLTYPE* FnCLRCreateInstance)(REFCLSID clsid, REFIID riid, LPVOID* ppInterface);
         FnCLRCreateInstance CLRCreateInstance = (FnCLRCreateInstance)GetProcAddress(mscoree, "CLRCreateInstance");
         
-        if (CLRCreateInstance) {
+        if (!CLRCreateInstance) {
+            DWORD err = GetLastError();
+            swprintf(msg, 512, L"[Inject] FAILED: CLRCreateInstance not found, error=%u", err);
+            Log(msg);
+        } else {
             // Get ICLRMetaHost
             ICLRMetaHost* metaHost = nullptr;
             HRESULT hr = CLRCreateInstance(CLSID_CLRMetaHost, IID_ICLRMetaHost, (LPVOID*)&metaHost);
-            if (SUCCEEDED(hr) && metaHost) {
+            if (FAILED(hr) || !metaHost) {
+                swprintf(msg, 512, L"[Inject] FAILED: CLRCreateInstance result=0x%08X", hr);
+                Log(msg);
+            } else {
+                swprintf(msg, 512, L"[Inject] ICLRMetaHost obtained");
+                Log(msg);
+                
                 // Get runtime info (v4.0 for .NET Framework 4.x)
                 ICLRRuntimeInfo* runtimeInfo = nullptr;
                 hr = metaHost->GetRuntime(L"v4.0.30319", IID_ICLRRuntimeInfo, (LPVOID*)&runtimeInfo);
+                if (FAILED(hr) || !runtimeInfo) {
+                    swprintf(msg, 512, L"[Inject] FAILED: GetRuntime result=0x%08X", hr);
+                    Log(msg);
+                    // Try to get any loaded runtime
+                    wchar_t loadedVersion[256] = {0};
+                    DWORD versionLen = 256;
+                    hr = metaHost->GetVersionFromFile(agentDllPath.c_str(), loadedVersion, &versionLen);
+                    if (SUCCEEDED(hr)) {
+                        swprintf(msg, 512, L"[Inject] DLL requires runtime: %s", loadedVersion);
+                        Log(msg);
+                        hr = metaHost->GetRuntime(loadedVersion, IID_ICLRRuntimeInfo, (LPVOID*)&runtimeInfo);
+                    }
+                }
+                
                 if (SUCCEEDED(hr) && runtimeInfo) {
+                    swprintf(msg, 512, L"[Inject] ICLRRuntimeInfo obtained");
+                    Log(msg);
+                    
                     // Get ICLRRuntimeHost
                     hr = runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_ICLRRuntimeHost, (LPVOID*)&runtimeHost);
-                    if (SUCCEEDED(hr) && runtimeHost) {
+                    if (FAILED(hr) || !runtimeHost) {
+                        swprintf(msg, 512, L"[Inject] FAILED: GetInterface result=0x%08X", hr);
+                        Log(msg);
+                    } else {
                         swprintf(msg, 512, L"[Inject] .NET Framework CLR Runtime Host obtained!");
                         Log(msg);
                     }
