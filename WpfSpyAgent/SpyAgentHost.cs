@@ -92,17 +92,25 @@ namespace WpfSpyAgent
                         PipeTransmissionMode.Byte,
                         PipeOptions.Asynchronous);
 
-                    Log("ListenLoop: Waiting for connection...");
-                    server.WaitForConnection();
-                    Log("ListenLoop: Client connected!");
-                    // Handle each client on its own thread so the listen
-                    // loop can accept the next connection immediately.
-                    var clientThread = new Thread(() => HandleClient(server))
+                    Log("ListenLoop: Waiting for connection (60s timeout)...");
+                    bool connected = server.WaitForConnection(TimeSpan.FromSeconds(60));
+                    if (connected)
                     {
-                        IsBackground = false,  // Foreground thread
-                        Name = "WpfSpyAgent-Client",
-                    };
-                    clientThread.Start();
+                        Log("ListenLoop: Client connected!");
+                        // Handle each client on its own thread so the listen
+                        // loop can accept the next connection immediately.
+                        var clientThread = new Thread(() => HandleClient(server))
+                        {
+                            IsBackground = false,  // Foreground thread
+                            Name = "WpfSpyAgent-Client",
+                        };
+                        clientThread.Start();
+                    }
+                    else
+                    {
+                        Log("ListenLoop: Connection timeout, disposing server");
+                        server.Dispose();
+                    }
                 }
                 catch (IOException ex)
                 {
