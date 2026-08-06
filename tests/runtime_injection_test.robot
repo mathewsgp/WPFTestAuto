@@ -12,7 +12,7 @@ Documentation    Test runtime injection features
 Library          ../api/robot_launcher.py
 
 *** Variables ***
-${APP_PATH}      ../SampleWpfApp/bin/Debug/net8.0-windows/SampleWpfApp.dll
+${APP_PATH}      C:\\Users\\mathe\\source\\repos\\WPFTestAuto\\SampleWpfApp\\bin\\Debug\\net8.0-windows\\SampleWpfApp.dll
 ${PIPE_NAME}     WPFSpyAgentPipe
 
 *** Test Cases ***
