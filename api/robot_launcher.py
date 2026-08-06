@@ -1,5 +1,5 @@
 """
-AppLauncher - Robot Framework Library for WPF Application Launching
+RobotLauncher - Robot Framework Library for WPF Application Launching
 ===================================================================
 Library for launching WPF applications with Spy Agent injection.
 
@@ -27,7 +27,7 @@ sys.path.insert(0, _THIS_DIR)
 from runtime_injector import RuntimeInjector
 
 
-class AppLauncher:
+class RobotLauncher:
     """
     Robot Framework library for launching WPF applications with Spy Agent.
     

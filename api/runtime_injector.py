@@ -331,12 +331,12 @@ class RuntimeInjector:
         return False
 
 
-class AppLauncher:
+class RobotLauncher:
     """
     High-level application launcher with Spy Agent support.
     
     Usage:
-        launcher = AppLauncher()
+        launcher = RobotLauncher()
         
         # Launch with automatic injection
         process = launcher.launch("C:\\path\\to\\app.exe")
@@ -472,7 +472,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    launcher = AppLauncher(args.hook)
+    launcher = RobotLauncher(args.hook)
     process = launcher.launch(args.app, args.args, args.pipe)
     
     print(f"Launched PID {process.pid}")
