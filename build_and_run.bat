@@ -472,6 +472,42 @@ if /i "%INJECTION_MODE%"=="runtime" (
     echo.
 )
 
+:: Build mode - launch with appropriate hook
+if /i "%INJECTION_MODE%"=="build" (
+    echo [MODE: BUILD - Launch with Spy Agent hook]
+    echo.
+    echo Starting target app WITH Spy Agent...
+    echo.
+    echo DEBUG: TARGET_DIR = %TARGET_DIR%
+    echo DEBUG: TARGET_PATH = %TARGET_PATH%
+    echo DEBUG: TARGET_FW = %TARGET_FW%
+    echo.
+    if not exist "%TARGET_PATH%" (
+        echo ERROR: Application not found at: %TARGET_PATH%
+        pause
+        exit /b 1
+    )
+    
+    if /i "!TARGET_FW!"=="net461" (
+        :: .NET Framework - use AppDomainManager via environment
+        echo       Using FrameworkHook (AppDomainManager) for .NET Framework
+        set COMPLUS_AppDomainManagerAssembly=WpfSpyAgent.FrameworkHook, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
+        set COMPLUS_AppDomainManagerType=WpfSpyAgent.FrameworkHook.SpyAppDomainManager
+        set WPFSPY_AGENT_ENABLED=1
+        set WPFSPY_PIPE_NAME=WPFSpyAgentPipe
+        start "" /D "%TARGET_DIR%" "%TARGET_PATH%"
+    ) else (
+        :: .NET Core/5+ - use Startup Hook
+        echo       Using StartupHook for .NET Core/5+
+        set DOTNET_STARTUP_HOOKS=%FW_ROOT%WpfSpyAgent.StartupHook\bin\%CONFIGURATION%\net8.0-windows\WpfSpyAgent.StartupHook.dll
+        set WPFSPY_AGENT_ENABLED=1
+        set WPFSPY_PIPE_NAME=WPFSpyAgentPipe
+        start "" /D "%TARGET_DIR%" "%TARGET_PATH%"
+    )
+    echo App launched. Now use the IDE to attach to the running process.
+    echo.
+)
+
 if /i "%INJECTION_MODE%"=="launch" (
     echo [MODE: LAUNCH - Startup Hook injection]
     echo.
