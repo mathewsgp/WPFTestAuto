@@ -58,16 +58,10 @@ namespace WpfSpyAgent
 
             try
             {
-                // Start ListenLoop on a dedicated background thread
-                // Using ThreadPool with QueueUserWorkItem for .NET Framework compatibility
-                Log($"Start: Starting ListenLoop thread...");
-                var thread = new Thread(() => ListenLoop(pipeName))
-                {
-                    IsBackground = true,
-                    Name = "WpfSpyAgent-ListenLoop"
-                };
-                thread.Start();
-                Log($"Start: Thread started");
+                // Use ThreadPool for .NET Framework compatibility
+                Log($"Start: Queuing ListenLoop to ThreadPool...");
+                ThreadPool.QueueUserWorkItem(_ => ListenLoop(pipeName));
+                Log($"Start: Queued to ThreadPool");
             }
             catch (Exception ex)
             {
