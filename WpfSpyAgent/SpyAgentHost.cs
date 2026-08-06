@@ -58,16 +58,10 @@ namespace WpfSpyAgent
 
             try
             {
-                Log($"Start: Creating thread...");
-                // Use ForegroundThread to ensure it survives ExecuteInDefaultAppDomain return
-                _listenerThread = new Thread(() => ListenLoop(pipeName))
-                {
-                    IsBackground = false,  // Foreground thread - won't be killed
-                    Name = "WpfSpyAgent-Listener",
-                };
-                Log($"Start: Starting thread...");
-                _listenerThread.Start();
-                Log($"Start: Thread started, ID={_listenerThread.ManagedThreadId}");
+                // For debugging: run synchronously first to test if pipe works
+                Log($"Start: Running ListenLoop synchronously...");
+                ListenLoop(pipeName);
+                Log($"Start: ListenLoop returned");
             }
             catch (Exception ex)
             {
@@ -84,32 +78,6 @@ namespace WpfSpyAgent
             // Signal that we've started
             _readyEvent?.Set();
             
-            try
-            {
-                Log($"ListenLoop: Creating pipe server '{pipeName}'");
-                var server = new NamedPipeServerStream(
-                    pipeName,
-                    PipeDirection.InOut,
-                    maxNumberOfServerInstances: 5,
-                    PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous);
-
-                Log("ListenLoop: Waiting for connection...");
-                server.WaitForConnection();
-                Log("ListenLoop: Client connected!");
-                var clientThread = new Thread(() => HandleClient(server))
-                {
-                    IsBackground = false,
-                    Name = "WpfSpyAgent-Client",
-                };
-                clientThread.Start();
-            }
-            catch (Exception ex)
-            {
-                Log($"ListenLoop: Exception - {ex.GetType().Name}: {ex.Message}");
-            }
-            
-            Log("ListenLoop: END");
             while (_running)
             {
                 try
@@ -151,7 +119,6 @@ namespace WpfSpyAgent
                 catch (Exception ex)
                 {
                     Log($"ListenLoop: Error - {ex.GetType().Name}: {ex.Message}");
-                    // Log unexpected errors but keep listening
                     System.Diagnostics.Debug.WriteLine($"WpfSpyAgent ListenLoop error: {ex.GetType().Name}: {ex.Message}");
                 }
             }
