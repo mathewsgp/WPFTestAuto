@@ -68,10 +68,12 @@ namespace WpfSpyAgent
 
         private static void ListenLoop(string pipeName)
         {
+            Log("ListenLoop started");
             while (_running)
             {
                 try
                 {
+                    Log($"ListenLoop: Creating pipe server '{pipeName}'");
                     // Do NOT wrap server in `using` here — ownership transfers
                     // to the client thread below, which disposes it when the
                     // connection ends.
@@ -82,7 +84,9 @@ namespace WpfSpyAgent
                         PipeTransmissionMode.Byte,
                         PipeOptions.Asynchronous);
 
+                    Log("ListenLoop: Waiting for connection...");
                     server.WaitForConnection();
+                    Log("ListenLoop: Client connected!");
                     // Handle each client on its own thread so the listen
                     // loop can accept the next connection immediately.
                     var clientThread = new Thread(() => HandleClient(server))
@@ -92,21 +96,35 @@ namespace WpfSpyAgent
                     };
                     clientThread.Start();
                 }
-                catch (IOException)
+                catch (IOException ex)
                 {
+                    Log($"ListenLoop: IOException - {ex.Message}");
                     // Client disconnected mid-stream — loop and accept the next connection.
                 }
                 catch (ObjectDisposedException)
                 {
+                    Log("ListenLoop: ObjectDisposedException - stopping");
                     // Stop() was called while WaitForConnection was blocked.
                     break;
                 }
                 catch (Exception ex)
                 {
+                    Log($"ListenLoop: Error - {ex.GetType().Name}: {ex.Message}");
                     // Log unexpected errors but keep listening
                     System.Diagnostics.Debug.WriteLine($"WpfSpyAgent ListenLoop error: {ex.GetType().Name}: {ex.Message}");
                 }
             }
+            Log("ListenLoop: Exiting");
+        }
+        
+        private static void Log(string message)
+        {
+            try
+            {
+                string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_probe_log.txt");
+                System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {message}{Environment.NewLine}");
+            }
+            catch { }
         }
 
         private static void HandleClient(NamedPipeServerStream server)
