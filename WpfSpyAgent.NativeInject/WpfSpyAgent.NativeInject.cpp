@@ -32,6 +32,17 @@ static std::wstring GetDllDirectory() {
     return L"";
 }
 
+// Check if coreclr.dll is loaded in this process (indicates .NET Core/5+)
+static bool IsCoreClrLoaded() {
+    HMODULE hCoreClr = GetModuleHandle(L"coreclr.dll");
+    return hCoreClr != NULL;
+}
+
+// Get the handle to coreclr.dll if it's loaded
+static HMODULE GetCoreClrHandle() {
+    return GetModuleHandle(L"coreclr.dll");
+}
+
 // Write debug log
 static void Log(const wchar_t* msg) {
     wchar_t path[MAX_PATH];
@@ -206,7 +217,87 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
         return false;
     }
     
+    // Check if this is a .NET Core app (coreclr.dll is loaded)
+    bool isCoreClr = IsCoreClrLoaded();
+    swprintf(msg, 512, L"[Inject] .NET Core runtime detected: %s", isCoreClr ? L"YES" : L"NO");
+    Log(msg);
+    
     ICLRRuntimeHost* runtimeHost = nullptr;
+    
+    // For .NET Core apps, we need to use coreclr.dll that's already loaded
+    if (isCoreClr) {
+        swprintf(msg, 512, L"[Inject] Using coreclr.dll from loaded runtime...");
+        Log(msg);
+        
+        HMODULE hCoreClr = GetCoreClrHandle();
+        if (hCoreClr) {
+            // Get GetCLRRuntimeHost from coreclr.dll
+            typedef HRESULT (STDAPICALLTYPE* FnGetCLRRuntimeHost)(REFIID riid, IUnknown** pUnk);
+            FnGetCLRRuntimeHost pfnGetCLRRuntimeHost = (FnGetCLRRuntimeHost)GetProcAddress(hCoreClr, "GetCLRRuntimeHost");
+            
+            if (pfnGetCLRRuntimeHost) {
+                swprintf(msg, 512, L"[Inject] GetCLRRuntimeHost found in coreclr.dll");
+                Log(msg);
+                
+                HRESULT hr = pfnGetCLRRuntimeHost(IID_ICLRRuntimeHost, (IUnknown**)&runtimeHost);
+                if (SUCCEEDED(hr) && runtimeHost) {
+                    swprintf(msg, 512, L"[Inject] ICLRRuntimeHost obtained from coreclr.dll!");
+                    Log(msg);
+                } else {
+                    swprintf(msg, 512, L"[Inject] GetCLRRuntimeHost failed: 0x%08X", hr);
+                    Log(msg);
+                }
+            } else {
+                DWORD err = GetLastError();
+                swprintf(msg, 512, L"[Inject] GetProcAddress failed for GetCLRRuntimeHost: %u", err);
+                Log(msg);
+            }
+        }
+        
+        if (!runtimeHost) {
+            swprintf(msg, 512, L"[Inject] Failed to get runtime host from coreclr.dll");
+            Log(msg);
+            return false;
+        }
+        
+        // For .NET Core, we need to start the runtime if not already started
+        // and then execute the managed code
+        swprintf(msg, 512, L"[Inject] Attempting to execute in .NET Core runtime...");
+        Log(msg);
+        
+        // Set environment variables for the agent
+        SetEnvironmentVariable(L"WPFSPY_PIPE_NAME", pipeName);
+        SetEnvironmentVariable(L"WPFSPY_AGENT_ENABLED", L"1");
+        
+        // Execute SpyAgentHost.StartWithPipe() in the default app domain
+        const wchar_t* dllPathW = agentDllPath.c_str();
+        const wchar_t* typeNameW = L"WpfSpyAgent.SpyAgentHost";
+        
+        DWORD exitCode = 0;
+        HRESULT hr = runtimeHost->ExecuteInDefaultAppDomain(
+            dllPathW,
+            typeNameW,
+            L"StartWithPipe",
+            pipeName,
+            &exitCode);
+        
+        if (SUCCEEDED(hr)) {
+            swprintf(msg, 512, L"[Inject] Spy Agent started via CLR Hosting! Exit code: %d", exitCode);
+            Log(msg);
+            runtimeHost->Release();
+            g_pipeName = pipeName;
+            return true;
+        } else {
+            swprintf(msg, 512, L"[Inject] ExecuteInDefaultAppDomain failed: 0x%08X", hr);
+            Log(msg);
+            runtimeHost->Release();
+            return false;
+        }
+    }
+    
+    // For .NET Framework apps, continue with mscoree.dll approach
+    swprintf(msg, 512, L"[Inject] Using mscoree.dll for .NET Framework...");
+    Log(msg);
     
     // Try .NET Framework first (mscoree.dll) - more common for WPF apps
     swprintf(msg, 512, L"[Inject] Trying .NET Framework (mscoree.dll)...");
