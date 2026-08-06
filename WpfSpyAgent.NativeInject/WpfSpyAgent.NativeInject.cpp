@@ -175,8 +175,9 @@ static DWORD WINAPI AgentThreadProc(LPVOID param) {
     return 0;
 }
 
-// Try to start the Spy Agent using CLR Hosting (for .NET Framework)
-// This function uses ICLRRuntimeHost::ExecuteInDefaultAppDomain to execute managed code
+// Try to start the Spy Agent using CLR Hosting
+// Supports both .NET Framework (mscoree.dll) and .NET Core (coreclr.dll)
+// Based on Snoop's approach: https://github.com/snoopwpf/snoopwpf
 static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
     if (g_agentStarted.exchange(true)) {
         return true; // Already started
@@ -200,60 +201,105 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
         return false;
     }
     
-    // Load mscoree.dll to get CLR hosting APIs
-    HMODULE mscoree = LoadLibrary(L"mscoree.dll");
-    if (!mscoree) {
-        swprintf(msg, 512, L"[Inject] Failed to load mscoree.dll!");
-        Log(msg);
-        return false;
-    }
-    
-    // Get CLRCreateInstance function
-    typedef HRESULT (STDAPICALLTYPE* FnCLRCreateInstance)(REFCLSID clsid, REFIID riid, LPVOID* ppInterface);
-    FnCLRCreateInstance CLRCreateInstance = (FnCLRCreateInstance)GetProcAddress(mscoree, "CLRCreateInstance");
-    
-    if (!CLRCreateInstance) {
-        swprintf(msg, 512, L"[Inject] CLRCreateInstance not found!");
-        Log(msg);
-        FreeLibrary(mscoree);
-        return false;
-    }
-    
-    // Get ICLRMetaHost
-    ICLRMetaHost* metaHost = nullptr;
-    HRESULT hr = CLRCreateInstance(CLSID_CLRMetaHost, IID_ICLRMetaHost, (LPVOID*)&metaHost);
-    if (FAILED(hr) || !metaHost) {
-        swprintf(msg, 512, L"[Inject] CLRCreateInstance failed: 0x%08X", hr);
-        Log(msg);
-        FreeLibrary(mscoree);
-        return false;
-    }
-    
-    // Get the runtime version (v4.0 for .NET Framework 4.x)
-    ICLRRuntimeInfo* runtimeInfo = nullptr;
-    hr = metaHost->GetRuntime(L"v4.0.30319", IID_ICLRRuntimeInfo, (LPVOID*)&runtimeInfo);
-    if (FAILED(hr) || !runtimeInfo) {
-        swprintf(msg, 512, L"[Inject] GetRuntime failed: 0x%08X", hr);
-        Log(msg);
-        metaHost->Release();
-        FreeLibrary(mscoree);
-        return false;
-    }
-    
-    // Get ICLRRuntimeHost
     ICLRRuntimeHost* runtimeHost = nullptr;
-    hr = runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_ICLRRuntimeHost, (LPVOID*)&runtimeHost);
-    if (FAILED(hr) || !runtimeHost) {
-        swprintf(msg, 512, L"[Inject] GetInterface for CLR Runtime Host failed: 0x%08X", hr);
+    
+    // Try .NET Core first (coreclr.dll)
+    swprintf(msg, 512, L"[Inject] Trying .NET Core (coreclr.dll)...");
+    Log(msg);
+    
+    HMODULE coreclr = LoadLibrary(L"coreclr.dll");
+    if (coreclr) {
+        swprintf(msg, 512, L"[Inject] coreclr.dll loaded");
         Log(msg);
+        
+        // Get GetCLRRuntimeHost from coreclr.dll
+        typedef HRESULT (STDAPICALLTYPE* FnGetCLRRuntimeHost)(REFIID riid, IUnknown** pUnk);
+        FnGetCLRRuntimeHost pfnGetCLRRuntimeHost = (FnGetCLRRuntimeHost)GetProcAddress(coreclr, "GetCLRRuntimeHost");
+        
+        if (pfnGetCLRRuntimeHost) {
+            swprintf(msg, 512, L"[Inject] GetCLRRuntimeHost found");
+            Log(msg);
+            
+            HRESULT hr = pfnGetCLRRuntimeHost(IID_ICLRRuntimeHost, (IUnknown**)&runtimeHost);
+            if (SUCCEEDED(hr) && runtimeHost) {
+                swprintf(msg, 512, L"[Inject] .NET Core CLR Runtime Host obtained!");
+                Log(msg);
+            }
+        }
+        
+        if (!runtimeHost) {
+            FreeLibrary(coreclr);
+        }
+    }
+    
+    // If .NET Core didn't work, try .NET Framework (mscoree.dll)
+    if (!runtimeHost) {
+        swprintf(msg, 512, L"[Inject] Trying .NET Framework (mscoree.dll)...");
+        Log(msg);
+        
+        HMODULE mscoree = LoadLibrary(L"mscoree.dll");
+        if (!mscoree) {
+            swprintf(msg, 512, L"[Inject] Neither coreclr.dll nor mscoree.dll found!");
+            Log(msg);
+            return false;
+        }
+        
+        // Get CLRCreateInstance function
+        typedef HRESULT (STDAPICALLTYPE* FnCLRCreateInstance)(REFCLSID clsid, REFIID riid, LPVOID* ppInterface);
+        FnCLRCreateInstance CLRCreateInstance = (FnCLRCreateInstance)GetProcAddress(mscoree, "CLRCreateInstance");
+        
+        if (!CLRCreateInstance) {
+            swprintf(msg, 512, L"[Inject] CLRCreateInstance not found!");
+            Log(msg);
+            FreeLibrary(mscoree);
+            return false;
+        }
+        
+        // Get ICLRMetaHost
+        ICLRMetaHost* metaHost = nullptr;
+        HRESULT hr = CLRCreateInstance(CLSID_CLRMetaHost, IID_ICLRMetaHost, (LPVOID*)&metaHost);
+        if (FAILED(hr) || !metaHost) {
+            swprintf(msg, 512, L"[Inject] CLRCreateInstance failed: 0x%08X", hr);
+            Log(msg);
+            FreeLibrary(mscoree);
+            return false;
+        }
+        
+        // Get the runtime version (v4.0 for .NET Framework 4.x)
+        ICLRRuntimeInfo* runtimeInfo = nullptr;
+        hr = metaHost->GetRuntime(L"v4.0.30319", IID_ICLRRuntimeInfo, (LPVOID*)&runtimeInfo);
+        if (FAILED(hr) || !runtimeInfo) {
+            swprintf(msg, 512, L"[Inject] GetRuntime failed: 0x%08X", hr);
+            Log(msg);
+            metaHost->Release();
+            FreeLibrary(mscoree);
+            return false;
+        }
+        
+        // Get ICLRRuntimeHost
+        hr = runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_ICLRRuntimeHost, (LPVOID*)&runtimeHost);
+        if (FAILED(hr) || !runtimeHost) {
+            swprintf(msg, 512, L"[Inject] GetInterface for CLR Runtime Host failed: 0x%08X", hr);
+            Log(msg);
+            runtimeInfo->Release();
+            metaHost->Release();
+            FreeLibrary(mscoree);
+            return false;
+        }
+        
+        swprintf(msg, 512, L"[Inject] .NET Framework CLR Runtime Host obtained!");
+        Log(msg);
+        
         runtimeInfo->Release();
         metaHost->Release();
         FreeLibrary(mscoree);
-        return false;
     }
     
-    swprintf(msg, 512, L"[Inject] CLR Runtime Host obtained successfully!");
-    Log(msg);
+    if (!runtimeHost) {
+        swprintf(msg, 512, L"[Inject] Failed to get CLR Runtime Host!");
+        Log(msg);
+        return false;
+    }
     
     // Set environment variables for the agent
     SetEnvironmentVariable(L"WPFSPY_PIPE_NAME", pipeName);
@@ -266,12 +312,12 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
     strcpy_s(typeNameA, "WpfSpyAgent.SpyAgentHost");
     
     // Execute SpyAgentHost.Start() in the default app domain
-    // This works because we're in the same process - the existing WPF Application is accessible
+    // The method will be called with the pipe name as argument
     DWORD exitCode = 0;
-    hr = runtimeHost->ExecuteInDefaultAppDomain(
+    HRESULT hr = runtimeHost->ExecuteInDefaultAppDomain(
         dllPathA,
         typeNameA,
-        "StartWithPipe",  // We'll add this method to SpyAgentHost
+        "StartWithPipe",  // Method that takes pipe name as parameter
         pipeName,
         &exitCode);
     
@@ -279,9 +325,6 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
         swprintf(msg, 512, L"[Inject] ExecuteInDefaultAppDomain failed: 0x%08X", hr);
         Log(msg);
         runtimeHost->Release();
-        runtimeInfo->Release();
-        metaHost->Release();
-        FreeLibrary(mscoree);
         return false;
     }
     
@@ -290,9 +333,6 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
     
     // Clean up
     runtimeHost->Release();
-    runtimeInfo->Release();
-    metaHost->Release();
-    FreeLibrary(mscoree);
     
     g_pipeName = pipeName;
     return true;
