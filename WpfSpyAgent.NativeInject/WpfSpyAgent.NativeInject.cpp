@@ -45,11 +45,14 @@ static bool TryStartSpyAgent(const wchar_t* pipeName) {
     
     g_pipeName = pipeName;
     
+    // Store pipe name in a local variable for lambda capture
+    std::wstring pipeStr = pipeName;
+    
     Log(L"[Inject] Starting Spy Agent thread...");
     
     // Run agent startup in a separate thread
-    g_agentThread = CreateThread(nullptr, 0, [](LPVOID param) -> DWORD {
-        const wchar_t* pipe = (const wchar_t*)param;
+    g_agentThread = CreateThread(nullptr, 0, [&pipeStr](LPVOID param) -> DWORD {
+        const wchar_t* pipe = pipeStr.c_str();
         
         // Wait a bit for the process to stabilize
         Sleep(500);
@@ -135,7 +138,7 @@ static bool TryStartSpyAgent(const wchar_t* pipeName) {
         // OR to use cooperative hosting where the app itself calls SpyAgentHost.Start().
         
         return 0;
-    }, (LPVOID)pipe, 0, nullptr);
+    }, nullptr, 0, nullptr);
     
     return g_agentThread != nullptr;
 }
