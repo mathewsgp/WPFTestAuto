@@ -62,9 +62,10 @@ namespace WpfSpyAgent
             _running = true;
             Log($"SpyAgentHost.Start called, pipe={pipeName}");
 
+            // Use ForegroundThread to ensure it survives ExecuteInDefaultAppDomain return
             _listenerThread = new Thread(() => ListenLoop(pipeName))
             {
-                IsBackground = true,
+                IsBackground = false,  // Foreground thread - won't be killed
                 Name = "WpfSpyAgent-Listener",
             };
             _listenerThread.Start();
@@ -102,7 +103,7 @@ namespace WpfSpyAgent
                     // loop can accept the next connection immediately.
                     var clientThread = new Thread(() => HandleClient(server))
                     {
-                        IsBackground = true,
+                        IsBackground = false,  // Foreground thread
                         Name = "WpfSpyAgent-Client",
                     };
                     clientThread.Start();
