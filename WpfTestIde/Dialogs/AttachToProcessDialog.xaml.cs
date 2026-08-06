@@ -193,7 +193,7 @@ namespace WpfTestIde.Dialogs
 
                 if (result != null)
                 {
-                    SelectedProcessId = result.Value.Id;
+                    SelectedProcessId = result.Id;
                     StatusText.Text = $"Launched PID {SelectedProcessId}";
                     DialogResult = true;
                 }

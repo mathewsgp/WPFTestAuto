@@ -154,8 +154,7 @@ namespace WpfTestIde.Helpers
             try
             {
                 using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut);
-                client.ConnectTimeout = 2000;
-                await client.ConnectAsync();
+                client.Connect(2000);
 
                 if (client.IsConnected)
                 {

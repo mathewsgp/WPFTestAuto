@@ -42,10 +42,9 @@ class RobotLauncher:
     - Connect to already-running Spy Agent instances
     - Manage application lifecycle
     """
-    
+
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
-    ROBOT_LISTENER_API_VERSION = 3
-    
+
     def __init__(self, startup_hook_path: Optional[str] = None):
         """
         Initialize the launcher.
