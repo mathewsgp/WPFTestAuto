@@ -220,7 +220,7 @@ namespace WpfTestIde.Helpers
                 // Step 8: Try to start the agent by calling the exported function
                 bool agentStarted = await StartAgentInProcessAsync(
                     processHandle, 
-                    exitCode, 
+                    (IntPtr)(long)exitCode, 
                     agentPipeName,
                     cancellationToken);
 
