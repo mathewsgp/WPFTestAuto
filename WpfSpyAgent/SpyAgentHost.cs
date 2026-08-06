@@ -39,17 +39,10 @@ namespace WpfSpyAgent
         /// </summary>
         public static int StartWithPipe(string pipeName)
         {
+            Log("StartWithPipe: BEGIN");
             _readyEvent = new ManualResetEvent(false);
             Start(pipeName);
-            
-            // Wait for the ListenLoop to actually start (with timeout)
-            // This ensures the thread has begun executing before we return
-            bool ready = _readyEvent.WaitOne(5000);
-            if (!ready)
-            {
-                Log("StartWithPipe: TIMEOUT waiting for ListenLoop to start!");
-            }
-            
+            Log("StartWithPipe: Start() returned");
             return 0; // Exit code for ExecuteInDefaultAppDomain
         }
 
@@ -57,30 +50,66 @@ namespace WpfSpyAgent
         {
             if (_running)
             {
+                Log("Start: already running, returning");
                 return;
             }
             _running = true;
-            Log($"SpyAgentHost.Start called, pipe={pipeName}");
+            Log($"Start: called, pipe={pipeName}");
 
-            // Use ForegroundThread to ensure it survives ExecuteInDefaultAppDomain return
-            _listenerThread = new Thread(() => ListenLoop(pipeName))
+            try
             {
-                IsBackground = false,  // Foreground thread - won't be killed
-                Name = "WpfSpyAgent-Listener",
-            };
-            _listenerThread.Start();
-            Log($"Thread started, ID={_listenerThread.ManagedThreadId}");
+                Log($"Start: Creating thread...");
+                // Use ForegroundThread to ensure it survives ExecuteInDefaultAppDomain return
+                _listenerThread = new Thread(() => ListenLoop(pipeName))
+                {
+                    IsBackground = false,  // Foreground thread - won't be killed
+                    Name = "WpfSpyAgent-Listener",
+                };
+                Log($"Start: Starting thread...");
+                _listenerThread.Start();
+                Log($"Start: Thread started, ID={_listenerThread.ManagedThreadId}");
+            }
+            catch (Exception ex)
+            {
+                Log($"Start: EXCEPTION - {ex.GetType().Name}: {ex.Message}");
+            }
         }
 
         public static void Stop() => _running = false;
 
         private static void ListenLoop(string pipeName)
         {
-            Log("ListenLoop started");
+            Log("ListenLoop: BEGIN");
             
             // Signal that we've started
             _readyEvent?.Set();
             
+            try
+            {
+                Log($"ListenLoop: Creating pipe server '{pipeName}'");
+                var server = new NamedPipeServerStream(
+                    pipeName,
+                    PipeDirection.InOut,
+                    maxNumberOfServerInstances: 5,
+                    PipeTransmissionMode.Byte,
+                    PipeOptions.Asynchronous);
+
+                Log("ListenLoop: Waiting for connection...");
+                server.WaitForConnection();
+                Log("ListenLoop: Client connected!");
+                var clientThread = new Thread(() => HandleClient(server))
+                {
+                    IsBackground = false,
+                    Name = "WpfSpyAgent-Client",
+                };
+                clientThread.Start();
+            }
+            catch (Exception ex)
+            {
+                Log($"ListenLoop: Exception - {ex.GetType().Name}: {ex.Message}");
+            }
+            
+            Log("ListenLoop: END");
             while (_running)
             {
                 try
