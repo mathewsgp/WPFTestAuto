@@ -233,17 +233,36 @@ _DRIVERS_INITIALIZED: bool = False
 
 
 def _get_drivers() -> dict:
-    """Lazy initialization of drivers. Returns cached drivers dict."""
+    """Lazy initialization of drivers. Returns cached drivers dict.
+    
+    The WPFSpy driver is created based on current mode:
+    - In 'real' mode: uses WPFSpyRealDriver (named pipe communication)
+    - In 'mock' mode: uses WPFSpyMockDriver (in-memory mock app)
+    """
     global _DRIVERS, _DRIVERS_INITIALIZED
     if not _DRIVERS_INITIALIZED:
         _DRIVERS = {
             "FlaUI": FlaUIDriver(),
-            "WPFSpy": WPFSpyDriver(),
+            "WPFSpy": _create_wpfspy_driver(),  # Create based on current mode
             "Sikuli": SikuliDriver(),
         }
         _DRIVERS_INITIALIZED = True
         logger.info("Drivers initialized", drivers=list(_DRIVERS.keys()))
     return _DRIVERS
+
+
+def _create_wpfspy_driver():
+    """Create the appropriate WPFSpy driver based on current mode.
+    
+    Uses _ACTIVE_MODE if set, otherwise falls back to WPFSPY_MODE env var.
+    """
+    effective_mode = _ACTIVE_MODE if _ACTIVE_MODE is not None else _WPFSPY_MODE
+    if effective_mode == "real":
+        from WPFSpyLibrary import WPFSpyRealDriver
+        return WPFSpyRealDriver()
+    else:
+        from WPFSpyLibrary import WPFSpyMockDriver
+        return WPFSpyMockDriver()
 
 
 def _reload_drivers():
@@ -739,12 +758,22 @@ class DriverAgnosticApi:
             raise ValueError(f"Invalid mode '{mode}'. Valid options: mock, real")
         _ACTIVE_MODE = normalized
         logger.info("Mode set", mode=_ACTIVE_MODE)
+        
+        # Reload drivers if already initialized, so WPFSpy driver is recreated
+        if _DRIVERS_INITIALIZED:
+            _reload_drivers()
+            _ = _get_drivers()  # Re-initialize with new mode
 
     def reset_mode(self):
         """Reset to the mode from the WPFSPY_MODE environment variable."""
         global _ACTIVE_MODE
         _ACTIVE_MODE = None
         logger.info("Mode reset to WPFSPY_MODE env var")
+        
+        # Reload drivers to match the reset mode
+        if _DRIVERS_INITIALIZED:
+            _reload_drivers()
+            _ = _get_drivers()
 
     def set_mode_and_driver(self, mode: str, driver: str):
         """Set both execution mode and driver in one call.
