@@ -62,6 +62,12 @@ namespace WpfSpyAgent
                 Name = "WpfSpyAgent-Listener",
             };
             _listenerThread.Start();
+            try
+            {
+                string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_probe_log.txt");
+                System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Thread started, ID={_listenerThread.ManagedThreadId}{Environment.NewLine}");
+            }
+            catch { }
         }
 
         public static void Stop() => _running = false;
