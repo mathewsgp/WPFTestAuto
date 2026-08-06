@@ -48,8 +48,7 @@ static DWORD WINAPI AgentThreadProc(LPVOID param) {
     swprintf(msg, 512, L"[Inject] Thread started, pipe=%s", pipe);
     Log(msg);
     
-    // Try to load the Spy Agent via the startup hook approach
-    // We look for WpfSpyAgent.StartupHook.dll in the same directory
+    // Get the target app directory
     wchar_t dllPath[MAX_PATH];
     GetModuleFileName(nullptr, dllPath, MAX_PATH);
     std::wstring dllDir = dllPath;
@@ -58,28 +57,54 @@ static DWORD WINAPI AgentThreadProc(LPVOID param) {
         dllDir = dllDir.substr(0, pos);
     }
     
-    std::wstring hookDllPath = dllDir + L"\\WpfSpyAgent.StartupHook.dll";
+    // Check for .NET Framework (FrameworkHook) or .NET Core/5+ (StartupHook)
+    std::wstring hookDllPath;
+    bool isNetFramework = false;
     
-    swprintf(msg, 512, L"[Inject] Looking for: %s", hookDllPath.c_str());
+    // First try FrameworkHook for .NET Framework apps
+    hookDllPath = dllDir + L"\\WpfSpyAgent.FrameworkHook.dll";
+    swprintf(msg, 512, L"[Inject] Looking for FrameworkHook: %s", hookDllPath.c_str());
     Log(msg);
     
-    // Check if the hook DLL exists
-    if (GetFileAttributes(hookDllPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        swprintf(msg, 512, L"[Inject] StartupHook DLL not found at %s", hookDllPath.c_str());
+    if (GetFileAttributes(hookDllPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        isNetFramework = true;
+        swprintf(msg, 512, L"[Inject] Found FrameworkHook at: %s", hookDllPath.c_str());
+        Log(msg);
+    } else {
+        // Try StartupHook for .NET Core/5+
+        hookDllPath = dllDir + L"\\WpfSpyAgent.StartupHook.dll";
+        swprintf(msg, 512, L"[Inject] FrameworkHook not found, looking for StartupHook: %s", hookDllPath.c_str());
         Log(msg);
         
-        // Try parent directories
-        for (int i = 0; i < 3; i++) {
-            pos = dllDir.rfind(L'\\');
-            if (pos != std::wstring::npos) {
-                dllDir = dllDir.substr(0, pos);
-                hookDllPath = dllDir + L"\\WpfSpyAgent.StartupHook.dll";
-                if (GetFileAttributes(hookDllPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
-                    swprintf(msg, 512, L"[Inject] Found at: %s", hookDllPath.c_str());
-                    Log(msg);
-                    break;
+        if (GetFileAttributes(hookDllPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
+            swprintf(msg, 512, L"[Inject] StartupHook DLL not found at %s", hookDllPath.c_str());
+            Log(msg);
+            
+            // Try parent directories
+            for (int i = 0; i < 3; i++) {
+                pos = dllDir.rfind(L'\\');
+                if (pos != std::wstring::npos) {
+                    dllDir = dllDir.substr(0, pos);
+                    if (!isNetFramework) {
+                        hookDllPath = dllDir + L"\\WpfSpyAgent.FrameworkHook.dll";
+                        if (GetFileAttributes(hookDllPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+                            isNetFramework = true;
+                            swprintf(msg, 512, L"[Inject] Found at: %s", hookDllPath.c_str());
+                            Log(msg);
+                            break;
+                        }
+                    }
+                    hookDllPath = dllDir + L"\\WpfSpyAgent.StartupHook.dll";
+                    if (GetFileAttributes(hookDllPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+                        swprintf(msg, 512, L"[Inject] Found at: %s", hookDllPath.c_str());
+                        Log(msg);
+                        break;
+                    }
                 }
             }
+        } else {
+            swprintf(msg, 512, L"[Inject] Found StartupHook at: %s", hookDllPath.c_str());
+            Log(msg);
         }
     }
     
