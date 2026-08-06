@@ -128,28 +128,31 @@ if "%TARGET_APP%"=="" (
     echo Auto-detected path: %TARGET_PATH%
     echo ============================================================
 ) else (
-    :: Use detected .exe path
-    set "TARGET_DIR=%~dp2"
-    set "TARGET_PATH=%~f2"
-    :: If .exe is in ARG3, ARG4, or ARG5, adjust
-    if exist "%ARG3%" (
-        if "%ARG3:~-4%"==".exe" (
-            set "TARGET_DIR=%~dp3"
-            set "TARGET_PATH=%~f3"
-        )
+    :: Find .exe in any argument and get its path
+    set "TARGET_DIR="
+    set "TARGET_PATH="
+    
+    if "%ARG1:~-4%"==".exe" (
+        set "TARGET_DIR=%~dp1"
+        set "TARGET_PATH=%~f1"
     )
-    if exist "%ARG4%" (
-        if "%ARG4:~-4%"==".exe" (
-            set "TARGET_DIR=%~dp4"
-            set "TARGET_PATH=%~f4"
-        )
+    if "%ARG2:~-4%"==".exe" (
+        set "TARGET_DIR=%~dp2"
+        set "TARGET_PATH=%~f2"
     )
-    if exist "%ARG5%" (
-        if "%ARG5:~-4%"==".exe" (
-            set "TARGET_DIR=%~dp5"
-            set "TARGET_PATH=%~f5"
-        )
+    if "%ARG3:~-4%"==".exe" (
+        set "TARGET_DIR=%~dp3"
+        set "TARGET_PATH=%~f3"
     )
+    if "%ARG4:~-4%"==".exe" (
+        set "TARGET_DIR=%~dp4"
+        set "TARGET_PATH=%~f4"
+    )
+    if "%ARG5:~-4%"==".exe" (
+        set "TARGET_DIR=%~dp5"
+        set "TARGET_PATH=%~f5"
+    )
+    
     echo ============================================================
     echo WPFTestAuto - Build and Inject
     echo ============================================================
