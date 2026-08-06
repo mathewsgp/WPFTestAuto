@@ -255,13 +255,33 @@ echo [Building Native Inject DLL for runtime injection...]
 if "%VS2026%"=="1" (
     set "NATIVE_INJECT_PROJECT=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj"
     echo       Building for VS 2026 ^(v145^)...
+    :: Try to find VS 2026 msbuild
+    if exist "C:\Program Files\Microsoft Visual Studio\2026\Community\MSBuild\Current\Bin\MSBuild.exe" (
+        set "MSBUILD_CMD=C:\Program Files\Microsoft Visual Studio\2026\Community\MSBuild\Current\Bin\MSBuild.exe"
+    ) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2026\BuildTools\MSBuild\Current\Bin\MSBuild.exe" (
+        set "MSBUILD_CMD=C:\Program Files (x86)\Microsoft Visual Studio\2026\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+    )
 ) else (
     set "NATIVE_INJECT_PROJECT=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2022.vcxproj"
     echo       Building for VS 2022 ^(v143^)...
+    :: Try to find VS 2022 msbuild
+    if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" (
+        set "MSBUILD_CMD=C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+    ) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe" (
+        set "MSBUILD_CMD=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Current\Bin\MSBuild.exe"
+    )
+)
+
+:: Fall back to msbuild in PATH or dotnet msbuild
+if not defined MSBUILD_CMD (
+    where msbuild >nul 2>&1 && set "MSBUILD_CMD=msbuild"
+    if not defined MSBUILD_CMD (
+        set "MSBUILD_CMD=dotnet msbuild"
+    )
 )
 
 if exist "%NATIVE_INJECT_PROJECT%" (
-    msbuild "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
+    "%MSBUILD_CMD%" "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
     if errorlevel 1 (
         echo WARNING: Failed to build NativeInject DLL ^(runtime injection may not work^)
         echo       Make sure you have C++ workload installed in Visual Studio.
