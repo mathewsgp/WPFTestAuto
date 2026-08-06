@@ -58,9 +58,15 @@ namespace WpfSpyAgent
 
             try
             {
-                Log($"Start: Using ThreadPool...");
-                ThreadPool.QueueUserWorkItem(_ => ListenLoop(pipeName));
-                Log($"Start: Queued to ThreadPool");
+                // Use Task.Run with LongRunning to ensure it runs on a dedicated thread
+                // This is important for CLR Hosting scenarios to avoid ThreadPool deadlocks
+                Log($"Start: Starting ListenLoop on dedicated thread...");
+                Task.Factory.StartNew(
+                    () => ListenLoop(pipeName),
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default);
+                Log($"Start: Task started");
             }
             catch (Exception ex)
             {

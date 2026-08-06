@@ -269,26 +269,70 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
         SetEnvironmentVariable(L"WPFSPY_PIPE_NAME", pipeName);
         SetEnvironmentVariable(L"WPFSPY_AGENT_ENABLED", L"1");
         
-        // Execute SpyAgentHost.StartWithPipe() in the default app domain
-        const wchar_t* dllPathW = agentDllPath.c_str();
-        const wchar_t* typeNameW = L"WpfSpyAgent.SpyAgentHost";
+        // IMPORTANT: ExecuteInDefaultAppDomain can block in .NET Core, which freezes the app.
+        // To avoid this, we spawn a dedicated thread to call ExecuteInDefaultAppDomain.
+        // This thread will remain alive as long as the Spy Agent needs to run.
         
-        DWORD exitCode = 0;
-        HRESULT hr = runtimeHost->ExecuteInDefaultAppDomain(
-            dllPathW,
-            typeNameW,
-            L"StartWithPipe",
-            pipeName,
-            &exitCode);
+        swprintf(msg, 512, L"[Inject] Spawning thread for ExecuteInDefaultAppDomain...");
+        Log(msg);
         
-        if (SUCCEEDED(hr)) {
-            swprintf(msg, 512, L"[Inject] Spy Agent started via CLR Hosting! Exit code: %d", exitCode);
+        // Store the parameters we need to pass to the thread
+        g_pipeName = pipeName;
+        
+        // Create a thread that will call ExecuteInDefaultAppDomain
+        // This thread will run the Spy Agent and stay alive
+        HANDLE execThread = CreateThread(
+            NULL,  // default security
+            0,     // default stack size
+            [](LPVOID lpParam) -> DWORD {
+                wchar_t msg[512];
+                swprintf(msg, 512, L"[Inject] Execute thread started");
+                Log(msg);
+                
+                ICLRRuntimeHost* host = (ICLRRuntimeHost*)lpParam;
+                
+                // Get the agent DLL path
+                std::wstring dllDir = GetDllDirectory();
+                std::wstring agentDllPath = dllDir + L"\\WpfSpyAgent.dll";
+                std::wstring agentDllFwPath = dllDir + L"\\net461\\WpfSpyAgent.dll";
+                
+                if (GetFileAttributes(agentDllFwPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+                    agentDllPath = agentDllFwPath;
+                }
+                
+                DWORD exitCode = 0;
+                HRESULT hr = host->ExecuteInDefaultAppDomain(
+                    agentDllPath.c_str(),
+                    L"WpfSpyAgent.SpyAgentHost",
+                    L"StartWithPipe",
+                    g_pipeName.c_str(),
+                    &exitCode);
+                
+                if (SUCCEEDED(hr)) {
+                    swprintf(msg, 512, L"[Inject] ExecuteInDefaultAppDomain succeeded, exit code: %d", exitCode);
+                } else {
+                    swprintf(msg, 512, L"[Inject] ExecuteInDefaultAppDomain failed: 0x%08X", hr);
+                }
+                Log(msg);
+                
+                host->Release();
+                return 0;
+            },
+            (LPVOID)runtimeHost,  // pass runtimeHost as parameter
+            0,  // start immediately
+            NULL
+        );
+        
+        if (execThread) {
+            swprintf(msg, 512, L"[Inject] Execute thread spawned successfully");
             Log(msg);
-            runtimeHost->Release();
-            g_pipeName = pipeName;
+            // Don't wait for thread - let it run independently
+            // The thread holds a reference to runtimeHost so it won't be garbage collected
+            CloseHandle(execThread);
             return true;
         } else {
-            swprintf(msg, 512, L"[Inject] ExecuteInDefaultAppDomain failed: 0x%08X", hr);
+            DWORD err = GetLastError();
+            swprintf(msg, 512, L"[Inject] Failed to create execute thread: %u", err);
             Log(msg);
             runtimeHost->Release();
             return false;
