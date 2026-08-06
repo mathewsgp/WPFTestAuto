@@ -1,45 +1,48 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set "TARGET_APP=%~1"
-set "INJECTION_MODE=%~2"
-set "CONFIGURATION=%~3"
-set "RUN_IDE=%~4"
-set "TARGET_VERSION=%~5"
+set "FW_ROOT=%~dp0"
 
-if "%TARGET_APP%"=="" (
-    echo ============================================================
-    echo WPFTestAuto - Build and Run
-    echo ============================================================
-    echo.
-    echo Usage: build_and_run.bat ^<target_app_path^> [InjectionMode] [Configuration] [RunIde] [TargetVersion]
-    echo.
-    echo Arguments:
-    echo   target_app_path    Path to the WPF application executable ^(required^)
-    echo   InjectionMode     Injection method: runtime ^(default^), launch, cooperative, attach
-    echo   Configuration      Build config: Debug ^(default^) or Release
-    echo   RunIde            Launch IDE: true or false ^(default: false^)
-    echo   TargetVersion     .NET version: net ^(default^) or framework
-    echo.
-    echo Injection Modes:
-    echo   runtime      Attach to running process via Windows Hook API ^(default^)
-    echo   launch       Launch with Startup Hook injection ^(requires restart^)
-    echo   cooperative  Cooperative hosting ^(requires app modification^)
-    echo   attach       Attach to running app via named pipe ^(existing agent^)
-    echo.
-    echo Examples:
-    echo   build_and_run.bat SampleWpfApp.exe
-    echo   build_and_run.bat SampleWpfApp.exe launch
-    echo   build_and_run.bat SampleWpfApp.exe runtime true net
-    echo.
-    pause
-    exit /b 1
+set "ARG1=%~1"
+set "ARG2=%~2"
+set "ARG3=%~3"
+set "ARG4=%~4"
+set "ARG5=%~5"
+
+:: Detect if first argument is an injection mode or app name
+set "TARGET_APP=%ARG1%"
+set "INJECTION_MODE="
+set "CONFIGURATION="
+set "RUN_IDE="
+set "TARGET_VERSION="
+
+:: Check if first arg is an injection mode
+if /i "%ARG1%"=="runtime" set "INJECTION_MODE=%ARG1%"
+if /i "%ARG1%"=="launch" set "INJECTION_MODE=%ARG1%"
+if /i "%ARG1%"=="cooperative" set "INJECTION_MODE=%ARG1%"
+if /i "%ARG1%"=="attach" set "INJECTION_MODE=%ARG1%"
+if /i "%ARG1%"=="debug" set "CONFIGURATION=Debug"
+if /i "%ARG1%"=="release" set "CONFIGURATION=Release"
+if /i "%ARG1%"=="net" set "TARGET_VERSION=net"
+if /i "%ARG1%"=="framework" set "TARGET_VERSION=framework"
+if /i "%ARG1%"=="true" set "RUN_IDE=true"
+if /i "%ARG1%"=="false" set "RUN_IDE=false"
+
+:: If first arg looks like a file, use as target
+echo %ARG1% | findstr /C:".exe" >nul 2>&1
+if not errorlevel 1 (
+    set "TARGET_APP=%ARG1%"
+    set "INJECTION_MODE=%ARG2%"
+    set "CONFIGURATION=%ARG3%"
+    set "RUN_IDE=%ARG4%"
+    set "TARGET_VERSION=%ARG5%"
 )
 
 :: Set defaults
 if "%INJECTION_MODE%"=="" set "INJECTION_MODE=runtime"
 if "%CONFIGURATION%"=="" set "CONFIGURATION=Debug"
 if "%RUN_IDE%"=="" set "RUN_IDE=false"
+if "%TARGET_VERSION%"=="" set "TARGET_VERSION=net"
 
 :: Validate injection mode
 if /i "%INJECTION_MODE%"=="runtime" (
@@ -59,17 +62,33 @@ if /i "%INJECTION_MODE%"=="runtime" (
 
 if /i "%TARGET_VERSION%"=="framework" (
     set "TARGET_FW=net461"
-) else if /i "%TARGET_VERSION%"=="net" (
-    set "TARGET_FW=net8.0-windows"
+    set "SAMPLE_APP_DIR=%FW_ROOT%SampleWpfApp\bin\%CONFIGURATION%\net461"
 ) else (
-    echo ERROR: TargetVersion must be "net" or "framework".
-    pause
-    exit /b 1
+    set "TARGET_FW=net8.0-windows"
+    set "SAMPLE_APP_DIR=%FW_ROOT%SampleWpfApp\bin\%CONFIGURATION%\net8.0-windows"
 )
 
-echo ============================================================
-echo WPFTestAuto - Build and Inject
-echo ============================================================
+:: If no target app specified, use SampleWpfApp
+if "%TARGET_APP%"=="" (
+    set "TARGET_APP=SampleWpfApp.exe"
+    set "TARGET_DIR=%SAMPLE_APP_DIR%"
+    set "TARGET_PATH=%SAMPLE_APP_DIR%\SampleWpfApp.exe"
+    echo ============================================================
+    echo WPFTestAuto - Auto-detecting SampleWpfApp
+    echo ============================================================
+    echo Configuration: %CONFIGURATION%
+    echo Target Version: %TARGET_VERSION%
+    echo Target Framework: %TARGET_FW%
+    echo Auto-detected path: %TARGET_PATH%
+    echo ============================================================
+) else (
+    set "TARGET_DIR=%~dp1"
+    set "TARGET_PATH=%~f1"
+    echo ============================================================
+    echo WPFTestAuto - Build and Inject
+    echo ============================================================
+)
+
 echo Target App:     %TARGET_APP%
 echo Injection Mode: %INJECTION_MODE%
 echo Description:    %INJECTION_DESC%
@@ -79,17 +98,36 @@ echo Target Version: %TARGET_VERSION%
 echo ============================================================
 echo.
 
-set "FW_ROOT=%~dp0"
 set "IDE_PROJECT=%FW_ROOT%WpfTestIde\WpfTestIde.csproj"
 set "AGENT_PROJECT=%FW_ROOT%WpfSpyAgent\WpfSpyAgent.csproj"
 set "STARTUP_HOOK_PROJECT=%FW_ROOT%WpfSpyAgent.StartupHook\WpfSpyAgent.StartupHook.csproj"
 set "FRAMEWORK_HOOK_PROJECT=%FW_ROOT%WpfSpyAgent.FrameworkHook\WpfSpyAgent.FrameworkHook.csproj"
-
-set "TARGET_DIR=%~dp1"
-set "TARGET_PATH=%~f1"
+set "SAMPLE_APP_PROJECT=%FW_ROOT%SampleWpfApp\SampleWpfApp.csproj"
 
 echo [1/5] Target framework: !TARGET_FW!
 echo.
+
+:: Build SampleWpfApp if using auto-detected path
+if /i "%TARGET_APP%"=="SampleWpfApp.exe" (
+    echo [Building SampleWpfApp...]
+    if /i "!TARGET_FW!"=="net461" (
+        dotnet build "!SAMPLE_APP_PROJECT!" -c %CONFIGURATION% -f net461
+        if errorlevel 1 (
+            echo ERROR: Failed to build SampleWpfApp for net461
+            pause
+            exit /b 1
+        )
+    ) else (
+        dotnet build "!SAMPLE_APP_PROJECT!" -c %CONFIGURATION% -f net8.0-windows
+        if errorlevel 1 (
+            echo ERROR: Failed to build SampleWpfApp for net8.0-windows
+            pause
+            exit /b 1
+        )
+    )
+    echo       SampleWpfApp built successfully.
+    echo.
+)
 
 echo [2/5] Building WpfSpyAgent...
 pushd "%FW_ROOT%"
