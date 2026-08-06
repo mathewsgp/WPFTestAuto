@@ -252,27 +252,41 @@ namespace WpfTestIde.Dialogs
         {
             // Look for the native injection DLL in common locations
             // The native DLL is used for runtime injection into already-running processes
-            var paths = new[]
+            var searchPaths = new[]
             {
-                // Native injection DLL (for runtime attach)
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "bin", "Debug", "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "bin", "Debug", "x64", "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "WpfSpyAgent.NativeInject", "bin", "Debug", "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "WpfSpyAgent.NativeInject", "bin", "Debug", "x64", "WpfSpyAgent.NativeInject.dll"),
+                // IDE output directory (Debug and Release)
+                "WpfSpyAgent.NativeInject.dll",
+                "bin\\Debug\\x64\\WpfSpyAgent.NativeInject.dll",
+                "bin\\Release\\x64\\WpfSpyAgent.NativeInject.dll",
+                "bin\\Debug\\WpfSpyAgent.NativeInject.dll",
+                "bin\\Release\\WpfSpyAgent.NativeInject.dll",
+                // Solution root bin (where batch copies it)
+                "..\\bin\\Debug\\x64\\WpfSpyAgent.NativeInject.dll",
+                "..\\bin\\Release\\x64\\WpfSpyAgent.NativeInject.dll",
+                // NativeInject project output
+                "..\\WpfSpyAgent.NativeInject\\bin\\Debug\\x64\\WpfSpyAgent.NativeInject.dll",
+                "..\\WpfSpyAgent.NativeInject\\bin\\Release\\x64\\WpfSpyAgent.NativeInject.dll",
+                "..\\WpfSpyAgent.NativeInject\\bin\\Debug\\WpfSpyAgent.NativeInject.dll",
+                "..\\WpfSpyAgent.NativeInject\\bin\\Release\\WpfSpyAgent.NativeInject.dll",
                 // .NET startup hook (for launch mode)
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WpfSpyAgent.StartupHook.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.StartupHook.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.StartupHook.dll"),
+                "WpfSpyAgent.StartupHook.dll",
+                "..\\WpfSpyAgent.StartupHook\\bin\\Debug\\net8.0-windows\\WpfSpyAgent.StartupHook.dll",
+                "..\\WpfSpyAgent.StartupHook\\bin\\Release\\net8.0-windows\\WpfSpyAgent.StartupHook.dll",
             };
 
-            foreach (var path in paths)
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+            foreach (var relPath in searchPaths)
             {
-                var fullPath = Path.GetFullPath(path);
-                if (File.Exists(fullPath))
+                try
                 {
-                    return fullPath;
+                    var fullPath = Path.GetFullPath(Path.Combine(baseDir, relPath));
+                    if (File.Exists(fullPath))
+                    {
+                        return fullPath;
+                    }
                 }
+                catch { }
             }
 
             return null;

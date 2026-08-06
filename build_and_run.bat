@@ -254,13 +254,10 @@ if exist "%NATIVE_INJECT_PROJECT%" (
     msbuild "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
     if errorlevel 1 (
         echo WARNING: Failed to build NativeInject DLL ^(runtime injection may not work^)
+        echo       Make sure you have C++ workload installed in Visual Studio.
     ) else (
-        :: Copy to solution bin directory for IDE to find
-        if not exist "%FW_ROOT%bin" mkdir "%FW_ROOT%bin"
-        if not exist "%FW_ROOT%bin\%CONFIGURATION%" mkdir "%FW_ROOT%bin\%CONFIGURATION%"
-        copy /Y "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%bin\%CONFIGURATION%\" >nul
-        copy /Y "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%bin\%CONFIGURATION%\" >nul 2>&1
         echo       NativeInject DLL built for runtime injection.
+        echo       Output: bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll
     )
 ) else (
     echo       NativeInject project not found ^(skip runtime injection setup^)
@@ -358,9 +355,21 @@ echo       IDE built successfully.
 echo.
 
 :: Copy native injection DLL to IDE output for runtime attach feature
-if exist "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" (
-    copy /Y "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%WpfTestIde\bin\%CONFIGURATION%\net8.0-windows\" >nul
+echo.
+echo [Copying DLLs for runtime injection...]
+set "NATIVE_DLL_FOUND="
+
+:: Source: bin\%CONFIGURATION%\x64\ (C++ project output)
+:: Target: WpfTestIde\bin\%CONFIGURATION%\net8.0-windows\ (IDE directory)
+if exist "%FW_ROOT%bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" (
+    copy /Y "%FW_ROOT%bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%WpfTestIde\bin\%CONFIGURATION%\net8.0-windows\" >nul
     echo       Copied NativeInject.dll to IDE directory.
+    set "NATIVE_DLL_FOUND=1"
+)
+
+if not defined NATIVE_DLL_FOUND (
+    echo       WARNING: NativeInject.dll not found.
+    echo       Build WpfSpyAgent.NativeInject project in Visual Studio first.
 )
 echo.
 
