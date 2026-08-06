@@ -251,10 +251,16 @@ echo.
 :: Build native injection DLL for runtime attach
 echo [Building Native Inject DLL for runtime injection...]
 if exist "%NATIVE_INJECT_PROJECT%" (
-    msbuild "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
+    :: Allow override of toolset via TOOLSET environment variable
+    :: Examples: v142 (VS 2019), v143 (VS 2022), v144 (VS 2024/2025), v145 (VS 2026+)
+    set "TOOLSET_CMD="
+    if not "%TOOLSET%"=="" set "TOOLSET_CMD=/p:PlatformToolset=%TOOLSET%"
+    
+    msbuild "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal !TOOLSET_CMD!
     if errorlevel 1 (
         echo WARNING: Failed to build NativeInject DLL ^(runtime injection may not work^)
         echo       Make sure you have C++ workload installed in Visual Studio.
+        echo       Or set TOOLSET environment variable: set TOOLSET=v143
     ) else (
         echo       NativeInject DLL built for runtime injection.
         echo       Output: bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll

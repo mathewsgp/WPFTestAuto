@@ -34,18 +34,18 @@
   
   <!-- 
     Platform Toolset Selection:
-    - v143 = VS 2022
-    - v144 = VS 2024/2025 
-    - v145 = VS 2026+
-    - v142 = VS 2019
+    - Let MSBuild auto-select the default toolset for installed VS
     
-    Using latest available toolset with fallback detection
+    The PlatformToolset property can be overridden from command line:
+    - /p:PlatformToolset=v143 (VS 2022)
+    - /p:PlatformToolset=v144 (VS 2024/2025)
+    - /p:PlatformToolset=v145 (VS 2026+)
+    - /p:PlatformToolset=v142 (VS 2019)
   -->
   <PropertyGroup Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <!-- Default to v143, but auto-detect if newer is available -->
-    <PlatformToolset Condition="'$(PlatformToolset)' == ''">v143</PlatformToolset>
+    <!-- Let MSBuild use default toolset - no explicit version required -->
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
