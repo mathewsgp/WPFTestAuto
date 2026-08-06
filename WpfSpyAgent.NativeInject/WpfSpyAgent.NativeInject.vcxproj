@@ -30,22 +30,27 @@
     <WindowsSDKDesktopARMTargetPlatformVersion>10.0.18362.0</WindowsSDKDesktopARMTargetPlatformVersion>
     <WindowsSDKDesktopARM64TargetPlatformVersion>10.0.18362.0</WindowsSDKDesktopARM64TargetPlatformVersion>
   </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   
   <!-- 
-    Platform Toolset Selection:
-    - Let MSBuild auto-select the default toolset for installed VS
+    Platform Toolset Selection (must be before Microsoft.Cpp.Default.props):
+    - v143 = VS 2022
+    - v144 = VS 2024/2025
+    - v145 = VS 2026+
+    - v142 = VS 2019
     
-    The PlatformToolset property can be overridden from command line:
-    - /p:PlatformToolset=v143 (VS 2022)
-    - /p:PlatformToolset=v144 (VS 2024/2025)
-    - /p:PlatformToolset=v145 (VS 2026+)
-    - /p:PlatformToolset=v142 (VS 2019)
+    Default to v143 (VS 2022). Override via:
+    - Command line: /p:PlatformToolset=v145
+    - Environment: set TOOLSET=v145 before build
   -->
+  <PropertyGroup>
+    <PlatformToolset Condition="'$(PlatformToolset)' == ''">v143</PlatformToolset>
+  </PropertyGroup>
+  
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  
   <PropertyGroup Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <!-- Let MSBuild use default toolset - no explicit version required -->
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
