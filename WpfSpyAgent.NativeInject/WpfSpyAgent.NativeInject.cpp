@@ -240,92 +240,110 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
                 swprintf(msg, 512, L"[Inject] ICLRMetaHost obtained");
                 Log(msg);
                 
-                // First, try to find already loaded runtimes in the process
-                // This is the correct approach for both .NET Framework and .NET Core
                 ICLRRuntimeInfo* runtimeInfo = nullptr;
                 
-                // Method 1: Get runtime from the target DLL file (most reliable)
+                // CRITICAL: For .NET Core/.NET 5+, we MUST use the runtime that's 
+                // ALREADY running in the process, not load a new one.
+                // GetVersionFromFile returns v4.0.30319 for ALL DLLs for compatibility,
+                // but the actual runtime in the process might be .NET Core 6/7/8.
+                
+                // Method 1: Enumerate loaded runtimes FIRST - this is the correct approach
+                // because we want to use the runtime that's already running
+                IEnumUnknown* enumRuntimes = nullptr;
+                hr = metaHost->EnumerateLoadedRuntimes(GetCurrentProcess(), &enumRuntimes);
+                if (SUCCEEDED(hr) && enumRuntimes) {
+                    swprintf(msg, 512, L"[Inject] Enumerating loaded runtimes...");
+                    Log(msg);
+                    
+                    IUnknown* enumItem = nullptr;
+                    ULONG fetched = 0;
+                    while (enumRuntimes->Next(1, &enumItem, &fetched) == S_OK && fetched == 1) {
+                        hr = enumItem->QueryInterface(IID_ICLRRuntimeInfo, (LPVOID*)&runtimeInfo);
+                        enumItem->Release();
+                        
+                        if (SUCCEEDED(hr) && runtimeInfo) {
+                            // Get the version string
+                            wchar_t version[256] = {0};
+                            DWORD versionLen = 256;
+                            runtimeInfo->GetVersionString(version, &versionLen);
+                            swprintf(msg, 512, L"[Inject] Found loaded runtime: %s", version);
+                            Log(msg);
+                            
+                            // Check if this runtime is compatible
+                            BOOL loadable = FALSE;
+                            runtimeInfo->IsLoadable(&loadable);
+                            swprintf(msg, 512, L"[Inject] Runtime loadable: %d", loadable);
+                            Log(msg);
+                            
+                            if (loadable) {
+                                // Try to get ICLRRuntimeHost
+                                hr = runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_ICLRRuntimeHost, (LPVOID*)&runtimeHost);
+                                if (SUCCEEDED(hr) && runtimeHost) {
+                                    swprintf(msg, 512, L"[Inject] CLR Runtime Host obtained from loaded runtime!");
+                                    Log(msg);
+                                    runtimeInfo->Release();
+                                    enumRuntimes->Release();
+                                    metaHost->Release();
+                                    return true; // Success!
+                                }
+                            }
+                            runtimeInfo->Release();
+                            runtimeInfo = nullptr;
+                        }
+                    }
+                    enumRuntimes->Release();
+                }
+                
+                // Method 2: Try GetVersionFromFile (less reliable for .NET Core)
                 wchar_t loadedVersion[256] = {0};
                 DWORD versionLen = 256;
                 hr = metaHost->GetVersionFromFile(agentDllPath.c_str(), loadedVersion, &versionLen);
                 if (SUCCEEDED(hr) && loadedVersion[0]) {
-                    swprintf(msg, 512, L"[Inject] DLL requires runtime: %s", loadedVersion);
+                    swprintf(msg, 512, L"[Inject] DLL metadata version: %s", loadedVersion);
                     Log(msg);
                     hr = metaHost->GetRuntime(loadedVersion, IID_ICLRRuntimeInfo, (LPVOID*)&runtimeInfo);
                     if (SUCCEEDED(hr) && runtimeInfo) {
                         swprintf(msg, 512, L"[Inject] Got runtime from DLL file");
                         Log(msg);
-                    }
-                }
-                
-                // Method 2: If DLL method didn't work, try to get loaded runtimes
-                if (!runtimeInfo) {
-                    IEnumUnknown* enumRuntimes = nullptr;
-                    hr = metaHost->EnumerateLoadedRuntimes(GetCurrentProcess(), &enumRuntimes);
-                    if (SUCCEEDED(hr) && enumRuntimes) {
-                        swprintf(msg, 512, L"[Inject] Enumerating loaded runtimes...");
-                        Log(msg);
                         
-                        IUnknown* enumItem = nullptr;
-                        ULONG fetched = 0;
-                        while (enumRuntimes->Next(1, &enumItem, &fetched) == S_OK && fetched == 1) {
-                            hr = enumItem->QueryInterface(IID_ICLRRuntimeInfo, (LPVOID*)&runtimeInfo);
-                            enumItem->Release();
-                            
-                            if (SUCCEEDED(hr) && runtimeInfo) {
-                                // Get the version string
-                                wchar_t version[256] = {0};
-                                DWORD versionLen = 256;
-                                runtimeInfo->GetVersionString(version, &versionLen);
-                                swprintf(msg, 512, L"[Inject] Found loaded runtime: %s", version);
+                        // Check if loadable
+                        BOOL loadable = FALSE;
+                        runtimeInfo->IsLoadable(&loadable);
+                        if (loadable) {
+                            hr = runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_ICLRRuntimeHost, (LPVOID*)&runtimeHost);
+                            if (SUCCEEDED(hr) && runtimeHost) {
+                                swprintf(msg, 512, L"[Inject] CLR Runtime Host obtained!");
                                 Log(msg);
-                                break; // Use the first (and usually only) runtime
+                                runtimeInfo->Release();
+                                metaHost->Release();
+                                return true;
                             }
                         }
-                        enumRuntimes->Release();
-                    }
-                }
-                
-                // Method 3: Fall back to v4.0 for .NET Framework (only if no loaded runtime found)
-                if (!runtimeInfo) {
-                    hr = metaHost->GetRuntime(L"v4.0.30319", IID_ICLRRuntimeInfo, (LPVOID*)&runtimeInfo);
-                    if (SUCCEEDED(hr) && runtimeInfo) {
-                        swprintf(msg, 512, L"[Inject] Got v4.0 runtime (fallback)");
-                        Log(msg);
-                    }
-                }
-                
-                if (SUCCEEDED(hr) && runtimeInfo) {
-                    swprintf(msg, 512, L"[Inject] ICLRRuntimeInfo obtained");
-                    Log(msg);
-                    
-                    // Check if this runtime is compatible with the target DLL
-                    BOOL loadable = FALSE;
-                    runtimeInfo->IsLoadable(&loadable);
-                    if (!loadable) {
-                        swprintf(msg, 512, L"[Inject] Runtime is not loadable for this process!");
-                        Log(msg);
                         runtimeInfo->Release();
                         runtimeInfo = nullptr;
-                    } else {
-                        // Get ICLRRuntimeHost
-                        hr = runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_ICLRRuntimeHost, (LPVOID*)&runtimeHost);
-                        if (FAILED(hr) || !runtimeHost) {
-                            swprintf(msg, 512, L"[Inject] FAILED: GetInterface result=0x%08X", hr);
-                            Log(msg);
-                            runtimeInfo->Release();
-                            runtimeInfo = nullptr;
-                        } else {
-                            swprintf(msg, 512, L"[Inject] CLR Runtime Host obtained!");
-                            Log(msg);
-                            runtimeInfo->Release();
-                            runtimeInfo = nullptr;
-                            metaHost->Release();
-                            return true; // Success!
-                        }
                     }
                 }
-                if (runtimeInfo) runtimeInfo->Release();
+                
+                // Method 3: Last resort - try v4.0.30319
+                swprintf(msg, 512, L"[Inject] Trying v4.0.30319 as last resort...");
+                Log(msg);
+                hr = metaHost->GetRuntime(L"v4.0.30319", IID_ICLRRuntimeInfo, (LPVOID*)&runtimeInfo);
+                if (SUCCEEDED(hr) && runtimeInfo) {
+                    BOOL loadable = FALSE;
+                    runtimeInfo->IsLoadable(&loadable);
+                    if (loadable) {
+                        hr = runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_ICLRRuntimeHost, (LPVOID*)&runtimeHost);
+                        if (SUCCEEDED(hr) && runtimeHost) {
+                            swprintf(msg, 512, L"[Inject] CLR Runtime Host obtained (v4.0 fallback)!");
+                            Log(msg);
+                            runtimeInfo->Release();
+                            metaHost->Release();
+                            return true;
+                        }
+                    }
+                    runtimeInfo->Release();
+                }
+                
                 metaHost->Release();
             }
         }
