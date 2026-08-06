@@ -1,23 +1,16 @@
 """
-Robot Framework App Launcher Library
-====================================
-Library for launching WPF applications with Spy Agent injection
-from Robot Framework tests.
+AppLauncher - Robot Framework Library for WPF Application Launching
+===================================================================
+Library for launching WPF applications with Spy Agent injection.
 
-Usage in Robot Framework:
+Usage:
     *** Settings ***
-    Library    api.robot_launcher
+    Library    ../api/robot_launcher.py
 
     *** Test Cases ***
-    Launch App With Spy Agent
-        ${process}=    Launch Application    C:\\path\\to\\app.exe
-        # Run tests...
-        Terminate Application    ${process}
-
-    Launch With Custom Pipe
-        ${process}=    Launch Application
-        ...    app_path=C:\\path\\to\\app.exe
-        ...    pipe_name=MyCustomPipe
+    Launch App
+        ${pid}=    Launch Application    C:\\path\\to\\app.exe
+        Terminate Application    ${pid}
 """
 
 import os
@@ -28,77 +21,54 @@ from pathlib import Path
 from typing import Optional
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent))
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _THIS_DIR)
 
-from runtime_injector import RuntimeInjector, AppLauncher
+from runtime_injector import RuntimeInjector
 
 
-class RobotLauncher:
+class AppLauncher:
     """
     Robot Framework library for launching WPF applications with Spy Agent.
     
-    This library provides keywords for Robot Framework tests to:
-    - Launch applications with Spy Agent auto-injected
-    - Connect to already-running Spy Agent instances
-    - Manage application lifecycle
+    Provides keywords:
+    - Launch Application
+    - Attach To Application
+    - Terminate Application
+    - Terminate All Applications
+    - Get Process Id
+    - Is Agent Ready
+    - Get Startup Hook Path
     """
     
-    ROBOT_LIBRARY_SCOPE = "GLOBAL"
-    ROBOT_LISTENER_API_VERSION = 3
+    ROBOT_LIBRARY_SCOPE = "TEST_SUITE"
     
-    def __init__(self, startup_hook_path: Optional[str] = None):
-        """
-        Initialize the launcher.
-        
-        Args:
-            startup_hook_path: Path to WpfSpyAgent.StartupHook.dll.
-                             If not provided, will search common locations.
-        """
-        self.injector = RuntimeInjector(startup_hook_path)
-        self._processes = {}  # Track launched processes
+    def __init__(self):
+        """Initialize the launcher."""
+        self._injector = RuntimeInjector()
+        self._processes = {}
     
-    def launch_application(
-        self,
-        app_path: str,
-        arguments: Optional[str] = None,
-        pipe_name: str = "WPFSpyAgentPipe",
-        timeout: float = 30.0,
-        cwd: Optional[str] = None
-    ) -> int:
-        """
-        Launch an application with Spy Agent injected.
-        
-        Args:
-            app_path: Path to the application executable
-            arguments: Command-line arguments (optional)
-            pipe_name: Named pipe name for Spy Agent (default: WPFSpyAgentPipe)
-            timeout: Max time to wait for agent readiness (default: 30s)
-            cwd: Working directory (optional)
-            
-        Returns:
-            Process ID (integer)
-            
-        Example:
-            ${pid}=    Launch Application    C:\\path\\to\\app.exe
-        """
+    def launch_application(self, app_path, arguments=None, pipe_name="WPFSpyAgentPipe", 
+                          timeout=30.0, cwd=None):
+        """Launch an application with Spy Agent injected."""
         if not Path(app_path).exists():
             raise FileNotFoundError(f"Application not found: {app_path}")
         
-        # Find startup hook if not already found
-        if not self.injector.startup_hook_path:
+        # Find startup hook
+        if not self._injector.startup_hook_path:
             hook_path = os.environ.get("WPFSPY_STARTUP_HOOK_DLL")
             if hook_path:
-                self.injector.startup_hook_path = hook_path
+                self._injector.startup_hook_path = hook_path
         
-        if not self.injector.startup_hook_path:
+        if not self._injector.startup_hook_path:
             raise RuntimeError(
                 "Startup hook DLL not found. Set WPFSPY_STARTUP_HOOK_DLL "
-                "environment variable or build WpfSpyAgent.StartupHook project."
+                "or build WpfSpyAgent.StartupHook project."
             )
         
         # Build environment
         full_env = os.environ.copy()
-        full_env["DOTNET_STARTUP_HOOKS"] = self.injector.startup_hook_path
+        full_env["DOTNET_STARTUP_HOOKS"] = self._injector.startup_hook_path
         full_env["WPFSPY_AGENT_ENABLED"] = "1"
         full_env["WPFSPY_PIPE_NAME"] = pipe_name
         
@@ -116,9 +86,7 @@ class RobotLauncher:
             stderr=subprocess.PIPE
         )
         
-        # Wait for agent if needed
-        time.sleep(1)  # Give app time to start
-        
+        time.sleep(1)
         self._processes[process.pid] = {
             'process': process,
             'pipe_name': pipe_name,
@@ -127,56 +95,24 @@ class RobotLauncher:
         
         return process.pid
     
-    def attach_to_application(
-        self,
-        process_id: int,
-        pipe_name: str = "WPFSpyAgentPipe",
-        timeout: float = 5.0
-    ) -> bool:
-        """
-        Attach to an already-running application.
-        
-        Args:
-            process_id: PID of the target process
-            pipe_name: Named pipe name
-            timeout: Connection timeout
-            
-        Returns:
-            True if connected successfully
-            
-        Example:
-            ${connected}=    Attach To Application    ${pid}
-        """
-        result = self.injector.attach_to_process(process_id, pipe_name, timeout)
+    def attach_to_application(self, process_id, pipe_name="WPFSpyAgentPipe", timeout=5.0):
+        """Attach to an already-running application."""
+        result = self._injector.attach_to_process(process_id, pipe_name, timeout)
         return result.success
     
-    def terminate_application(self, process_id: int) -> bool:
-        """
-        Terminate a launched application.
-        
-        Args:
-            process_id: PID of the process to terminate
-            
-        Returns:
-            True if terminated successfully
-            
-        Example:
-            ${terminated}=    Terminate Application    ${pid}
-        """
+    def terminate_application(self, process_id):
+        """Terminate a launched application."""
         if process_id in self._processes:
             proc_info = self._processes[process_id]
             proc = proc_info['process']
-            
             proc.terminate()
             try:
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 proc.kill()
-            
             del self._processes[process_id]
             return True
         
-        # Try to terminate by PID
         try:
             if sys.platform == "win32":
                 subprocess.run(['taskkill', '/F', '/PID', str(process_id)], check=True)
@@ -187,16 +123,8 @@ class RobotLauncher:
         except:
             return False
     
-    def terminate_all_applications(self) -> int:
-        """
-        Terminate all applications launched by this library.
-        
-        Returns:
-            Number of applications terminated
-            
-        Example:
-            ${count}=    Terminate All Applications
-        """
+    def terminate_all_applications(self):
+        """Terminate all applications launched by this library."""
         count = 0
         pids = list(self._processes.keys())
         for pid in pids:
@@ -204,58 +132,18 @@ class RobotLauncher:
                 count += 1
         return count
     
-    def get_process_id(self, app_path: Optional[str] = None) -> Optional[int]:
-        """
-        Get PID of a running application.
-        
-        Args:
-            app_path: Path to executable (optional)
-            
-        Returns:
-            PID if found, None otherwise
-            
-        Example:
-            ${pid}=    Get Process Id    C:\\path\\to\\app.exe
-        """
+    def get_process_id(self, app_path=None):
+        """Get PID of a running application."""
         for pid, info in self._processes.items():
             if app_path is None or info['app_path'] == app_path:
-                if info['process'].poll() is None:  # Still running
+                if info['process'].poll() is None:
                     return pid
         return None
     
-    def is_agent_ready(self, pipe_name: str = "WPFSpyAgentPipe") -> bool:
-        """
-        Check if Spy Agent is ready on the named pipe.
-        
-        Args:
-            pipe_name: Named pipe name
-            
-        Returns:
-            True if agent is ready
-            
-        Example:
-            ${ready}=    Is Agent Ready
-        """
-        return self.injector.is_agent_running(pipe_name)
+    def is_agent_ready(self, pipe_name="WPFSpyAgentPipe"):
+        """Check if Spy Agent is ready on the named pipe."""
+        return self._injector.is_agent_running(pipe_name)
     
-    def get_startup_hook_path(self) -> Optional[str]:
-        """
-        Get the path to the startup hook DLL.
-        
-        Returns:
-            Path to DLL or None if not found
-        """
-        return self.injector.startup_hook_path
-
-
-# Robot Framework keyword mappings
-__all__ = [
-    'RobotLauncher',
-    'launch_application',
-    'attach_to_application',
-    'terminate_application',
-    'terminate_all_applications',
-    'get_process_id',
-    'is_agent_ready',
-    'get_startup_hook_path'
-]
+    def get_startup_hook_path(self):
+        """Get the path to the startup hook DLL."""
+        return self._injector.startup_hook_path or "None"
