@@ -4,9 +4,6 @@ using System.Windows;
 using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
-#if NET8_0_OR_GREATER
-using Tesseract;
-#endif
 using WpfSpyAgent.Protocol;
 
 namespace WpfSpyAgent
@@ -281,36 +278,12 @@ case "GetDataGridContent":
                      var base64 = VisualTreeInspector.GetDataGridScreenshot(element);
                      return SpyResponse.Ok(base64);
                  }
-#if NET8_0_OR_GREATER
                  case "GetDataGridContentOcr":
                  {
-                     var element = RequireElement(request.Name, request.XPath);
-                     var base64 = VisualTreeInspector.GetDataGridScreenshot(element);
-                     if (base64.StartsWith("{\"error\""))
-                         return SpyResponse.Ok(base64);
-                     try
-                     {
-                         var imageBytes = Convert.FromBase64String(base64);
-                         using var img = Pix.LoadFromMemory(imageBytes);
-                         var tessdataPath = System.IO.Path.Combine(
-                             AppDomain.CurrentDomain.BaseDirectory, "tessdata");
-                         if (!System.IO.Directory.Exists(tessdataPath))
-                             tessdataPath = System.IO.Path.Combine(
-                                 AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "tessdata");
-                         using var engine = new TesseractEngine(tessdataPath, "eng", EngineMode.Default);
-                         using var page = engine.Process(img);
-                         var ocrText = page.GetText();
-                         var csv = VisualTreeInspector.OcrTextToCsv(ocrText);
-                         return SpyResponse.Ok(csv);
-                     }
-                     catch (Exception ex)
-                     {
-                         return SpyResponse.Fail(
-                             "OCR failed: " + ex.Message +
-                             "\nEnsure tessdata/eng.traineddata is available.");
-                     }
+                     return SpyResponse.Fail(
+                         "OCR is not available. Tesseract package is not installed. " +
+                         "To enable OCR, add the Tesseract NuGet package and ensure tessdata folder exists.");
                  }
-#endif
                  case "ResetState":
                 {
                     ResetAppState();

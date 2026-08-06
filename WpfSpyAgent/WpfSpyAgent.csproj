@@ -23,8 +23,11 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
+  <!-- Tesseract removed - OCR functionality is now optional.
+       To enable OCR, uncomment the following and ensure tessdata folder exists:
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
     <PackageReference Include="Tesseract" Version="4.1.1" />
   </ItemGroup>
+  -->
 
 </Project>
