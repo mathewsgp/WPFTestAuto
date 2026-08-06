@@ -415,14 +415,25 @@ set "NATIVE_DLL_FOUND="
 
 :: Source: bin\%CONFIGURATION%\x64\ (C++ project output)
 :: Target: WpfTestIde\bin\%CONFIGURATION%\net8.0-windows\ (IDE directory)
-if exist "%FW_ROOT%bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" (
-    copy /Y "%FW_ROOT%bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%WpfTestIde\bin\%CONFIGURATION%\net8.0-windows\" >nul
-    echo       Copied NativeInject.dll to IDE directory.
-    set "NATIVE_DLL_FOUND=1"
+set "SRC_DLL=%FW_ROOT%bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll"
+set "DST_DIR=%FW_ROOT%WpfTestIde\bin\%CONFIGURATION%\net8.0-windows"
+set "DST_DLL=%DST_DIR%\WpfSpyAgent.NativeInject.dll"
+
+echo       Source: %SRC_DLL%
+echo       Target: %DST_DIR%
+
+if exist "%SRC_DLL%" (
+    if not exist "%DST_DIR%" mkdir "%DST_DIR%"
+    copy /Y "%SRC_DLL%" "%DST_DIR%\" >nul
+    if exist "%DST_DLL%" (
+        echo       Copied NativeInject.dll to IDE directory.
+        set "NATIVE_DLL_FOUND=1"
+    )
+) else (
+    echo       WARNING: NativeInject.dll not found at %SRC_DLL%
 )
 
 if not defined NATIVE_DLL_FOUND (
-    echo       WARNING: NativeInject.dll not found.
     echo       Build WpfSpyAgent.NativeInject project in Visual Studio first.
 )
 echo.
