@@ -222,6 +222,7 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
         Log(msg);
         
         // Get CLRCreateInstance function
+        typedef HRESULT (STDAPICALLTYPE* FnCLRCreateInstance)(REFCLSID clsid, REFIID riid, LPVOID* ppInterface);
         FnCLRCreateInstance CLRCreateInstance = (FnCLRCreateInstance)GetProcAddress(mscoree, "CLRCreateInstance");
         
         if (!CLRCreateInstance) {
