@@ -323,6 +323,14 @@ if /i "%INJECTION_MODE%"=="runtime" (
     echo Starting target app WITHOUT Spy Agent...
     echo The Spy Agent will be injected via Windows Hook API when you use the IDE.
     echo.
+    echo DEBUG: TARGET_DIR = %TARGET_DIR%
+    echo DEBUG: TARGET_PATH = %TARGET_PATH%
+    echo.
+    if not exist "%TARGET_PATH%" (
+        echo ERROR: Application not found at: %TARGET_PATH%
+        pause
+        exit /b 1
+    )
     start "" /D "%TARGET_DIR%" "%TARGET_PATH%"
     echo App launched. Now use the IDE to attach to the running process.
     echo.
