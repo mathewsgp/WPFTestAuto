@@ -26,7 +26,8 @@ Test Get Startup Hook Path
     [Documentation]    Verify RuntimeInjector finds startup hook DLL
     ${path}=    Get Startup Hook Path
     Log    Startup hook path: ${path}
-    Run Keyword If    '${path}' == 'None'
+    ${is_none}=    Evaluate    $path == "None"
+    Run Keyword If    $is_none
     ...    Log    WARNING: Startup hook DLL not found. Build WpfSpyAgent.StartupHook first.
     ...    ELSE    Log    Found hook at: ${path}
 
@@ -34,7 +35,8 @@ Test Launch Application With Spy Agent
     [Documentation]    Launch app with Spy Agent auto-injected
     [Tags]    runtime_injection
     ${path}=    Get Startup Hook Path
-    Skip If    '${path}' == 'None'    Startup hook DLL not found. Build WpfSpyAgent.StartupHook first.
+    ${is_none}=    Evaluate    $path == "None"
+    Skip If    $is_none    Startup hook DLL not found. Build WpfSpyAgent.StartupHook first.
     Log    Launching application with Spy Agent...
     ${pid}=    Launch Application    ${APP_PATH}
     Log    Launched with PID: ${pid}
@@ -47,7 +49,8 @@ Test Terminate Application
     [Documentation]    Terminate launched application
     [Tags]    runtime_injection    cleanup
     ${path}=    Get Startup Hook Path
-    Skip If    '${path}' == 'None'
+    ${is_none}=    Evaluate    $path == "None"
+    Skip If    $is_none
     ${pid}=    Launch Application    ${APP_PATH}
     Sleep    2
     Log    Terminating PID: ${pid}
@@ -64,7 +67,8 @@ Test Terminate All Applications
     [Documentation]    Cleanup all launched applications
     [Tags]    runtime_injection    cleanup
     ${path}=    Get Startup Hook Path
-    Skip If    '${path}' == 'None'
+    ${is_none}=    Evaluate    $path == "None"
+    Skip If    $is_none
     ${pid1}=    Launch Application    ${APP_PATH}
     ${pid2}=    Launch Application    ${APP_PATH}
     Sleep    2
