@@ -419,6 +419,25 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
                                     runtimeInfo->Release();
                                     enumRuntimes->Release();
                                     metaHost->Release();
+                                    // Execute the Spy Agent
+                                    SetEnvironmentVariable(L"WPFSPY_PIPE_NAME", pipeName);
+                                    SetEnvironmentVariable(L"WPFSPY_AGENT_ENABLED", L"1");
+                                    DWORD exitCode = 0;
+                                    hr = runtimeHost->ExecuteInDefaultAppDomain(
+                                        agentDllPath.c_str(),
+                                        L"WpfSpyAgent.SpyAgentHost",
+                                        L"StartWithPipe",
+                                        pipeName,
+                                        &exitCode);
+                                    if (SUCCEEDED(hr)) {
+                                        swprintf(msg, 512, L"[Inject] Spy Agent started! Exit code: %d", exitCode);
+                                        Log(msg);
+                                    } else {
+                                        swprintf(msg, 512, L"[Inject] ExecuteInDefaultAppDomain failed: 0x%08X", hr);
+                                        Log(msg);
+                                    }
+                                    runtimeHost->Release();
+                                    g_pipeName = pipeName;
                                     return true; // Success!
                                 }
                             }
@@ -451,6 +470,25 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
                                 Log(msg);
                                 runtimeInfo->Release();
                                 metaHost->Release();
+                                // Execute the Spy Agent
+                                SetEnvironmentVariable(L"WPFSPY_PIPE_NAME", pipeName);
+                                SetEnvironmentVariable(L"WPFSPY_AGENT_ENABLED", L"1");
+                                DWORD exitCode = 0;
+                                hr = runtimeHost->ExecuteInDefaultAppDomain(
+                                    agentDllPath.c_str(),
+                                    L"WpfSpyAgent.SpyAgentHost",
+                                    L"StartWithPipe",
+                                    pipeName,
+                                    &exitCode);
+                                if (SUCCEEDED(hr)) {
+                                    swprintf(msg, 512, L"[Inject] Spy Agent started! Exit code: %d", exitCode);
+                                    Log(msg);
+                                } else {
+                                    swprintf(msg, 512, L"[Inject] ExecuteInDefaultAppDomain failed: 0x%08X", hr);
+                                    Log(msg);
+                                }
+                                runtimeHost->Release();
+                                g_pipeName = pipeName;
                                 return true;
                             }
                         }
@@ -473,6 +511,25 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
                             Log(msg);
                             runtimeInfo->Release();
                             metaHost->Release();
+                            // Execute the Spy Agent
+                            SetEnvironmentVariable(L"WPFSPY_PIPE_NAME", pipeName);
+                            SetEnvironmentVariable(L"WPFSPY_AGENT_ENABLED", L"1");
+                            DWORD exitCode = 0;
+                            hr = runtimeHost->ExecuteInDefaultAppDomain(
+                                agentDllPath.c_str(),
+                                L"WpfSpyAgent.SpyAgentHost",
+                                L"StartWithPipe",
+                                pipeName,
+                                &exitCode);
+                            if (SUCCEEDED(hr)) {
+                                swprintf(msg, 512, L"[Inject] Spy Agent started! Exit code: %d", exitCode);
+                                Log(msg);
+                            } else {
+                                swprintf(msg, 512, L"[Inject] ExecuteInDefaultAppDomain failed: 0x%08X", hr);
+                                Log(msg);
+                            }
+                            runtimeHost->Release();
+                            g_pipeName = pipeName;
                             return true;
                         }
                     }
@@ -488,97 +545,10 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
         }
     }
     
-    // Try .NET Core/5+ via coreclr.dll from its installation path
-    if (!runtimeHost) {
-        swprintf(msg, 512, L"[Inject] Trying .NET Core/5+ (coreclr.dll)...");
-        Log(msg);
-        
-        // Find coreclr.dll from .NET installation
-        wchar_t coreclrPath[MAX_PATH] = {0};
-        
-        // Check common .NET installation paths
-        const wchar_t* dotnetPaths[] = {
-            L"C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App\\",
-            L"C:\\Program Files (x86)\\dotnet\\shared\\Microsoft.NETCore.App\\",
-        };
-        
-        HMODULE coreclr = NULL;
-        for (const wchar_t* basePath : dotnetPaths) {
-            // Try to find a version subdirectory with coreclr.dll
-            WIN32_FIND_DATA findData;
-            HANDLE hFind = FindFirstFile(basePath, &findData);
-            if (hFind != INVALID_HANDLE_VALUE) {
-                FindClose(hFind);
-            }
-        }
-        
-        // Try loading from system PATH
-        coreclr = LoadLibrary(L"coreclr.dll");
-        
-        if (coreclr) {
-            swprintf(msg, 512, L"[Inject] coreclr.dll loaded");
-            Log(msg);
-            
-            // Get GetCLRRuntimeHost from coreclr.dll
-            typedef HRESULT (STDAPICALLTYPE* FnGetCLRRuntimeHost)(REFIID riid, IUnknown** pUnk);
-            FnGetCLRRuntimeHost pfnGetCLRRuntimeHost = (FnGetCLRRuntimeHost)GetProcAddress(coreclr, "GetCLRRuntimeHost");
-            
-            if (pfnGetCLRRuntimeHost) {
-                swprintf(msg, 512, L"[Inject] GetCLRRuntimeHost found");
-                Log(msg);
-                
-                HRESULT hr = pfnGetCLRRuntimeHost(IID_ICLRRuntimeHost, (IUnknown**)&runtimeHost);
-                if (SUCCEEDED(hr) && runtimeHost) {
-                    swprintf(msg, 512, L"[Inject] .NET Core/5+ CLR Runtime Host obtained!");
-                    Log(msg);
-                }
-            }
-            
-            if (!runtimeHost) {
-                FreeLibrary(coreclr);
-            }
-        }
-    }
-    
-    if (!runtimeHost) {
-        swprintf(msg, 512, L"[Inject] Failed to get CLR Runtime Host!");
-        Log(msg);
-        return false;
-    }
-    
-    // Set environment variables for the agent
-    SetEnvironmentVariable(L"WPFSPY_PIPE_NAME", pipeName);
-    SetEnvironmentVariable(L"WPFSPY_AGENT_ENABLED", L"1");
-    
-    // ExecuteInDefaultAppDomain expects wide strings
-    const wchar_t* dllPathW = agentDllPath.c_str();
-    const wchar_t* typeNameW = L"WpfSpyAgent.SpyAgentHost";
-    
-    // Execute SpyAgentHost.Start() in the default app domain
-    // The method will be called with the pipe name as argument
-    DWORD exitCode = 0;
-    HRESULT hr = runtimeHost->ExecuteInDefaultAppDomain(
-        dllPathW,
-        typeNameW,
-        L"StartWithPipe",  // Method that takes pipe name as parameter
-        pipeName,
-        &exitCode);
-    
-    if (FAILED(hr)) {
-        swprintf(msg, 512, L"[Inject] ExecuteInDefaultAppDomain failed: 0x%08X", hr);
-        Log(msg);
-        runtimeHost->Release();
-        return false;
-    }
-    
-    swprintf(msg, 512, L"[Inject] Spy Agent started via CLR Hosting! Exit code: %d", exitCode);
+    // If we reach here without starting the agent, no suitable runtime was found
+    swprintf(msg, 512, L"[Inject] No suitable runtime found to host the Spy Agent");
     Log(msg);
-    
-    // Clean up
-    runtimeHost->Release();
-    
-    g_pipeName = pipeName;
-    return true;
+    return false;
 }
 
 // Try to start the Spy Agent using .NET hosting
