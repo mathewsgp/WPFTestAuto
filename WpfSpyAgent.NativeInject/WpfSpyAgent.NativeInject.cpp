@@ -11,15 +11,9 @@
 #include <thread>
 #include <atomic>
 
-// CLR Hosting interfaces
+// CLR Hosting interfaces - these are already defined in mscoree.h
 #include <metahost.h>
 #pragma comment(lib, "mscoree.lib")
-
-// COM interface definitions
-EXTERN_C const IID IID_ICLRRuntimeHost = {0x90f1a06c,0x7712,0x4762,{0x86,0xb5,0x7a,0x5c,0x31,0x1e,0xdf,0x3d}};
-EXTERN_C const CLSID CLSID_CLRRuntimeHost = {0x90f1a06b,0x7712,0x4762,{0x86,0xb5,0x7a,0x5c,0x31,0x1e,0xdf,0x3d}};
-EXTERN_C const IID IID_ICLRMetaHost = {0x332c4425,0x26cb,0x11d8,{0x86,0x1a,0x8e,0x91,0x50,0x78,0x6e,0x0c}};
-EXTERN_C const CLSID CLSID_CLRMetaHost = {0x9280188d,0x0e8e,0x4861,{0xbf,0xc0,0x21,0x97,0x80,0xaf,0x4c,0xd8}};
 
 // Global state
 static std::atomic<bool> g_agentStarted(false);
@@ -305,19 +299,17 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
     SetEnvironmentVariable(L"WPFSPY_PIPE_NAME", pipeName);
     SetEnvironmentVariable(L"WPFSPY_AGENT_ENABLED", L"1");
     
-    // Convert paths to ANSI for ExecuteInDefaultAppDomain
-    char dllPathA[MAX_PATH];
-    char typeNameA[256];
-    WideCharToMultiByte(CP_ACP, 0, agentDllPath.c_str(), -1, dllPathA, MAX_PATH, nullptr, nullptr);
-    strcpy_s(typeNameA, "WpfSpyAgent.SpyAgentHost");
+    // ExecuteInDefaultAppDomain expects wide strings
+    const wchar_t* dllPathW = agentDllPath.c_str();
+    const wchar_t* typeNameW = L"WpfSpyAgent.SpyAgentHost";
     
     // Execute SpyAgentHost.Start() in the default app domain
     // The method will be called with the pipe name as argument
     DWORD exitCode = 0;
     HRESULT hr = runtimeHost->ExecuteInDefaultAppDomain(
-        dllPathA,
-        typeNameA,
-        "StartWithPipe",  // Method that takes pipe name as parameter
+        dllPathW,
+        typeNameW,
+        L"StartWithPipe",  // Method that takes pipe name as parameter
         pipeName,
         &exitCode);
     

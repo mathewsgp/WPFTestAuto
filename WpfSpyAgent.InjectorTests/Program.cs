@@ -350,17 +350,4 @@ namespace WpfSpyAgent.InjectorTests
             Console.WriteLine("[PASS] .NET Framework injection pipeline verified");
         }
     }
-
-    class Program
-    {
-        static int Main(string[] args)
-        {
-            Console.WriteLine("=== WpfSpyAgent.InjectorTests ===");
-            Console.WriteLine("Testing CLR Hosting runtime injection mechanism\n");
-
-            return Xunit.ConsoleClient.Program.Main(
-                args.Length > 0 ? args : new[] { typeof(Program).Assembly.Location }
-            );
-        }
-    }
 }
