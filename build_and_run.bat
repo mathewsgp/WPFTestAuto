@@ -250,17 +250,17 @@ echo.
 
 :: Build native injection DLL for runtime attach
 echo [Building Native Inject DLL for runtime injection...]
+:: Detect which solution/project to build based on installed VS version
+:: Default to VS 2022 (v143). Override with VS2026 environment variable.
+if "%VS2026%"=="1" (
+    set "NATIVE_INJECT_PROJECT=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj"
+    echo       Building for VS 2026 ^(v145^)...
+) else (
+    set "NATIVE_INJECT_PROJECT=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2022.vcxproj"
+    echo       Building for VS 2022 ^(v143^)...
+)
+
 if exist "%NATIVE_INJECT_PROJECT%" (
-    :: Detect which solution/project to build based on installed VS version
-    :: Default to VS 2022 (v143). Override with VS2026 environment variable.
-    if "%VS2026%"=="1" (
-        set "NATIVE_INJECT_PROJECT=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj"
-        echo       Building for VS 2026 ^(v145^)...
-    ) else (
-        set "NATIVE_INJECT_PROJECT=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2022.vcxproj"
-        echo       Building for VS 2022 ^(v143^)...
-    )
-    
     msbuild "%NATIVE_INJECT_PROJECT%" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
     if errorlevel 1 (
         echo WARNING: Failed to build NativeInject DLL ^(runtime injection may not work^)
