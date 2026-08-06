@@ -1,19 +1,42 @@
 // WpfSpyAgent.NativeInject.cpp
 // Native DLL for runtime injection into WPF processes.
 // This DLL is injected into the target process using CreateRemoteThread + LoadLibrary.
-// It then bootstraps the .NET runtime and loads the Spy Agent.
+// It then bootstraps the .NET runtime and loads the Spy Agent using CLR Hosting APIs.
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <iostream>
 #include <string>
+#include <vector>
 #include <thread>
 #include <atomic>
+
+// CLR Hosting interfaces
+#include <metahost.h>
+#pragma comment(lib, "mscoree.lib")
+
+// COM interface definitions
+EXTERN_C const IID IID_ICLRRuntimeHost = {0x90f1a06c,0x7712,0x4762,{0x86,0xb5,0x7a,0x5c,0x31,0x1e,0xdf,0x3d}};
+EXTERN_C const CLSID CLSID_CLRRuntimeHost = {0x90f1a06b,0x7712,0x4762,{0x86,0xb5,0x7a,0x5c,0x31,0x1e,0xdf,0x3d}};
+EXTERN_C const IID IID_ICLRMetaHost = {0x332c4425,0x26cb,0x11d8,{0x86,0x1a,0x8e,0x91,0x50,0x78,0x6e,0x0c}};
+EXTERN_C const CLSID CLSID_CLRMetaHost = {0x9280188d,0x0e8e,0x4861,{0xbf,0xc0,0x21,0x97,0x80,0xaf,0x4c,0xd8}};
 
 // Global state
 static std::atomic<bool> g_agentStarted(false);
 static HANDLE g_agentThread = nullptr;
 static std::wstring g_pipeName = L"WPFSpyAgentPipe";
+
+// Helper function to get the directory containing this DLL
+static std::wstring GetDllDirectory() {
+    wchar_t path[MAX_PATH];
+    GetModuleFileName(nullptr, path, MAX_PATH);
+    std::wstring dllPath = path;
+    size_t pos = dllPath.rfind(L'\\');
+    if (pos != std::wstring::npos) {
+        return dllPath.substr(0, pos);
+    }
+    return L"";
+}
 
 // Write debug log
 static void Log(const wchar_t* msg) {
@@ -152,6 +175,129 @@ static DWORD WINAPI AgentThreadProc(LPVOID param) {
     return 0;
 }
 
+// Try to start the Spy Agent using CLR Hosting (for .NET Framework)
+// This function uses ICLRRuntimeHost::ExecuteInDefaultAppDomain to execute managed code
+static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
+    if (g_agentStarted.exchange(true)) {
+        return true; // Already started
+    }
+    
+    wchar_t msg[512];
+    swprintf(msg, 512, L"[Inject] Attempting CLR Hosting to start Spy Agent...");
+    Log(msg);
+    
+    // Get the path to our DLL and the Spy Agent DLL
+    std::wstring dllDir = GetDllDirectory();
+    
+    // Look for WpfSpyAgent.dll in the same directory
+    std::wstring agentDllPath = dllDir + L"\\WpfSpyAgent.dll";
+    swprintf(msg, 512, L"[Inject] Looking for Spy Agent DLL: %s", agentDllPath.c_str());
+    Log(msg);
+    
+    if (GetFileAttributes(agentDllPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
+        swprintf(msg, 512, L"[Inject] Spy Agent DLL not found!");
+        Log(msg);
+        return false;
+    }
+    
+    // Load mscoree.dll to get CLR hosting APIs
+    HMODULE mscoree = LoadLibrary(L"mscoree.dll");
+    if (!mscoree) {
+        swprintf(msg, 512, L"[Inject] Failed to load mscoree.dll!");
+        Log(msg);
+        return false;
+    }
+    
+    // Get CLRCreateInstance function
+    typedef HRESULT (STDAPICALLTYPE* FnCLRCreateInstance)(REFCLSID clsid, REFIID riid, LPVOID* ppInterface);
+    FnCLRCreateInstance CLRCreateInstance = (FnCLRCreateInstance)GetProcAddress(mscoree, "CLRCreateInstance");
+    
+    if (!CLRCreateInstance) {
+        swprintf(msg, 512, L"[Inject] CLRCreateInstance not found!");
+        Log(msg);
+        FreeLibrary(mscoree);
+        return false;
+    }
+    
+    // Get ICLRMetaHost
+    ICLRMetaHost* metaHost = nullptr;
+    HRESULT hr = CLRCreateInstance(CLSID_CLRMetaHost, IID_ICLRMetaHost, (LPVOID*)&metaHost);
+    if (FAILED(hr) || !metaHost) {
+        swprintf(msg, 512, L"[Inject] CLRCreateInstance failed: 0x%08X", hr);
+        Log(msg);
+        FreeLibrary(mscoree);
+        return false;
+    }
+    
+    // Get the runtime version (v4.0 for .NET Framework 4.x)
+    ICLRRuntimeInfo* runtimeInfo = nullptr;
+    hr = metaHost->GetRuntime(L"v4.0.30319", IID_ICLRRuntimeInfo, (LPVOID*)&runtimeInfo);
+    if (FAILED(hr) || !runtimeInfo) {
+        swprintf(msg, 512, L"[Inject] GetRuntime failed: 0x%08X", hr);
+        Log(msg);
+        metaHost->Release();
+        FreeLibrary(mscoree);
+        return false;
+    }
+    
+    // Get ICLRRuntimeHost
+    ICLRRuntimeHost* runtimeHost = nullptr;
+    hr = runtimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_ICLRRuntimeHost, (LPVOID*)&runtimeHost);
+    if (FAILED(hr) || !runtimeHost) {
+        swprintf(msg, 512, L"[Inject] GetInterface for CLR Runtime Host failed: 0x%08X", hr);
+        Log(msg);
+        runtimeInfo->Release();
+        metaHost->Release();
+        FreeLibrary(mscoree);
+        return false;
+    }
+    
+    swprintf(msg, 512, L"[Inject] CLR Runtime Host obtained successfully!");
+    Log(msg);
+    
+    // Set environment variables for the agent
+    SetEnvironmentVariable(L"WPFSPY_PIPE_NAME", pipeName);
+    SetEnvironmentVariable(L"WPFSPY_AGENT_ENABLED", L"1");
+    
+    // Convert paths to ANSI for ExecuteInDefaultAppDomain
+    char dllPathA[MAX_PATH];
+    char typeNameA[256];
+    WideCharToMultiByte(CP_ACP, 0, agentDllPath.c_str(), -1, dllPathA, MAX_PATH, nullptr, nullptr);
+    strcpy_s(typeNameA, "WpfSpyAgent.SpyAgentHost");
+    
+    // Execute SpyAgentHost.Start() in the default app domain
+    // This works because we're in the same process - the existing WPF Application is accessible
+    DWORD exitCode = 0;
+    hr = runtimeHost->ExecuteInDefaultAppDomain(
+        dllPathA,
+        typeNameA,
+        "StartWithPipe",  // We'll add this method to SpyAgentHost
+        pipeName,
+        &exitCode);
+    
+    if (FAILED(hr)) {
+        swprintf(msg, 512, L"[Inject] ExecuteInDefaultAppDomain failed: 0x%08X", hr);
+        Log(msg);
+        runtimeHost->Release();
+        runtimeInfo->Release();
+        metaHost->Release();
+        FreeLibrary(mscoree);
+        return false;
+    }
+    
+    swprintf(msg, 512, L"[Inject] Spy Agent started via CLR Hosting! Exit code: %d", exitCode);
+    Log(msg);
+    
+    // Clean up
+    runtimeHost->Release();
+    runtimeInfo->Release();
+    metaHost->Release();
+    FreeLibrary(mscoree);
+    
+    g_pipeName = pipeName;
+    return true;
+}
+
 // Try to start the Spy Agent using .NET hosting
 static bool TryStartSpyAgent(const wchar_t* pipeName) {
     if (g_agentStarted.exchange(true)) {
@@ -177,6 +323,7 @@ static bool TryStartSpyAgent(const wchar_t* pipeName) {
 
 // ============================================================
 // Exported function called by the injector
+// This is called from RuntimeInjector.InjectAsync()
 // ============================================================
 extern "C" __declspec(dllexport) 
 void __stdcall InjectAndStartAgent(const char* pipeName) {
@@ -188,7 +335,67 @@ void __stdcall InjectAndStartAgent(const char* pipeName) {
     swprintf(msg, 256, L"[Inject] InjectAndStartAgent called with pipe: %s", widePipe);
     Log(msg);
     
+    // Try CLR Hosting first (for .NET Framework)
+    if (TryStartSpyAgentCLR(widePipe)) {
+        swprintf(msg, 256, L"[Inject] Agent started via CLR Hosting!");
+        Log(msg);
+        return;
+    }
+    
+    // Fall back to environment variable approach
+    swprintf(msg, 256, L"[Inject] CLR Hosting failed, using environment variables...");
+    Log(msg);
     TryStartSpyAgent(widePipe);
+}
+
+// ============================================================
+// Exported function for Snoop-style injection
+// Called via CreateRemoteThread + GetProcAddress("ExecuteInDefaultAppDomain")
+// Parameters: "dllPath|assemblyPath|typeName|methodName|pipeName"
+// ============================================================
+extern "C" __declspec(dllexport)
+DWORD WINAPI ExecuteInDefaultAppDomain(LPCWSTR args) {
+    wchar_t msg[512];
+    swprintf(msg, 512, L"[Inject] ExecuteInDefaultAppDomain called with args: %s", args);
+    Log(msg);
+    
+    // Parse the parameters (separated by |)
+    std::wstring argsStr(args);
+    std::wstring delimiter = L"|";
+    
+    size_t pos = 0;
+    std::vector<std::wstring> tokens;
+    while ((pos = argsStr.find(delimiter)) != std::wstring::npos) {
+        tokens.push_back(argsStr.substr(0, pos));
+        argsStr.erase(0, pos + delimiter.length());
+    }
+    tokens.push_back(argsStr);
+    
+    if (tokens.size() < 5) {
+        swprintf(msg, 512, L"[Inject] Invalid arguments count: %d (expected 5)", tokens.size());
+        Log(msg);
+        return E_FAIL;
+    }
+    
+    std::wstring& dllPath = tokens[0];
+    std::wstring& assemblyPath = tokens[1];
+    std::wstring& typeName = tokens[2];
+    std::wstring& methodName = tokens[3];
+    std::wstring& pipeName = tokens[4];
+    
+    swprintf(msg, 512, L"[Inject] Starting agent: %s.%s in %s", typeName.c_str(), methodName.c_str(), assemblyPath.c_str());
+    Log(msg);
+    
+    // Use the agent thread approach with the pipe name
+    if (TryStartSpyAgentCLR(pipeName.c_str())) {
+        swprintf(msg, 512, L"[Inject] Agent started successfully!");
+        Log(msg);
+        return S_OK;
+    }
+    
+    swprintf(msg, 512, L"[Inject] Failed to start agent via CLR Hosting");
+    Log(msg);
+    return E_FAIL;
 }
 
 // DllMain - called when our DLL is loaded/unloaded
@@ -202,8 +409,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             DisableThreadLibraryCalls(hModule);
             Log(L"[Inject] Native DLL loaded into target process!");
             
-            // Try to auto-start the agent
-            TryStartSpyAgent(L"WPFSpyAgentPipe");
+            // Try to auto-start the agent using CLR Hosting
+            TryStartSpyAgentCLR(L"WPFSpyAgentPipe");
             break;
         case DLL_THREAD_ATTACH:
             reason = L"DLL_THREAD_ATTACH";
