@@ -20,10 +20,28 @@ set "TARGET_VERSION="
 :: Order doesn't matter - identified by content
 
 :: Detect .exe in any position (take first one found)
-for %%A in (%ARG1% %ARG2% %ARG3% %ARG4% %ARG5%) do (
-    echo %%~A | findstr /C:".exe" >nul 2>&1
-    if not errorlevel 1 (
-        if "%TARGET_APP%"=="" set "TARGET_APP=%%~A"
+:: Only check non-empty arguments that end with .exe
+if not "%ARG1%"=="" (
+    if "%ARG1:~-4%"==".exe" set "TARGET_APP=%ARG1%"
+)
+if not "%ARG2%"=="" (
+    if "%ARG2:~-4%"==".exe" (
+        if "%TARGET_APP%"=="" set "TARGET_APP=%ARG2%"
+    )
+)
+if not "%ARG3%"=="" (
+    if "%ARG3:~-4%"==".exe" (
+        if "%TARGET_APP%"=="" set "TARGET_APP=%ARG3%"
+    )
+)
+if not "%ARG4%"=="" (
+    if "%ARG4:~-4%"==".exe" (
+        if "%TARGET_APP%"=="" set "TARGET_APP=%ARG4%"
+    )
+)
+if not "%ARG5%"=="" (
+    if "%ARG5:~-4%"==".exe" (
+        if "%TARGET_APP%"=="" set "TARGET_APP=%ARG5%"
     )
 )
 
@@ -128,29 +146,40 @@ if "%TARGET_APP%"=="" (
     echo Auto-detected path: %TARGET_PATH%
     echo ============================================================
 ) else (
+    :: A custom .exe was provided - find its path
     :: Find .exe in any argument and get its path
     set "TARGET_DIR="
     set "TARGET_PATH="
     
-    if "%ARG1:~-4%"==".exe" (
-        set "TARGET_DIR=%~dp1"
-        set "TARGET_PATH=%~f1"
+    if not "%ARG1%"=="" (
+        if "%ARG1:~-4%"==".exe" (
+            set "TARGET_DIR=%~dp1"
+            set "TARGET_PATH=%~f1"
+        )
     )
-    if "%ARG2:~-4%"==".exe" (
-        set "TARGET_DIR=%~dp2"
-        set "TARGET_PATH=%~f2"
+    if not "%ARG2%"=="" (
+        if "%ARG2:~-4%"==".exe" (
+            set "TARGET_DIR=%~dp2"
+            set "TARGET_PATH=%~f2"
+        )
     )
-    if "%ARG3:~-4%"==".exe" (
-        set "TARGET_DIR=%~dp3"
-        set "TARGET_PATH=%~f3"
+    if not "%ARG3%"=="" (
+        if "%ARG3:~-4%"==".exe" (
+            set "TARGET_DIR=%~dp3"
+            set "TARGET_PATH=%~f3"
+        )
     )
-    if "%ARG4:~-4%"==".exe" (
-        set "TARGET_DIR=%~dp4"
-        set "TARGET_PATH=%~f4"
+    if not "%ARG4%"=="" (
+        if "%ARG4:~-4%"==".exe" (
+            set "TARGET_DIR=%~dp4"
+            set "TARGET_PATH=%~f4"
+        )
     )
-    if "%ARG5:~-4%"==".exe" (
-        set "TARGET_DIR=%~dp5"
-        set "TARGET_PATH=%~f5"
+    if not "%ARG5%"=="" (
+        if "%ARG5:~-4%"==".exe" (
+            set "TARGET_DIR=%~dp5"
+            set "TARGET_PATH=%~f5"
+        )
     )
     
     echo ============================================================
