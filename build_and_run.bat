@@ -16,6 +16,17 @@ set "CONFIGURATION="
 set "RUN_IDE="
 set "TARGET_VERSION="
 
+:: Check all arguments and identify each by value
+:: Order doesn't matter - identified by content
+
+:: Detect .exe in any position (take first one found)
+for %%A in (%ARG1% %ARG2% %ARG3% %ARG4% %ARG5%) do (
+    echo %%~A | findstr /C:".exe" >nul 2>&1
+    if not errorlevel 1 (
+        if "%TARGET_APP%"=="" set "TARGET_APP=%%~A"
+    )
+)
+
 :: Check if first arg is an injection mode
 if /i "%ARG1%"=="runtime" set "INJECTION_MODE=%ARG1%"
 if /i "%ARG1%"=="launch" set "INJECTION_MODE=%ARG1%"
@@ -28,15 +39,50 @@ if /i "%ARG1%"=="framework" set "TARGET_VERSION=framework"
 if /i "%ARG1%"=="true" set "RUN_IDE=true"
 if /i "%ARG1%"=="false" set "RUN_IDE=false"
 
-:: If first arg looks like a file, use as target
-echo %ARG1% | findstr /C:".exe" >nul 2>&1
-if not errorlevel 1 (
-    set "TARGET_APP=%ARG1%"
-    set "INJECTION_MODE=%ARG2%"
-    set "CONFIGURATION=%ARG3%"
-    set "RUN_IDE=%ARG4%"
-    set "TARGET_VERSION=%ARG5%"
-)
+:: Check other args too (in case .exe is first)
+if /i "%ARG2%"=="runtime" set "INJECTION_MODE=%ARG2%"
+if /i "%ARG2%"=="launch" set "INJECTION_MODE=%ARG2%"
+if /i "%ARG2%"=="cooperative" set "INJECTION_MODE=%ARG2%"
+if /i "%ARG2%"=="attach" set "INJECTION_MODE=%ARG2%"
+if /i "%ARG2%"=="debug" set "CONFIGURATION=Debug"
+if /i "%ARG2%"=="release" set "CONFIGURATION=Release"
+if /i "%ARG2%"=="net" set "TARGET_VERSION=net"
+if /i "%ARG2%"=="framework" set "TARGET_VERSION=framework"
+if /i "%ARG2%"=="true" set "RUN_IDE=true"
+if /i "%ARG2%"=="false" set "RUN_IDE=false"
+
+if /i "%ARG3%"=="runtime" set "INJECTION_MODE=%ARG3%"
+if /i "%ARG3%"=="launch" set "INJECTION_MODE=%ARG3%"
+if /i "%ARG3%"=="cooperative" set "INJECTION_MODE=%ARG3%"
+if /i "%ARG3%"=="attach" set "INJECTION_MODE=%ARG3%"
+if /i "%ARG3%"=="debug" set "CONFIGURATION=Debug"
+if /i "%ARG3%"=="release" set "CONFIGURATION=Release"
+if /i "%ARG3%"=="net" set "TARGET_VERSION=net"
+if /i "%ARG3%"=="framework" set "TARGET_VERSION=framework"
+if /i "%ARG3%"=="true" set "RUN_IDE=true"
+if /i "%ARG3%"=="false" set "RUN_IDE=false"
+
+if /i "%ARG4%"=="runtime" set "INJECTION_MODE=%ARG4%"
+if /i "%ARG4%"=="launch" set "INJECTION_MODE=%ARG4%"
+if /i "%ARG4%"=="cooperative" set "INJECTION_MODE=%ARG4%"
+if /i "%ARG4%"=="attach" set "INJECTION_MODE=%ARG4%"
+if /i "%ARG4%"=="debug" set "CONFIGURATION=Debug"
+if /i "%ARG4%"=="release" set "CONFIGURATION=Release"
+if /i "%ARG4%"=="net" set "TARGET_VERSION=net"
+if /i "%ARG4%"=="framework" set "TARGET_VERSION=framework"
+if /i "%ARG4%"=="true" set "RUN_IDE=true"
+if /i "%ARG4%"=="false" set "RUN_IDE=false"
+
+if /i "%ARG5%"=="runtime" set "INJECTION_MODE=%ARG5%"
+if /i "%ARG5%"=="launch" set "INJECTION_MODE=%ARG5%"
+if /i "%ARG5%"=="cooperative" set "INJECTION_MODE=%ARG5%"
+if /i "%ARG5%"=="attach" set "INJECTION_MODE=%ARG5%"
+if /i "%ARG5%"=="debug" set "CONFIGURATION=Debug"
+if /i "%ARG5%"=="release" set "CONFIGURATION=Release"
+if /i "%ARG5%"=="net" set "TARGET_VERSION=net"
+if /i "%ARG5%"=="framework" set "TARGET_VERSION=framework"
+if /i "%ARG5%"=="true" set "RUN_IDE=true"
+if /i "%ARG5%"=="false" set "RUN_IDE=false"
 
 :: Set defaults
 if "%INJECTION_MODE%"=="" set "INJECTION_MODE=runtime"
@@ -82,8 +128,28 @@ if "%TARGET_APP%"=="" (
     echo Auto-detected path: %TARGET_PATH%
     echo ============================================================
 ) else (
-    set "TARGET_DIR=%~dp1"
-    set "TARGET_PATH=%~f1"
+    :: Use detected .exe path
+    set "TARGET_DIR=%~dp2"
+    set "TARGET_PATH=%~f2"
+    :: If .exe is in ARG3, ARG4, or ARG5, adjust
+    if exist "%ARG3%" (
+        if "%ARG3:~-4%"==".exe" (
+            set "TARGET_DIR=%~dp3"
+            set "TARGET_PATH=%~f3"
+        )
+    )
+    if exist "%ARG4%" (
+        if "%ARG4:~-4%"==".exe" (
+            set "TARGET_DIR=%~dp4"
+            set "TARGET_PATH=%~f4"
+        )
+    )
+    if exist "%ARG5%" (
+        if "%ARG5:~-4%"==".exe" (
+            set "TARGET_DIR=%~dp5"
+            set "TARGET_PATH=%~f5"
+        )
+    )
     echo ============================================================
     echo WPFTestAuto - Build and Inject
     echo ============================================================
