@@ -3,7 +3,6 @@ using System.IO;
 using System.IO.Pipes;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Threading;
 using WpfSpyAgent.Protocol;
 
@@ -59,15 +58,16 @@ namespace WpfSpyAgent
 
             try
             {
-                // Use Task.Run with LongRunning to ensure it runs on a dedicated thread
-                // This is important for CLR Hosting scenarios to avoid ThreadPool deadlocks
-                Log($"Start: Starting ListenLoop on dedicated thread...");
-                Task.Factory.StartNew(
-                    () => ListenLoop(pipeName),
-                    CancellationToken.None,
-                    TaskCreationOptions.LongRunning,
-                    TaskScheduler.Default);
-                Log($"Start: Task started");
+                // Start ListenLoop on a dedicated background thread
+                // Using ThreadPool with QueueUserWorkItem for .NET Framework compatibility
+                Log($"Start: Starting ListenLoop thread...");
+                var thread = new Thread(() => ListenLoop(pipeName))
+                {
+                    IsBackground = true,
+                    Name = "WpfSpyAgent-ListenLoop"
+                };
+                thread.Start();
+                Log($"Start: Thread started");
             }
             catch (Exception ex)
             {
