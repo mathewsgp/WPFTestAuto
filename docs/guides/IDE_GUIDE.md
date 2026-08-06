@@ -58,6 +58,7 @@ WpfTestIde/
 │   └── RepositoryWriter.cs     ElementEntry list -> repository YAML
 ├── Execution/RobotRunner.cs    Shells out to `python -m robot`
 ├── Converters/Converters.cs
+├── Helpers/RuntimeInjector.cs    ← Runtime injection support
 └── RelayCommand.cs
 ```
 
@@ -70,52 +71,61 @@ dotnet build
 dotnet run
 ```
 
-### Try it end-to-end against SampleWpfApp
+## Attaching to Processes
 
-`SampleWpfApp` has no built-in agent hook (see
-`docs/INJECTION_OPTIONS.md`) — start it with the Spy Agent injected via
-the startup-hook loader first, exactly as `SampleWpfApp/README.md`
-describes:
+The IDE supports three ways to connect to a WPF application:
+
+### Option 1: Runtime Attach (Already Running)
+
+If the Spy Agent is **already running** inside your application:
+
+1. **Attach to Process...** → select your app from the list
+2. Click **Attach**
+
+The IDE will connect via Named Pipe to the existing Spy Agent.
+
+### Option 2: Launch with Spy Agent
+
+The IDE can **launch a new process** with Spy Agent automatically injected:
+
+1. **Attach to Process...** → select **Launch New Process** mode
+2. Browse to your application executable
+3. Click **Attach**
+
+The IDE sets `DOTNET_STARTUP_HOOKS` and `WPFSPY_AGENT_ENABLED` environment
+variables before launching.
+
+### Option 3: Manual Startup Hook
+
+Start your app with the Spy Agent injected via the startup-hook loader:
 
 ```powershell
-# Terminal 1 — build the loader once
+# Build the loader
 cd WpfSpyAgent.StartupHook
 dotnet build
 
-# Terminal 1 (cont.) — run the UNMODIFIED target app with the agent injected
+# Launch your app with the hook
 cd ..\SampleWpfApp
 $env:DOTNET_STARTUP_HOOKS = "$(Resolve-Path ..\WpfSpyAgent.StartupHook\bin\Debug\net6.0-windows\WpfSpyAgent.StartupHook.dll)"
 $env:WPFSPY_AGENT_ENABLED = "1"
 dotnet run -f net6.0-windows
 
-# Terminal 2 — the IDE
-cd WpfTestIde
-dotnet run
+# Then attach from the IDE
 ```
 
-In the IDE:
-1. **Attach to Process...** → select `SampleWpfApp` from the list (its
-   default page-name mapping — "Login" → `LoginPage`, "Orders" →
-   `OrdersPage` — already matches `SampleWpfApp`'s window titles).
-2. Click **● Record**.
-3. In the `SampleWpfApp` window: type `user1` / `Pass@123`, click
-   **Login**, select a SKU, toggle **Priority**, click **Create Order**.
-4. Click **■ Stop Recording**. Check the **Element Repository** and
-   **Generated Script** tabs — the priority checkbox should be flagged
-   non-standard.
-5. Click a step's **+ verify after**, pick
-   `OrdersPage.lblConfirmation`, confirm the pre-filled expected value.
-6. Click **▶ Run Script** — this writes the generated script to
-   `tests/ide_generated_test.robot` and runs it via `python -m robot`,
-   streaming output into the **Run Results** tab.
-7. **Export Repository (.yaml)** / **Export Script (.robot)** to save
-   them into `repository/elements/` and `tests/` for real, following the
-   same review/refactor steps as `docs/RECORDER_GUIDE.md`.
+See [Injection Options](../technical/INJECTION_OPTIONS.md) for more details.
 
-No live app? Click **Load Sample** to populate the Recorded Steps,
-Element Repository, and Generated Script tabs with a worked example —
-useful for exploring the UI, adding verifications, and running, without
-needing `SampleWpfApp` running.
+## Using the IDE
+
+1. **Attach to Process...** → select your app (page-name mapping is pre-configured)
+2. Click **● Record** to start recording
+3. Interact with your application (type, click, select)
+4. Click **■ Stop Recording**
+5. Review **Recorded Steps** and **Element Repository**
+6. Add verifications: Click **+ verify after** on any step
+7. Click **▶ Run Script** to execute
+
+**Load Sample** populates the IDE with a worked example without needing a live app.
 
 ## Known simplifications (documented, not hidden)
 
