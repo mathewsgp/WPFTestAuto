@@ -37,6 +37,9 @@ namespace WpfTestIde.Models
         /// If null or empty, the global driver order from config is used.</summary>
         public List<string>? DriverPriority { get; set; }
 
+        /// <summary>App context ID for multi-app support. Null/empty means global element.</summary>
+        public string? AppId { get; set; }
+
         public ElementEntry Clone()
         {
             return new ElementEntry
@@ -48,7 +51,8 @@ namespace WpfTestIde.Models
                 Name = Name,
                 XPath = XPath,
                 RecordingModes = RecordingModes != null ? new List<string>(RecordingModes) : null,
-                DriverPriority = DriverPriority != null ? new List<string>(DriverPriority) : null
+                DriverPriority = DriverPriority != null ? new List<string>(DriverPriority) : null,
+                AppId = AppId,
             };
         }
     }

@@ -111,8 +111,9 @@ namespace WpfTestIde.Recording
                 Action = isToggle ? ActionKind.Toggle : ActionKind.Invoke,
                 NonStandard = probed.ResolvedVia == "WPFSpy",
                 Value = isToggle ? (probed.Text ?? "") : null,
+                AppId = _appId,
             };
-            Log($"[OnClick] firing StepCaptured: alias={alias}, action={step.Action}");
+            Log($"[OnClick] firing StepCaptured: alias={alias}, action={step.Action}, appId={_appId ?? "(none)"}");
             StepCaptured?.Invoke(step, entry);
         }
 
@@ -132,6 +133,7 @@ namespace WpfTestIde.Recording
                 Action = ActionKind.SetValue,
                 Value = value ?? "",
                 NonStandard = _pendingFocusedInput.ResolvedVia == "WPFSpy",
+                AppId = _appId,
             };
             StepCaptured?.Invoke(step, entry);
 

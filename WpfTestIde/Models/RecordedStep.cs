@@ -29,6 +29,9 @@ namespace WpfTestIde.Models
         /// self-healing locator demo.</summary>
         public bool NonStandard { get; set; }
 
+        /// <summary>App context ID for multi-app recording. Null for single-app recordings.</summary>
+        public string? AppId { get; set; }
+
         public string DisplayVerb => Kind switch
         {
             StepKind.Verify => "Verify Element Text",

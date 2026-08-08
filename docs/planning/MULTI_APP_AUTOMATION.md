@@ -252,24 +252,61 @@ Capture Screenshot    app_id=main    filename=main.png
 Capture Screenshot    app_id=helper    filename=helper.png
 ```
 
-## Implementation Order
+## Implementation Status
 
-| Phase | Priority | Effort | Dependencies |
-|-------|----------|--------|--------------|
-| 1.1 App Context Model | High | 2 days | None |
-| 1.2 Multi-App Registry | High | 1 day | 1.1 |
-| 1.3 Keyword Changes | High | 3 days | 1.2 |
-| 1.4 Element Repository | Medium | 2 days | 1.2 |
-| 1.5 Driver Changes | High | 2 days | 1.1 |
-| 2.1 IDE Multi-App Attach | Medium | 3 days | 1.2 |
-| 2.2 Spy Tool Multi-App | Medium | 2 days | 2.1 |
-| 2.3 Recording per App | Medium | 2 days | 2.1 |
-| 2.4 Element Repo per App | Low | 1 day | 2.1 |
-| 3.1 Robot Keywords | High | 2 days | 1.3 |
-| 3.2 Implicit Switching | Low | 1 day | 3.1 |
-| 4.1 Data Passing | Medium | 1 day | 3.1 |
-| 4.2 Sync Keywords | Low | 1 day | 3.1 |
-| 4.3 Screenshots | Low | 1 day | 3.1 |
+### Phase 1: Framework Core (Python) — COMPLETE
+
+| Task | Status | Files Modified |
+|------|--------|----------------|
+| 1.1 App Context Model | ✅ Complete | `api/app_context.py` (new) |
+| 1.2 Multi-App Registry | ✅ Complete | `api/app_context.py` |
+| 1.3 Keyword Changes | ✅ Complete | `api/DriverAgnosticApi.py` |
+| 1.4 Element Repository | ✅ Complete | `api/repository_access.py` |
+| 1.5 Driver Changes | ✅ Complete | `drivers_rf/flaui_robotframework/flaui_driver.py` |
+
+**Key features:**
+- `AppContext` and `MultiAppContext` classes for per-app driver/process management
+- New keywords: `Register Application`, `Switch Application`, `Launch Application`, `Attach To Application`, `Close Application`, `Get Application List`
+- All existing keywords accept optional `app_id` parameter
+- Backward-compatible legacy mode when no apps are registered
+- Element repository supports optional `appId` field for app-scoped elements
+- FlaUI driver attaches by PID via `AutomationElement.FromHandle`
+
+### Phase 2: IDE Support (C# WPF) — IN PROGRESS
+
+| Task | Status | Files Modified |
+|------|--------|----------------|
+| 2.1 IDE Multi-App Foundation | ✅ Complete | `WpfTestIde/Models/AppContext.cs` (new), `MainViewModel.cs`, `AttachToProcessDialog.xaml/.cs` |
+| 2.2 Spy Tool Multi-App Mode | ✅ Complete | `SpyToolDialog.xaml/.cs` |
+| 2.3 Recording per App | ✅ Complete | `RecordingSession.cs`, `RecordedStep.cs`, `MainViewModel.cs`, `ScriptGenerator.cs`, `TestFlowViewModel.cs` |
+| 2.4 Element Repo per App | ✅ Complete | `RepositoryLookup.cs` |
+| 2.5 Multi-App Management UI | ✅ Complete | `MultiAppDialog.xaml/.cs` (new), `MainWindow.xaml` |
+
+**Key features:**
+- C# `AppContext` model mirroring Python's `AppContext`
+- `MainViewModel.AttachedApps` collection with `SelectedApp`
+- `AttachToProcessDialog` returns `AppId` (auto-generated or user-specified)
+- `SpyToolDialog` has `AppSelector` ComboBox for switching between attached apps
+- `RecordingSession` tags steps with `AppId`
+- `ScriptGenerator` emits `app_id=` per step (not global)
+- `RepositoryLookup` filters elements by `appId` during YAML loading
+- `MultiAppDialog` for managing attached apps (Detach/Set Default)
+- IDE passes app registration env vars (`WPFSPY_APP_ID`, `WPFSPY_PROCESS_ID`, etc.) to Python
+
+### Phase 3: Robot Test Support — PENDING
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 3.1 Robot Keywords | ⏳ Pending | Python keywords already implemented in Phase 1 |
+| 3.2 Implicit Switching | ⏳ Pending | Deferred — explicit `app_id` preferred for clarity |
+
+### Phase 4: Cross-App Workflows — PENDING
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 4.1 Data Passing | ⏳ Pending | |
+| 4.2 Sync Keywords | ⏳ Pending | |
+| 4.3 Screenshots | ⏳ Pending | |
 
 ## Constraints and Considerations
 
@@ -297,3 +334,5 @@ Capture Screenshot    app_id=helper    filename=helper.png
 2. **Default app**: First registered app becomes default automatically
 3. **Gradual adoption**: Existing tests continue to work; multi-app features opt-in
 4. **IDE enhancement**: Add multi-app features without breaking single-app workflow
+5. **IDE-generated scripts**: Generated tests include `Attach To Application` Test Setup when multi-app attach is used
+6. **Per-step app context**: Recorded steps carry `AppId` so generated scripts work correctly in multi-app scenarios

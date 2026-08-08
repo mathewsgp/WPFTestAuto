@@ -6,19 +6,22 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Automation;
 using WpfTestIde.Recording;
+using WpfTestIde.Models;
 
 namespace WpfTestIde.Dialogs
 {
     public partial class SpyToolDialog : Window
     {
-        private readonly string _pipeName;
+        private string _pipeName;
         private SpyAgentClient? _client;
         private TreeViewItem? _selectedTreeItem;
         private ElementTreeNode? _selectedElement;
         private readonly List<ElementTreeNode> _allNodes = new();
         private int _targetProcessId;
         private string? _appId;
+        private readonly List<WpfTestIde.Models.AppContext> _attachedApps;
 
         public string? SelectedAlias { get; private set; }
         public string? SelectedXPath { get; private set; }
@@ -26,12 +29,13 @@ namespace WpfTestIde.Dialogs
         public List<string> SelectedRecordingModes { get; private set; }
         public string SelectedMode { get; private set; } = "WPFSpy";
 
-        public SpyToolDialog(string pipeName = "WPFSpyAgentPipe", List<string>? recordingModes = null, string selectedMode = "WPFSpy", int targetProcessId = 0, string? appId = null)
+        public SpyToolDialog(string pipeName = "WPFSpyAgentPipe", List<string>? recordingModes = null, string selectedMode = "WPFSpy", int targetProcessId = 0, string? appId = null, List<WpfTestIde.Models.AppContext>? attachedApps = null)
         {
             InitializeComponent();
             _pipeName = pipeName;
             _targetProcessId = targetProcessId;
             _appId = appId;
+            _attachedApps = attachedApps ?? new List<WpfTestIde.Models.AppContext>();
             SelectedRecordingModes = recordingModes ?? new List<string> { "FlaUI", "WPFSpy" };
             SelectedMode = selectedMode;
             
@@ -59,19 +63,37 @@ namespace WpfTestIde.Dialogs
         {
             AppSelector.Items.Clear();
             
-            // Add current app context
-            var currentApp = new ComboBoxItem
+            // Add all attached apps
+            if (_attachedApps.Count > 0)
             {
-                Content = $"(Current) PID {_targetProcessId}",
-                Tag = selectedAppId ?? ""
-            };
-            AppSelector.Items.Add(currentApp);
-            
-            // In a full implementation, this would list all attached apps
-            // from MainViewModel.AttachedApps. For now, we show the current app.
-            if (string.IsNullOrEmpty(selectedAppId))
+                foreach (var app in _attachedApps)
+                {
+                    var item = new ComboBoxItem
+                    {
+                        Content = app.DisplayText,
+                        Tag = app.AppId
+                    };
+                    AppSelector.Items.Add(item);
+                    
+                    if (app.AppId == selectedAppId || (string.IsNullOrEmpty(selectedAppId) && app.IsDefault))
+                    {
+                        item.IsSelected = true;
+                    }
+                }
+            }
+            else
             {
-                currentApp.IsSelected = true;
+                // Fallback: show current app context
+                var currentApp = new ComboBoxItem
+                {
+                    Content = $"(Current) PID {_targetProcessId}",
+                    Tag = selectedAppId ?? ""
+                };
+                AppSelector.Items.Add(currentApp);
+                if (string.IsNullOrEmpty(selectedAppId))
+                {
+                    currentApp.IsSelected = true;
+                }
             }
         }
         
@@ -80,7 +102,16 @@ namespace WpfTestIde.Dialogs
             if (AppSelector.SelectedItem is ComboBoxItem item && item.Tag is string appId)
             {
                 _appId = string.IsNullOrEmpty(appId) ? null : appId;
-                // In full implementation, this would reload the tree for the selected app
+                
+                // Find the selected app context and update pipe/process
+                var selectedApp = _attachedApps.FirstOrDefault(a => a.AppId == _appId);
+                if (selectedApp != null)
+                {
+                    _pipeName = selectedApp.PipeName;
+                    _targetProcessId = selectedApp.ProcessId;
+                }
+                
+                // Reload tree for the selected app
                 LoadElementTree();
             }
         }

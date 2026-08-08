@@ -18,9 +18,10 @@ namespace WpfTestIde.Recording
     {
         private static readonly Dictionary<string, string> _byAutomationId = new(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, string> _byName = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, (string AutomationId, string Name, string Alias)> _allEntries = new(StringComparer.OrdinalIgnoreCase);
         private static bool _loaded;
 
-        public static void EnsureLoaded(string frameworkRoot)
+        public static void EnsureLoaded(string frameworkRoot, string? appId = null)
         {
             if (_loaded) return;
 
@@ -28,7 +29,7 @@ namespace WpfTestIde.Recording
             string logPath = Path.Combine(frameworkRoot, "repository", "repo_lookup.log");
             try
             {
-                File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] EnsureLoaded: frameworkRoot={frameworkRoot}, repoDir={repoDir}, exists={Directory.Exists(repoDir)}{Environment.NewLine}");
+                File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] EnsureLoaded: frameworkRoot={frameworkRoot}, repoDir={repoDir}, appId={appId ?? "(global)"}, exists={Directory.Exists(repoDir)}{Environment.NewLine}");
             }
             catch { }
             if (!Directory.Exists(repoDir)) return;
@@ -40,8 +41,6 @@ namespace WpfTestIde.Recording
                     string yaml = File.ReadAllText(yamlPath);
                     var deserializer = new DeserializerBuilder().Build();
                     
-                    // YamlDotNet returns Dictionary<object, object> for generic
-                    // deserialization because YAML keys/values can be any type.
                     var root = deserializer.Deserialize<Dictionary<object, object>>(yaml);
                     if (root == null) continue;
 
@@ -70,6 +69,16 @@ namespace WpfTestIde.Recording
                             continue;
                         }
 
+                        // Multi-app: check if element is scoped to a different app
+                        if (appId != null && entry.TryGetValue("appId", out var elementAppIdObj) && elementAppIdObj is string elementAppId)
+                        {
+                            if (!string.Equals(elementAppId, appId, StringComparison.OrdinalIgnoreCase))
+                            {
+                                try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Skipping alias={alias} (appId={elementAppId} != {appId}){Environment.NewLine}"); } catch { }
+                                continue;
+                            }
+                        }
+
                         try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Processing alias={alias}, entry keys={string.Join(",", entry.Keys)}{Environment.NewLine}"); } catch { }
 
                         // Extract AutomationId from FlaUI strategy
@@ -78,12 +87,16 @@ namespace WpfTestIde.Recording
                         {
                             try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}]   Found strategies: {string.Join(",", strategies.Keys)}{Environment.NewLine}"); } catch { }
                             
+                            string? automationId = null;
+                            string? name = null;
+                            
                             if (strategies.TryGetValue("FlaUI", out var flaObj) &&
                                 flaObj is System.Collections.Generic.IDictionary<string, object> fla &&
                                 fla.TryGetValue("value", out var flaValue) &&
                                 flaValue is string flaStr &&
                                 !string.IsNullOrEmpty(flaStr))
                             {
+                                automationId = flaStr;
                                 _byAutomationId[flaStr] = alias;
                                 try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}]   Added AutomationId mapping: {flaStr} -> {alias}{Environment.NewLine}"); } catch { }
                             }
@@ -94,8 +107,14 @@ namespace WpfTestIde.Recording
                                 wpfValue is string wpfStr &&
                                 !string.IsNullOrEmpty(wpfStr))
                             {
+                                name = wpfStr;
                                 _byName[wpfStr] = alias;
                                 try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}]   Added Name mapping: {wpfStr} -> {alias}{Environment.NewLine}"); } catch { }
+                            }
+                            
+                            if (automationId != null || name != null)
+                            {
+                                _allEntries[alias] = (automationId ?? "", name ?? "", alias);
                             }
                         }
                         else

@@ -82,6 +82,8 @@ namespace WpfTestIde.ViewModels
 
         public string Description { get; private set; } = "";
 
+        public string? AppId { get; set; }
+
         public string Icon => ActionType switch
         {
             "Click" => "🖱️",
@@ -136,27 +138,28 @@ namespace WpfTestIde.ViewModels
         /// </summary>
         public string ToRobotCode()
         {
+            string appIdArg = string.IsNullOrEmpty(AppId) ? "" : $"    app_id={AppId}";
             return ActionType switch
             {
-                "Click" => $"Click Element    alias={ElementAlias}",
-                "DoubleClick" => $"Double Click Element    alias={ElementAlias}",
-                "RightClick" => $"Click Element    alias={ElementAlias}    button=right",
-                "Hover" => $"Mouse Over    alias={ElementAlias}",
-                "SetText" => $"Input Text    alias={ElementAlias}    text={Value}",
-                "GetText" => $"Get Text    alias={ElementAlias}",
-                "Select" => $"Select From List By Label    alias={ElementAlias}    label={Value}",
-                "Check" => $"Select Checkbox    alias={ElementAlias}",
-                "Uncheck" => $"Unselect Checkbox    alias={ElementAlias}",
+                "Click" => $"Click Element    alias={ElementAlias}{appIdArg}",
+                "DoubleClick" => $"Double Click Element    alias={ElementAlias}{appIdArg}",
+                "RightClick" => $"Click Element    alias={ElementAlias}    button=right{appIdArg}",
+                "Hover" => $"Mouse Over    alias={ElementAlias}{appIdArg}",
+                "SetText" => $"Input Text    alias={ElementAlias}    text={Value}{appIdArg}",
+                "GetText" => $"Get Text    alias={ElementAlias}{appIdArg}",
+                "Select" => $"Select From List By Label    alias={ElementAlias}    label={Value}{appIdArg}",
+                "Check" => $"Select Checkbox    alias={ElementAlias}{appIdArg}",
+                "Uncheck" => $"Unselect Checkbox    alias={ElementAlias}{appIdArg}",
                 "Verify" => CheckpointType switch
                 {
-                    "Text" => $"Verify Element Text    alias={ElementAlias}    expected={ExpectedValue}",
-                    "Value" => $"Verify Element Value    alias={ElementAlias}    expected={ExpectedValue}",
-                    "Property" => $"Verify Element Property    alias={ElementAlias}    property=IsEnabled    expected={ExpectedValue}",
-                    _ => $"Verify Element Attribute    alias={ElementAlias}    attribute=IsVisible    expected={ExpectedValue}"
+                    "Text" => $"Verify Element Text    alias={ElementAlias}    expected={ExpectedValue}{appIdArg}",
+                    "Value" => $"Verify Element Value    alias={ElementAlias}    expected={ExpectedValue}{appIdArg}",
+                    "Property" => $"Verify Element Property    alias={ElementAlias}    property=IsEnabled    expected={ExpectedValue}{appIdArg}",
+                    _ => $"Verify Element Attribute    alias={ElementAlias}    attribute=IsVisible    expected={ExpectedValue}{appIdArg}"
                 },
                 "Wait" => $"Sleep    {Value}",
                 "Screenshot" => $"Capture Page Screenshot",
-                "KeyPress" => $"Press Key    alias={ElementAlias}    key={Value}",
+                "KeyPress" => $"Press Key    alias={ElementAlias}    key={Value}{appIdArg}",
                 _ => $"Log    Unknown action: {ActionType}"
             };
         }
@@ -435,7 +438,8 @@ namespace WpfTestIde.ViewModels
                     Value = rs.Value ?? "",
                     CheckpointType = rs.Kind == StepKind.Verify ? "Text" : "",
                     ExpectedValue = rs.Value ?? "",
-                    Status = FlowStepStatus.Pending
+                    Status = FlowStepStatus.Pending,
+                    AppId = rs.AppId,
                 };
                 Steps.Add(step);
             }

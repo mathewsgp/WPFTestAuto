@@ -57,6 +57,7 @@
         <Border DockPanel.Dock="Top" Background="#1B2029" Padding="10">
             <StackPanel Orientation="Horizontal">
                 <Button Style="{StaticResource ToolbarButton}" Content="Attach to Process..." Command="{Binding AttachCommand}"/>
+                <Button Style="{StaticResource ToolbarButton}" Content="Manage Apps" Command="{Binding OpenMultiAppDialogCommand}" ToolTip="Manage attached applications"/>
                 <Button Style="{StaticResource ToolbarButton}" Content="Check Pipe" Command="{Binding CheckPipeConnectionCommand}"/>
                 <Button Style="{StaticResource ToolbarButton}" Content="{Binding RecordButtonLabel}" Command="{Binding ToggleRecordingCommand}"/>
                 <Button Style="{StaticResource ToolbarButton}" Content="Load Sample" Command="{Binding LoadSampleCommand}"/>

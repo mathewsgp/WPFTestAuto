@@ -201,10 +201,11 @@ namespace WpfTestIde.ViewModels
         public ICommand CancelEditElementCommand { get; }
 	public ICommand PreviewElementCommand { get; }
         public ICommand PickElementCommand { get; }
-        public ICommand GetDataGridContentOcrCommand { get; }
-        public ICommand OpenCheckpointWizardCommand { get; }
-        public ICommand OpenSpyToolCommand { get; }
-        public ICommand OpenVisualTestBuilderCommand { get; }
+        public ICommand GetDataGridContentOcrCommand { get; }   
+        public ICommand OpenCheckpointWizardCommand { get; }    
+        public ICommand OpenSpyToolCommand { get; }            
+        public ICommand OpenVisualTestBuilderCommand { get; }  
+        public ICommand OpenMultiAppDialogCommand { get; }
 
         public MainViewModel()
         {
@@ -230,6 +231,7 @@ namespace WpfTestIde.ViewModels
             OpenCheckpointWizardCommand = new RelayCommand(_ => OpenCheckpointWizard());
             OpenSpyToolCommand = new RelayCommand(_ => OpenSpyTool());
             OpenVisualTestBuilderCommand = new RelayCommand(_ => OpenVisualTestBuilder());
+            OpenMultiAppDialogCommand = new RelayCommand(_ => OpenMultiAppDialog(), _ => AttachedApps.Count > 0);
             MoveElementPriorityUpCommand = new RelayCommand(_ => MoveElementPriorityUp(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
             MoveElementPriorityDownCommand = new RelayCommand(_ => MoveElementPriorityDown(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
 
@@ -303,6 +305,53 @@ namespace WpfTestIde.ViewModels
 
             IsAttached = true;
             StatusText = $"Attached to {appName} (PID {dialog.SelectedProcessId}) — ready to record.";
+        }
+
+        public void DetachApplication(string appId)
+        {
+            var app = AttachedApps.FirstOrDefault(a => a.AppId == appId);
+            if (app == null) return;
+
+            AttachedApps.Remove(app);
+            
+            if (SelectedApp?.AppId == appId)
+            {
+                SelectedApp = AttachedApps.FirstOrDefault();
+                if (SelectedApp != null)
+                {
+                    PipeName = SelectedApp.PipeName;
+                    SelectedProcessId = SelectedApp.ProcessId;
+                }
+                else
+                {
+                    IsAttached = false;
+                    StatusText = "No applications attached.";
+                }
+            }
+            
+            StatusText = $"Detached from {app.AppName} (PID {app.ProcessId}).";
+        }
+
+        public void SetDefaultApplication(string appId)
+        {
+            foreach (var app in AttachedApps)
+            {
+                app.IsDefault = app.AppId == appId;
+            }
+            
+            var selected = AttachedApps.FirstOrDefault(a => a.AppId == appId);
+            if (selected != null)
+            {
+                SelectedApp = selected;
+                PipeName = selected.PipeName;
+                SelectedProcessId = selected.ProcessId;
+            }
+        }
+
+        private void OpenMultiAppDialog()
+        {
+            var dialog = new Dialogs.MultiAppDialog(this);
+            dialog.ShowDialog();
         }
 
         private static string GenerateAppId(int processId, string? appPath)
@@ -419,6 +468,7 @@ namespace WpfTestIde.ViewModels
                     Action = step.Action,
                     Value = step.Value,
                     NonStandard = step.NonStandard,
+                    AppId = step.AppId,
                 };
                 entry = new ElementEntry
                 {
@@ -455,6 +505,7 @@ namespace WpfTestIde.ViewModels
                 Kind = StepKind.Verify,
                 Alias = dialog.SelectedAlias,
                 Value = dialog.ExpectedValue,
+                AppId = SelectedApp?.AppId,
             };
 
             int index = afterStep is null ? Steps.Count : Steps.IndexOf(afterStep) + 1;
@@ -481,6 +532,7 @@ namespace WpfTestIde.ViewModels
                     Kind = StepKind.Verify,
                     Alias = checkpoint.ElementAlias ?? "",
                     Value = checkpoint.ExpectedValue,
+                    AppId = SelectedApp?.AppId,
                 };
                 Steps.Add(verifyStep);
                 
@@ -498,7 +550,7 @@ namespace WpfTestIde.ViewModels
             }
 
             var appId = SelectedApp?.AppId;
-            var dialog = new Dialogs.SpyToolDialog(PipeName, GetSelectedRecordingModes(), SelectedMode, SelectedProcessId, appId);
+            var dialog = new Dialogs.SpyToolDialog(PipeName, GetSelectedRecordingModes(), SelectedMode, SelectedProcessId, appId, AttachedApps.ToList());
             if (dialog.ShowDialog() == true)
             {
                 // Add selected element to repository
@@ -558,7 +610,8 @@ namespace WpfTestIde.ViewModels
                         Kind = kind,
                         Action = action,
                         Alias = flowStep.ElementAlias,
-                        Value = flowStep.Value
+                        Value = flowStep.Value,
+                        AppId = flowStep.AppId,
                     };
                     Steps.Add(recordedStep);
                 }
