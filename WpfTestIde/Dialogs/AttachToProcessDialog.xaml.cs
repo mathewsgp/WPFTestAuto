@@ -22,6 +22,7 @@ namespace WpfTestIde.Dialogs
     {
         public int? SelectedProcessId { get; private set; }
         public string PipeName { get; private set; } = "WPFSpyAgentPipe";
+        public string AppId { get; private set; } = "";
         public List<(string, string)> PageMap { get; private set; } = new();
         public string? ApplicationPath { get; private set; }
         public string? Arguments { get; private set; }
@@ -121,6 +122,7 @@ namespace WpfTestIde.Dialogs
         private async void Attach_Click(object sender, RoutedEventArgs e)
         {
             PipeName = string.IsNullOrWhiteSpace(PipeNameBox.Text) ? "WPFSpyAgentPipe" : PipeNameBox.Text.Trim();
+            AppId = string.IsNullOrWhiteSpace(AppIdBox.Text) ? "" : AppIdBox.Text.Trim();
             PageMap = _pageMapRows
                 .Where(r => !string.IsNullOrWhiteSpace(r.TitleContains) && !string.IsNullOrWhiteSpace(r.PageAlias))
                 .Select(r => (r.TitleContains, r.PageAlias))

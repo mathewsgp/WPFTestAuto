@@ -18,6 +18,7 @@ namespace WpfTestIde.Dialogs
         private ElementTreeNode? _selectedElement;
         private readonly List<ElementTreeNode> _allNodes = new();
         private int _targetProcessId;
+        private string? _appId;
 
         public string? SelectedAlias { get; private set; }
         public string? SelectedXPath { get; private set; }
@@ -25,13 +26,17 @@ namespace WpfTestIde.Dialogs
         public List<string> SelectedRecordingModes { get; private set; }
         public string SelectedMode { get; private set; } = "WPFSpy";
 
-        public SpyToolDialog(string pipeName = "WPFSpyAgentPipe", List<string>? recordingModes = null, string selectedMode = "WPFSpy", int targetProcessId = 0)
+        public SpyToolDialog(string pipeName = "WPFSpyAgentPipe", List<string>? recordingModes = null, string selectedMode = "WPFSpy", int targetProcessId = 0, string? appId = null)
         {
             InitializeComponent();
             _pipeName = pipeName;
             _targetProcessId = targetProcessId;
+            _appId = appId;
             SelectedRecordingModes = recordingModes ?? new List<string> { "FlaUI", "WPFSpy" };
             SelectedMode = selectedMode;
+            
+            // Populate app selector
+            PopulateAppSelector(appId);
             
             // Set mode selector
             foreach (ComboBoxItem item in ModeSelector.Items)
@@ -45,8 +50,39 @@ namespace WpfTestIde.Dialogs
             
             // Attach event handler after initialization to avoid firing during XAML load
             ModeSelector.SelectionChanged += ModeSelector_SelectionChanged;
+            AppSelector.SelectionChanged += AppSelector_SelectionChanged;
             
             BuildPropertyGrid();
+        }
+        
+        private void PopulateAppSelector(string? selectedAppId)
+        {
+            AppSelector.Items.Clear();
+            
+            // Add current app context
+            var currentApp = new ComboBoxItem
+            {
+                Content = $"(Current) PID {_targetProcessId}",
+                Tag = selectedAppId ?? ""
+            };
+            AppSelector.Items.Add(currentApp);
+            
+            // In a full implementation, this would list all attached apps
+            // from MainViewModel.AttachedApps. For now, we show the current app.
+            if (string.IsNullOrEmpty(selectedAppId))
+            {
+                currentApp.IsSelected = true;
+            }
+        }
+        
+        private void AppSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (AppSelector.SelectedItem is ComboBoxItem item && item.Tag is string appId)
+            {
+                _appId = string.IsNullOrEmpty(appId) ? null : appId;
+                // In full implementation, this would reload the tree for the selected app
+                LoadElementTree();
+            }
         }
 
         private void BuildPropertyGrid()

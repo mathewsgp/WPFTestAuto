@@ -1,0 +1,61 @@
+{
+  "alias": "OrdersPage.OrdersWindow.btnLogout",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-08-08T23:00:34.366142",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnLogout",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnLogout': Element from XPath '//*[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-08T23:00:53.772493",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnLogout']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='OrdersWindow']/TabControl[@AutomationId='",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 0,
+      "failure_count": 2,
+      "total_duration_ms": 1194.8351860046387,
+      "last_success": null,
+      "last_failure": "2026-08-08T23:00:34.366152",
+      "avg_duration_ms": 597.4175930023193
+    },
+    "WPFSpy:XPath": {
+      "success_count": 0,
+      "failure_count": 3,
+      "total_duration_ms": 14099.770784378052,
+      "last_success": null,
+      "last_failure": "2026-08-08T23:00:53.772507",
+      "avg_duration_ms": 4699.923594792684
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    }
+  },
+  "total_interactions": 5,
+  "first_seen": "2026-08-08T23:00:27.309635",
+  "last_interaction": "2026-08-08T23:00:53.772512",
+  "consecutive_failures": 5,
+  "consecutive_successes": 0
+}

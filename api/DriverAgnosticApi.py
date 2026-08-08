@@ -18,7 +18,7 @@ import os
 import subprocess
 import time
 import signal
-from typing import Optional, Tuple, Dict, Any, List
+from typing import Optional, Tuple, Dict, Any, List, Union
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -39,7 +39,7 @@ from base_driver import ElementHandle  # noqa: E402
 import repository_access as repo  # noqa: E402
 
 # Import app context for multi-application support
-from app_context import MultiAppContext, AppContext  # noqa: E402
+from app_context import MultiAppContext, AppContext, _create_driver_for_app  # noqa: E402
 
 # Import healing metadata store (Phase 1 feature)
 from healing_metadata_store import get_healing_store  # noqa: E402
@@ -365,6 +365,41 @@ class DriverAgnosticApi:
         self._app_contexts: Dict[str, AppContext] = {}
         if default_app_id:
             _MULTI_APP_CONTEXT.set_default_app(default_app_id)
+        
+        # Auto-register app from IDE environment variables if present
+        self._auto_register_from_env()
+    
+    def _auto_register_from_env(self):
+        """Auto-register app context from WPFSPY_* environment variables.
+        
+        Called during library initialization to support IDE runs where
+        the IDE passes app details via environment variables.
+        """
+        app_id = os.environ.get("WPFSPY_APP_ID")
+        if not app_id:
+            return
+        
+        app_name = os.environ.get("WPFSPY_APP_NAME", app_id)
+        pipe_name = os.environ.get("WPFSPY_PIPE_NAME")
+        process_id_str = os.environ.get("WPFSPY_PROCESS_ID")
+        
+        process_id = None
+        if process_id_str:
+            try:
+                process_id = int(process_id_str)
+            except (ValueError, TypeError):
+                pass
+        
+        if app_id not in _MULTI_APP_CONTEXT.apps:
+            app_context = AppContext(
+                app_id=app_id,
+                app_name=app_name,
+                driver="FlaUI",
+                process_id=process_id,
+                pipe_name=pipe_name,
+            )
+            _MULTI_APP_CONTEXT.register_app(app_context)
+            logger.info("Auto-registered app from IDE env vars", app_id=app_id, process_id=process_id)
 
     # ------------------------------------------------------------------
     # Multi-Application Management
@@ -446,21 +481,27 @@ class DriverAgnosticApi:
         logger.info("Launched application", app_id=app_id, app_path=app_path, pid=app_context.process_id)
         return app_id
 
-    def attach_to_application(self, app_id: str, process_id: int, driver: str = "FlaUI", pipe_name: Optional[str] = None) -> str:
+    def attach_to_application(self, app_id: str, process_id: Union[int, str], driver: str = "FlaUI", pipe_name: Optional[str] = None) -> str:
         """Attach to a running application and register it.
 
         Args:
             app_id: Logical ID for this app.
-            process_id: OS process ID.
+            process_id: OS process ID (int or string).
             driver: Primary driver.
             pipe_name: Named pipe for WPFSpy agent.
 
         Returns:
             The registered app_id.
         """
+        if isinstance(process_id, str):
+            try:
+                process_id = int(process_id)
+            except (ValueError, TypeError):
+                process_id = None
+        
         app_context = AppContext(
             app_id=app_id,
-            app_name=f"Process-{process_id}",
+            app_name=f"Process-{process_id}" if process_id else app_id,
             driver=driver,
             process_id=process_id,
             pipe_name=pipe_name or f"WPFSpyAgentPipe_{app_id}",
@@ -512,6 +553,12 @@ class DriverAgnosticApi:
             app_id: Optional application context ID. If None, uses default app.
             *args: Action-specific arguments.
         """
+        healing_store = None
+        try:
+            healing_store = get_healing_store()
+        except Exception:
+            pass
+        
         if app_id is None and not _MULTI_APP_CONTEXT.apps:
             return self._resolve_and_execute_legacy(alias, action_name, *args)
 

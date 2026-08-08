@@ -119,9 +119,27 @@ namespace WpfTestIde.ViewModels
 
         // Paths — defaults match this repo's layout when the IDE is run
         // from WpfTestIde/bin/.../ against the sibling WpfTestFramework checkout.
-        public string FrameworkRoot { get; set; } = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        public string FrameworkRoot { get; set; } = Path.GetFullPath(Path.Combine(System.AppContext.BaseDirectory, "..", "..", "..", ".."));
         public string PipeName { get; set; } = "WPFSpyAgentPipe";
         public int SelectedProcessId { get; set; }
+
+        // Multi-app support
+        public ObservableCollection<WpfTestIde.Models.AppContext> AttachedApps { get; } = new();
+        private WpfTestIde.Models.AppContext? _selectedApp;
+        public WpfTestIde.Models.AppContext? SelectedApp
+        {
+            get => _selectedApp;
+            set
+            {
+                _selectedApp = value;
+                OnPropertyChanged();
+                if (value != null)
+                {
+                    PipeName = value.PipeName;
+                    SelectedProcessId = value.ProcessId;
+                }
+            }
+        }
 
         private ElementEntry? _selectedElement;
         public ElementEntry? SelectedElement 
@@ -239,23 +257,62 @@ namespace WpfTestIde.ViewModels
                 return;
             }
 
+            // Create app context for multi-app support
+            string appId = string.IsNullOrWhiteSpace(dialog.AppId)
+                ? GenerateAppId(dialog.SelectedProcessId.Value, dialog.ApplicationPath)
+                : dialog.AppId.Trim();
+
+            string appName = string.IsNullOrWhiteSpace(dialog.ApplicationPath)
+                ? $"Process-{dialog.SelectedProcessId.Value}"
+                : Path.GetFileNameWithoutExtension(dialog.ApplicationPath);
+
+            var appContext = new WpfTestIde.Models.AppContext
+            {
+                AppId = appId,
+                AppName = appName,
+                Driver = "WPFSpy",
+                ProcessId = dialog.SelectedProcessId.Value,
+                PipeName = dialog.PipeName,
+                AppPath = dialog.ApplicationPath ?? "",
+                IsAttached = true,
+                IsDefault = AttachedApps.Count == 0,
+            };
+
+            // Dispose existing session for this app if re-attaching
+            var existingApp = AttachedApps.FirstOrDefault(a => a.AppId == appId);
+            if (existingApp != null)
+            {
+                AttachedApps.Remove(existingApp);
+            }
+
+            AttachedApps.Add(appContext);
+            SelectedApp = appContext;
+
             _session?.Dispose();
-            _session = new RecordingSession(dialog.PipeName, dialog.SelectedProcessId.Value, dialog.PageMap);
+            _session = new RecordingSession(dialog.PipeName, dialog.SelectedProcessId.Value, dialog.PageMap, appId);
             _session.StepCaptured += OnStepCaptured;
 
             string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "repository", "attach_log.txt");
             try
             {
-                File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Attach: FrameworkRoot={FrameworkRoot}, PipeName={PipeName}{Environment.NewLine}");
+                File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Attach: FrameworkRoot={FrameworkRoot}, PipeName={PipeName}, AppId={appId}{Environment.NewLine}");
             }
             catch { }
 
             RepositoryLookup.EnsureLoaded(FrameworkRoot);
 
-            PipeName = dialog.PipeName;
-            SelectedProcessId = dialog.SelectedProcessId.Value;
             IsAttached = true;
-            StatusText = $"Attached to process #{dialog.SelectedProcessId} — ready to record.";
+            StatusText = $"Attached to {appName} (PID {dialog.SelectedProcessId}) — ready to record.";
+        }
+
+        private static string GenerateAppId(int processId, string? appPath)
+        {
+            if (!string.IsNullOrWhiteSpace(appPath))
+            {
+                string name = Path.GetFileNameWithoutExtension(appPath);
+                return $"{name}_{processId}";
+            }
+            return $"app_{processId}";
         }
 
         private void CheckPipeConnection()
@@ -440,7 +497,8 @@ namespace WpfTestIde.ViewModels
                 return;
             }
 
-            var dialog = new Dialogs.SpyToolDialog(PipeName, GetSelectedRecordingModes(), SelectedMode, SelectedProcessId);
+            var appId = SelectedApp?.AppId;
+            var dialog = new Dialogs.SpyToolDialog(PipeName, GetSelectedRecordingModes(), SelectedMode, SelectedProcessId, appId);
             if (dialog.ShowDialog() == true)
             {
                 // Add selected element to repository
@@ -555,12 +613,13 @@ namespace WpfTestIde.ViewModels
         // Generation
         // ------------------------------------------------------------
          private void RegenerateScript()
-        {
-            var driver = _selectedDriver != "Auto" ? _selectedDriver : null;
-            var mode = _selectedMode != "Auto" ? _selectedMode : null;
-            var recordingModes = GetSelectedRecordingModes();
-            GeneratedScript = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode, recordingModes: recordingModes);
-        }
+         {
+             var driver = _selectedDriver != "Auto" ? _selectedDriver : null;
+             var mode = _selectedMode != "Auto" ? _selectedMode : null;
+             var recordingModes = GetSelectedRecordingModes();
+             var appId = SelectedApp?.AppId;
+             GeneratedScript = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
+         }
 
         private List<string> GetSelectedRecordingModes()
         {
@@ -631,24 +690,39 @@ namespace WpfTestIde.ViewModels
 
              string outputDir = Path.Combine(FrameworkRoot, "results", "ide_run");
 
-            var summary = await RobotRunner.RunAsync(
-                scriptPath,
-                outputDir,
-                FrameworkRoot,
-                line => Application.Current.Dispatcher.Invoke(() => RunOutputLines.Add(line)),
-                new System.Collections.Generic.Dictionary<string, string>
-                {
-                    ["WPFSPY_MODE"] = "real",
-                    ["WPFSPY_PIPE_NAME"] = PipeName,
-                    ["WPFSPY_IDE_RUN"] = "1",
-                    ["WPFSPY_RUN_MODES"] = string.Join(",", GetSelectedRunModes()),
-                });
+             var env = new System.Collections.Generic.Dictionary<string, string>
+             {
+                 ["WPFSPY_MODE"] = "real",
+                 ["WPFSPY_IDE_RUN"] = "1",
+                 ["WPFSPY_RUN_MODES"] = string.Join(",", GetSelectedRunModes()),
+             };
 
-            LastRunSuccess = summary.Success;
-            RunSummaryText = summary.Total > 0
-                ? $"{summary.Total} tests, {summary.Passed} passed, {summary.Failed} failed"
-                : "No summary line found — check the output above for errors.";
-        }
+             // Register the selected app with the Python framework for multi-app support
+             if (SelectedApp != null && !string.IsNullOrEmpty(SelectedApp.AppId))
+             {
+                 env["WPFSPY_APP_ID"] = SelectedApp.AppId;
+                 env["WPFSPY_APP_NAME"] = SelectedApp.AppName;
+                 env["WPFSPY_PIPE_NAME"] = SelectedApp.PipeName;
+                 env["WPFSPY_PROCESS_ID"] = SelectedApp.ProcessId.ToString();
+             }
+             else if (!string.IsNullOrEmpty(PipeName))
+             {
+                 env["WPFSPY_PIPE_NAME"] = PipeName;
+                 env["WPFSPY_PROCESS_ID"] = SelectedProcessId.ToString();
+             }
+
+             var summary = await RobotRunner.RunAsync(
+                 scriptPath,
+                 outputDir,
+                 FrameworkRoot,
+                 line => Application.Current.Dispatcher.Invoke(() => RunOutputLines.Add(line)),
+                 env);
+
+             LastRunSuccess = summary.Success;
+             RunSummaryText = summary.Total > 0
+                 ? $"{summary.Total} tests, {summary.Passed} passed, {summary.Failed} failed"
+                 : "No summary line found — check the output above for errors.";
+         }
 
         // ------------------------------------------------------------
         // Export

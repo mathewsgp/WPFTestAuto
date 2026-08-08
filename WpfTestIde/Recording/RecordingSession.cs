@@ -26,6 +26,7 @@ namespace WpfTestIde.Recording
         private readonly List<(string TitleContains, string PageAlias)> _pageMap;
         private readonly int _targetProcessId;
         private readonly string _pipeName;
+        private readonly string? _appId;
 
         private ProbedElement? _pendingFocusedInput;
         private string? _pendingFocusedAlias;
@@ -33,12 +34,13 @@ namespace WpfTestIde.Recording
 
         public event Action<RecordedStep, ElementEntry>? StepCaptured;
 
-        public RecordingSession(string pipeName, int targetProcessId, List<(string, string)> pageMap)
+        public RecordingSession(string pipeName, int targetProcessId, List<(string, string)> pageMap, string? appId = null)
         {
             _probe = new ElementProbe(pipeName);
             _pipeName = pipeName;
             _targetProcessId = targetProcessId;
             _pageMap = pageMap;
+            _appId = appId;
         }
 
         public void Start()

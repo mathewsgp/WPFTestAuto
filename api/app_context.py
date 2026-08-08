@@ -117,7 +117,12 @@ class MultiAppContext:
 
 
 def _create_driver_for_app(driver_name: str, app_context: AppContext) -> Any:
-    effective_mode = _ACTIVE_MODE if _ACTIVE_MODE is not None else os.environ.get("WPFSPY_MODE", "mock").lower()
+    # Import _ACTIVE_MODE lazily to avoid circular imports at module load time
+    try:
+        from DriverAgnosticApi import _ACTIVE_MODE
+        effective_mode = _ACTIVE_MODE if _ACTIVE_MODE is not None else os.environ.get("WPFSPY_MODE", "mock").lower()
+    except ImportError:
+        effective_mode = os.environ.get("WPFSPY_MODE", "mock").lower()
 
     if driver_name == "FlaUI":
         try:

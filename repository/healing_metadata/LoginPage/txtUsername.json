@@ -11,8 +11,8 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-08T22:58:40.253880",
-    "last_verified": "2026-08-08T22:58:40.253882",
+    "captured_at": "2026-08-08T23:21:22.597068",
+    "last_verified": "2026-08-08T23:21:22.597070",
     "verification_count": 1,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
@@ -37,29 +37,48 @@
         "is_visible": true,
         "is_enabled": true
       }
+    },
+    {
+      "timestamp": "2026-08-08T23:21:22.597042",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': FlaUI: Could not attach to ap",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "user1",
+        "is_visible": true,
+        "is_enabled": true
+      }
     }
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 0,
-      "failure_count": 2,
-      "total_duration_ms": 2552.708148956299,
-      "last_success": null,
-      "last_failure": "2026-08-08T22:58:40.250340",
-      "avg_duration_ms": 1276.3540744781494
+      "success_count": 1,
+      "failure_count": 3,
+      "total_duration_ms": 3215.8849239349365,
+      "last_success": "2026-08-08T23:00:12.648693",
+      "last_failure": "2026-08-08T23:21:22.593533",
+      "avg_duration_ms": 803.9712309837341
     },
     "WPFSpy:XPath": {
-      "success_count": 2,
+      "success_count": 5,
       "failure_count": 0,
-      "total_duration_ms": 0.3464221954345703,
-      "last_success": "2026-08-08T22:58:40.253891",
+      "total_duration_ms": 8.823394775390625,
+      "last_success": "2026-08-08T23:21:22.597079",
       "last_failure": null,
-      "avg_duration_ms": 0.17321109771728516
+      "avg_duration_ms": 1.764678955078125
     }
   },
-  "total_interactions": 4,
+  "total_interactions": 11,
   "first_seen": "2026-08-08T22:57:42.665970",
-  "last_interaction": "2026-08-08T22:58:40.253894",
+  "last_interaction": "2026-08-08T23:21:22.597083",
   "consecutive_failures": 0,
   "consecutive_successes": 2
 }

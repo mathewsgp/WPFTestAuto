@@ -19,6 +19,10 @@
 
         <!-- Toolbar -->
         <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="App:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+            <ComboBox x:Name="AppSelector" Width="180" Margin="0,0,8,0" FontSize="11" SelectedIndex="0"
+                      DisplayMemberPath="DisplayText" SelectedValuePath="AppId"/>
+            
             <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <ComboBox x:Name="ModeSelector" Width="160" Margin="0,0,8,0" FontSize="11" SelectedIndex="0">
                 <ComboBoxItem Content="WPFSpy Visual Tree" Tag="WPFSpy"/>
