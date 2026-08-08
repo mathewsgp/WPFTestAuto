@@ -29,7 +29,7 @@ namespace WpfTestIde.Recording
 
             foreach (var entry in entries)
             {
-                var strategies = new Dictionary<string, object>();
+                var strategies = new Dictionary<string, List<object>>();
 
                 // Use per-element recording modes if available, otherwise fall back to global modes
                 var modes = entry.RecordingModes ?? recordingModes;
@@ -38,31 +38,40 @@ namespace WpfTestIde.Recording
                 if ((modes == null || modes.Contains("FlaUI")) &&
                     !string.IsNullOrEmpty(entry.AutomationId))
                 {
-                    strategies["FlaUI"] = new Dictionary<string, object>
+                    strategies["FlaUI"] = new List<object>
                     {
-                        ["searchBy"] = "AutomationId",
-                        ["value"] = entry.AutomationId!,
-                        ["scope"] = "Descendant",
+                        new Dictionary<string, object>
+                        {
+                            ["searchBy"] = "AutomationId",
+                            ["value"] = entry.AutomationId!,
+                            ["scope"] = "Descendant",
+                        }
                     };
                 }
 
                 // WPFSpy strategy: XPath-based (visual tree path from root window)
                 if (modes == null || modes.Contains("WPFSpy"))
                 {
-                    strategies["WPFSpy"] = new Dictionary<string, object>
+                    strategies["WPFSpy"] = new List<object>
                     {
-                        ["searchBy"] = "XPath",
-                        ["value"] = entry.XPath ?? $"{entry.ControlType}[@Name='{entry.Name}']",
+                        new Dictionary<string, object>
+                        {
+                            ["searchBy"] = "XPath",
+                            ["value"] = entry.XPath ?? $"{entry.ControlType}[@Name='{entry.Name}']",
+                        }
                     };
                 }
 
                 // Sikuli strategy: image-based (placeholder — image capture not yet implemented)
                 if (modes == null || modes.Contains("Sikuli"))
                 {
-                    strategies["Sikuli"] = new Dictionary<string, object>
+                    strategies["Sikuli"] = new List<object>
                     {
-                        ["searchBy"] = "Image",
-                        ["value"] = $"{entry.Alias.Split('.').Last().ToLower()}.png",
+                        new Dictionary<string, object>
+                        {
+                            ["searchBy"] = "Image",
+                            ["value"] = $"{entry.Alias.Split('.').Last().ToLower()}.png",
+                        }
                     };
                 }
 

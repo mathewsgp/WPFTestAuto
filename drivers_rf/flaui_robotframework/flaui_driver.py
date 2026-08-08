@@ -13,6 +13,7 @@ from typing import List, Optional
 
 # Add parent directories to path for mock app fallback
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "drivers", "mock_wpf_app"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # WPF control type -> UIA control type mapping
 # UI Automation maps WPF controls to different UIA control types

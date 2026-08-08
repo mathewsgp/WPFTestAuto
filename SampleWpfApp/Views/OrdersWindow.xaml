@@ -34,7 +34,9 @@
             <!-- Custom-rendered control — no reliable AutomationId.
                  Only findable/drivable via WPFSpy (Name) or Sikuli
                  (image). See docs/SELF_HEALING_LOCATORS.md. -->
-            <custom:PriorityToggleControl x:Name="chkPriority" Margin="8,0,0,0"/>
+            <custom:PriorityToggleControl x:Name="chkPriority" 
+                                          AutomationProperties.AutomationId="chkPriority"
+                                          Margin="8,0,0,0"/>
         </StackPanel>
 
         <StackPanel Grid.Row="5" Orientation="Vertical">

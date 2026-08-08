@@ -108,29 +108,30 @@ elements:
           value: "qty_box.png"
           priority: 2
 
-  # Priority Checkbox - NO AutomationId, parent is OrderGroup
+  # Priority Checkbox - now UIA-accessible via AutomationPeer
   OrdersPage.OrdersWindow.chkPriority:
-    displayName: "Priority Checkbox (No AutomationId)"
+    displayName: "Priority Checkbox"
     controlType: "CheckBox"
+    automationId: "chkPriority"
     name: "PriorityToggle"
-    hasAutomationId: false
+    hasAutomationId: true
     parentAlias: "OrdersPage.OrderGroup"
-    relativeXPath: "CheckBox[@Name='PriorityToggle']"
+    relativeXPath: "CheckBox[@AutomationId='chkPriority']"
     defaultTimeout: 10
-    tags: ["orders", "non-standard", "no-automationid"]
+    tags: ["orders", "critical"]
     strategies:
       FlaUI:
-        - searchBy: "Name"
-          value: "PriorityToggle"
+        - searchBy: "AutomationId"
+          value: "chkPriority"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "CheckBox[@Name='PriorityToggle']"
+          value: "CheckBox[@AutomationId='chkPriority']"
           priority: 1
       Sikuli:
         - searchBy: "Image"
           value: "priority_checkbox.png"
-          priority: 1
+          priority: 2
 
   # Create Order Button - parent is OrderGroup
   OrdersPage.OrdersWindow.btnCreateOrder:

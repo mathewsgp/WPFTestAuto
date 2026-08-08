@@ -203,10 +203,41 @@ namespace WpfTestIde.Dialogs
 
             try
             {
-                // Use UIA directly to build the automation tree
-                var rootElement = System.Windows.Automation.AutomationElement.RootElement;
-                var nodes = BuildTreeFromAutomationElement(rootElement, null, _targetProcessId);
-                
+                System.Windows.Automation.AutomationElement? rootElement = null;
+
+                if (_targetProcessId > 0)
+                {
+                    // Find the target app window by process ID
+                    rootElement = FindAppWindowByPid(_targetProcessId);
+                }
+
+                if (rootElement == null)
+                {
+                    // Fallback: use the focused element's root window, or RootElement
+                    try
+                    {
+                        var focused = System.Windows.Automation.AutomationElement.FocusedElement;
+                        if (focused != null)
+                        {
+                            rootElement = focused;
+                            while (rootElement.Current.NativeWindowHandle == IntPtr.Zero && rootElement != System.Windows.Automation.AutomationElement.RootElement)
+                            {
+                                var parent = System.Windows.Automation.TreeWalker.RawViewWalker.GetParent(rootElement);
+                                if (parent == null || parent == System.Windows.Automation.AutomationElement.RootElement)
+                                    break;
+                                rootElement = parent;
+                            }
+                        }
+                    }
+                    catch { }
+
+                    if (rootElement == null)
+                    {
+                        rootElement = System.Windows.Automation.AutomationElement.RootElement;
+                    }
+                }
+
+                var nodes = BuildTreeFromAutomationElement(rootElement, null);
                 foreach (var node in nodes)
                 {
                     var treeItem = CreateTreeItem(node);
@@ -224,7 +255,34 @@ namespace WpfTestIde.Dialogs
             }
         }
 
-        private List<ElementTreeNode> BuildTreeFromAutomationElement(System.Windows.Automation.AutomationElement element, ElementTreeNode? parent, int targetPid)
+        private System.Windows.Automation.AutomationElement? FindAppWindowByPid(int pid)
+        {
+            try
+            {
+                var condition = new System.Windows.Automation.PropertyCondition(
+                    System.Windows.Automation.AutomationElement.ControlTypeProperty,
+                    System.Windows.Automation.ControlType.Window);
+                
+                var windows = System.Windows.Automation.AutomationElement.RootElement.FindAll(
+                    System.Windows.Automation.TreeScope.Children, condition);
+                
+                foreach (System.Windows.Automation.AutomationElement window in windows)
+                {
+                    try
+                    {
+                        if (window.Current.ProcessId == pid)
+                        {
+                            return window;
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private List<ElementTreeNode> BuildTreeFromAutomationElement(System.Windows.Automation.AutomationElement element, ElementTreeNode? parent)
         {
             var nodes = new List<ElementTreeNode>();
             
@@ -243,17 +301,6 @@ namespace WpfTestIde.Dialogs
                     Bounds = new Rect(element.Current.BoundingRectangle.X, element.Current.BoundingRectangle.Y, 
                                      element.Current.BoundingRectangle.Width, element.Current.BoundingRectangle.Height)
                 };
-
-                // Try to get process ID
-                try
-                {
-                    int pid = element.Current.ProcessId;
-                    if (targetPid > 0 && pid != targetPid)
-                    {
-                        return nodes;
-                    }
-                }
-                catch { }
 
                 // Build XPath from parent chain
                 if (parent != null)
@@ -288,7 +335,7 @@ namespace WpfTestIde.Dialogs
                     
                     foreach (System.Windows.Automation.AutomationElement child in children)
                     {
-                        var childNodes = BuildTreeFromAutomationElement(child, node, targetPid);
+                        var childNodes = BuildTreeFromAutomationElement(child, node);
                         nodes.AddRange(childNodes);
                     }
                 }
