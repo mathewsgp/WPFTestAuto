@@ -430,7 +430,8 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
                         ControlType = controlType ?? "Unknown",
                         AutomationId = automationId ?? "",
                         Name = name ?? "",
-                        XPath = xpath ?? ""
+                        XPath = xpath ?? "",
+                        RecordingModes = dialog.SelectedRecordingModes
                     };
                     Elements.Add(newElement);
                     StatusText = $"Added element: {alias}";

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace WpfTestIde.Models
 {
     /// <summary>
@@ -26,6 +28,10 @@ namespace WpfTestIde.Models
 
         public bool NonStandard => string.IsNullOrEmpty(AutomationId);
 
+        /// <summary>Per-element recording modes (FlaUI, WPFSpy, Sikuli).
+        /// If null or empty, the global recording modes from the ViewModel are used.</summary>
+        public List<string>? RecordingModes { get; set; }
+
         public ElementEntry Clone()
         {
             return new ElementEntry
@@ -35,7 +41,8 @@ namespace WpfTestIde.Models
                 ControlType = ControlType,
                 AutomationId = AutomationId,
                 Name = Name,
-                XPath = XPath
+                XPath = XPath,
+                RecordingModes = RecordingModes != null ? new List<string>(RecordingModes) : null
             };
         }
     }

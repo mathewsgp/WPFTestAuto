@@ -31,8 +31,11 @@ namespace WpfTestIde.Recording
             {
                 var strategies = new Dictionary<string, object>();
 
+                // Use per-element recording modes if available, otherwise fall back to global modes
+                var modes = entry.RecordingModes ?? recordingModes;
+
                 // FlaUI strategy: AutomationId-based (most stable for standard controls)
-                if ((recordingModes == null || recordingModes.Contains("FlaUI")) &&
+                if ((modes == null || modes.Contains("FlaUI")) &&
                     !string.IsNullOrEmpty(entry.AutomationId))
                 {
                     strategies["FlaUI"] = new Dictionary<string, object>
@@ -44,7 +47,7 @@ namespace WpfTestIde.Recording
                 }
 
                 // WPFSpy strategy: XPath-based (visual tree path from root window)
-                if (recordingModes == null || recordingModes.Contains("WPFSpy"))
+                if (modes == null || modes.Contains("WPFSpy"))
                 {
                     strategies["WPFSpy"] = new Dictionary<string, object>
                     {
@@ -54,7 +57,7 @@ namespace WpfTestIde.Recording
                 }
 
                 // Sikuli strategy: image-based (placeholder — image capture not yet implemented)
-                if (recordingModes == null || recordingModes.Contains("Sikuli"))
+                if (modes == null || modes.Contains("Sikuli"))
                 {
                     strategies["Sikuli"] = new Dictionary<string, object>
                     {

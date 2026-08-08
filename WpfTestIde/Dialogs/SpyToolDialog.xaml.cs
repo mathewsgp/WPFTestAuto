@@ -21,6 +21,7 @@ namespace WpfTestIde.Dialogs
         public string? SelectedAlias { get; private set; }
         public string? SelectedXPath { get; private set; }
         public Dictionary<string, string> SelectedProperties { get; private set; } = new();
+        public List<string> SelectedRecordingModes { get; private set; } = new();
 
         public SpyToolDialog(string pipeName = "WPFSpyAgentPipe")
         {
@@ -434,6 +435,12 @@ namespace WpfTestIde.Dialogs
                     ["XPath"] = _selectedElement.XPath ?? "",
                     ["ClassName"] = _selectedElement.ClassName ?? ""
                 };
+
+                SelectedRecordingModes.Clear();
+                if (RecordFlaUICheck.IsChecked == true) SelectedRecordingModes.Add("FlaUI");
+                if (RecordWPFSpyCheck.IsChecked == true) SelectedRecordingModes.Add("WPFSpy");
+                if (RecordSikuliCheck.IsChecked == true) SelectedRecordingModes.Add("Sikuli");
+
                 DialogResult = true;
             }
         }
