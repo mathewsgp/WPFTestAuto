@@ -502,12 +502,19 @@ class DriverAgnosticApi:
     def _resolve_and_execute(self, alias: str, action_name: str, app_id: Optional[str] = None, *args):
         """Resolve element and execute action with self-healing fallback.
 
+        Backward-compatible: when no apps are registered and no app_id is
+        provided, falls back to the legacy global-driver behavior so
+        existing tests and IDE-generated scripts keep working.
+
         Args:
             alias: Element alias from repository.
             action_name: Method name on driver (invoke, set_value, get_text, etc.).
             app_id: Optional application context ID. If None, uses default app.
             *args: Action-specific arguments.
         """
+        if app_id is None and not _MULTI_APP_CONTEXT.apps:
+            return self._resolve_and_execute_legacy(alias, action_name, *args)
+
         app_context = _MULTI_APP_CONTEXT.get_app(app_id)
         app_drivers = {}
         for driver_name in _get_run_modes():
@@ -744,6 +751,254 @@ class DriverAgnosticApi:
                     continue
         except Exception:
             pass  # Screenshot capture is non-critical
+        
+        raise AllStrategiesFailedError(
+            alias=alias,
+            attempts=attempts,
+            details=error_details
+        )
+
+    def _resolve_and_execute_legacy(self, alias: str, action_name: str, *args):
+        """Legacy single-app resolution using global driver pool.
+
+        Used when no apps are registered and no app_id is provided,
+        preserving backward compatibility with existing tests.
+        """
+        healing_store = None
+        try:
+            healing_store = get_healing_store()
+        except Exception:
+            pass
+        
+        all_strategies = repo.get_all_driver_strategies_sorted(alias)
+        wpfspy_mode = os.environ.get("WPFSPY_MODE", "mock")
+        
+        logger.debug(
+            "Resolving element (legacy mode)",
+            alias=alias,
+            action=action_name,
+            wpfspy_mode=wpfspy_mode,
+            available_drivers=list(all_strategies.keys())
+        )
+        
+        if not all_strategies:
+            raise AllStrategiesFailedError(
+                alias=alias,
+                attempts=[],
+                details={"reason": "No strategies configured"}
+            )
+        
+        if _ACTIVE_DRIVER is not None:
+            driver_order = [_ACTIVE_DRIVER]
+        else:
+            try:
+                element = repo.get_element(alias)
+                element_priority = element.get("driverPriority")
+                if element_priority and isinstance(element_priority, list):
+                    driver_order = [d for d in element_priority if d in all_strategies]
+                    if not driver_order:
+                        driver_order = _get_run_modes()
+                else:
+                    driver_order = _get_run_modes()
+            except Exception:
+                driver_order = _get_run_modes()
+        
+        app_drivers = _get_drivers()
+        attempts = []
+        healing_info = {
+            "attempted": False,
+            "primary_driver": None,
+            "primary_search_by": None,
+            "primary_value": None,
+            "primary_error": None,
+            "healing_driver": None,
+            "healing_search_by": None,
+            "healing_value": None
+        }
+        
+        for driver_name in driver_order:
+            if driver_name not in all_strategies:
+                continue
+            
+            driver_strategies = all_strategies[driver_name]
+            driver = app_drivers.get(driver_name)
+            
+            if driver is None:
+                logger.warning(
+                    f"Driver {driver_name} not available",
+                    alias=alias,
+                    driver=driver_name
+                )
+                continue
+            
+            breaker = _breaker_manager.get_breaker(driver_name)
+            if not breaker.allow_request():
+                logger.warning(
+                    f"Circuit breaker open for {driver_name}, skipping",
+                    alias=alias,
+                    driver=driver_name
+                )
+                attempts.append((f"{driver_name}:*", "CIRCUIT_OPEN"))
+                continue
+            
+            for strategy in driver_strategies:
+                search_by = strategy.get("searchBy", "")
+                strategy_value = strategy.get("value", "")
+                priority = strategy.get("priority", 99)
+                strategy_desc = f"{driver_name}:{search_by}"
+                
+                resolved_strategy = self._resolve_strategy_with_parent(strategy, alias)
+                
+                start_time = time.time()
+                logger.debug(
+                    f"Trying {strategy_desc}",
+                    alias=alias,
+                    driver=driver_name,
+                    searchBy=search_by,
+                    value=resolved_strategy.get("value", ""),
+                    priority=priority
+                )
+                
+                try:
+                    element = driver.find_element(resolved_strategy)
+                    result = getattr(driver, action_name)(element, *args)
+                    duration_ms = (time.time() - start_time) * 1000
+                    
+                    breaker.record_success()
+                    self.last_strategy_used = strategy_desc
+                    self.attempt_log = [(strategy_desc, "SUCCESS")]
+                    
+                    logger.info(
+                        f"Element found via {strategy_desc}",
+                        alias=alias,
+                        driver=driver_name,
+                        searchBy=search_by,
+                        duration_ms=round(duration_ms, 2)
+                    )
+                    
+                    if healing_store is not None:
+                        healing_store.record_strategy_attempt(
+                            alias=alias,
+                            driver=driver_name,
+                            search_method=search_by,
+                            success=True,
+                            duration_ms=duration_ms
+                        )
+                        if healing_info["attempted"]:
+                            healing_store.record_healing(
+                                alias=alias,
+                                primary_driver=healing_info["primary_driver"],
+                                primary_search_method=healing_info["primary_search_by"],
+                                primary_search_value=healing_info["primary_value"],
+                                failure_reason=healing_info["primary_error"],
+                                healing_driver=driver_name,
+                                healing_search_method=search_by,
+                                healing_search_value=strategy_value,
+                                healing_successful=True,
+                                new_properties=self._capture_element_properties(driver, element)
+                            )
+                            logger.info(
+                                f"[Healing] Element healed via {driver_name}:{search_by}",
+                                alias=alias,
+                                primary=healing_info["primary_driver"],
+                                healing=driver_name
+                            )
+                        else:
+                            props = self._capture_element_properties(driver, element)
+                            healing_store.capture_baseline(
+                                alias=alias,
+                                properties=props,
+                                driver=driver_name,
+                                search_method=search_by,
+                                search_value=strategy_value
+                            )
+                    
+                    return result
+                    
+                except Exception as e:
+                    duration_ms = (time.time() - start_time) * 1000
+                    error_msg = str(e)[:100]
+                    attempts.append((strategy_desc, f"FAILED: {error_msg}"))
+                    
+                    if healing_store is not None:
+                        healing_store.record_strategy_attempt(
+                            alias=alias,
+                            driver=driver_name,
+                            search_method=search_by,
+                            success=False,
+                            duration_ms=duration_ms
+                        )
+                    
+                    if not healing_info["attempted"]:
+                        healing_info["attempted"] = True
+                        healing_info["primary_driver"] = driver_name
+                        healing_info["primary_search_by"] = search_by
+                        healing_info["primary_value"] = strategy_value
+                        healing_info["primary_error"] = error_msg
+                    
+                    logger.debug(
+                        f"Strategy failed, trying next",
+                        alias=alias,
+                        driver=driver_name,
+                        searchBy=search_by,
+                        error=error_msg,
+                        duration_ms=round(duration_ms, 2)
+                    )
+                    
+                    breaker.record_failure()
+                    continue
+            
+            logger.debug(
+                f"All {driver_name} strategies failed, trying next driver",
+                alias=alias,
+                driver=driver_name
+            )
+        
+        error_details = {
+            "attempts": attempts,
+            "total_attempts": len(attempts),
+            "driver_order": driver_order
+        }
+        
+        if healing_store is not None and healing_info["attempted"]:
+            healing_store.record_healing(
+                alias=alias,
+                primary_driver=healing_info["primary_driver"],
+                primary_search_method=healing_info["primary_search_by"],
+                primary_search_value=healing_info["primary_value"],
+                failure_reason=healing_info["primary_error"],
+                healing_driver="None",
+                healing_search_method="N/A",
+                healing_search_value="N/A",
+                healing_successful=False
+            )
+        
+        logger.error(
+            f"All strategies failed for {alias}",
+            alias=alias,
+            attempts=attempts
+        )
+        
+        try:
+            screenshot_mgr = get_screenshot_manager()
+            for driver_name, driver in _get_drivers().items():
+                try:
+                    screenshot_data = driver.capture_screenshot()
+                    if screenshot_data:
+                        screenshot_mgr.capture(
+                            image_data=screenshot_data,
+                            alias=alias,
+                            error_type="AllStrategiesFailedError",
+                            error_message=f"All strategies failed. Last error: {healing_info['primary_error']}",
+                            driver_used=healing_info['primary_driver'],
+                            prefix="failure"
+                        )
+                        logger.info(f"Screenshot captured: {screenshot_mgr.get_latest_screenshot_path()}")
+                        break
+                except Exception:
+                    continue
+        except Exception:
+            pass
         
         raise AllStrategiesFailedError(
             alias=alias,
