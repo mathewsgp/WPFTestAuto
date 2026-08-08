@@ -89,6 +89,41 @@ namespace WpfTestIde.ViewModels
             set { _recordSikuli = value; OnPropertyChanged(); RegenerateScript(); }
         }
 
+        // Run mode checkboxes (FlaUI, WPFSpy, Sikuli)
+        private bool _runFlaUI = true;
+        public bool RunFlaUI
+        {
+            get => _runFlaUI;
+            set { _runFlaUI = value; OnPropertyChanged(); RegenerateScript(); }
+        }
+
+        private bool _runWPFSpy = true;
+        public bool RunWPFSpy
+        {
+            get => _runWPFSpy;
+            set { _runWPFSpy = value; OnPropertyChanged(); RegenerateScript(); }
+        }
+
+        private bool _runSikuli = false;
+        public bool RunSikuli
+        {
+            get => _runSikuli;
+            set { _runSikuli = value; OnPropertyChanged(); RegenerateScript(); }
+        }
+
+        // Driver priority order (used for both recording and run identification)
+        public ObservableCollection<string> DriverPriority { get; } = new ObservableCollection<string> { "FlaUI", "WPFSpy", "Sikuli" };
+
+        private string? _selectedPriorityDriver;
+        public string? SelectedPriorityDriver
+        {
+            get => _selectedPriorityDriver;
+            set { _selectedPriorityDriver = value; OnPropertyChanged(); }
+        }
+
+        public ICommand MovePriorityUpCommand { get; }
+        public ICommand MovePriorityDownCommand { get; }
+
         private bool _lastRunSuccess;
         public bool LastRunSuccess { get => _lastRunSuccess; set { _lastRunSuccess = value; OnPropertyChanged(); } }
 
@@ -180,12 +215,14 @@ namespace WpfTestIde.ViewModels
             SaveElementCommand = new RelayCommand(_ => SaveElement());
             DeleteElementCommand = new RelayCommand(param => DeleteElement(param as ElementEntry));
             CancelEditElementCommand = new RelayCommand(_ => CancelEditElement());
-PreviewElementCommand = new RelayCommand(_ => PreviewElement());
+            PreviewElementCommand = new RelayCommand(_ => PreviewElement());
             PickElementCommand = new RelayCommand(_ => TogglePickMode(), _ => IsAttached);
             GetDataGridContentOcrCommand = new RelayCommand(async _ => await GetDataGridContentOcr(), _ => IsAttached);
             OpenCheckpointWizardCommand = new RelayCommand(_ => OpenCheckpointWizard());
             OpenSpyToolCommand = new RelayCommand(_ => OpenSpyTool());
             OpenVisualTestBuilderCommand = new RelayCommand(_ => OpenVisualTestBuilder());
+            MovePriorityUpCommand = new RelayCommand(_ => MovePriorityUp(), _ => SelectedPriorityDriver != null);
+            MovePriorityDownCommand = new RelayCommand(_ => MovePriorityDown(), _ => SelectedPriorityDriver != null);
 
             Steps.CollectionChanged += (_, __) => RegenerateScript();
             Elements.CollectionChanged += (_, __) => { RegenerateRepository(); RefreshElementTree(); };
@@ -410,7 +447,7 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
                 return;
             }
 
-            var dialog = new Dialogs.SpyToolDialog(PipeName);
+            var dialog = new Dialogs.SpyToolDialog(PipeName, GetSelectedRecordingModes());
             if (dialog.ShowDialog() == true)
             {
                 // Add selected element to repository
@@ -539,6 +576,35 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
             if (RecordSikuli) modes.Add("Sikuli");
             return modes;
         }
+
+        private List<string> GetSelectedRunModes()
+        {
+            var modes = new List<string>();
+            if (RunFlaUI) modes.Add("FlaUI");
+            if (RunWPFSpy) modes.Add("WPFSpy");
+            if (RunSikuli) modes.Add("Sikuli");
+            return modes;
+        }
+
+        private void MovePriorityUp()
+        {
+            if (SelectedPriorityDriver == null) return;
+            int index = DriverPriority.IndexOf(SelectedPriorityDriver);
+            if (index > 0)
+            {
+                DriverPriority.Move(index, index - 1);
+            }
+        }
+
+        private void MovePriorityDown()
+        {
+            if (SelectedPriorityDriver == null) return;
+            int index = DriverPriority.IndexOf(SelectedPriorityDriver);
+            if (index < DriverPriority.Count - 1)
+            {
+                DriverPriority.Move(index, index + 1);
+            }
+        }
          private void RegenerateRepository() => RepositoryYaml = RepositoryWriter.GenerateYaml(Elements, GetSelectedRecordingModes());
 
         // ------------------------------------------------------------
@@ -574,6 +640,8 @@ PreviewElementCommand = new RelayCommand(_ => PreviewElement());
                     ["WPFSPY_MODE"] = "real",
                     ["WPFSPY_PIPE_NAME"] = PipeName,
                     ["WPFSPY_IDE_RUN"] = "1",
+                    ["WPFSPY_RUN_MODES"] = string.Join(",", GetSelectedRunModes()),
+                    ["WPFSPY_DRIVER_PRIORITY"] = string.Join(",", DriverPriority.ToList()),
                 });
 
             LastRunSuccess = summary.Success;

@@ -50,7 +50,7 @@ sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "wpfspy_robotfram
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "sikuli_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers", "mock_wpf_app"))
 
-from FlaUILibrary import FlaUIDriver          # noqa: E402
+from flaui_driver import FlaUIDriver          # noqa: E402
 from WPFSpyLibrary import WPFSpyDriver        # noqa: E402
 from SikuliLibrary import SikuliDriver        # noqa: E402
 from mock_app import (                        # noqa: E402
@@ -67,6 +67,14 @@ _ACTIVE_DRIVER = None
 
 # Active mode override (None = use WPFSPY_MODE env var)
 _ACTIVE_MODE = None
+
+# Run modes filter (None = use all drivers in DRIVER_ORDER)
+# Comma-separated list of enabled drivers for test execution
+_RUN_MODES = None
+
+# Driver priority order for element identification (None = use DRIVER_ORDER)
+# Comma-separated list like "FlaUI,WPFSpy,Sikuli"
+_DRIVER_PRIORITY = None
 
 # Initialize logger
 logger = get_api_logger()
@@ -275,6 +283,64 @@ def _reload_drivers():
     _DRIVERS_INITIALIZED = False
 
 
+def _get_run_modes() -> list:
+    """Get the enabled driver modes for test execution.
+    
+    Reads from:
+    1. WPFSPY_RUN_MODES env var (comma-separated)
+    2. Falls back to DRIVER_ORDER from config
+    
+    Returns:
+        List of enabled driver names in priority order.
+    """
+    global _RUN_MODES, _DRIVER_PRIORITY
+    
+    if _RUN_MODES is not None:
+        return _RUN_MODES
+    
+    # Read from environment
+    run_modes_env = os.environ.get("WPFSPY_RUN_MODES", "").strip()
+    if run_modes_env:
+        _RUN_MODES = [d.strip() for d in run_modes_env.split(",") if d.strip()]
+        return _RUN_MODES
+    
+    # Read priority order from environment
+    priority_env = os.environ.get("WPFSPY_DRIVER_PRIORITY", "").strip()
+    if priority_env:
+        _DRIVER_PRIORITY = [d.strip() for d in priority_env.split(",") if d.strip()]
+        _RUN_MODES = _DRIVER_PRIORITY
+        return _RUN_MODES
+    
+    # Fall back to config DRIVER_ORDER
+    _RUN_MODES = config.DRIVER_ORDER
+    return _RUN_MODES
+
+
+def set_active_driver(driver_name: Optional[str]):
+    """Set the active driver override."""
+    global _ACTIVE_DRIVER
+    _ACTIVE_DRIVER = driver_name
+
+
+def set_active_mode(mode: Optional[str]):
+    """Set the active mode override."""
+    global _ACTIVE_MODE
+    _ACTIVE_MODE = mode
+
+
+def set_run_modes(modes: Optional[list]):
+    """Set the run modes filter."""
+    global _RUN_MODES
+    _RUN_MODES = modes
+
+
+def set_driver_priority(priority: Optional[list]):
+    """Set the driver priority order."""
+    global _DRIVER_PRIORITY, _RUN_MODES
+    _DRIVER_PRIORITY = priority
+    _RUN_MODES = priority
+
+
 class DriverAgnosticApi:
     """Robot Framework library — Layer 3 keywords.
 
@@ -352,7 +418,7 @@ class DriverAgnosticApi:
         if _ACTIVE_DRIVER is not None:
             driver_order = [_ACTIVE_DRIVER]
         else:
-            driver_order = config.DRIVER_ORDER
+            driver_order = _get_run_modes()
         attempts = []
         
         # Track healing info: first failure and subsequent success
@@ -732,11 +798,15 @@ class DriverAgnosticApi:
             )
         _ACTIVE_DRIVER = normalized
         logger.info("Driver set", driver=_ACTIVE_DRIVER)
+        
+        # Update run modes to use only the selected driver
+        set_run_modes([normalized])
 
     def reset_drivers(self):
         """Reset to default driver order (FlaUI -> WPFSpy -> Sikuli)."""
         global _ACTIVE_DRIVER
         _ACTIVE_DRIVER = None
+        set_run_modes(None)  # Reset to default from env/config
         logger.info("Driver reset to default order")
 
     def set_mode(self, mode: str):
@@ -780,13 +850,21 @@ class DriverAgnosticApi:
 
         Args:
             mode: One of 'mock', 'real'.
-            driver: One of 'FlaUI', 'WPFSpy', 'Sikuli'.
+            driver: One of 'FlaUI', 'WPFSpy', 'Sikuli', or 'Auto'.
 
         Example:
             | Set Mode And Driver | real | WPFSpy |
         """
         self.set_mode(mode)
         self.set_driver(driver)
+        
+        # Update run modes based on selected driver
+        if driver.lower() == "auto":
+            # Auto mode: use all drivers from priority order
+            set_run_modes(None)
+        else:
+            # Specific driver: use only that driver
+            set_run_modes([driver])
     
     def click_element(self, alias: str):
         """Invokes (clicks) the element identified by `alias`."""
@@ -839,7 +917,7 @@ class DriverAgnosticApi:
     def is_element_visible(self, alias: str) -> bool:
         """Check if element is visible without failing."""
         strategies = repo.get_strategies(alias)
-        for driver_name in config.DRIVER_ORDER:
+        for driver_name in _get_run_modes():
             if driver_name not in strategies:
                 continue
             driver = self._drivers.get(driver_name)
@@ -855,7 +933,7 @@ class DriverAgnosticApi:
     def is_element_enabled(self, alias: str) -> bool:
         """Check if element is enabled without failing."""
         strategies = repo.get_strategies(alias)
-        for driver_name in config.DRIVER_ORDER:
+        for driver_name in _get_run_modes():
             if driver_name not in strategies:
                 continue
             driver = self._drivers.get(driver_name)
@@ -871,7 +949,7 @@ class DriverAgnosticApi:
     def is_element_actionable(self, alias: str) -> bool:
         """Check if element is both visible and enabled."""
         strategies = repo.get_strategies(alias)
-        for driver_name in config.DRIVER_ORDER:
+        for driver_name in _get_run_modes():
             if driver_name not in strategies:
                 continue
             driver = self._drivers.get(driver_name)
@@ -908,7 +986,7 @@ class DriverAgnosticApi:
             )
         
         while time.time() - start_time < timeout:
-            for driver_name in config.DRIVER_ORDER:
+            for driver_name in _get_run_modes():
                 if driver_name not in strategies:
                     continue
                 driver = self._drivers.get(driver_name)
@@ -952,7 +1030,7 @@ class DriverAgnosticApi:
             )
         
         while time.time() - start_time < timeout:
-            for driver_name in config.DRIVER_ORDER:
+            for driver_name in _get_run_modes():
                 if driver_name not in strategies:
                     continue
                 driver = self._drivers.get(driver_name)
@@ -995,7 +1073,7 @@ class DriverAgnosticApi:
             )
         
         while time.time() - start_time < timeout:
-            for driver_name in config.DRIVER_ORDER:
+            for driver_name in _get_run_modes():
                 if driver_name not in strategies:
                     continue
                 driver = self._drivers.get(driver_name)
