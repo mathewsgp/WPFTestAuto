@@ -86,6 +86,33 @@
             </StackPanel>
         </Border>
 
+        <!-- ================= Driver Settings ================= -->
+        <Border DockPanel.Dock="Top" Background="#FAFBFC" Padding="8" BorderBrush="#DDD" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Record checkboxes -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="Record:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11" FontWeight="Bold"/>
+                    <CheckBox Content="FlaUI" IsChecked="{Binding RecordFlaUI}" Margin="0,0,6,0" FontSize="11"/>
+                    <CheckBox Content="WPFSpy" IsChecked="{Binding RecordWPFSpy}" Margin="0,0,6,0" FontSize="11"/>
+                    <CheckBox Content="Sikuli" IsChecked="{Binding RecordSikuli}" FontSize="11"/>
+                </StackPanel>
+
+                <!-- Run checkboxes -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <TextBlock Text="Run:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11" FontWeight="Bold"/>
+                    <CheckBox Content="FlaUI" IsChecked="{Binding RunFlaUI}" Margin="0,0,6,0" FontSize="11"/>
+                    <CheckBox Content="WPFSpy" IsChecked="{Binding RunWPFSpy}" Margin="0,0,6,0" FontSize="11"/>
+                    <CheckBox Content="Sikuli" IsChecked="{Binding RunSikuli}" FontSize="11"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- ================= OCR Result ================= -->
         <Border DockPanel.Dock="Bottom" Background="#1E2A3A" Padding="8" BorderBrush="#333" BorderThickness="0,1,0,0">
             <DockPanel>
@@ -174,6 +201,12 @@
                                     <TextBlock DockPanel.Dock="Left" Text="  Mode:" VerticalAlignment="Center" Margin="8,0,4,0" FontSize="11"/>
                                     <ComboBox DockPanel.Dock="Left" SelectedItem="{Binding SelectedMode}"
                                               ItemsSource="{Binding AvailableModes}" Width="80" FontSize="11"/>
+                                </DockPanel>
+                                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                                    <TextBlock DockPanel.Dock="Left" Text="Record:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"/>
+                                    <CheckBox DockPanel.Dock="Left" Content="FlaUI" IsChecked="{Binding RecordFlaUI}" Margin="0,0,8,0" FontSize="11"/>
+                                    <CheckBox DockPanel.Dock="Left" Content="WPFSpy" IsChecked="{Binding RecordWPFSpy}" Margin="0,0,8,0" FontSize="11"/>
+                                    <CheckBox DockPanel.Dock="Left" Content="Sikuli" IsChecked="{Binding RecordSikuli}" FontSize="11"/>
                                 </DockPanel>
                                 <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
                                     <TextBlock DockPanel.Dock="Left" Text="Run:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"/>
