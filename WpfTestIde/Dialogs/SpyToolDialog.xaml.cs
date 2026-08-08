@@ -298,6 +298,7 @@ namespace WpfTestIde.Dialogs
                     IsEnabled = element.Current.IsEnabled,
                     IsVisible = element.Current.IsOffscreen == false,
                     Parent = parent,
+                    Children = new List<ElementTreeNode>(),
                     Bounds = new Rect(element.Current.BoundingRectangle.X, element.Current.BoundingRectangle.Y, 
                                      element.Current.BoundingRectangle.Width, element.Current.BoundingRectangle.Height)
                 };
@@ -315,6 +316,7 @@ namespace WpfTestIde.Dialogs
                         segment = node.ControlType ?? "*";
                     }
                     node.XPath = $"{parent.XPath}/{segment}";
+                    parent.Children!.Add(node);
                 }
                 else
                 {
@@ -323,9 +325,8 @@ namespace WpfTestIde.Dialogs
                     {
                         node.XPath = $"/{node.ControlType ?? "*"}[@Name='{node.Name}']";
                     }
+                    nodes.Add(node);
                 }
-
-                nodes.Add(node);
 
                 // Get children
                 try
@@ -335,8 +336,7 @@ namespace WpfTestIde.Dialogs
                     
                     foreach (System.Windows.Automation.AutomationElement child in children)
                     {
-                        var childNodes = BuildTreeFromAutomationElement(child, node);
-                        nodes.AddRange(childNodes);
+                        BuildTreeFromAutomationElement(child, node);
                     }
                 }
                 catch { }
