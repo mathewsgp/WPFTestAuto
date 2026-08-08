@@ -108,25 +108,20 @@ elements:
           value: "qty_box.png"
           priority: 2
 
-  # Priority Checkbox - now UIA-accessible via AutomationPeer
+  # Priority Checkbox - custom control, no AutomationId, WPFSpy only
   OrdersPage.OrdersWindow.chkPriority:
     displayName: "Priority Checkbox"
     controlType: "CheckBox"
-    automationId: "chkPriority"
     name: "PriorityToggle"
-    hasAutomationId: true
+    hasAutomationId: false
     parentAlias: "OrdersPage.OrderGroup"
-    relativeXPath: "CheckBox[@AutomationId='chkPriority']"
+    relativeXPath: "CheckBox[@Name='PriorityToggle']"
     defaultTimeout: 10
-    tags: ["orders", "critical"]
+    tags: ["orders", "non-standard", "wpfspy-only"]
     strategies:
-      FlaUI:
-        - searchBy: "AutomationId"
-          value: "chkPriority"
-          priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "CheckBox[@AutomationId='chkPriority']"
+          value: "CheckBox[@Name='PriorityToggle']"
           priority: 1
       Sikuli:
         - searchBy: "Image"
