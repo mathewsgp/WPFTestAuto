@@ -33,6 +33,17 @@
             <TextBox Text="{Binding EditingElement.XPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                      FontFamily="Consolas" FontSize="12" Padding="4" Margin="0,0,0,8" 
                      AcceptsReturn="True" TextWrapping="Wrap" Height="80"/>
+
+            <TextBlock Text="Driver Priority Order" FontSize="11" FontWeight="Bold" Margin="0,0,0,2"/>
+            <DockPanel Margin="0,0,0,8">
+                <ListBox x:Name="DriverPriorityListBox" ItemsSource="{Binding EditingElement.DriverPriority}" 
+                         Height="80" Width="200" FontSize="11" Margin="0,0,4,0"/>
+                <StackPanel Orientation="Vertical" DockPanel.Dock="Right">
+                    <Button Content="Up" Command="{Binding MoveElementPriorityUpCommand}" Padding="6,2" FontSize="10" Margin="0,0,0,1"/>
+                    <Button Content="Down" Command="{Binding MoveElementPriorityDownCommand}" Padding="6,2" FontSize="10"/>
+                </StackPanel>
+            </DockPanel>
+            <TextBlock Text="Reorder drivers for this element. Top = highest priority." FontSize="10" Foreground="Gray" Margin="0,0,0,8"/>
         </StackPanel>
 
         <TextBlock DockPanel.Dock="Bottom" Text="{Binding PreviewText}" FontFamily="Consolas" FontSize="11"

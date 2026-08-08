@@ -86,47 +86,6 @@
             </StackPanel>
         </Border>
 
-        <!-- ================= Driver Settings ================= -->
-        <Border DockPanel.Dock="Top" Background="#FAFBFC" Padding="8" BorderBrush="#DDD" BorderThickness="0,0,0,1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="20"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="20"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Record checkboxes -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <TextBlock Text="Record:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11" FontWeight="Bold"/>
-                    <CheckBox Content="FlaUI" IsChecked="{Binding RecordFlaUI}" Margin="0,0,6,0" FontSize="11"/>
-                    <CheckBox Content="WPFSpy" IsChecked="{Binding RecordWPFSpy}" Margin="0,0,6,0" FontSize="11"/>
-                    <CheckBox Content="Sikuli" IsChecked="{Binding RecordSikuli}" FontSize="11"/>
-                </StackPanel>
-
-                <!-- Run checkboxes -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <TextBlock Text="Run:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11" FontWeight="Bold"/>
-                    <CheckBox Content="FlaUI" IsChecked="{Binding RunFlaUI}" Margin="0,0,6,0" FontSize="11"/>
-                    <CheckBox Content="WPFSpy" IsChecked="{Binding RunWPFSpy}" Margin="0,0,6,0" FontSize="11"/>
-                    <CheckBox Content="Sikuli" IsChecked="{Binding RunSikuli}" FontSize="11"/>
-                </StackPanel>
-
-                <!-- Priority order -->
-                <StackPanel Grid.Column="4" Orientation="Horizontal">
-                    <TextBlock Text="Priority:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11" FontWeight="Bold"/>
-                    <ListBox ItemsSource="{Binding DriverPriority}" SelectedItem="{Binding SelectedPriorityDriver}" 
-                             Width="180" Height="50" FontSize="10" Margin="0,0,4,0" Padding="2"/>
-                    <StackPanel Orientation="Vertical">
-                        <Button Content="▲" Command="{Binding MovePriorityUpCommand}" Padding="4,0" FontSize="9" Margin="0,0,0,1"/>
-                        <Button Content="▼" Command="{Binding MovePriorityDownCommand}" Padding="4,0" FontSize="9"/>
-                    </StackPanel>
-                </StackPanel>
-            </Grid>
-        </Border>
-
         <!-- ================= OCR Result ================= -->
         <Border DockPanel.Dock="Bottom" Background="#1E2A3A" Padding="8" BorderBrush="#333" BorderThickness="0,1,0,0">
             <DockPanel>

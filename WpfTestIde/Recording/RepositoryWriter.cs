@@ -78,6 +78,12 @@ namespace WpfTestIde.Recording
                     ["strategies"] = strategies,
                 };
 
+                // Include per-element driver priority if set
+                if (entry.DriverPriority != null && entry.DriverPriority.Any())
+                {
+                    elementDef["driverPriority"] = entry.DriverPriority;
+                }
+
                 elements[entry.Alias] = elementDef;
             }
 

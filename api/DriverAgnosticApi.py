@@ -418,7 +418,22 @@ class DriverAgnosticApi:
         if _ACTIVE_DRIVER is not None:
             driver_order = [_ACTIVE_DRIVER]
         else:
-            driver_order = _get_run_modes()
+            # Check for per-element driver priority first
+            try:
+                element = repo.get_element(alias)
+                element_priority = element.get("driverPriority")
+                if element_priority and isinstance(element_priority, list):
+                    driver_order = [d for d in element_priority if d in all_strategies]
+                    if driver_order:
+                        logger.debug(
+                            "Using per-element driver priority",
+                            alias=alias,
+                            driver_order=driver_order
+                        )
+                else:
+                    driver_order = _get_run_modes()
+            except Exception:
+                driver_order = _get_run_modes()
         attempts = []
         
         # Track healing info: first failure and subsequent success

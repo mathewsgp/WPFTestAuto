@@ -111,18 +111,8 @@ namespace WpfTestIde.ViewModels
             set { _runSikuli = value; OnPropertyChanged(); RegenerateScript(); }
         }
 
-        // Driver priority order (used for both recording and run identification)
-        public ObservableCollection<string> DriverPriority { get; } = new ObservableCollection<string> { "FlaUI", "WPFSpy", "Sikuli" };
-
-        private string? _selectedPriorityDriver;
-        public string? SelectedPriorityDriver
-        {
-            get => _selectedPriorityDriver;
-            set { _selectedPriorityDriver = value; OnPropertyChanged(); }
-        }
-
-        public ICommand MovePriorityUpCommand { get; }
-        public ICommand MovePriorityDownCommand { get; }
+        public ICommand MoveElementPriorityUpCommand { get; }
+        public ICommand MoveElementPriorityDownCommand { get; }
 
         private bool _lastRunSuccess;
         public bool LastRunSuccess { get => _lastRunSuccess; set { _lastRunSuccess = value; OnPropertyChanged(); } }
@@ -221,8 +211,8 @@ namespace WpfTestIde.ViewModels
             OpenCheckpointWizardCommand = new RelayCommand(_ => OpenCheckpointWizard());
             OpenSpyToolCommand = new RelayCommand(_ => OpenSpyTool());
             OpenVisualTestBuilderCommand = new RelayCommand(_ => OpenVisualTestBuilder());
-            MovePriorityUpCommand = new RelayCommand(_ => MovePriorityUp(), _ => SelectedPriorityDriver != null);
-            MovePriorityDownCommand = new RelayCommand(_ => MovePriorityDown(), _ => SelectedPriorityDriver != null);
+            MoveElementPriorityUpCommand = new RelayCommand(_ => MoveElementPriorityUp(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
+            MoveElementPriorityDownCommand = new RelayCommand(_ => MoveElementPriorityDown(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
 
             Steps.CollectionChanged += (_, __) => RegenerateScript();
             Elements.CollectionChanged += (_, __) => { RegenerateRepository(); RefreshElementTree(); };
@@ -379,6 +369,7 @@ namespace WpfTestIde.ViewModels
                     AutomationId = entry.AutomationId,
                     Name = entry.Name,
                     XPath = entry.XPath,
+                    DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" }
                 };
 
                 Steps.Add(step);
@@ -468,7 +459,8 @@ namespace WpfTestIde.ViewModels
                         AutomationId = automationId ?? "",
                         Name = name ?? "",
                         XPath = xpath ?? "",
-                        RecordingModes = dialog.SelectedRecordingModes
+                        RecordingModes = dialog.SelectedRecordingModes,
+                        DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" }
                     };
                     Elements.Add(newElement);
                     StatusText = $"Added element: {alias}";
@@ -586,23 +578,30 @@ namespace WpfTestIde.ViewModels
             return modes;
         }
 
-        private void MovePriorityUp()
+        private void MoveElementPriorityUp()
         {
-            if (SelectedPriorityDriver == null) return;
-            int index = DriverPriority.IndexOf(SelectedPriorityDriver);
+            if (EditingElement?.DriverPriority == null || EditingElement.DriverPriority.Count < 2) return;
+            int index = EditingElement.DriverPriority.Count - 1; // Move last selected or just move up if there's a selection
+            // For simplicity, move the first item up if no specific selection
             if (index > 0)
             {
-                DriverPriority.Move(index, index - 1);
+                var item = EditingElement.DriverPriority[0];
+                EditingElement.DriverPriority.RemoveAt(0);
+                EditingElement.DriverPriority.Insert(1, item);
+                OnPropertyChanged(nameof(EditingElement));
             }
         }
 
-        private void MovePriorityDown()
+        private void MoveElementPriorityDown()
         {
-            if (SelectedPriorityDriver == null) return;
-            int index = DriverPriority.IndexOf(SelectedPriorityDriver);
-            if (index < DriverPriority.Count - 1)
+            if (EditingElement?.DriverPriority == null || EditingElement.DriverPriority.Count < 2) return;
+            int lastIndex = EditingElement.DriverPriority.Count - 1;
+            if (lastIndex > 0)
             {
-                DriverPriority.Move(index, index + 1);
+                var item = EditingElement.DriverPriority[lastIndex];
+                EditingElement.DriverPriority.RemoveAt(lastIndex);
+                EditingElement.DriverPriority.Insert(lastIndex - 1, item);
+                OnPropertyChanged(nameof(EditingElement));
             }
         }
          private void RegenerateRepository() => RepositoryYaml = RepositoryWriter.GenerateYaml(Elements, GetSelectedRecordingModes());
@@ -641,7 +640,6 @@ namespace WpfTestIde.ViewModels
                     ["WPFSPY_PIPE_NAME"] = PipeName,
                     ["WPFSPY_IDE_RUN"] = "1",
                     ["WPFSPY_RUN_MODES"] = string.Join(",", GetSelectedRunModes()),
-                    ["WPFSPY_DRIVER_PRIORITY"] = string.Join(",", DriverPriority.ToList()),
                 });
 
             LastRunSuccess = summary.Success;
@@ -704,14 +702,14 @@ namespace WpfTestIde.ViewModels
             Reset();
             var sampleElements = new[]
             {
-                new ElementEntry { Alias = "LoginPage.txtUsername", DisplayName = "UsernameInput", ControlType = "TextBox", AutomationId = "txtUsername", Name = "UsernameInput" },
-                new ElementEntry { Alias = "LoginPage.txtPassword", DisplayName = "PasswordInput", ControlType = "PasswordBox", AutomationId = "txtPassword", Name = "PasswordInput" },
-                new ElementEntry { Alias = "LoginPage.btnSubmit", DisplayName = "SubmitBtn", ControlType = "Button", AutomationId = "btnSubmit", Name = "SubmitBtn" },
-                new ElementEntry { Alias = "OrdersPage.cmbSku", DisplayName = "SkuCombo", ControlType = "ComboBox", AutomationId = "cmbSku", Name = "SkuCombo" },
-                new ElementEntry { Alias = "OrdersPage.txtQty", DisplayName = "QtyInput", ControlType = "TextBox", AutomationId = "txtQty", Name = "QtyInput" },
-                new ElementEntry { Alias = "OrdersPage.chkPriority", DisplayName = "PriorityToggle", ControlType = "PriorityToggleControl", AutomationId = null, Name = "PriorityToggle" },
-                new ElementEntry { Alias = "OrdersPage.btnCreateOrder", DisplayName = "CreateOrderBtn", ControlType = "Button", AutomationId = "btnCreateOrder", Name = "CreateOrderBtn" },
-                new ElementEntry { Alias = "OrdersPage.lblConfirmation", DisplayName = "ConfirmationLabel", ControlType = "Label", AutomationId = "lblConfirmation", Name = "ConfirmationLabel" },
+                new ElementEntry { Alias = "LoginPage.txtUsername", DisplayName = "UsernameInput", ControlType = "TextBox", AutomationId = "txtUsername", Name = "UsernameInput", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
+                new ElementEntry { Alias = "LoginPage.txtPassword", DisplayName = "PasswordInput", ControlType = "PasswordBox", AutomationId = "txtPassword", Name = "PasswordInput", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
+                new ElementEntry { Alias = "LoginPage.btnSubmit", DisplayName = "SubmitBtn", ControlType = "Button", AutomationId = "btnSubmit", Name = "SubmitBtn", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
+                new ElementEntry { Alias = "OrdersPage.cmbSku", DisplayName = "SkuCombo", ControlType = "ComboBox", AutomationId = "cmbSku", Name = "SkuCombo", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
+                new ElementEntry { Alias = "OrdersPage.txtQty", DisplayName = "QtyInput", ControlType = "TextBox", AutomationId = "txtQty", Name = "QtyInput", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
+                new ElementEntry { Alias = "OrdersPage.chkPriority", DisplayName = "PriorityToggle", ControlType = "PriorityToggleControl", AutomationId = null, Name = "PriorityToggle", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
+                new ElementEntry { Alias = "OrdersPage.btnCreateOrder", DisplayName = "CreateOrderBtn", ControlType = "Button", AutomationId = "btnCreateOrder", Name = "CreateOrderBtn", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
+                new ElementEntry { Alias = "OrdersPage.lblConfirmation", DisplayName = "ConfirmationLabel", ControlType = "Label", AutomationId = "lblConfirmation", Name = "ConfirmationLabel", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
             };
             foreach (var e in sampleElements) Elements.Add(e);
 
@@ -755,7 +753,8 @@ namespace WpfTestIde.ViewModels
                 ControlType = "Text",
                 AutomationId = "",
                 Name = "",
-                XPath = ""
+                XPath = "",
+                DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" }
             };
             Elements.Add(newElement);
             SelectedElement = newElement;
@@ -1042,7 +1041,8 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                             ControlType = probe.ControlType,
                             AutomationId = probe.AutomationId,
                             Name = probe.Name,
-                            XPath = probe.XPath
+                            XPath = probe.XPath,
+                            DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" }
                         };
 
                         // Marshaling to UI thread because mouse hook raises events on a background thread

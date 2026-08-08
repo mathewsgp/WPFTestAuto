@@ -32,6 +32,11 @@ namespace WpfTestIde.Models
         /// If null or empty, the global recording modes from the ViewModel are used.</summary>
         public List<string>? RecordingModes { get; set; }
 
+        /// <summary>Per-element driver priority order for element identification.
+        /// Example: ["FlaUI", "WPFSpy", "Sikuli"]
+        /// If null or empty, the global driver order from config is used.</summary>
+        public List<string>? DriverPriority { get; set; }
+
         public ElementEntry Clone()
         {
             return new ElementEntry
@@ -42,7 +47,8 @@ namespace WpfTestIde.Models
                 AutomationId = AutomationId,
                 Name = Name,
                 XPath = XPath,
-                RecordingModes = RecordingModes != null ? new List<string>(RecordingModes) : null
+                RecordingModes = RecordingModes != null ? new List<string>(RecordingModes) : null,
+                DriverPriority = DriverPriority != null ? new List<string>(DriverPriority) : null
             };
         }
     }
