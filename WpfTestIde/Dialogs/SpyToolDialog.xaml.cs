@@ -43,6 +43,9 @@ namespace WpfTestIde.Dialogs
                 }
             }
             
+            // Attach event handler after initialization to avoid firing during XAML load
+            ModeSelector.SelectionChanged += ModeSelector_SelectionChanged;
+            
             BuildPropertyGrid();
         }
 
@@ -118,7 +121,15 @@ namespace WpfTestIde.Dialogs
             if (ModeSelector.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string mode)
             {
                 SelectedMode = mode;
-                LoadElementTree();
+                try
+                {
+                    LoadElementTree();
+                }
+                catch (Exception ex)
+                {
+                    XPathStatus.Text = $"Error loading tree: {ex.Message}";
+                    XPathStatus.Foreground = Brushes.Red;
+                }
             }
         }
 
