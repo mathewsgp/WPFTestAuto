@@ -121,14 +121,23 @@ class FlaUIDriver:
             raise ImportError(f"FlaUILibrary not available: {e}. Install with: pip install robotframework-flaui")
 
     def _ensure_attached(self):
-        """Ensure the driver is attached to the SampleWpfApp."""
+        """Ensure the driver is attached to the application."""
         if self._connected and self._lib is not None:
             return
 
         if self._lib is None:
             self._init_library()
 
-        # Try to attach to an existing SampleWpfApp
+        # Try to attach by PID first if we have one
+        if self._app_pid:
+            try:
+                self._lib.attach_application_by_pid(self._app_pid)
+                self._connected = True
+                return
+            except Exception:
+                pass
+
+        # Fallback: attach by name
         try:
             self._lib.attach_application_by_name("SampleWpfApp")
             self._connected = True
@@ -140,7 +149,7 @@ class FlaUIDriver:
                 pass
 
         if not self._connected:
-            raise ConnectionError("FlaUI: Could not attach to SampleWpfApp. Ensure the app is running.")
+            raise ConnectionError("FlaUI: Could not attach to application. Ensure the app is running.")
 
     def _to_xpath(self, element) -> str:
         """Convert element handle to XPath string for FlaUI keywords.

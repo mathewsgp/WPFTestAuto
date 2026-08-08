@@ -86,11 +86,18 @@ def load_steps(force_reload=False):
     return _steps_cache
 
 
-def get_element(alias: str) -> dict:
+def get_element(alias: str, app_id: str = None) -> dict:
     elements = load_elements()
     if alias not in elements:
         raise KeyError(f"Element Repository: no entry for alias '{alias}'")
-    return elements[alias]
+    element = elements[alias]
+    
+    # If app_id is specified, check if element is scoped to this app or is global
+    if app_id and "appId" in element:
+        if element["appId"] != app_id:
+            raise KeyError(f"Element '{alias}' is not available for app '{app_id}'")
+    
+    return element
 
 
 def get_step(alias: str) -> dict:
@@ -202,17 +209,18 @@ def build_absolute_xpath(alias: str) -> str:
     return full_path
 
 
-def get_strategies(alias: str, driver: str = None) -> dict:
+def get_strategies(alias: str, driver: str = None, app_id: str = None) -> dict:
     """Returns strategies for a specific driver or all strategies.
     
     Args:
         alias: Element alias in repository
         driver: Driver name (FlaUI, WPFSpy, Sikuli). If None, returns all.
+        app_id: Optional app context ID to filter elements.
     
     Returns:
         Dict of strategies. Each strategy has multiple search methods with priority.
     """
-    element = get_element(alias)
+    element = get_element(alias, app_id=app_id)
     all_strategies = element.get("strategies", {})
     
     if driver:
@@ -242,13 +250,17 @@ def get_driver_strategies_sorted(alias: str, driver: str) -> list:
     return sorted(strategy_list, key=lambda s: s.get("priority", 99))
 
 
-def get_all_driver_strategies_sorted(alias: str) -> dict:
+def get_all_driver_strategies_sorted(alias: str, app_id: str = None) -> dict:
     """Returns all driver strategies sorted by priority.
+    
+    Args:
+        alias: Element alias in repository
+        app_id: Optional app context ID to filter elements.
     
     Returns:
         Dict mapping driver name -> sorted list of strategies.
     """
-    all_strategies = get_strategies(alias)
+    all_strategies = get_strategies(alias, app_id=app_id)
     result = {}
     for driver, strategy_list in all_strategies.items():
         result[driver] = sorted(strategy_list, key=lambda s: s.get("priority", 99))

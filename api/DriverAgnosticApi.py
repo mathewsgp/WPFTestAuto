@@ -38,6 +38,9 @@ from base_driver import ElementHandle  # noqa: E402
 
 import repository_access as repo  # noqa: E402
 
+# Import app context for multi-application support
+from app_context import MultiAppContext, AppContext  # noqa: E402
+
 # Import healing metadata store (Phase 1 feature)
 from healing_metadata_store import get_healing_store  # noqa: E402
 
@@ -75,6 +78,9 @@ _RUN_MODES = None
 # Driver priority order for element identification (None = use DRIVER_ORDER)
 # Comma-separated list like "FlaUI,WPFSpy,Sikuli"
 _DRIVER_PRIORITY = None
+
+# Global multi-app context registry
+_MULTI_APP_CONTEXT = MultiAppContext()
 
 # Initialize logger
 logger = get_api_logger()
@@ -351,89 +357,174 @@ class DriverAgnosticApi:
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
 
-    def __init__(self):
+    def __init__(self, default_app_id: Optional[str] = None):
         self.last_strategy_used: Optional[str] = None
         self.attempt_log: list = []
-        self._drivers = _get_drivers()
+        self._app_id = default_app_id
+        self._drivers: Dict[str, Any] = {}
+        self._app_contexts: Dict[str, AppContext] = {}
+        if default_app_id:
+            _MULTI_APP_CONTEXT.set_default_app(default_app_id)
+
+    # ------------------------------------------------------------------
+    # Multi-Application Management
+    # ------------------------------------------------------------------
+    def register_application(
+        self,
+        app_id: str,
+        app_name: str,
+        driver: str = "FlaUI",
+        process_id: Optional[int] = None,
+        pipe_name: Optional[str] = None,
+        app_path: Optional[str] = None,
+        launch_args: Optional[List[str]] = None,
+    ) -> str:
+        """Register a new application context for automation.
+
+        Args:
+            app_id: Logical ID for this app (e.g. 'main', 'helper').
+            app_name: Human-readable name (e.g. 'SampleWpfApp').
+            driver: Primary driver ('FlaUI', 'WPFSpy', 'Sikuli').
+            process_id: OS process ID if already running.
+            pipe_name: Named pipe for WPFSpy agent.
+            app_path: Path to executable/DLL for launching.
+            launch_args: Additional arguments for launch.
+
+        Returns:
+            The registered app_id.
+        """
+        app_context = AppContext(
+            app_id=app_id,
+            app_name=app_name,
+            driver=driver,
+            process_id=process_id,
+            pipe_name=pipe_name,
+            app_path=app_path,
+            launch_args=launch_args or [],
+        )
+        _MULTI_APP_CONTEXT.register_app(app_context)
+        logger.info("Registered application", app_id=app_id, app_name=app_name, driver=driver)
+        return app_id
+
+    def switch_application(self, app_id: str):
+        """Switch the default application context.
+
+        Args:
+            app_id: The application ID to switch to.
+        """
+        _MULTI_APP_CONTEXT.set_default_app(app_id)
+        self._app_id = app_id
+        logger.info("Switched application context", app_id=app_id)
+
+    def launch_application(self, app_id: str, app_path: str, driver: str = "FlaUI", *args) -> str:
+        """Launch an application and register it.
+
+        Args:
+            app_id: Logical ID for this app.
+            app_path: Path to executable/DLL.
+            driver: Primary driver.
+            *args: Additional launch arguments.
+
+        Returns:
+            The registered app_id.
+        """
+        app_context = AppContext(
+            app_id=app_id,
+            app_name=os.path.basename(app_path),
+            driver=driver,
+            app_path=app_path,
+            launch_args=list(args),
+        )
+        try:
+            app_context.process = _launch_app_for_context(app_context)
+            if app_context.process.pid:
+                app_context.process_id = app_context.process.pid
+        except Exception as e:
+            logger.error(f"Failed to launch application: {e}")
+            raise
+        _MULTI_APP_CONTEXT.register_app(app_context)
+        logger.info("Launched application", app_id=app_id, app_path=app_path, pid=app_context.process_id)
+        return app_id
+
+    def attach_to_application(self, app_id: str, process_id: int, driver: str = "FlaUI", pipe_name: Optional[str] = None) -> str:
+        """Attach to a running application and register it.
+
+        Args:
+            app_id: Logical ID for this app.
+            process_id: OS process ID.
+            driver: Primary driver.
+            pipe_name: Named pipe for WPFSpy agent.
+
+        Returns:
+            The registered app_id.
+        """
+        app_context = AppContext(
+            app_id=app_id,
+            app_name=f"Process-{process_id}",
+            driver=driver,
+            process_id=process_id,
+            pipe_name=pipe_name or f"WPFSpyAgentPipe_{app_id}",
+        )
+        _MULTI_APP_CONTEXT.register_app(app_context)
+        logger.info("Attached to application", app_id=app_id, process_id=process_id)
+        return app_id
+
+    def close_application(self, app_id: str):
+        """Close and unregister an application.
+
+        Args:
+            app_id: The application ID to close.
+        """
+        _MULTI_APP_CONTEXT.unregister_app(app_id)
+        logger.info("Closed application", app_id=app_id)
+
+    def get_application_list(self) -> List[str]:
+        """List all registered application IDs."""
+        return [app["app_id"] for app in _MULTI_APP_CONTEXT.list_apps()]
+
+    def set_default_application(self, app_id: str):
+        """Set the default application for subsequent keywords.
+
+        Args:
+            app_id: The application ID to set as default.
+        """
+        _MULTI_APP_CONTEXT.set_default_app(app_id)
+        self._app_id = app_id
+        logger.info("Set default application", app_id=app_id)
+
+    def get_current_application(self) -> str:
+        """Get the current default application ID."""
+        return _MULTI_APP_CONTEXT.default_app_id or ""
 
     # ------------------------------------------------------------------
     # Core resolution + self-healing fallback
     # ------------------------------------------------------------------
-    def _resolve_and_execute(self, alias: str, action_name: str, *args):
+    def _resolve_and_execute(self, alias: str, action_name: str, app_id: Optional[str] = None, *args):
         """Resolve element and execute action with self-healing fallback.
-        
-        Tries each configured driver in order (FlaUI -> WPFSpy -> Sikuli),
-        and for each driver, tries all strategies in priority order.
-        Automatically falls back if one strategy or driver fails.
-        
-        Phase 1 Enhancement: Integrates with HealingMetadataStore to:
-        - Capture baseline properties on successful interactions
-        - Record healing attempts when driver fallback occurs
-        - Track strategy success/failure for post-run repository updates
-        
-        Path Resolution:
-        - If element has parentAlias, walks parent chain to build full XPath
-        - Relative XPath is appended to parent's full XPath
-        - Elements can define: parentAlias, relativeXPath, and strategies
-        
+
         Args:
             alias: Element alias from repository.
             action_name: Method name on driver (invoke, set_value, get_text, etc.).
+            app_id: Optional application context ID. If None, uses default app.
             *args: Action-specific arguments.
-        
-        Returns:
-            Driver-specific result.
-        
-        Raises:
-            AllStrategiesFailedError: If all strategies across all drivers fail.
         """
-        # Initialize healing store for metadata capture
-        healing_store = None
-        try:
-            healing_store = get_healing_store()
-        except Exception:
-            pass  # Healing store is optional
-        
-        # Get all strategies for this element, sorted by priority
-        all_strategies = repo.get_all_driver_strategies_sorted(alias)
-        wpfspy_mode = os.environ.get("WPFSPY_MODE", "mock")
-        
-        logger.debug(
-            "Resolving element",
-            alias=alias,
-            action=action_name,
-            wpfspy_mode=wpfspy_mode,
-            available_drivers=list(all_strategies.keys())
-        )
-        
+        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
+        app_drivers = {}
+        for driver_name in _get_run_modes():
+            if driver_name not in app_context.drivers:
+                app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
+            app_drivers[driver_name] = app_context.drivers[driver_name]
+
+        all_strategies = repo.get_all_driver_strategies_sorted(alias, app_id=app_context.app_id)
+
         if not all_strategies:
             raise AllStrategiesFailedError(
                 alias=alias,
                 attempts=[],
                 details={"reason": "No strategies configured"}
             )
-        
-        # Build ordered strategy list from config and available strategies
-        # If a specific driver is set via Set Driver, use only that driver
-        if _ACTIVE_DRIVER is not None:
-            driver_order = [_ACTIVE_DRIVER]
-        else:
-            # Check for per-element driver priority first
-            try:
-                element = repo.get_element(alias)
-                element_priority = element.get("driverPriority")
-                if element_priority and isinstance(element_priority, list):
-                    driver_order = [d for d in element_priority if d in all_strategies]
-                    if driver_order:
-                        logger.debug(
-                            "Using per-element driver priority",
-                            alias=alias,
-                            driver_order=driver_order
-                        )
-                else:
-                    driver_order = _get_run_modes()
-            except Exception:
-                driver_order = _get_run_modes()
+
+        driver_order = _get_run_modes()
         attempts = []
         
         # Track healing info: first failure and subsequent success
@@ -450,15 +541,14 @@ class DriverAgnosticApi:
         
         for driver_name in driver_order:
             if driver_name not in all_strategies:
-                # This driver is not configured for this element
                 continue
             
             driver_strategies = all_strategies[driver_name]
-            driver = self._drivers.get(driver_name)
+            driver = app_drivers.get(driver_name)
             
             if driver is None:
                 logger.warning(
-                    f"Driver {driver_name} not available",
+                    f"Driver {driver_name} not available for app {app_context.app_id}",
                     alias=alias,
                     driver=driver_name
                 )
@@ -635,8 +725,8 @@ class DriverAgnosticApi:
         # Quick fix: capture screenshot on failure using first available driver
         try:
             screenshot_mgr = get_screenshot_manager()
-            # Try to capture with any available driver
-            for driver_name, driver in self._drivers.items():
+            app_context = _MULTI_APP_CONTEXT.get_app()
+            for driver_name, driver in app_context.drivers.items():
                 try:
                     screenshot_data = driver.capture_screenshot()
                     if screenshot_data:
@@ -706,15 +796,13 @@ class DriverAgnosticApi:
         
         return properties
     
-    def _resolve_strategy_with_parent(self, strategy: dict, alias: str) -> dict:
+    def _resolve_strategy_with_parent(self, strategy: dict, alias: str, app_id: Optional[str] = None) -> dict:
         """Resolve strategy by building full XPath from parent chain.
-        
-        If strategy value is a relative XPath, walks up parent chain to build
-        the full XPath from Window.
         
         Args:
             strategy: Strategy dict with searchBy and value
             alias: Element alias for parent chain lookup
+            app_id: Optional app context ID
         
         Returns:
             Strategy dict with resolved full XPath
@@ -722,39 +810,31 @@ class DriverAgnosticApi:
         resolved = strategy.copy()
         value = strategy.get("value", "")
         
-        # Only resolve XPath values
         if strategy.get("searchBy") != "XPath":
             return resolved
         
-        # If value already starts with /, it's a full path
         if value.startswith("/"):
             return resolved
         
-        # Build full path by walking parent chain
-        full_path = self._build_full_path_from_alias(alias)
-        
-        # Append relative XPath
+        full_path = self._build_full_path_from_alias(alias, app_id)
         resolved["value"] = f"{full_path}/{value}"
         
         return resolved
     
-    def _build_full_path_from_alias(self, alias: str) -> str:
+    def _build_full_path_from_alias(self, alias: str, app_id: Optional[str] = None) -> str:
         """Build full XPath by walking parent chain.
-        
-        Walks up the parent chain (parentAlias references) to build
-        the complete XPath from Window to the element's PARENT.
         
         Args:
             alias: Element alias to resolve
+            app_id: Optional app context ID
         
         Returns:
             Full XPath from Window to the element's parent.
-            The caller should append the relative XPath.
         """
         path_parts = []
-        parent_alias = repo.get_parent_alias(alias)
-        current_alias = parent_alias  # Start from parent, not the element itself
-        visited = set()  # Prevent infinite loops
+        parent_alias = repo.get_parent_alias(alias, app_id=app_id)
+        current_alias = parent_alias
+        visited = set()
         
         while current_alias:
             if current_alias in visited:
@@ -762,10 +842,10 @@ class DriverAgnosticApi:
                 break
             visited.add(current_alias)
             
-            element = repo.get_element(current_alias)
+            element = repo.get_element(current_alias, app_id=app_id)
             
             # Get the parent alias
-            parent = repo.get_parent_alias(current_alias)
+            parent = repo.get_parent_alias(current_alias, app_id=app_id)
             
             # Build XPath prefix for this element
             control_type = element.get("controlType", "")
@@ -881,61 +961,63 @@ class DriverAgnosticApi:
             # Specific driver: use only that driver
             set_run_modes([driver])
     
-    def click_element(self, alias: str):
+    def click_element(self, alias: str, app_id: Optional[str] = None):
         """Invokes (clicks) the element identified by `alias`."""
-        self._resolve_and_execute(alias, "invoke")
+        self._resolve_and_execute(alias, "invoke", app_id)
 
-    def click_element_with_wait(self, alias: str, timeout: float = 10.0):
+    def click_element_with_wait(self, alias: str, timeout: float = 10.0, app_id: Optional[str] = None):
         """Clicks element after waiting for it to be actionable."""
-        self.wait_until_element_actionable(alias, timeout)
-        self._resolve_and_execute(alias, "invoke")
+        self.wait_until_element_actionable(alias, timeout, app_id)
+        self._resolve_and_execute(alias, "invoke", app_id)
 
-    def set_element_value(self, alias: str, value: str):
+    def set_element_value(self, alias: str, value: str, app_id: Optional[str] = None):
         """Sets the text/value of the element identified by `alias`."""
-        self._resolve_and_execute(alias, "set_value", value)
+        self._resolve_and_execute(alias, "set_value", app_id, value)
 
     def set_element_value_with_wait(
         self, 
         alias: str, 
         value: str, 
-        timeout: float = 10.0
+        timeout: float = 10.0,
+        app_id: Optional[str] = None,
     ):
         """Sets element value after waiting for it to be actionable."""
-        self.wait_until_element_actionable(alias, timeout)
-        self._resolve_and_execute(alias, "set_value", value)
+        self.wait_until_element_actionable(alias, timeout, app_id)
+        self._resolve_and_execute(alias, "set_value", app_id, value)
 
-    def get_element_text(self, alias: str) -> str:
+    def get_element_text(self, alias: str, app_id: Optional[str] = None) -> str:
         """Returns the current text of the element identified by `alias`."""
-        return self._resolve_and_execute(alias, "get_text")
+        return self._resolve_and_execute(alias, "get_text", app_id)
 
-    def verify_element_text(self, alias: str, expected: str):
+    def verify_element_text(self, alias: str, expected: str, app_id: Optional[str] = None):
         """Fails the test unless the element's text equals `expected`."""
-        actual = self.get_element_text(alias)
+        actual = self.get_element_text(alias, app_id)
         if actual != expected:
             raise AssertionError(f"'{alias}' text mismatch: expected '{expected}', got '{actual}'")
 
-    def verify_element_contains_text(self, alias: str, expected: str):
+    def verify_element_contains_text(self, alias: str, expected: str, app_id: Optional[str] = None):
         """Fails the test unless the element's text contains `expected`."""
-        actual = self.get_element_text(alias)
+        actual = self.get_element_text(alias, app_id)
         if expected not in actual:
             raise AssertionError(f"'{alias}' text does not contain '{expected}': got '{actual}'")
 
-    def get_data_grid_content_ocr(self, alias: str) -> str:
+    def get_data_grid_content_ocr(self, alias: str, app_id: Optional[str] = None) -> str:
         """Captures a DataGrid element screenshot and returns
         its content as CSV text using OCR."""
-        return self._resolve_and_execute(alias, "get_data_grid_content_ocr")
+        return self._resolve_and_execute(alias, "get_data_grid_content_ocr", app_id)
 
-    def toggle_element(self, alias: str):
+    def toggle_element(self, alias: str, app_id: Optional[str] = None):
         """Toggles a checkbox/toggle-style element identified by `alias`."""
-        self._resolve_and_execute(alias, "toggle")
+        self._resolve_and_execute(alias, "toggle", app_id)
 
-    def is_element_visible(self, alias: str) -> bool:
+    def is_element_visible(self, alias: str, app_id: Optional[str] = None) -> bool:
         """Check if element is visible without failing."""
         strategies = repo.get_strategies(alias)
+        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
         for driver_name in _get_run_modes():
             if driver_name not in strategies:
                 continue
-            driver = self._drivers.get(driver_name)
+            driver = app_context.drivers.get(driver_name)
             if driver is None:
                 continue
             try:
@@ -945,13 +1027,14 @@ class DriverAgnosticApi:
                 continue
         return False
 
-    def is_element_enabled(self, alias: str) -> bool:
+    def is_element_enabled(self, alias: str, app_id: Optional[str] = None) -> bool:
         """Check if element is enabled without failing."""
         strategies = repo.get_strategies(alias)
+        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
         for driver_name in _get_run_modes():
             if driver_name not in strategies:
                 continue
-            driver = self._drivers.get(driver_name)
+            driver = app_context.drivers.get(driver_name)
             if driver is None:
                 continue
             try:
@@ -961,13 +1044,14 @@ class DriverAgnosticApi:
                 continue
         return False
 
-    def is_element_actionable(self, alias: str) -> bool:
+    def is_element_actionable(self, alias: str, app_id: Optional[str] = None) -> bool:
         """Check if element is both visible and enabled."""
         strategies = repo.get_strategies(alias)
+        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
         for driver_name in _get_run_modes():
             if driver_name not in strategies:
                 continue
-            driver = self._drivers.get(driver_name)
+            driver = app_context.drivers.get(driver_name)
             if driver is None:
                 continue
             try:
@@ -981,7 +1065,8 @@ class DriverAgnosticApi:
         self, 
         alias: str, 
         timeout: float = 10.0,
-        poll_interval: float = 0.5
+        poll_interval: float = 0.5,
+        app_id: Optional[str] = None,
     ):
         """Polls until the element is visible, or raises after `timeout` seconds.
         
@@ -992,6 +1077,7 @@ class DriverAgnosticApi:
         
         start_time = time.time()
         strategies = repo.get_strategies(alias)
+        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
         
         if not strategies:
             raise AllStrategiesFailedError(
@@ -1004,7 +1090,7 @@ class DriverAgnosticApi:
             for driver_name in _get_run_modes():
                 if driver_name not in strategies:
                     continue
-                driver = self._drivers.get(driver_name)
+                driver = app_context.drivers.get(driver_name)
                 if driver is None:
                     continue
                 try:
@@ -1028,7 +1114,8 @@ class DriverAgnosticApi:
         self,
         alias: str,
         timeout: float = 10.0,
-        poll_interval: float = 0.5
+        poll_interval: float = 0.5,
+        app_id: Optional[str] = None,
     ):
         """Wait for element to be visible and enabled.
         
@@ -1036,6 +1123,7 @@ class DriverAgnosticApi:
         """
         start_time = time.time()
         strategies = repo.get_strategies(alias)
+        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
         
         if not strategies:
             raise AllStrategiesFailedError(
@@ -1048,7 +1136,7 @@ class DriverAgnosticApi:
             for driver_name in _get_run_modes():
                 if driver_name not in strategies:
                     continue
-                driver = self._drivers.get(driver_name)
+                driver = app_context.drivers.get(driver_name)
                 if driver is None:
                     continue
                 try:
@@ -1072,13 +1160,15 @@ class DriverAgnosticApi:
         alias: str,
         expected: str,
         timeout: float = 10.0,
-        case_sensitive: bool = True
+        case_sensitive: bool = True,
+        app_id: Optional[str] = None,
     ):
         """Wait for element's text to contain the expected value."""
         from exceptions import WaitTimeoutError
         
         start_time = time.time()
         strategies = repo.get_strategies(alias)
+        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
         
         if not strategies:
             raise AllStrategiesFailedError(
@@ -1091,7 +1181,7 @@ class DriverAgnosticApi:
             for driver_name in _get_run_modes():
                 if driver_name not in strategies:
                     continue
-                driver = self._drivers.get(driver_name)
+                driver = app_context.drivers.get(driver_name)
                 if driver is None:
                     continue
                 try:
