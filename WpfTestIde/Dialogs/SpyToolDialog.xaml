@@ -19,7 +19,13 @@
 
         <!-- Toolbar -->
         <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,8">
-            <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <ComboBox x:Name="ModeSelector" Width="160" Margin="0,0,8,0" FontSize="11" SelectedIndex="0" SelectionChanged="ModeSelector_SelectionChanged">
+                <ComboBoxItem Content="WPFSpy Visual Tree" Tag="WPFSpy"/>
+                <ComboBoxItem Content="FlaUI Automation Tree" Tag="FlaUI"/>
+            </ComboBox>
+            
+            <TextBlock Text="Search:" VerticalAlignment="Center" Margin="8,0,8,0"/>
             <TextBox x:Name="SearchBox" Width="200" Padding="4" 
                      TextChanged="SearchBox_TextChanged"/>
             <Button Content="🔍" Click="Search_Click" Padding="8,4" Margin="4,0,16,0" ToolTip="Search elements"/>

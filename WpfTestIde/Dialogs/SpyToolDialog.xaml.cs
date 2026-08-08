@@ -17,17 +17,32 @@ namespace WpfTestIde.Dialogs
         private TreeViewItem? _selectedTreeItem;
         private ElementTreeNode? _selectedElement;
         private readonly List<ElementTreeNode> _allNodes = new();
+        private int _targetProcessId;
 
         public string? SelectedAlias { get; private set; }
         public string? SelectedXPath { get; private set; }
         public Dictionary<string, string> SelectedProperties { get; private set; } = new();
         public List<string> SelectedRecordingModes { get; private set; }
+        public string SelectedMode { get; private set; } = "WPFSpy";
 
-        public SpyToolDialog(string pipeName = "WPFSpyAgentPipe", List<string>? recordingModes = null)
+        public SpyToolDialog(string pipeName = "WPFSpyAgentPipe", List<string>? recordingModes = null, string selectedMode = "WPFSpy", int targetProcessId = 0)
         {
             InitializeComponent();
             _pipeName = pipeName;
+            _targetProcessId = targetProcessId;
             SelectedRecordingModes = recordingModes ?? new List<string> { "FlaUI", "WPFSpy" };
+            SelectedMode = selectedMode;
+            
+            // Set mode selector
+            foreach (ComboBoxItem item in ModeSelector.Items)
+            {
+                if (item.Tag as string == selectedMode)
+                {
+                    ModeSelector.SelectedItem = item;
+                    break;
+                }
+            }
+            
             BuildPropertyGrid();
         }
 
@@ -98,57 +113,179 @@ namespace WpfTestIde.Dialogs
             LoadElementTree();
         }
 
+        private void ModeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ModeSelector.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string mode)
+            {
+                SelectedMode = mode;
+                LoadElementTree();
+            }
+        }
+
         private void LoadElementTree()
         {
             try
             {
-                _client = new SpyAgentClient(_pipeName);
-
-                // Request full tree from agent
-                var response = _client.Send("GetFullTree");
-
-                ElementTree.Items.Clear();
-                _allNodes.Clear();
-
-                if (response.Success && !string.IsNullOrEmpty(response.Data))
+                if (SelectedMode == "FlaUI")
                 {
-                    var treeData = System.Text.Json.JsonSerializer.Deserialize<ElementTreeData>(
-                        response.Data,
-                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-                    );
-
-                    if (treeData?.Nodes != null)
-                    {
-                        foreach (var node in treeData.Nodes)
-                        {
-                            RebuildParentRefs(node, null);
-                            var treeItem = CreateTreeItem(node);
-                            ElementTree.Items.Add(treeItem);
-                            _allNodes.Add(node);
-                        }
-                    }
+                    LoadFlaUITree();
                 }
                 else
                 {
-                    // Fallback: Add sample node if no response
-                    var rootNode = new ElementTreeNode
-                    {
-                        Name = "Root (No App Connected)",
-                        ControlType = "Window",
-                        AutomationId = null
-                    };
-                    var item = CreateTreeItem(rootNode);
-                    ElementTree.Items.Add(item);
+                    LoadWPFSpyTree();
                 }
-
-                XPathStatus.Text = $"Loaded {_allNodes.Count} elements";
-                XPathStatus.Foreground = Brushes.Green;
             }
             catch (Exception ex)
             {
                 XPathStatus.Text = $"Error: {ex.Message}";
                 XPathStatus.Foreground = Brushes.Red;
             }
+        }
+
+        private void LoadWPFSpyTree()
+        {
+            _client = new SpyAgentClient(_pipeName);
+
+            var response = _client.Send("GetFullTree");
+
+            ElementTree.Items.Clear();
+            _allNodes.Clear();
+
+            if (response.Success && !string.IsNullOrEmpty(response.Data))
+            {
+                var treeData = System.Text.Json.JsonSerializer.Deserialize<ElementTreeData>(
+                    response.Data,
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+
+                if (treeData?.Nodes != null)
+                {
+                    foreach (var node in treeData.Nodes)
+                    {
+                        RebuildParentRefs(node, null);
+                        var treeItem = CreateTreeItem(node);
+                        ElementTree.Items.Add(treeItem);
+                        _allNodes.Add(node);
+                    }
+                }
+            }
+            else
+            {
+                var rootNode = new ElementTreeNode
+                {
+                    Name = "Root (No App Connected)",
+                    ControlType = "Window",
+                    AutomationId = null
+                };
+                var item = CreateTreeItem(rootNode);
+                ElementTree.Items.Add(item);
+            }
+
+            XPathStatus.Text = $"Loaded {_allNodes.Count} elements (WPFSpy Visual Tree)";
+            XPathStatus.Foreground = Brushes.Green;
+        }
+
+        private void LoadFlaUITree()
+        {
+            ElementTree.Items.Clear();
+            _allNodes.Clear();
+
+            try
+            {
+                // Use UIA directly to build the automation tree
+                var rootElement = System.Windows.Automation.AutomationElement.RootElement;
+                var nodes = BuildTreeFromAutomationElement(rootElement, null, _targetProcessId);
+                
+                foreach (var node in nodes)
+                {
+                    var treeItem = CreateTreeItem(node);
+                    ElementTree.Items.Add(treeItem);
+                    _allNodes.Add(node);
+                }
+
+                XPathStatus.Text = $"Loaded {_allNodes.Count} elements (FlaUI Automation Tree)";
+                XPathStatus.Foreground = Brushes.Green;
+            }
+            catch (Exception ex)
+            {
+                XPathStatus.Text = $"FlaUI Error: {ex.Message}";
+                XPathStatus.Foreground = Brushes.Red;
+            }
+        }
+
+        private List<ElementTreeNode> BuildTreeFromAutomationElement(System.Windows.Automation.AutomationElement element, ElementTreeNode? parent, int targetPid)
+        {
+            var nodes = new List<ElementTreeNode>();
+            
+            try
+            {
+                var node = new ElementTreeNode
+                {
+                    Name = element.Current.Name,
+                    ControlType = element.Current.ControlType.ProgrammaticName?.Replace("ControlType.", ""),
+                    AutomationId = element.Current.AutomationId,
+                    ClassName = element.Current.ClassName,
+                    Text = element.Current.Name,
+                    IsEnabled = element.Current.IsEnabled,
+                    IsVisible = element.Current.IsOffscreen == false,
+                    Parent = parent,
+                    Bounds = new Rect(element.Current.BoundingRectangle.X, element.Current.BoundingRectangle.Y, 
+                                     element.Current.BoundingRectangle.Width, element.Current.BoundingRectangle.Height)
+                };
+
+                // Try to get process ID
+                try
+                {
+                    int pid = element.Current.ProcessId;
+                    if (targetPid > 0 && pid != targetPid)
+                    {
+                        return nodes;
+                    }
+                }
+                catch { }
+
+                // Build XPath from parent chain
+                if (parent != null)
+                {
+                    var segment = $"*[@AutomationId='{node.AutomationId}']";
+                    if (string.IsNullOrEmpty(node.AutomationId))
+                    {
+                        segment = $"*[@Name='{node.Name}']";
+                    }
+                    if (string.IsNullOrEmpty(node.Name))
+                    {
+                        segment = node.ControlType ?? "*";
+                    }
+                    node.XPath = $"{parent.XPath}/{segment}";
+                }
+                else
+                {
+                    node.XPath = $"/{node.ControlType ?? "*"}[@AutomationId='{node.AutomationId}']";
+                    if (string.IsNullOrEmpty(node.AutomationId))
+                    {
+                        node.XPath = $"/{node.ControlType ?? "*"}[@Name='{node.Name}']";
+                    }
+                }
+
+                nodes.Add(node);
+
+                // Get children
+                try
+                {
+                    var condition = new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.IsControlElementProperty, true);
+                    var children = element.FindAll(System.Windows.Automation.TreeScope.Children, condition);
+                    
+                    foreach (System.Windows.Automation.AutomationElement child in children)
+                    {
+                        var childNodes = BuildTreeFromAutomationElement(child, node, targetPid);
+                        nodes.AddRange(childNodes);
+                    }
+                }
+                catch { }
+            }
+            catch { }
+
+            return nodes;
         }
 
         private static void RebuildParentRefs(ElementTreeNode node, ElementTreeNode? parent)

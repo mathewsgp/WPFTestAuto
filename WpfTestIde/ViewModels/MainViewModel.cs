@@ -121,6 +121,7 @@ namespace WpfTestIde.ViewModels
         // from WpfTestIde/bin/.../ against the sibling WpfTestFramework checkout.
         public string FrameworkRoot { get; set; } = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
         public string PipeName { get; set; } = "WPFSpyAgentPipe";
+        public int SelectedProcessId { get; set; }
 
         private ElementEntry? _selectedElement;
         public ElementEntry? SelectedElement 
@@ -252,6 +253,7 @@ namespace WpfTestIde.ViewModels
             RepositoryLookup.EnsureLoaded(FrameworkRoot);
 
             PipeName = dialog.PipeName;
+            SelectedProcessId = dialog.SelectedProcessId.Value;
             IsAttached = true;
             StatusText = $"Attached to process #{dialog.SelectedProcessId} — ready to record.";
         }
@@ -438,7 +440,7 @@ namespace WpfTestIde.ViewModels
                 return;
             }
 
-            var dialog = new Dialogs.SpyToolDialog(PipeName, GetSelectedRecordingModes());
+            var dialog = new Dialogs.SpyToolDialog(PipeName, GetSelectedRecordingModes(), SelectedMode, SelectedProcessId);
             if (dialog.ShowDialog() == true)
             {
                 // Add selected element to repository
