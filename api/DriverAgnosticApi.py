@@ -18,7 +18,7 @@ import os
 import subprocess
 import time
 import signal
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, List
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
