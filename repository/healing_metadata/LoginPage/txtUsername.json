@@ -1,0 +1,65 @@
+{
+  "alias": "LoginPage.MainWindow.txtUsername",
+  "baseline": {
+    "alias": "LoginPage.MainWindow.txtUsername",
+    "automation_id": "txtUsername",
+    "name": "UsernameInput",
+    "control_type": "TextBox",
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "user1",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-08-08T22:58:40.253880",
+    "last_verified": "2026-08-08T22:58:40.253882",
+    "verification_count": 1,
+    "driver_used": "WPFSpy",
+    "search_method": "XPath",
+    "search_value": "TextBox[@AutomationId='txtUsername']"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-08-08T22:58:40.253847",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "user1",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 0,
+      "failure_count": 2,
+      "total_duration_ms": 2552.708148956299,
+      "last_success": null,
+      "last_failure": "2026-08-08T22:58:40.250340",
+      "avg_duration_ms": 1276.3540744781494
+    },
+    "WPFSpy:XPath": {
+      "success_count": 2,
+      "failure_count": 0,
+      "total_duration_ms": 0.3464221954345703,
+      "last_success": "2026-08-08T22:58:40.253891",
+      "last_failure": null,
+      "avg_duration_ms": 0.17321109771728516
+    }
+  },
+  "total_interactions": 4,
+  "first_seen": "2026-08-08T22:57:42.665970",
+  "last_interaction": "2026-08-08T22:58:40.253894",
+  "consecutive_failures": 0,
+  "consecutive_successes": 2
+}

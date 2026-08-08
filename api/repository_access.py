@@ -107,65 +107,56 @@ def get_step(alias: str) -> dict:
     return steps[alias]
 
 
-def get_parent_alias(alias: str) -> Optional[str]:
+def get_parent_alias(alias: str, app_id: str = None) -> Optional[str]:
     """Get the parentAlias for an element.
     
     Returns None if element has no parent (is root/Window).
     """
-    if alias not in _element_parent_cache:
-        element = get_element(alias)
-        _element_parent_cache[alias] = element.get("parentAlias")
-    return _element_parent_cache.get(alias)
+    cache_key = f"{app_id or 'global'}:{alias}"
+    if cache_key not in _element_parent_cache:
+        element = get_element(alias, app_id=app_id)
+        _element_parent_cache[cache_key] = element.get("parentAlias")
+    return _element_parent_cache.get(cache_key)
 
 
-def get_relative_xpath(alias: str) -> Optional[str]:
+def get_relative_xpath(alias: str, app_id: str = None) -> Optional[str]:
     """Get the relative XPath for an element.
     
     Returns None if element doesn't have a relativeXPath defined.
     """
-    if alias not in _element_relative_xpath_cache:
-        element = get_element(alias)
-        _element_relative_xpath_cache[alias] = element.get("relativeXPath")
-    return _element_relative_xpath_cache.get(alias)
+    cache_key = f"{app_id or 'global'}:{alias}"
+    if cache_key not in _element_relative_xpath_cache:
+        element = get_element(alias, app_id=app_id)
+        _element_relative_xpath_cache[cache_key] = element.get("relativeXPath")
+    return _element_relative_xpath_cache.get(cache_key)
 
 
-def resolve_full_path(alias: str) -> Tuple[str, str]:
+def resolve_full_path(alias: str, app_id: str = None) -> Tuple[str, str]:
     """Resolve the full XPath for an element by walking up the parent chain.
     
-    Returns:
-        Tuple of (full_path, parent_alias) where:
-        - full_path: Complete XPath from Window to element's parent
-        - parent_alias: The parent alias used (for relative XPath appending)
+    Args:
+        alias: Element alias
+        app_id: Optional app context ID to filter elements.
     
-    Example:
-        LoginPage.MainWindow.GroupBox.CustomerName
-          parentAlias: "LoginPage.MainWindow.GroupBox"
-          relativeXPath: "TextBox[@AutomationId='CustomerName']"
-        
-        Returns:
-            ("/Window[@AutomationId='MainWindow']/GroupBox[@AutomationId='CustomerGroup']",
-             "LoginPage.MainWindow.GroupBox")
-
-    The caller should append the relativeXPath to the returned full_path.
+    Returns:
+        Tuple of (full_path, parent_alias)
     """
     path_parts = []
-    parent_alias = get_parent_alias(alias)
-    current_alias = parent_alias  # Start from parent, not the element itself
-    visited = set()  # Prevent infinite loops
+    parent_alias = get_parent_alias(alias, app_id=app_id)
+    current_alias = parent_alias
+    visited = set()
     
     while current_alias:
         if current_alias in visited:
             raise ValueError(f"Circular parent reference detected for alias: {current_alias}")
         visited.add(current_alias)
         
-        element = get_element(current_alias)
-        parent_alias = get_parent_alias(current_alias)
+        element = get_element(current_alias, app_id=app_id)
+        parent_alias = get_parent_alias(current_alias, app_id=app_id)
         
-        # Build XPath prefix for this element
         control_type = element.get("controlType", "")
         window_id = element.get("windowAutomationId") or element.get("windowId", "MainWindow")
         
-        # Get XPath prefix for this element
         if "xpathPrefix" in element:
             path_parts.insert(0, element["xpathPrefix"])
         elif control_type == "Window":
@@ -175,34 +166,26 @@ def resolve_full_path(alias: str) -> Tuple[str, str]:
         elif "name" in element:
             path_parts.insert(0, f"{control_type}[@Name='{element['name']}']")
         
-        # Move to parent
         if parent_alias is None:
-            # Reached root
             break
         
         current_alias = parent_alias
     
     full_path = "/" + "/".join(path_parts)
-    parent_alias = get_parent_alias(alias)
+    parent_alias = get_parent_alias(alias, app_id=app_id)
     
     return full_path, parent_alias
 
 
-def build_absolute_xpath(alias: str) -> str:
+def build_absolute_xpath(alias: str, app_id: str = None) -> str:
     """Build the complete absolute XPath for an element.
     
-    Walks up the parent chain and appends the relative XPath.
-    
-    Example:
-        alias: "LoginPage.MainWindow.txtUsername"
-        parentAlias: "LoginPage.MainWindow"
-        relativeXPath: "TextBox[@AutomationId='txtUsername']"
-        
-        Returns:
-            "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtUsername']"
+    Args:
+        alias: Element alias
+        app_id: Optional app context ID to filter elements.
     """
-    full_path, parent_alias = resolve_full_path(alias)
-    relative_xpath = get_relative_xpath(alias)
+    full_path, parent_alias = resolve_full_path(alias, app_id=app_id)
+    relative_xpath = get_relative_xpath(alias, app_id=app_id)
     
     if relative_xpath:
         return f"{full_path}/{relative_xpath}"
