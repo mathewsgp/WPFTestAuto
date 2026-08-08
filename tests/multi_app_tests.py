@@ -74,9 +74,46 @@ def test_app_context_to_dict():
     print("test_app_context_to_dict: PASS")
 
 
+def test_multi_app_context_error_handling():
+    ctx = MultiAppContext()
+    
+    try:
+        ctx.get_app("nonexistent")
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "nonexistent" in str(e)
+    
+    try:
+        ctx.set_default_app("nonexistent")
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "nonexistent" in str(e)
+    
+    print("test_multi_app_context_error_handling: PASS")
+
+
+def test_multi_app_context_close_all():
+    ctx = MultiAppContext()
+    
+    app1 = AppContext(app_id="main", app_name="Main", driver="FlaUI")
+    app2 = AppContext(app_id="helper", app_name="Helper", driver="FlaUI")
+    
+    ctx.register_app(app1)
+    ctx.register_app(app2)
+    ctx.set_default_app("main")
+    
+    ctx.close_all()
+    
+    assert len(ctx.apps) == 0
+    assert ctx.default_app_id is None
+    print("test_multi_app_context_close_all: PASS")
+
+
 if __name__ == "__main__":
     test_multi_app_context_registration()
     test_multi_app_context_default()
     test_multi_app_context_unregister()
     test_app_context_to_dict()
+    test_multi_app_context_error_handling()
+    test_multi_app_context_close_all()
     print("\nAll multi-app context tests passed.")

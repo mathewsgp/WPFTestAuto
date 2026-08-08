@@ -924,10 +924,8 @@ class DriverAgnosticApi:
         _ACTIVE_MODE = normalized
         logger.info("Mode set", mode=_ACTIVE_MODE)
         
-        # Reload drivers if already initialized, so WPFSpy driver is recreated
-        if _DRIVERS_INITIALIZED:
-            _reload_drivers()
-            _ = _get_drivers()  # Re-initialize with new mode
+        for app in _MULTI_APP_CONTEXT.apps.values():
+            app.drivers.clear()
 
     def reset_mode(self):
         """Reset to the mode from the WPFSPY_MODE environment variable."""
@@ -935,10 +933,8 @@ class DriverAgnosticApi:
         _ACTIVE_MODE = None
         logger.info("Mode reset to WPFSPY_MODE env var")
         
-        # Reload drivers to match the reset mode
-        if _DRIVERS_INITIALIZED:
-            _reload_drivers()
-            _ = _get_drivers()
+        for app in _MULTI_APP_CONTEXT.apps.values():
+            app.drivers.clear()
 
     def set_mode_and_driver(self, mode: str, driver: str):
         """Set both execution mode and driver in one call.

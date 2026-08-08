@@ -117,6 +117,8 @@ class MultiAppContext:
 
 
 def _create_driver_for_app(driver_name: str, app_context: AppContext) -> Any:
+    effective_mode = _ACTIVE_MODE if _ACTIVE_MODE is not None else os.environ.get("WPFSPY_MODE", "mock").lower()
+
     if driver_name == "FlaUI":
         try:
             from flaui_driver import FlaUIDriver
@@ -125,13 +127,20 @@ def _create_driver_for_app(driver_name: str, app_context: AppContext) -> Any:
             raise ImportError("FlaUI driver not available. Install: pip install robotframework-flaui")
 
     if driver_name == "WPFSpy":
-        if app_context.pipe_name is None:
-            raise ValueError("WPFSpy driver requires pipe_name in AppContext")
-        try:
-            from WPFSpyLibrary import WPFSpyRealDriver
-            return WPFSpyRealDriver(pipe_name=app_context.pipe_name)
-        except ImportError:
-            raise ImportError("WPFSpy driver not available")
+        if effective_mode == "real":
+            if app_context.pipe_name is None:
+                raise ValueError("WPFSpy real driver requires pipe_name in AppContext")
+            try:
+                from WPFSpyLibrary import WPFSpyRealDriver
+                return WPFSpyRealDriver(pipe_name=app_context.pipe_name)
+            except ImportError:
+                raise ImportError("WPFSpy driver not available")
+        else:
+            try:
+                from WPFSpyLibrary import WPFSpyMockDriver
+                return WPFSpyMockDriver()
+            except ImportError:
+                raise ImportError("WPFSpy mock driver not available")
 
     if driver_name == "Sikuli":
         try:
