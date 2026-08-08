@@ -103,6 +103,8 @@ Add app-aware keywords to `DriverAgnosticApi`:
 | `Attach To Application` | Attach to existing process and register |
 | `Close Application` | Close and unregister an app |
 | `Get Application List` | List all registered apps |
+| `Wait For Application` | Wait for app to be available (polling with timeout) |
+| `Capture Screenshot` | Capture screenshot for specific app or full screen |
 
 Modify existing keywords to accept optional `app_id` parameter:
 
@@ -266,13 +268,13 @@ Capture Screenshot    app_id=helper    filename=helper.png
 
 **Key features:**
 - `AppContext` and `MultiAppContext` classes for per-app driver/process management
-- New keywords: `Register Application`, `Switch Application`, `Launch Application`, `Attach To Application`, `Close Application`, `Get Application List`
+- New keywords: `Register Application`, `Switch Application`, `Launch Application`, `Attach To Application`, `Close Application`, `Get Application List`, `Wait For Application`, `Capture Screenshot`
 - All existing keywords accept optional `app_id` parameter
 - Backward-compatible legacy mode when no apps are registered
 - Element repository supports optional `appId` field for app-scoped elements
 - FlaUI driver attaches by PID via `AutomationElement.FromHandle`
 
-### Phase 2: IDE Support (C# WPF) — IN PROGRESS
+### Phase 2: IDE Support (C# WPF) — COMPLETE
 
 | Task | Status | Files Modified |
 |------|--------|----------------|
@@ -293,20 +295,20 @@ Capture Screenshot    app_id=helper    filename=helper.png
 - `MultiAppDialog` for managing attached apps (Detach/Set Default)
 - IDE passes app registration env vars (`WPFSPY_APP_ID`, `WPFSPY_PROCESS_ID`, etc.) to Python
 
-### Phase 3: Robot Test Support — PENDING
+### Phase 3: Robot Test Support — COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 3.1 Robot Keywords | ⏳ Pending | Python keywords already implemented in Phase 1 |
-| 3.2 Implicit Switching | ⏳ Pending | Deferred — explicit `app_id` preferred for clarity |
+| 3.1 Robot Keywords | ✅ Complete | Implemented in Phase 1: `Register Application`, `Switch Application`, `Launch Application`, `Attach To Application`, `Close Application`, `Get Application List` |
+| 3.2 Implicit Switching | ⏳ Deferred | Explicit `app_id` preferred for clarity; framework supports it via element `appId` field |
 
-### Phase 4: Cross-App Workflows — PENDING
+### Phase 4: Cross-App Workflows — COMPLETE
 
-| Task | Status | Notes |
-|------|--------|-------|
-| 4.1 Data Passing | ⏳ Pending | |
-| 4.2 Sync Keywords | ⏳ Pending | |
-| 4.3 Screenshots | ⏳ Pending | |
+| Task | Status | Implementation |
+|------|--------|----------------|
+| 4.1 Data Passing | ✅ Complete | Works via existing Robot Framework variables + `Switch Application` keyword |
+| 4.2 Sync Keywords | ✅ Complete | `Wait For Application    app_id=helper    timeout=30` |
+| 4.3 Screenshots per App | ✅ Complete | `Capture Screenshot    app_id=main    filename=main.png` |
 
 ## Constraints and Considerations
 

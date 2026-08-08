@@ -18,6 +18,7 @@ import os
 import subprocess
 import time
 import signal
+from pathlib import Path
 from typing import Optional, Tuple, Dict, Any, List, Union
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -536,6 +537,95 @@ class DriverAgnosticApi:
     def get_current_application(self) -> str:
         """Get the current default application ID."""
         return _MULTI_APP_CONTEXT.default_app_id or ""
+
+    def wait_for_application(self, app_id: str, timeout: float = 30.0, poll_interval: float = 1.0) -> bool:
+        """Wait for an application to become available.
+        
+        Polls until the app is registered and at least one driver
+        for it is ready, or raises after timeout seconds.
+        
+        Args:
+            app_id: Application ID to wait for.
+            timeout: Maximum seconds to wait.
+            poll_interval: Seconds between polls.
+            
+        Returns:
+            True if the app became available.
+            
+        Raises:
+            TimeoutError: If the app is not available within timeout.
+        """
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                app_context = _MULTI_APP_CONTEXT.get_app(app_id)
+                if app_context.process_id:
+                    return True
+            except ValueError:
+                pass
+            
+            time.sleep(poll_interval)
+        
+        raise TimeoutError(f"Application '{app_id}' not available within {timeout}s")
+
+    def capture_screenshot(self, filename: str = None, app_id: Optional[str] = None) -> str:
+        """Capture a screenshot of the current screen or target application.
+        
+        Args:
+            filename: Optional filename for the screenshot.
+                      If None, generates a timestamped name.
+            app_id: Optional application context ID. If None, uses default app.
+            
+        Returns:
+            Path to the saved screenshot file.
+        """
+        screenshot_mgr = get_screenshot_manager()
+        app_context = _MULTI_APP_CONTEXT.get_app(app_id) if app_id or _MULTI_APP_CONTEXT.apps else None
+        
+        screenshot_data = None
+        driver_used = None
+        
+        if app_context:
+            for driver_name in _get_run_modes():
+                if driver_name not in app_context.drivers:
+                    continue
+                driver = app_context.drivers[driver_name]
+                try:
+                    screenshot_data = driver.capture_screenshot()
+                    driver_used = driver_name
+                    break
+                except Exception:
+                    continue
+        
+        if screenshot_data is None:
+            for driver_name in _get_run_modes():
+                driver = _get_drivers().get(driver_name)
+                if driver is None:
+                    continue
+                try:
+                    screenshot_data = driver.capture_screenshot()
+                    driver_used = driver_name
+                    break
+                except Exception:
+                    continue
+        
+        if screenshot_data is None:
+            raise RuntimeError("No driver available for screenshot capture")
+        
+        if filename is None:
+            prefix = f"screenshot_{app_context.app_id}" if app_context else "screenshot"
+            filename = screenshot_mgr._generate_filename(prefix)
+        
+        metadata = screenshot_mgr.capture(
+            image_data=screenshot_data,
+            alias=None,
+            error_type=None,
+            error_message=None,
+            driver_used=driver_used,
+            prefix=Path(filename).stem
+        )
+        
+        return metadata.screenshot_path if metadata else filename
 
     # ------------------------------------------------------------------
     # Core resolution + self-healing fallback
