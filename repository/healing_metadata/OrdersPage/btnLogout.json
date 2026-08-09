@@ -1,6 +1,23 @@
 {
   "alias": "OrdersPage.OrdersWindow.btnLogout",
-  "baseline": null,
+  "baseline": {
+    "alias": "OrdersPage.OrdersWindow.btnLogout",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-08-09T16:47:50.722001",
+    "last_verified": "2026-08-09T16:47:50.722006",
+    "verification_count": 1,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnLogout"
+  },
   "healing_history": [
     {
       "timestamp": "2026-08-08T23:00:34.366142",
@@ -29,12 +46,12 @@
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 0,
+      "success_count": 1,
       "failure_count": 2,
-      "total_duration_ms": 1194.8351860046387,
-      "last_success": null,
+      "total_duration_ms": 1605.7438850402832,
+      "last_success": "2026-08-09T16:47:40.071459",
       "last_failure": "2026-08-08T23:00:34.366152",
-      "avg_duration_ms": 597.4175930023193
+      "avg_duration_ms": 1605.7438850402832
     },
     "WPFSpy:XPath": {
       "success_count": 0,
@@ -53,9 +70,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 5,
+  "total_interactions": 7,
   "first_seen": "2026-08-08T23:00:27.309635",
-  "last_interaction": "2026-08-08T23:00:53.772512",
-  "consecutive_failures": 5,
-  "consecutive_successes": 0
+  "last_interaction": "2026-08-09T16:47:50.722011",
+  "consecutive_failures": 0,
+  "consecutive_successes": 2
 }

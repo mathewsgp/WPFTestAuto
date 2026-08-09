@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T13:56:53.553551",
-    "last_verified": "2026-08-09T13:56:53.553559",
-    "verification_count": 66,
+    "captured_at": "2026-08-09T17:26:13.666486",
+    "last_verified": "2026-08-09T17:26:13.666494",
+    "verification_count": 68,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "TextBlock[@AutomationId='StatusText']"
@@ -54,12 +54,12 @@
       "avg_duration_ms": 472.20633029937744
     },
     "WPFSpy:XPath": {
-      "success_count": 46,
+      "success_count": 48,
       "failure_count": 4,
-      "total_duration_ms": 8585.348844528198,
-      "last_success": "2026-08-09T13:56:53.547094",
+      "total_duration_ms": 8634.613752365112,
+      "last_success": "2026-08-09T17:26:13.660606",
       "last_failure": "2026-08-09T09:36:53.887774",
-      "avg_duration_ms": 186.63801835930866
+      "avg_duration_ms": 179.8877865076065
     },
     "None:N/A": {
       "success_count": 0,
@@ -70,9 +70,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 136,
+  "total_interactions": 140,
   "first_seen": "2026-08-09T01:53:52.803162",
-  "last_interaction": "2026-08-09T13:56:53.553564",
+  "last_interaction": "2026-08-09T17:26:13.666499",
   "consecutive_failures": 0,
-  "consecutive_successes": 104
+  "consecutive_successes": 108
 }

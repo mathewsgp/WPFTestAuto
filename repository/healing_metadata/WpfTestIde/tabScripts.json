@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T13:57:10.360467",
-    "last_verified": "2026-08-09T13:57:10.360479",
-    "verification_count": 82,
+    "captured_at": "2026-08-09T17:26:30.532557",
+    "last_verified": "2026-08-09T17:26:30.532569",
+    "verification_count": 85,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "TabItem[@AutomationId='tabScripts']"
@@ -42,12 +42,12 @@
       "avg_duration_ms": 691.907195483937
     },
     "WPFSpy:XPath": {
-      "success_count": 65,
+      "success_count": 68,
       "failure_count": 2,
-      "total_duration_ms": 1887.916088104248,
-      "last_success": "2026-08-09T13:57:10.303498",
+      "total_duration_ms": 1977.4036407470703,
+      "last_success": "2026-08-09T17:26:30.476396",
       "last_failure": "2026-08-09T09:30:31.526538",
-      "avg_duration_ms": 29.044862893911507
+      "avg_duration_ms": 29.079465305103977
     },
     "None:N/A": {
       "success_count": 0,
@@ -58,9 +58,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 166,
+  "total_interactions": 172,
   "first_seen": "2026-08-09T01:54:58.163554",
-  "last_interaction": "2026-08-09T13:57:10.360488",
+  "last_interaction": "2026-08-09T17:26:30.532576",
   "consecutive_failures": 0,
-  "consecutive_successes": 144
+  "consecutive_successes": 150
 }

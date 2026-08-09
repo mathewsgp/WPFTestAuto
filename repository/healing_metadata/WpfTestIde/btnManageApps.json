@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T13:58:25.103443",
-    "last_verified": "2026-08-09T13:58:25.103454",
-    "verification_count": 61,
+    "captured_at": "2026-08-09T17:27:45.363396",
+    "last_verified": "2026-08-09T17:27:45.363407",
+    "verification_count": 63,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "Button[@AutomationId='btnManageApps']"
@@ -29,17 +29,17 @@
       "avg_duration_ms": 290.18514296587773
     },
     "WPFSpy:XPath": {
-      "success_count": 44,
+      "success_count": 46,
       "failure_count": 0,
-      "total_duration_ms": 1449.9037265777588,
-      "last_success": "2026-08-09T13:58:25.040590",
+      "total_duration_ms": 1535.0463390350342,
+      "last_success": "2026-08-09T17:27:45.296965",
       "last_failure": null,
-      "avg_duration_ms": 32.95235742222179
+      "avg_duration_ms": 33.37057258771814
     }
   },
-  "total_interactions": 122,
+  "total_interactions": 126,
   "first_seen": "2026-08-09T01:54:28.412630",
-  "last_interaction": "2026-08-09T13:58:25.103462",
+  "last_interaction": "2026-08-09T17:27:45.363414",
   "consecutive_failures": 0,
-  "consecutive_successes": 122
+  "consecutive_successes": 126
 }

@@ -7,13 +7,13 @@
     "control_type": null,
     "xpath": null,
     "parent_xpath": null,
-    "text": "SampleWpfApp/bin/Debug/net8.0-windows/SampleWpfApp.exe",
+    "text": "C:\\Users\\mathe\\source\\repos\\WPFTestAuto\\SampleWpfApp/bin/Debug/net8.0-windows/SampleWpfApp.exe",
     "position": null,
     "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-08-09T12:16:42.720212",
-    "last_verified": "2026-08-09T12:16:42.720220",
-    "verification_count": 1,
+    "captured_at": "2026-08-09T17:20:10.788886",
+    "last_verified": "2026-08-09T17:20:10.788894",
+    "verification_count": 7,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "TextBox[@AutomationId='ApplicationPathBox']"
@@ -34,12 +34,12 @@
   ],
   "strategy_stats": {
     "WPFSpy:XPath": {
-      "success_count": 1,
+      "success_count": 7,
       "failure_count": 2,
-      "total_duration_ms": 7095.278263092041,
-      "last_success": "2026-08-09T12:16:42.712275",
+      "total_duration_ms": 7143.382549285889,
+      "last_success": "2026-08-09T17:20:10.782292",
       "last_failure": "2026-08-09T12:06:29.958563",
-      "avg_duration_ms": 7095.278263092041
+      "avg_duration_ms": 1020.4832213265555
     },
     "None:N/A": {
       "success_count": 0,
@@ -50,9 +50,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 4,
+  "total_interactions": 16,
   "first_seen": "2026-08-09T12:06:29.957510",
-  "last_interaction": "2026-08-09T12:16:42.720225",
+  "last_interaction": "2026-08-09T17:20:10.788900",
   "consecutive_failures": 0,
-  "consecutive_successes": 2
+  "consecutive_successes": 14
 }

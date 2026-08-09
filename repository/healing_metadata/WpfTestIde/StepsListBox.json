@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T13:57:12.390465",
-    "last_verified": "2026-08-09T13:57:12.390472",
-    "verification_count": 12,
+    "captured_at": "2026-08-09T17:26:32.562823",
+    "last_verified": "2026-08-09T17:26:32.562832",
+    "verification_count": 13,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "ListBox[@AutomationId='StepsListBox']"
@@ -42,12 +42,12 @@
       "avg_duration_ms": 353.015661239624
     },
     "WPFSpy:XPath": {
-      "success_count": 11,
+      "success_count": 12,
       "failure_count": 2,
-      "total_duration_ms": 67.50297546386719,
-      "last_success": "2026-08-09T13:57:12.384786",
+      "total_duration_ms": 73.32944869995117,
+      "last_success": "2026-08-09T17:26:32.556651",
       "last_failure": "2026-08-09T13:08:33.013121",
-      "avg_duration_ms": 6.136634133078835
+      "avg_duration_ms": 6.110787391662598
     },
     "None:N/A": {
       "success_count": 0,
@@ -58,9 +58,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 26,
+  "total_interactions": 28,
   "first_seen": "2026-08-09T13:03:45.451760",
-  "last_interaction": "2026-08-09T13:57:12.390478",
+  "last_interaction": "2026-08-09T17:26:32.562838",
   "consecutive_failures": 0,
-  "consecutive_successes": 22
+  "consecutive_successes": 24
 }

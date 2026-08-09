@@ -758,7 +758,7 @@ namespace WpfTestIde.ViewModels
                  env["WPFSPY_PIPE_NAME"] = SelectedApp.PipeName;
                  env["WPFSPY_PROCESS_ID"] = SelectedApp.ProcessId.ToString();
              }
-             else if (!string.IsNullOrEmpty(PipeName))
+             else if (!string.IsNullOrEmpty(PipeName) && SelectedProcessId > 0)
              {
                  env["WPFSPY_PIPE_NAME"] = PipeName;
                  env["WPFSPY_PROCESS_ID"] = SelectedProcessId.ToString();

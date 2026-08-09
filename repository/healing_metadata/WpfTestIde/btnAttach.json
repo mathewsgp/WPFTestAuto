@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T13:55:59.402518",
-    "last_verified": "2026-08-09T13:55:59.402532",
-    "verification_count": 51,
+    "captured_at": "2026-08-09T17:25:19.399048",
+    "last_verified": "2026-08-09T17:25:19.399060",
+    "verification_count": 60,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "Button[@AutomationId='btnAttach']"
@@ -29,17 +29,17 @@
       "avg_duration_ms": 290.9271717071533
     },
     "WPFSpy:XPath": {
-      "success_count": 34,
+      "success_count": 43,
       "failure_count": 0,
-      "total_duration_ms": 1638.1149291992188,
-      "last_success": "2026-08-09T13:55:59.239228",
+      "total_duration_ms": 2062.2386932373047,
+      "last_success": "2026-08-09T17:25:19.233962",
       "last_failure": null,
-      "avg_duration_ms": 48.17985085880055
+      "avg_duration_ms": 47.95903937761174
     }
   },
-  "total_interactions": 102,
+  "total_interactions": 120,
   "first_seen": "2026-08-09T01:54:20.915068",
-  "last_interaction": "2026-08-09T13:55:59.402543",
+  "last_interaction": "2026-08-09T17:25:19.399072",
   "consecutive_failures": 0,
-  "consecutive_successes": 102
+  "consecutive_successes": 120
 }

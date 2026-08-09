@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T13:57:11.377254",
-    "last_verified": "2026-08-09T13:57:11.377267",
-    "verification_count": 30,
+    "captured_at": "2026-08-09T17:26:31.548412",
+    "last_verified": "2026-08-09T17:26:31.548422",
+    "verification_count": 32,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "//TabItem[@AutomationId='tabVisualSteps']"
@@ -70,12 +70,12 @@
   ],
   "strategy_stats": {
     "WPFSpy:XPath": {
-      "success_count": 28,
+      "success_count": 30,
       "failure_count": 8,
-      "total_duration_ms": 187.9286766052246,
-      "last_success": "2026-08-09T13:57:11.369127",
+      "total_duration_ms": 200.90246200561523,
+      "last_success": "2026-08-09T17:26:31.542032",
       "last_failure": "2026-08-09T13:41:12.325270",
-      "avg_duration_ms": 6.711738450186593
+      "avg_duration_ms": 6.696748733520508
     },
     "None:N/A": {
       "success_count": 0,
@@ -94,9 +94,9 @@
       "avg_duration_ms": 359.6220016479492
     }
   },
-  "total_interactions": 68,
+  "total_interactions": 72,
   "first_seen": "2026-08-09T12:21:12.862902",
-  "last_interaction": "2026-08-09T13:57:11.377276",
+  "last_interaction": "2026-08-09T17:26:31.548426",
   "consecutive_failures": 0,
-  "consecutive_successes": 16
+  "consecutive_successes": 20
 }
