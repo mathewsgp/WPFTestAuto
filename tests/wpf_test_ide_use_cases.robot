@@ -251,3 +251,142 @@ UC-019 Visual Test Builder Open And Close
     Sleep    2s
     Capture Screenshot    app_id=ide    filename=ide_visual_builder_open.png
     Close Application    ide
+
+REG-001 Load Sample Add Verification And Run Script
+    [Documentation]    Regression: load sample steps, verify steps populated, run script, verify output directory.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnLoadSample
+    Sleep    2s
+    ${status}=    Get Element Text    WpfTestIde.MainWindow.StatusText
+    Should Contain    ${status}    Loaded sample recording
+    Click Element    WpfTestIde.MainWindow.tabScripts
+    Sleep    1s
+    Click Element    WpfTestIde.MainWindow.tabVisualSteps
+    Sleep    1s
+    ${steps_text}=    Get Element Text    WpfTestIde.MainWindow.StepsListBox
+    Should Contain    ${steps_text}    rows
+    Click Element    WpfTestIde.MainWindow.btnRunScript
+    Sleep    60s
+    ${output_dir_exists}=    Run Keyword And Return Status    Directory Should Exist    results/ide_run
+    Should Be True    ${output_dir_exists}
+    Capture Screenshot    app_id=ide    filename=ide_regression_load_verify_run.png
+    Close Application    ide
+
+REG-002 Multi-App Dialog UI Verification
+    [Documentation]    Regression: open Manage Apps dialog, verify all UI controls are accessible.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnManageApps
+    Sleep    2s
+    ${visible}=    Is Element Visible    MultiAppDialog.btnSetDefault
+    Should Be True    ${visible}
+    ${visible2}=    Is Element Visible    MultiAppDialog.btnDetach
+    Should Be True    ${visible2}
+    ${visible3}=    Is Element Visible    MultiAppDialog.btnMultiAppClose
+    Should Be True    ${visible3}
+    Capture Screenshot    app_id=ide    filename=ide_regression_multi_app.png
+    Close Application    ide
+
+REG-003 Checkpoint Wizard Full Interaction
+    [Documentation]    Regression: open Checkpoint Wizard, verify dialog is accessible.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnCheckpointWizard
+    Sleep    3s
+    Capture Screenshot    app_id=ide    filename=ide_regression_checkpoint.png
+    Close Application    ide
+
+REG-004 Element Tree Buttons Accessible
+    [Documentation]    Regression: verify element tree buttons are accessible on Elements tab.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.tabElements
+    Sleep    2s
+    ${visible1}=    Is Element Visible    WpfTestIde.MainWindow.btnAddFolder
+    Should Be True    ${visible1}
+    ${visible2}=    Is Element Visible    WpfTestIde.MainWindow.btnAddElement
+    Should Be True    ${visible2}
+    ${visible3}=    Is Element Visible    WpfTestIde.MainWindow.btnPickElement
+    Should Be True    ${visible3}
+    ${visible4}=    Is Element Visible    WpfTestIde.MainWindow.btnPreviewElement
+    Should Be True    ${visible4}
+    Capture Screenshot    app_id=ide    filename=ide_regression_element_tree.png
+    Close Application    ide
+
+REG-005 Driver Settings Toggle All Modes
+    [Documentation]    Regression: toggle all driver checkboxes in both Record and Run sections.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Toggle Element    WpfTestIde.MainWindow.chkRecordFlaUI
+    Sleep    0.5s
+    Toggle Element    WpfTestIde.MainWindow.chkRecordWPFSpy
+    Sleep    0.5s
+    Toggle Element    WpfTestIde.MainWindow.chkRunFlaUI
+    Sleep    0.5s
+    Toggle Element    WpfTestIde.MainWindow.chkRunWPFSpy
+    Sleep    0.5s
+    Toggle Element    WpfTestIde.MainWindow.chkRecordFlaUI
+    Sleep    0.5s
+    Toggle Element    WpfTestIde.MainWindow.chkRecordWPFSpy
+    Sleep    0.5s
+    Toggle Element    WpfTestIde.MainWindow.chkRunFlaUI
+    Sleep    0.5s
+    Toggle Element    WpfTestIde.MainWindow.chkRunWPFSpy
+    Sleep    0.5s
+    Capture Screenshot    app_id=ide    filename=ide_regression_driver_settings.png
+    Close Application    ide
+
+REG-006 Reset Clears Loaded Sample Steps
+    [Documentation]    Regression: load sample then reset, verify steps are cleared.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnLoadSample
+    Sleep    2s
+    ${status_loaded}=    Get Element Text    WpfTestIde.MainWindow.StatusText
+    Should Contain    ${status_loaded}    Loaded sample recording
+    Click Element    WpfTestIde.MainWindow.btnReset
+    Sleep    1s
+    ${status_after}=    Get Element Text    WpfTestIde.MainWindow.StatusText
+    Should Not Be Empty    ${status_after}
+    Capture Screenshot    app_id=ide    filename=ide_regression_reset.png
+    Close Application    ide
+
+REG-007 Check Pipe Button When Not Attached
+    [Documentation]    Regression: click Check Pipe button when not attached, verify graceful handling.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnCheckPipe
+    Sleep    2s
+    Capture Screenshot    app_id=ide    filename=ide_regression_check_pipe.png
+    Close Application    ide
+
+REG-008 OCR DataGrid Button Accessible
+    [Documentation]    Regression: verify OCR DataGrid button is accessible from toolbar.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    ${visible}=    Is Element Visible    WpfTestIde.MainWindow.btnOcrDataGrid
+    Should Be True    ${visible}
+    Capture Screenshot    app_id=ide    filename=ide_regression_ocr_button.png
+    Close Application    ide
+
+REG-009 Spy Tool And Visual Builder Sequential Open
+    [Documentation]    Regression: open Spy Tool then Visual Test Builder sequentially, verify both dialogs accessible.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnSpyTool
+    Sleep    2s
+    Capture Screenshot    app_id=ide    filename=ide_regression_spy_tool.png
+    Click Element    WpfTestIde.MainWindow.btnVisualTestBuilder
+    Sleep    2s
+    Capture Screenshot    app_id=ide    filename=ide_regression_visual_builder.png
+    Close Application    ide

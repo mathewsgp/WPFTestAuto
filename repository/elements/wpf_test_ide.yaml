@@ -887,7 +887,7 @@ elements:
     automationId: "btnCheckpointCancel"
     name: "Cancel"
     parentAlias: "CheckpointWizardDialog"
-    relativeXPath: "Button[@AutomationId='btnCheckpointCancel']"
+    relativeXPath: "//Button[@AutomationId='btnCheckpointCancel']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -895,7 +895,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Button[@AutomationId='btnCheckpointCancel']"
+          value: "//Button[@AutomationId='btnCheckpointCancel']"
           priority: 1
 
   # ================= Spy Tool Dialog =================
@@ -1040,6 +1040,23 @@ elements:
       WPFSpy:
         - searchBy: "XPath"
           value: "ListBox[@AutomationId='StepsListBox']"
+          priority: 1
+
+  WpfTestIde.MainWindow.btnAddVerification:
+    displayName: "Add Verification Button"
+    controlType: "Button"
+    automationId: "btnAddVerification"
+    name: "+ verify after"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "//Button[@AutomationId='btnAddVerification']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnAddVerification"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//Button[@AutomationId='btnAddVerification']"
           priority: 1
 
   WpfTestIde.MainWindow.chkScriptRecordFlaUI:
@@ -1335,7 +1352,7 @@ elements:
     automationId: "ElementCombo"
     name: "ElementCombo"
     parentAlias: "CheckpointWizardDialog"
-    relativeXPath: "ComboBox[@AutomationId='ElementCombo']"
+    relativeXPath: "//ComboBox[@AutomationId='ElementCombo']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -1343,7 +1360,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "ComboBox[@AutomationId='ElementCombo']"
+          value: "//ComboBox[@AutomationId='ElementCombo']"
           priority: 1
 
   CheckpointWizardDialog.TypeCombo:
@@ -1352,7 +1369,7 @@ elements:
     automationId: "TypeCombo"
     name: "TypeCombo"
     parentAlias: "CheckpointWizardDialog"
-    relativeXPath: "ComboBox[@AutomationId='TypeCombo']"
+    relativeXPath: "//ComboBox[@AutomationId='TypeCombo']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -1360,7 +1377,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "ComboBox[@AutomationId='TypeCombo']"
+          value: "//ComboBox[@AutomationId='TypeCombo']"
           priority: 1
 
   CheckpointWizardDialog.PropertyCombo:
@@ -1369,7 +1386,7 @@ elements:
     automationId: "PropertyCombo"
     name: "PropertyCombo"
     parentAlias: "CheckpointWizardDialog"
-    relativeXPath: "ComboBox[@AutomationId='PropertyCombo']"
+    relativeXPath: "//ComboBox[@AutomationId='PropertyCombo']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -1377,7 +1394,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "ComboBox[@AutomationId='PropertyCombo']"
+          value: "//ComboBox[@AutomationId='PropertyCombo']"
           priority: 1
 
   CheckpointWizardDialog.ExpectedValueBox:
@@ -1386,7 +1403,7 @@ elements:
     automationId: "ExpectedValueBox"
     name: "ExpectedValueBox"
     parentAlias: "CheckpointWizardDialog"
-    relativeXPath: "TextBox[@AutomationId='ExpectedValueBox']"
+    relativeXPath: "//TextBox[@AutomationId='ExpectedValueBox']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -1394,7 +1411,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "TextBox[@AutomationId='ExpectedValueBox']"
+          value: "//TextBox[@AutomationId='ExpectedValueBox']"
           priority: 1
 
   CheckpointWizardDialog.btnGetCurrentValue:
@@ -1403,7 +1420,7 @@ elements:
     automationId: "btnGetCurrentValue"
     name: "Get Current Value"
     parentAlias: "CheckpointWizardDialog"
-    relativeXPath: "Button[@AutomationId='btnGetCurrentValue']"
+    relativeXPath: "//Button[@AutomationId='btnGetCurrentValue']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -1411,7 +1428,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Button[@AutomationId='btnGetCurrentValue']"
+          value: "//Button[@AutomationId='btnGetCurrentValue']"
           priority: 1
 
   CheckpointWizardDialog.btnCheckpointNext:
@@ -1420,7 +1437,7 @@ elements:
     automationId: "btnCheckpointNext"
     name: "Next / Add"
     parentAlias: "CheckpointWizardDialog"
-    relativeXPath: "Button[@AutomationId='btnCheckpointNext']"
+    relativeXPath: "//Button[@AutomationId='btnCheckpointNext']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -1428,7 +1445,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Button[@AutomationId='btnCheckpointNext']"
+          value: "//Button[@AutomationId='btnCheckpointNext']"
           priority: 1
 
   CheckpointWizardDialog.btnCheckpointBack:
@@ -1437,7 +1454,7 @@ elements:
     automationId: "btnCheckpointBack"
     name: "Back"
     parentAlias: "CheckpointWizardDialog"
-    relativeXPath: "Button[@AutomationId='btnCheckpointBack']"
+    relativeXPath: "//Button[@AutomationId='btnCheckpointBack']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -1445,41 +1462,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Button[@AutomationId='btnCheckpointBack']"
-          priority: 1
-
-  CheckpointWizardDialog.btnCheckpointCancel:
-    displayName: "Cancel Button"
-    controlType: "Button"
-    automationId: "btnCheckpointCancel"
-    name: "Cancel"
-    parentAlias: "CheckpointWizardDialog"
-    relativeXPath: "Button[@AutomationId='btnCheckpointCancel']"
-    strategies:
-      FlaUI:
-        - searchBy: "AutomationId"
-          value: "btnCheckpointCancel"
-          priority: 1
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "Button[@AutomationId='btnCheckpointCancel']"
-          priority: 1
-
-  CheckpointWizardDialog.StepIndicator:
-    displayName: "Step Indicator Text"
-    controlType: "Text"
-    automationId: "StepIndicator"
-    name: "StepIndicator"
-    parentAlias: "CheckpointWizardDialog"
-    relativeXPath: "//TextBlock[@AutomationId='StepIndicator']"
-    strategies:
-      FlaUI:
-        - searchBy: "AutomationId"
-          value: "StepIndicator"
-          priority: 1
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "//TextBlock[@AutomationId='StepIndicator']"
+          value: "//Button[@AutomationId='btnCheckpointBack']"
           priority: 1
 
   # ================= Multi App Dialog =================

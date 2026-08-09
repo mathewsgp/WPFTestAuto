@@ -1,0 +1,41 @@
+{
+  "alias": "WpfTestIde.MainWindow.btnAddFolder",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T17:58:04.699250",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "//Button[@AutomationId='btnAddFolder']",
+      "failure_reason": "No element found for XPath: //Button[@AutomationId='btnAddFolder']",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 11,
+      "failure_count": 2,
+      "total_duration_ms": 67.54827499389648,
+      "last_success": "2026-08-09T21:50:06.901506",
+      "last_failure": "2026-08-09T17:58:04.699263",
+      "avg_duration_ms": 6.140752272172407
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    }
+  },
+  "total_interactions": 13,
+  "first_seen": "2026-08-09T17:58:04.697969",
+  "last_interaction": "2026-08-09T21:50:06.901510",
+  "consecutive_failures": 0,
+  "consecutive_successes": 11
+}

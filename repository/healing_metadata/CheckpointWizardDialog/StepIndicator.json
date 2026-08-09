@@ -193,6 +193,30 @@
       "healing_search_value": "N/A",
       "healing_successful": false,
       "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T18:12:31.728183",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "//TextBlock[@AutomationId='StepIndicator']",
+      "failure_reason": "WPFSpy: no element found for XPath '//TextBlock[@AutomationId='StepIndicator']' after 15 attempts",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T21:31:54.077564",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "//TextBlock[@AutomationId='StepIndicator']",
+      "failure_reason": "WPFSpy: no element found for XPath '//TextBlock[@AutomationId='StepIndicator']' after 15 attempts",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
     }
   ],
   "strategy_stats": {
@@ -206,11 +230,11 @@
     },
     "WPFSpy:XPath": {
       "success_count": 0,
-      "failure_count": 20,
-      "total_duration_ms": 117200.5660533905,
+      "failure_count": 24,
+      "total_duration_ms": 131323.8217830658,
       "last_success": null,
-      "last_failure": "2026-08-09T12:50:28.646092",
-      "avg_duration_ms": 5860.028302669525
+      "last_failure": "2026-08-09T21:31:54.077574",
+      "avg_duration_ms": 5471.825907627742
     },
     "None:N/A": {
       "success_count": 0,
@@ -221,9 +245,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 44,
+  "total_interactions": 48,
   "first_seen": "2026-08-09T01:57:10.795685",
-  "last_interaction": "2026-08-09T12:50:28.646095",
-  "consecutive_failures": 44,
+  "last_interaction": "2026-08-09T21:31:54.077577",
+  "consecutive_failures": 48,
   "consecutive_successes": 0
 }

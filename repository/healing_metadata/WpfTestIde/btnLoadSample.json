@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T17:26:38.068030",
-    "last_verified": "2026-08-09T17:26:38.068043",
-    "verification_count": 69,
+    "captured_at": "2026-08-09T22:05:10.875456",
+    "last_verified": "2026-08-09T22:05:10.875470",
+    "verification_count": 119,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "Button[@AutomationId='btnLoadSample']"
@@ -21,12 +21,12 @@
   "healing_history": [],
   "strategy_stats": {
     "WPFSpy:XPath": {
-      "success_count": 66,
+      "success_count": 116,
       "failure_count": 0,
-      "total_duration_ms": 2649.585962295532,
-      "last_success": "2026-08-09T17:26:37.711015",
+      "total_duration_ms": 4850.036382675171,
+      "last_success": "2026-08-09T22:05:10.582727",
       "last_failure": null,
-      "avg_duration_ms": 40.14524185296261
+      "avg_duration_ms": 41.81065847133768
     },
     "FlaUI:AutomationId": {
       "success_count": 3,
@@ -37,9 +37,9 @@
       "avg_duration_ms": 301.1488119761149
     }
   },
-  "total_interactions": 138,
+  "total_interactions": 238,
   "first_seen": "2026-08-09T12:21:09.380999",
-  "last_interaction": "2026-08-09T17:26:38.068051",
+  "last_interaction": "2026-08-09T22:05:10.875478",
   "consecutive_failures": 0,
-  "consecutive_successes": 138
+  "consecutive_successes": 238
 }

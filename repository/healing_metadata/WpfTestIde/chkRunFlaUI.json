@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T17:27:59.183902",
-    "last_verified": "2026-08-09T17:27:59.183910",
-    "verification_count": 17,
+    "captured_at": "2026-08-09T22:05:04.444520",
+    "last_verified": "2026-08-09T22:05:04.444528",
+    "verification_count": 35,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "CheckBox[@AutomationId='chkRunFlaUI']"
@@ -21,12 +21,12 @@
   "healing_history": [],
   "strategy_stats": {
     "WPFSpy:XPath": {
-      "success_count": 16,
+      "success_count": 34,
       "failure_count": 0,
-      "total_duration_ms": 90.28792381286621,
-      "last_success": "2026-08-09T17:27:59.177519",
+      "total_duration_ms": 191.1940574645996,
+      "last_success": "2026-08-09T22:05:04.437728",
       "last_failure": null,
-      "avg_duration_ms": 5.642995238304138
+      "avg_duration_ms": 5.623354631311753
     },
     "FlaUI:AutomationId": {
       "success_count": 1,
@@ -37,9 +37,9 @@
       "avg_duration_ms": 326.5881538391113
     }
   },
-  "total_interactions": 34,
+  "total_interactions": 70,
   "first_seen": "2026-08-09T12:26:31.774367",
-  "last_interaction": "2026-08-09T17:27:59.183924",
+  "last_interaction": "2026-08-09T22:05:04.444533",
   "consecutive_failures": 0,
-  "consecutive_successes": 34
+  "consecutive_successes": 70
 }

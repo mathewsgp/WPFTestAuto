@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T17:26:32.562823",
-    "last_verified": "2026-08-09T17:26:32.562832",
-    "verification_count": 13,
+    "captured_at": "2026-08-09T22:03:33.671999",
+    "last_verified": "2026-08-09T22:03:33.672010",
+    "verification_count": 36,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "ListBox[@AutomationId='StepsListBox']"
@@ -25,6 +25,18 @@
       "primary_search_method": "XPath",
       "primary_search_value": "ListBox[@AutomationId='StepsListBox']",
       "failure_reason": "No element found for XPath: /Window[@AutomationId='MainWindow']/ListBox[@AutomationId='StepsListBox'",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T17:57:36.173979",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "ListBox[@AutomationId='StepsListBox']",
+      "failure_reason": "WpfSpyAgent: don't know how to invoke element of type 'ListBox'. Standard buttons and controls imple",
       "healing_driver": "None",
       "healing_search_method": "N/A",
       "healing_search_value": "N/A",
@@ -42,12 +54,12 @@
       "avg_duration_ms": 353.015661239624
     },
     "WPFSpy:XPath": {
-      "success_count": 12,
-      "failure_count": 2,
-      "total_duration_ms": 73.32944869995117,
-      "last_success": "2026-08-09T17:26:32.556651",
-      "last_failure": "2026-08-09T13:08:33.013121",
-      "avg_duration_ms": 6.110787391662598
+      "success_count": 35,
+      "failure_count": 4,
+      "total_duration_ms": 191.09082221984863,
+      "last_success": "2026-08-09T22:03:33.664698",
+      "last_failure": "2026-08-09T17:57:36.173988",
+      "avg_duration_ms": 5.459737777709961
     },
     "None:N/A": {
       "success_count": 0,
@@ -58,9 +70,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 28,
+  "total_interactions": 76,
   "first_seen": "2026-08-09T13:03:45.451760",
-  "last_interaction": "2026-08-09T17:26:32.562838",
+  "last_interaction": "2026-08-09T22:03:33.672018",
   "consecutive_failures": 0,
-  "consecutive_successes": 24
+  "consecutive_successes": 40
 }

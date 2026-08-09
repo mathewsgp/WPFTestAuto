@@ -43,7 +43,8 @@
                     <Button Grid.Column="1" Content="+ verify after"
                             Command="{Binding DataContext.AddVerificationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"
-                            FontSize="10" Padding="4,2" Margin="4,0" VerticalAlignment="Center"/>
+                            FontSize="10" Padding="4,2" Margin="4,0" VerticalAlignment="Center"
+                            AutomationProperties.AutomationId="btnAddVerification"/>
                     <Button Grid.Column="2" Content="X"
                             Command="{Binding DataContext.DeleteStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"

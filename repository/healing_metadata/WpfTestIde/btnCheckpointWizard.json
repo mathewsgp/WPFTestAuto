@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T17:26:20.932523",
-    "last_verified": "2026-08-09T17:26:20.932537",
-    "verification_count": 42,
+    "captured_at": "2026-08-09T22:04:46.065644",
+    "last_verified": "2026-08-09T22:04:46.065653",
+    "verification_count": 66,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "Button[@AutomationId='btnCheckpointWizard']"
@@ -29,17 +29,17 @@
       "avg_duration_ms": 520.876577922276
     },
     "WPFSpy:XPath": {
-      "success_count": 21,
+      "success_count": 45,
       "failure_count": 0,
-      "total_duration_ms": 911.5135669708252,
-      "last_success": "2026-08-09T17:26:20.909370",
+      "total_duration_ms": 1993.0033683776855,
+      "last_success": "2026-08-09T22:04:46.046277",
       "last_failure": null,
-      "avg_duration_ms": 43.40540795099167
+      "avg_duration_ms": 44.28896374172635
     }
   },
-  "total_interactions": 84,
+  "total_interactions": 132,
   "first_seen": "2026-08-09T01:54:35.362318",
-  "last_interaction": "2026-08-09T17:26:20.932545",
+  "last_interaction": "2026-08-09T22:04:46.065673",
   "consecutive_failures": 0,
-  "consecutive_successes": 84
+  "consecutive_successes": 132
 }
