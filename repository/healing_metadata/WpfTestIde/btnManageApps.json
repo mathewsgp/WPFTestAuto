@@ -1,0 +1,45 @@
+{
+  "alias": "WpfTestIde.MainWindow.btnManageApps",
+  "baseline": {
+    "alias": "WpfTestIde.MainWindow.btnManageApps",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Manage Apps",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": false,
+    "captured_at": "2026-08-09T11:17:57.522565",
+    "last_verified": "2026-08-09T11:17:57.522574",
+    "verification_count": 27,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnManageApps"
+  },
+  "healing_history": [],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 15,
+      "failure_count": 0,
+      "total_duration_ms": 4398.742437362671,
+      "last_success": "2026-08-09T11:17:57.326922",
+      "last_failure": null,
+      "avg_duration_ms": 293.24949582417804
+    },
+    "WPFSpy:XPath": {
+      "success_count": 12,
+      "failure_count": 0,
+      "total_duration_ms": 438.8010501861572,
+      "last_success": "2026-08-09T11:15:05.529973",
+      "last_failure": null,
+      "avg_duration_ms": 36.56675418217977
+    }
+  },
+  "total_interactions": 54,
+  "first_seen": "2026-08-09T01:54:28.412630",
+  "last_interaction": "2026-08-09T11:17:57.522580",
+  "consecutive_failures": 0,
+  "consecutive_successes": 54
+}

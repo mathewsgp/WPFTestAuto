@@ -1,0 +1,66 @@
+{
+  "alias": "WpfTestIde.MainWindow.tabScripts",
+  "baseline": {
+    "alias": "WpfTestIde.MainWindow.tabScripts",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "SCRIPTS",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-08-09T11:18:21.254016",
+    "last_verified": "2026-08-09T11:18:21.254025",
+    "verification_count": 27,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "tabScripts"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T09:30:31.526530",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "TabItem[@AutomationId='tabScripts']",
+      "failure_reason": "WpfSpyAgent: don't know how to invoke element of type 'TabItem'. Standard buttons and controls imple",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 14,
+      "failure_count": 0,
+      "total_duration_ms": 9787.544250488281,
+      "last_success": "2026-08-09T11:18:20.749716",
+      "last_failure": null,
+      "avg_duration_ms": 699.1103036063058
+    },
+    "WPFSpy:XPath": {
+      "success_count": 13,
+      "failure_count": 2,
+      "total_duration_ms": 622.8964328765869,
+      "last_success": "2026-08-09T11:15:27.130912",
+      "last_failure": "2026-08-09T09:30:31.526538",
+      "avg_duration_ms": 47.91511022127592
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    }
+  },
+  "total_interactions": 56,
+  "first_seen": "2026-08-09T01:54:58.163554",
+  "last_interaction": "2026-08-09T11:18:21.254032",
+  "consecutive_failures": 0,
+  "consecutive_successes": 34
+}

@@ -40,7 +40,7 @@ from base_driver import ElementHandle  # noqa: E402
 import repository_access as repo  # noqa: E402
 
 # Import app context for multi-application support
-from app_context import MultiAppContext, AppContext, _create_driver_for_app  # noqa: E402
+from app_context import MultiAppContext, AppContext, _create_driver_for_app, _launch_app_for_context  # noqa: E402
 
 # Import healing metadata store (Phase 1 feature)
 from healing_metadata_store import get_healing_store  # noqa: E402
@@ -470,6 +470,7 @@ class DriverAgnosticApi:
             driver=driver,
             app_path=app_path,
             launch_args=list(args),
+            pipe_name=f"WPFSpyAgentPipe_{app_id}" if driver == "WPFSpy" else None,
         )
         try:
             app_context.process = _launch_app_for_context(app_context)
@@ -611,6 +612,16 @@ class DriverAgnosticApi:
         
         if screenshot_data is None:
             raise RuntimeError("No driver available for screenshot capture")
+        
+        # Normalize screenshot data to bytes
+        if isinstance(screenshot_data, str):
+            import base64
+            try:
+                screenshot_data = base64.b64decode(screenshot_data)
+            except Exception:
+                screenshot_data = screenshot_data.encode("utf-8")
+        elif not isinstance(screenshot_data, bytes):
+            screenshot_data = str(screenshot_data).encode("utf-8")
         
         if filename is None:
             prefix = f"screenshot_{app_context.app_id}" if app_context else "screenshot"
@@ -1405,14 +1416,18 @@ class DriverAgnosticApi:
         for driver_name in _get_run_modes():
             if driver_name not in strategies:
                 continue
-            driver = app_context.drivers.get(driver_name)
-            if driver is None:
-                continue
-            try:
-                element = driver.find_element(strategies[driver_name])
-                return driver.is_visible(element)
-            except Exception:
-                continue
+            if driver_name not in app_context.drivers:
+                app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
+            driver = app_context.drivers[driver_name]
+            driver_strategies = strategies[driver_name]
+            for strategy in driver_strategies:
+                try:
+                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                    element = driver.find_element(resolved)
+                    if driver.is_visible(element):
+                        return True
+                except Exception:
+                    continue
         return False
 
     def is_element_enabled(self, alias: str, app_id: Optional[str] = None) -> bool:
@@ -1422,14 +1437,18 @@ class DriverAgnosticApi:
         for driver_name in _get_run_modes():
             if driver_name not in strategies:
                 continue
-            driver = app_context.drivers.get(driver_name)
-            if driver is None:
-                continue
-            try:
-                element = driver.find_element(strategies[driver_name])
-                return driver.is_enabled(element)
-            except Exception:
-                continue
+            if driver_name not in app_context.drivers:
+                app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
+            driver = app_context.drivers[driver_name]
+            driver_strategies = strategies[driver_name]
+            for strategy in driver_strategies:
+                try:
+                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                    element = driver.find_element(resolved)
+                    if driver.is_enabled(element):
+                        return True
+                except Exception:
+                    continue
         return False
 
     def is_element_actionable(self, alias: str, app_id: Optional[str] = None) -> bool:
@@ -1439,14 +1458,18 @@ class DriverAgnosticApi:
         for driver_name in _get_run_modes():
             if driver_name not in strategies:
                 continue
-            driver = app_context.drivers.get(driver_name)
-            if driver is None:
-                continue
-            try:
-                element = driver.find_element(strategies[driver_name])
-                return driver.is_actionable(element)
-            except Exception:
-                continue
+            if driver_name not in app_context.drivers:
+                app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
+            driver = app_context.drivers[driver_name]
+            driver_strategies = strategies[driver_name]
+            for strategy in driver_strategies:
+                try:
+                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                    element = driver.find_element(resolved)
+                    if driver.is_actionable(element):
+                        return True
+                except Exception:
+                    continue
         return False
 
     def wait_until_element_visible(
@@ -1481,12 +1504,14 @@ class DriverAgnosticApi:
                 driver = app_context.drivers.get(driver_name)
                 if driver is None:
                     continue
-                try:
-                    element = driver.find_element(strategies[driver_name])
-                    if driver.is_visible(element):
-                        return True
-                except Exception:
-                    continue
+                for strategy in strategies[driver_name]:
+                    try:
+                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                        element = driver.find_element(resolved)
+                        if driver.is_visible(element):
+                            return True
+                    except Exception:
+                        continue
             
             # Exponential backoff
             remaining = timeout - (time.time() - start_time)
@@ -1527,12 +1552,14 @@ class DriverAgnosticApi:
                 driver = app_context.drivers.get(driver_name)
                 if driver is None:
                     continue
-                try:
-                    element = driver.find_element(strategies[driver_name])
-                    if driver.is_actionable(element):
-                        return True
-                except Exception:
-                    continue
+                for strategy in strategies[driver_name]:
+                    try:
+                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                        element = driver.find_element(resolved)
+                        if driver.is_actionable(element):
+                            return True
+                    except Exception:
+                        continue
             
             remaining = timeout - (time.time() - start_time)
             if remaining > 0:

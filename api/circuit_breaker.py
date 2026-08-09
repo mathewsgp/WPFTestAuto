@@ -11,7 +11,7 @@ from typing import Callable, Any, Optional
 from functools import wraps
 
 try:
-    from .exceptions import CircuitBreakerOpenError
+    from exceptions import CircuitBreakerOpenError
 except ImportError:
     from exceptions import CircuitBreakerOpenError
 

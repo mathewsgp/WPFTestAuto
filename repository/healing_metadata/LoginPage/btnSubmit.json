@@ -7,39 +7,470 @@
     "control_type": null,
     "xpath": null,
     "parent_xpath": null,
-    "text": null,
+    "text": "Login",
     "position": null,
-    "is_visible": false,
+    "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-08T23:00:46.724259",
-    "last_verified": "2026-08-08T23:00:46.724270",
-    "verification_count": 2,
-    "driver_used": "WPFSpy",
-    "search_method": "XPath",
-    "search_value": "Button[@AutomationId='btnSubmit']"
+    "captured_at": "2026-08-09T11:22:11.912898",
+    "last_verified": "2026-08-09T11:22:11.912916",
+    "verification_count": 17,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnSubmit"
   },
-  "healing_history": [],
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T00:19:23.893987",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:19:39.558951",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:21:01.207751",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:21:16.957839",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:23:08.430034",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:23:34.408174",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:26:36.458747",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:27:02.584818",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:28:38.399144",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:29:26.236199",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:31:53.463408",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:32:47.699599",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:47:11.880449",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T00:47:28.114707",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T00:47:56.539254",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:48:44.185792",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:50:24.067026",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:50:40.680717",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:53:43.005381",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:53:59.552900",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "btnSubmit",
+        "name": "SubmitBtn",
+        "control_type": "Button",
+        "text": "Login",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:57:02.382036",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T00:57:28.040640",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T01:02:20.798523",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T01:03:35.395001",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 1,
-      "failure_count": 0,
-      "total_duration_ms": 232.64050483703613,
-      "last_success": "2026-08-08T23:00:13.286355",
-      "last_failure": null,
-      "avg_duration_ms": 232.64050483703613
+      "success_count": 11,
+      "failure_count": 30,
+      "total_duration_ms": 23534.92569923401,
+      "last_success": "2026-08-09T11:22:11.673167",
+      "last_failure": "2026-08-09T01:03:35.395013",
+      "avg_duration_ms": 2139.5386999303646
     },
     "WPFSpy:XPath": {
-      "success_count": 1,
+      "success_count": 44,
+      "failure_count": 6,
+      "total_duration_ms": 40370.22876739502,
+      "last_success": "2026-08-09T11:20:40.652249",
+      "last_failure": "2026-08-09T01:03:35.389807",
+      "avg_duration_ms": 917.5051992589778
+    },
+    "Sikuli:Image": {
+      "success_count": 0,
+      "failure_count": 6,
+      "total_duration_ms": 0.2837181091308594,
+      "last_success": null,
+      "last_failure": "2026-08-09T01:03:35.392995",
+      "avg_duration_ms": 0.0472863515218099
+    },
+    "None:N/A": {
+      "success_count": 0,
       "failure_count": 0,
-      "total_duration_ms": 18.84627342224121,
-      "last_success": "2026-08-08T23:00:46.716249",
+      "total_duration_ms": 0.0,
+      "last_success": null,
       "last_failure": null,
-      "avg_duration_ms": 18.84627342224121
+      "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 4,
+  "total_interactions": 116,
   "first_seen": "2026-08-08T23:00:13.286318",
-  "last_interaction": "2026-08-08T23:00:46.724280",
+  "last_interaction": "2026-08-09T11:22:11.912928",
   "consecutive_failures": 0,
-  "consecutive_successes": 4
+  "consecutive_successes": 32
 }

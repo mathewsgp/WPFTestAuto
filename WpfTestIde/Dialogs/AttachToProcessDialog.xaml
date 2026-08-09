@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Attach to Process" Height="600" Width="650"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        AutomationProperties.AutomationId="AttachToProcessDialog">
 
     <Window.Resources>
         <Style x:Key="SectionHeader" TargetType="TextBlock">
@@ -33,10 +34,10 @@
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
             <RadioButton x:Name="RuntimeAttachRadio" Content="Runtime Attach (Already Running)" 
                         IsChecked="True" Margin="0,0,20,0" VerticalContentAlignment="Center"
-                        Checked="RuntimeAttachRadio_Checked"/>
+                        Checked="RuntimeAttachRadio_Checked" AutomationProperties.AutomationId="RuntimeAttachRadio"/>
             <RadioButton x:Name="NewProcessRadio" Content="Launch New Process"
                         Margin="0,0,20,0" VerticalContentAlignment="Center"
-                        Checked="NewProcessRadio_Checked"/>
+                        Checked="NewProcessRadio_Checked" AutomationProperties.AutomationId="NewProcessRadio"/>
         </StackPanel>
 
         <!-- Process List (Runtime Attach Mode) -->
@@ -50,7 +51,7 @@
             <TextBlock Grid.Row="0" Text="Select the target application's process:" 
                       Style="{StaticResource SectionHeader}"/>
 
-            <ListView Grid.Row="1" x:Name="ProcessListView" Margin="0,0,0,8">
+            <ListView Grid.Row="1" x:Name="ProcessListView" Margin="0,0,0,8" AutomationProperties.AutomationId="ProcessListView">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="PID" Width="60" DisplayMemberBinding="{Binding Id}"/>
@@ -61,12 +62,12 @@
             </ListView>
 
             <StackPanel Grid.Row="2" Orientation="Horizontal">
-                <Button Content="Refresh List" Click="RefreshProcessList_Click" 
-                       Width="100" Margin="0,0,8,0"/>
+                <Button x:Name="btnRefreshProcessList" Content="Refresh List" Click="RefreshProcessList_Click" 
+                       Width="100" Margin="0,0,8,0" AutomationProperties.AutomationId="btnRefreshProcessList"/>
                 <CheckBox x:Name="ShowAllProcessesCheck" Content="Show all processes" 
                          VerticalAlignment="Center" Margin="8,0,0,0"
                          Checked="ShowAllProcessesCheck_Changed"
-                         Unchecked="ShowAllProcessesCheck_Changed"/>
+                         Unchecked="ShowAllProcessesCheck_Changed" AutomationProperties.AutomationId="ShowAllProcessesCheck"/>
             </StackPanel>
         </Grid>
 
@@ -86,13 +87,13 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox Grid.Column="0" x:Name="ApplicationPathBox" 
-                        Margin="0,0,8,0"/>
-                <Button Grid.Column="1" Content="Browse..." 
-                       Width="80" Click="BrowseApplication_Click"/>
+                        Margin="0,0,8,0" AutomationProperties.AutomationId="ApplicationPathBox"/>
+                <Button Grid.Column="1" x:Name="btnBrowseApplication" Content="Browse..." 
+                       Width="80" Click="BrowseApplication_Click" AutomationProperties.AutomationId="btnBrowseApplication"/>
             </Grid>
 
             <TextBlock Grid.Row="2" Text="Arguments (optional):" Style="{StaticResource SectionHeader}" Margin="0,0,0,4"/>
-            <TextBox Grid.Row="3" x:Name="ArgumentsBox" Margin="0,0,0,8"/>
+            <TextBox Grid.Row="3" x:Name="ArgumentsBox" Margin="0,0,0,8" AutomationProperties.AutomationId="ArgumentsBox"/>
 
             <Border Grid.Row="4" Background="#E8F4FD" Padding="10" CornerRadius="4" Margin="0,8,0,0">
                 <StackPanel>
@@ -113,19 +114,19 @@
         <!-- Pipe Name & App ID -->
         <StackPanel Grid.Row="2" Margin="0,10,0,0">
             <TextBlock Text="Spy Agent Named Pipe name:" Margin="0,0,0,4"/>
-            <TextBox x:Name="PipeNameBox" Text="WPFSpyAgentPipe"/>
+            <TextBox x:Name="PipeNameBox" Text="WPFSpyAgentPipe" AutomationProperties.AutomationId="PipeNameBox"/>
         </StackPanel>
 
         <StackPanel Grid.Row="3" Margin="0,6,0,0">
             <TextBlock Text="Application ID (optional, for multi-app support):" Margin="0,0,0,4"/>
-            <TextBox x:Name="AppIdBox" Text="" ToolTip="Logical ID for this app, e.g. 'main', 'helper'. Leave empty for auto-generated ID."/>
+            <TextBox x:Name="AppIdBox" Text="" ToolTip="Logical ID for this app, e.g. 'main', 'helper'. Leave empty for auto-generated ID." AutomationProperties.AutomationId="AppIdBox"/>
         </StackPanel>
 
         <!-- Page Mapping -->
         <GroupBox Grid.Row="5" Header="Page name mapping (window title contains → page alias)" Margin="0,10,0,0">
             <DataGrid x:Name="PageMapGrid" AutoGenerateColumns="False" 
                      CanUserAddRows="True" Margin="4"
-                     MinHeight="80">
+                     MinHeight="80" AutomationProperties.AutomationId="PageMapGrid">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Title contains" Binding="{Binding TitleContains}" Width="*"/>
                     <DataGridTextColumn Header="Page alias" Binding="{Binding PageAlias}" Width="*"/>
@@ -142,13 +143,13 @@
 
             <TextBlock Grid.Column="0" x:Name="StatusText" 
                       Style="{StaticResource StatusText}"
-                      VerticalAlignment="Center"/>
+                      VerticalAlignment="Center" AutomationProperties.AutomationId="StatusText"/>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button Content="Cancel" Width="80" Margin="0,0,8,0" 
-                       Click="Cancel_Click" IsCancel="True"/>
-                <Button Content="Attach" Width="100" Click="Attach_Click" 
-                       IsDefault="True" Background="#E8F4FD"/>
+                <Button x:Name="btnAttachCancel" Content="Cancel" Width="80" Margin="0,0,8,0" 
+                       Click="Cancel_Click" IsCancel="True" AutomationProperties.AutomationId="btnAttachCancel"/>
+                <Button x:Name="btnAttach" Content="Attach" Width="100" Click="Attach_Click" 
+                       IsDefault="True" Background="#E8F4FD" AutomationProperties.AutomationId="btnAttach"/>
             </StackPanel>
         </Grid>
     </Grid>

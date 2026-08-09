@@ -45,8 +45,8 @@ namespace WpfTestIde.Dialogs
                 2 => "Step 2: Configure Checkpoint",
                 _ => "Checkpoint Configuration"
             };
-            StepIndicator.Text = stepText;
-            BackButton.IsEnabled = _currentStep > 1;
+             StepIndicator.Text = stepText;
+             btnCheckpointBack.IsEnabled = _currentStep > 1;
         }
 
         private void ElementCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)

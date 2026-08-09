@@ -71,13 +71,25 @@ class WPFSpyRealDriver:
         request = json.dumps({"command": command, **params}) + "\n"
         print(f"[WPFSpyReal] _send: command={command}, params={params}")
 
-        handle = win32file.CreateFile(
-            pipe_path,
-            win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-            0, None,
-            win32file.OPEN_EXISTING,
-            0, None,
-        )
+        max_pipe_retries = 20
+        pipe_retry_delay = 0.5
+        last_pipe_error = None
+        for _ in range(max_pipe_retries):
+            try:
+                handle = win32file.CreateFile(
+                    pipe_path,
+                    win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                    0, None,
+                    win32file.OPEN_EXISTING,
+                    0, None,
+                )
+                break
+            except Exception as e:
+                last_pipe_error = e
+                time.sleep(pipe_retry_delay)
+        else:
+            raise last_pipe_error
+
         try:
             win32file.WriteFile(handle, request.encode("utf-8"))
             buffer = b""
@@ -184,11 +196,18 @@ class WPFSpyRealDriver:
 
     def is_visible(self, element) -> bool:
         """Check if an element is visible."""
-        if "xpath" in element:
-            response = self._send("IsVisible", xpath=element["xpath"])
-        else:
-            response = self._send("IsVisible", name=element["name"])
-        return response.get("data") == "true"
+        max_retries = 3
+        retry_delay = 0.2
+        for attempt in range(max_retries):
+            if "xpath" in element:
+                response = self._send("IsVisible", xpath=element["xpath"])
+            else:
+                response = self._send("IsVisible", name=element["name"])
+            if response.get("success"):
+                return response.get("data") == "true"
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+        return False
 
     def is_enabled(self, element) -> bool:
         """Check if an element is enabled.

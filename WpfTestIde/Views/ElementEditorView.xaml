@@ -37,10 +37,10 @@
             <TextBlock Text="Driver Priority Order" FontSize="11" FontWeight="Bold" Margin="0,0,0,2"/>
             <DockPanel Margin="0,0,0,8">
                 <ListBox x:Name="DriverPriorityListBox" ItemsSource="{Binding EditingElement.DriverPriority}" 
-                         Height="80" Width="200" FontSize="11" Margin="0,0,4,0"/>
+                         Height="80" Width="200" FontSize="11" Margin="0,0,4,0" AutomationProperties.AutomationId="DriverPriorityListBox"/>
                 <StackPanel Orientation="Vertical" DockPanel.Dock="Right">
-                    <Button Content="Up" Command="{Binding MoveElementPriorityUpCommand}" Padding="6,2" FontSize="10" Margin="0,0,0,1"/>
-                    <Button Content="Down" Command="{Binding MoveElementPriorityDownCommand}" Padding="6,2" FontSize="10"/>
+                    <Button x:Name="btnMovePriorityUp" Content="Up" Command="{Binding MoveElementPriorityUpCommand}" Padding="6,2" FontSize="10" Margin="0,0,0,1" AutomationProperties.AutomationId="btnMovePriorityUp"/>
+                    <Button x:Name="btnMovePriorityDown" Content="Down" Command="{Binding MoveElementPriorityDownCommand}" Padding="6,2" FontSize="10" AutomationProperties.AutomationId="btnMovePriorityDown"/>
                 </StackPanel>
             </DockPanel>
             <TextBlock Text="Reorder drivers for this element. Top = highest priority." FontSize="10" Foreground="Gray" Margin="0,0,0,8"/>
@@ -50,8 +50,8 @@
                    Foreground="Gray" Margin="0,10,0,0" TextWrapping="Wrap" Height="60"/>
 
         <StackPanel Orientation="Horizontal" DockPanel.Dock="Bottom" Margin="0,10,0,0">
-            <Button Content="Save" Command="{Binding SaveElementCommand}" Padding="12,6" Margin="0,0,6,0" Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
-            <Button Content="Cancel" Command="{Binding CancelEditElementCommand}" Padding="12,6"/>
+            <Button x:Name="btnSaveElement" Content="Save" Command="{Binding SaveElementCommand}" Padding="12,6" Margin="0,0,6,0" Background="#4CAF50" Foreground="White" FontWeight="Bold" AutomationProperties.AutomationId="btnSaveElement"/>
+            <Button x:Name="btnCancelEdit" Content="Cancel" Command="{Binding CancelEditElementCommand}" Padding="12,6" AutomationProperties.AutomationId="btnCancelEdit"/>
         </StackPanel>
     </DockPanel>
 </UserControl>

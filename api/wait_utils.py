@@ -10,7 +10,7 @@ import logging
 from typing import Callable, Any, Optional, List, Type
 from functools import wraps
 
-from .exceptions import WaitTimeoutError
+from exceptions import WaitTimeoutError
 
 logger = logging.getLogger(__name__)
 

@@ -139,8 +139,22 @@ namespace WpfSpyAgent
                 }
                 case "IsVisible":
                 {
-                    var element = RequireElement(request.Name, request.XPath);
-                    return SpyResponse.Ok(VisualTreeInspector.IsVisible(element) ? "true" : "false");
+                    FrameworkElement? element = null;
+                    string? error = null;
+                    try
+                    {
+                        element = RequireElement(request.Name, request.XPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        error = ex.Message;
+                    }
+                    if (element is null)
+                    {
+                        return SpyResponse.Fail(error ?? "Element not found");
+                    }
+                    bool isVisible = VisualTreeInspector.IsVisible(element);
+                    return SpyResponse.Ok(isVisible ? "true" : "false");
                 }
                 case "Toggle":
                 {

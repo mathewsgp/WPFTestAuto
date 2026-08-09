@@ -11,6 +11,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using System.Xml.Linq;
 
 namespace WpfSpyAgent
@@ -703,8 +704,34 @@ namespace WpfSpyAgent
                     spy.SpyInvoke();
                     break;
 
+                case TextBox textBox:
+                    textBox.Focus();
+                    break;
+
                 case ButtonBase button:
-                    button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                {
+                    if (button.Command != null)
+                    {
+                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
+                        {
+                            try
+                            {
+                                button.Command.Execute(null);
+                            }
+                            catch
+                            {
+                            }
+                        }));
+                    }
+                    else
+                    {
+                        button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                    }
+                    break;
+                }
+
+                case TabItem tabItem:
+                    tabItem.IsSelected = true;
                     break;
 
                 default:
@@ -717,12 +744,6 @@ namespace WpfSpyAgent
 
         public static void SetValue(FrameworkElement element, string value)
         {
-            try
-            {
-                string log = $"[SetValue] {element.GetType().Name} name={element.Name} automationId={System.Windows.Automation.AutomationProperties.GetAutomationId(element)} value='{value}'\n";
-                System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "xpath_log.txt"), log);
-            }
-            catch { }
             switch (element)
             {
                 case ISpyInteractable spy:
@@ -745,20 +766,12 @@ namespace WpfSpyAgent
                             comboBox.SelectedItem = item;
                             try
                             {
-                                string log = $"[SetValue] ComboBox selected item '{cbi.Content}'\n";
-                                System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "xpath_log.txt"), log);
                             }
                             catch { }
                             return;
                         }
                     }
                     comboBox.Text = value;
-                    try
-                    {
-                        string log = $"[SetValue] ComboBox set Text to '{value}'\n";
-                        System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "xpath_log.txt"), log);
-                    }
-                    catch { }
                     break;
 
                 default:
@@ -790,18 +803,13 @@ namespace WpfSpyAgent
                 TextBox textBox => textBox.Text,
                 PasswordBox passwordBox => passwordBox.Password,
                 ComboBox comboBox => comboBox.Text,
+                TextBlock textBlock => textBlock.Text,
                 ContentControl content => content.Content?.ToString() ?? "",
                 ItemsControl items => $"{items.Items.Count} rows",
                 _ when TryGetSpyText(element) != null => TryGetSpyText(element)!,
                 _ => throw new InvalidOperationException(
                     $"WpfSpyAgent: don't know how to read text from element of type '{element.GetType().Name}'.")
             };
-            try
-            {
-                string log = $"[GetText] {element.GetType().Name} name={element.Name} automationId={System.Windows.Automation.AutomationProperties.GetAutomationId(element)} -> '{result}'\n";
-                System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "xpath_log.txt"), log);
-            }
-            catch { }
             return result;
         }
 
@@ -957,15 +965,6 @@ namespace WpfSpyAgent
                 return null;
             }
 
-            // Search every PresentationSource in the process, not just
-            // Application.Current.Windows. A regular Window is itself a
-            // PresentationSource, so this is a strict superset -- it also
-            // covers Popup overlays, dropdown editors, tooltips, and
-            // DevExpress floating/docking panels, which is exactly what
-            // FindByScreenPoint can now anchor a recording on (see the
-            // WindowFromPoint-based hit-testing fix above). Without this,
-            // anything recorded inside such a surface could never be
-            // replayed.
             foreach (PresentationSource source in PresentationSource.CurrentSources)
             {
                 if (source?.RootVisual is not DependencyObject root)
@@ -976,21 +975,21 @@ namespace WpfSpyAgent
                 var result = MatchXPathSegment(root, xpath.Split('/'), 1);
                 if (result != null)
                 {
-                    try
-                    {
-                        string log = $"[XPath] '{xpath}' -> {result.GetType().Name} name={result.Name} automationId={AutomationProperties.GetAutomationId(result)}\n";
-                        System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "xpath_log.txt"), log);
-                    }
-                    catch { }
                     return result;
                 }
             }
-            try
+
+            foreach (Window window in Application.Current.Windows)
             {
-                string log = $"[XPath] '{xpath}' -> NOT FOUND\n";
-                System.IO.File.AppendAllText(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "xpath_log.txt"), log);
+                if (!window.IsVisible) continue;
+
+                var result = MatchXPathSegment(window, xpath.Split('/'), 1);
+                if (result != null)
+                {
+                    return result;
+                }
             }
-            catch { }
+
             return null;
         }
 

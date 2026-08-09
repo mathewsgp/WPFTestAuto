@@ -2,21 +2,21 @@
   "alias": "LoginPage.MainWindow.txtUsername",
   "baseline": {
     "alias": "LoginPage.MainWindow.txtUsername",
-    "automation_id": "txtUsername",
-    "name": "UsernameInput",
-    "control_type": "TextBox",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
     "xpath": null,
     "parent_xpath": null,
-    "text": "user1",
+    "text": "",
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-08T23:21:22.597068",
-    "last_verified": "2026-08-08T23:21:22.597070",
-    "verification_count": 1,
-    "driver_used": "WPFSpy",
-    "search_method": "XPath",
-    "search_value": "TextBox[@AutomationId='txtUsername']"
+    "captured_at": "2026-08-09T11:22:18.458672",
+    "last_verified": "2026-08-09T11:22:18.458682",
+    "verification_count": 6,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "txtUsername"
   },
   "healing_history": [
     {
@@ -56,29 +56,419 @@
         "is_visible": true,
         "is_enabled": true
       }
+    },
+    {
+      "timestamp": "2026-08-09T00:18:44.961852",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:19:40.208928",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:21:17.641899",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:23:35.362838",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:27:13.649355",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:27:44.237616",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "user1",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:29:58.920218",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:36:59.242096",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "user1",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:37:16.197644",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "user1",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:39:16.455164",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "user1",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:42:35.155070",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:45:38.572482",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T00:45:54.582475",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T00:45:55.532532",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T00:47:29.188075",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T00:49:16.753783",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:50:42.168280",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:54:01.120560",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "TextBox[@AutomationId='txtUsername']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": "txtUsername",
+        "name": "UsernameInput",
+        "control_type": "TextBox",
+        "text": "",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-09T00:57:38.520796",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T01:05:33.643465",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T01:06:26.838643",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T01:07:31.877855",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "txtUsername",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='txtUsername': Element from XPath '//*[@Auto",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T11:19:26.252899",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "TextBox[@AutomationId='txtUsername']",
+      "failure_reason": "WpfSpyAgent: don't know how to invoke element of type 'TextBox'. Standard buttons and controls imple",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
     }
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 1,
-      "failure_count": 3,
-      "total_duration_ms": 3215.8849239349365,
-      "last_success": "2026-08-08T23:00:12.648693",
-      "last_failure": "2026-08-08T23:21:22.593533",
-      "avg_duration_ms": 803.9712309837341
+      "success_count": 5,
+      "failure_count": 33,
+      "total_duration_ms": 20301.57494544983,
+      "last_success": "2026-08-09T11:22:18.334659",
+      "last_failure": "2026-08-09T01:07:31.877880",
+      "avg_duration_ms": 4060.314989089966
     },
     "WPFSpy:XPath": {
-      "success_count": 5,
+      "success_count": 37,
+      "failure_count": 10,
+      "total_duration_ms": 40168.946981430054,
+      "last_success": "2026-08-09T11:20:46.839572",
+      "last_failure": "2026-08-09T11:19:26.252909",
+      "avg_duration_ms": 1085.6472157143257
+    },
+    "Sikuli:Image": {
+      "success_count": 0,
+      "failure_count": 8,
+      "total_duration_ms": 0.36406517028808594,
+      "last_success": null,
+      "last_failure": "2026-08-09T01:07:31.876278",
+      "avg_duration_ms": 0.04550814628601074
+    },
+    "None:N/A": {
+      "success_count": 0,
       "failure_count": 0,
-      "total_duration_ms": 8.823394775390625,
-      "last_success": "2026-08-08T23:21:22.597079",
+      "total_duration_ms": 0.0,
+      "last_success": null,
       "last_failure": null,
-      "avg_duration_ms": 1.764678955078125
+      "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 11,
+  "total_interactions": 103,
   "first_seen": "2026-08-08T22:57:42.665970",
-  "last_interaction": "2026-08-08T23:21:22.597083",
+  "last_interaction": "2026-08-09T11:22:18.458687",
   "consecutive_failures": 0,
-  "consecutive_successes": 2
+  "consecutive_successes": 6
 }

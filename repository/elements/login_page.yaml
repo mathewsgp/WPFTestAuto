@@ -59,6 +59,7 @@ elements:
     displayName: "Password Text Box"
     controlType: "PasswordBox"
     automationId: "txtPassword"
+    name: "txtPassword"
     parentAlias: "LoginPage.MainWindow"
     relativeXPath: "PasswordBox[@AutomationId='txtPassword']"
     defaultTimeout: 10
@@ -68,6 +69,9 @@ elements:
         - searchBy: "AutomationId"
           value: "txtPassword"
           priority: 1
+        - searchBy: "Name"
+          value: "txtPassword"
+          priority: 2
       WPFSpy:
         - searchBy: "XPath"
           value: "PasswordBox[@AutomationId='txtPassword']"

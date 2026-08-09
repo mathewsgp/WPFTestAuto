@@ -8,7 +8,8 @@
         Title="Visual Test Builder"
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F5F5">
+        Background="#F5F5F5"
+        AutomationProperties.AutomationId="TestFlowDialog">
 
     <Window.Resources>
         <!-- Colors -->
@@ -192,67 +193,67 @@
 
                     <!-- Action Categories -->
                     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="ActionPalette">
-                            <!-- Mouse Actions -->
-                            <Expander Header="🖱️ Mouse" IsExpanded="True" Margin="8,4">
-                                <StackPanel>
-                                    <Button Content="🖱️ Click" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#42A5F5" Click="AddAction_Click" Tag="Click"/>
-                                    <Button Content="🖱️🖱️ Double Click" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#42A5F5" Click="AddAction_Click" Tag="DoubleClick"/>
-                                    <Button Content="🖱️☑️ Right Click" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#42A5F5" Click="AddAction_Click" Tag="RightClick"/>
-                                    <Button Content="👆 Hover" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#42A5F5" Click="AddAction_Click" Tag="Hover"/>
-                                </StackPanel>
-                            </Expander>
-
-                            <!-- Input Actions -->
-                            <Expander Header="⌨️ Input" IsExpanded="True" Margin="8,4">
-                                <StackPanel>
-                                    <Button Content="⌨️ Set Text" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#66BB6A" Click="AddAction_Click" Tag="SetText"/>
-                                    <Button Content="📝 Get Text" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#66BB6A" Click="AddAction_Click" Tag="GetText"/>
-                                    <Button Content="☑️ Select" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#66BB6A" Click="AddAction_Click" Tag="Select"/>
-                                </StackPanel>
-                            </Expander>
-
-                            <!-- Checkbox Actions -->
-                            <Expander Header="☑️ Checkbox" IsExpanded="True" Margin="8,4">
-                                <StackPanel>
-                                    <Button Content="✅ Check" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#FFA726" Click="AddAction_Click" Tag="Check"/>
-                                    <Button Content="⬜ Uncheck" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#FFA726" Click="AddAction_Click" Tag="Uncheck"/>
-                                </StackPanel>
-                            </Expander>
-
-                            <!-- Verification -->
-                            <Expander Header="🔍 Verification" IsExpanded="True" Margin="8,4">
-                                <StackPanel>
-                                    <Button Content="🔍 Verify Text" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#AB47BC" Click="AddAction_Click" Tag="Verify"/>
-                                    <Button Content="🔍 Verify Value" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#AB47BC" Click="AddAction_Click" Tag="Verify"/>
-                                    <Button Content="🔍 Verify Property" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#AB47BC" Click="AddAction_Click" Tag="Verify"/>
-                                </StackPanel>
-                            </Expander>
-
-                            <!-- Control Flow -->
-                            <Expander Header="⚙️ Control" IsExpanded="True" Margin="8,4">
-                                <StackPanel>
-                                    <Button Content="⏳ Wait" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#78909C" Click="AddAction_Click" Tag="Wait"/>
-                                    <Button Content="📷 Screenshot" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#78909C" Click="AddAction_Click" Tag="Screenshot"/>
-                                    <Button Content="🎹 Key Press" Style="{StaticResource ActionButtonStyle}" 
-                                            Background="#78909C" Click="AddAction_Click" Tag="KeyPress"/>
-                                </StackPanel>
-                            </Expander>
+                <StackPanel Grid.Row="1" x:Name="ActionPalette">
+                    <!-- Mouse Actions -->
+                    <Expander Header="🖱️ Mouse" IsExpanded="True" Margin="8,4">
+                        <StackPanel>
+                            <Button x:Name="btnActionClick" Content="🖱️ Click" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#42A5F5" Click="AddAction_Click" Tag="Click" AutomationProperties.AutomationId="btnActionClick"/>
+                            <Button x:Name="btnActionDoubleClick" Content="🖱️🖱️ Double Click" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#42A5F5" Click="AddAction_Click" Tag="DoubleClick" AutomationProperties.AutomationId="btnActionDoubleClick"/>
+                            <Button x:Name="btnActionRightClick" Content="🖱️☑️ Right Click" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#42A5F5" Click="AddAction_Click" Tag="RightClick" AutomationProperties.AutomationId="btnActionRightClick"/>
+                            <Button x:Name="btnActionHover" Content="👆 Hover" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#42A5F5" Click="AddAction_Click" Tag="Hover" AutomationProperties.AutomationId="btnActionHover"/>
                         </StackPanel>
+                    </Expander>
+
+                    <!-- Input Actions -->
+                    <Expander Header="⌨️ Input" IsExpanded="True" Margin="8,4">
+                        <StackPanel>
+                            <Button x:Name="btnActionSetText" Content="⌨️ Set Text" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#66BB6A" Click="AddAction_Click" Tag="SetText" AutomationProperties.AutomationId="btnActionSetText"/>
+                            <Button x:Name="btnActionGetText" Content="📝 Get Text" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#66BB6A" Click="AddAction_Click" Tag="GetText" AutomationProperties.AutomationId="btnActionGetText"/>
+                            <Button x:Name="btnActionSelect" Content="☑️ Select" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#66BB6A" Click="AddAction_Click" Tag="Select" AutomationProperties.AutomationId="btnActionSelect"/>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- Checkbox Actions -->
+                    <Expander Header="☑️ Checkbox" IsExpanded="True" Margin="8,4">
+                        <StackPanel>
+                            <Button x:Name="btnActionCheck" Content="✅ Check" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#FFA726" Click="AddAction_Click" Tag="Check" AutomationProperties.AutomationId="btnActionCheck"/>
+                            <Button x:Name="btnActionUncheck" Content="⬜ Uncheck" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#FFA726" Click="AddAction_Click" Tag="Uncheck" AutomationProperties.AutomationId="btnActionUncheck"/>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- Verification -->
+                    <Expander Header="🔍 Verification" IsExpanded="True" Margin="8,4">
+                        <StackPanel>
+                            <Button x:Name="btnActionVerifyText" Content="🔍 Verify Text" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#AB47BC" Click="AddAction_Click" Tag="Verify" AutomationProperties.AutomationId="btnActionVerifyText"/>
+                            <Button x:Name="btnActionVerifyValue" Content="🔍 Verify Value" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#AB47BC" Click="AddAction_Click" Tag="Verify" AutomationProperties.AutomationId="btnActionVerifyValue"/>
+                            <Button x:Name="btnActionVerifyProperty" Content="🔍 Verify Property" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#AB47BC" Click="AddAction_Click" Tag="Verify" AutomationProperties.AutomationId="btnActionVerifyProperty"/>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- Control Flow -->
+                    <Expander Header="⚙️ Control" IsExpanded="True" Margin="8,4">
+                        <StackPanel>
+                            <Button x:Name="btnActionWait" Content="⏳ Wait" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#78909C" Click="AddAction_Click" Tag="Wait" AutomationProperties.AutomationId="btnActionWait"/>
+                            <Button x:Name="btnActionScreenshot" Content="📷 Screenshot" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#78909C" Click="AddAction_Click" Tag="Screenshot" AutomationProperties.AutomationId="btnActionScreenshot"/>
+                            <Button x:Name="btnActionKeyPress" Content="🎹 Key Press" Style="{StaticResource ActionButtonStyle}" 
+                                    Background="#78909C" Click="AddAction_Click" Tag="KeyPress" AutomationProperties.AutomationId="btnActionKeyPress"/>
+                        </StackPanel>
+                    </Expander>
+                </StackPanel>
                     </ScrollViewer>
                 </Grid>
             </Border>
@@ -278,14 +279,14 @@
                             <TextBlock Text="Test Name" FontWeight="Bold" FontSize="12" 
                                        Foreground="{StaticResource TextSecondaryBrush}"/>
                             <TextBox x:Name="TestNameBox" Text="{Binding TestName, Mode=TwoWay}"
-                                     FontSize="16" Padding="8" Margin="0,4,0,0"/>
+                                     FontSize="16" Padding="8" Margin="0,4,0,0" AutomationProperties.AutomationId="TestNameBox"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Margin="8,0,0,0">
                             <TextBlock Text="Description" FontWeight="Bold" FontSize="12" 
                                        Foreground="{StaticResource TextSecondaryBrush}"/>
                             <TextBox x:Name="DescriptionBox" Text="{Binding Description, Mode=TwoWay}"
-                                     FontSize="14" Padding="8" Margin="0,4,0,0"/>
+                                     FontSize="14" Padding="8" Margin="0,4,0,0" AutomationProperties.AutomationId="DescriptionBox"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -341,7 +342,7 @@
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                  AllowDrop="True"
                                  Drop="StepsListBox_Drop"
-                                 DragOver="StepsListBox_DragOver">
+                                 DragOver="StepsListBox_DragOver" AutomationProperties.AutomationId="StepsListBox">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid>
@@ -470,7 +471,7 @@
                                           DisplayMemberPath="Name"
                                           SelectedValuePath="Name"
                                           SelectedValue="{Binding SelectedStep.ActionType, Mode=TwoWay}"
-                                          Padding="8" Margin="0,0,0,12"/>
+                                          Padding="8" Margin="0,0,0,12" AutomationProperties.AutomationId="ActionTypeCombo"/>
 
                                 <!-- Element Alias -->
                                 <TextBlock Text="Element Alias" FontWeight="Bold" FontSize="12" 
@@ -481,7 +482,7 @@
                                           SelectedValuePath="Alias"
                                           SelectedValue="{Binding SelectedStep.ElementAlias, Mode=TwoWay}"
                                           IsEditable="True"
-                                          Padding="8" Margin="0,0,0,12"/>
+                                          Padding="8" Margin="0,0,0,12" AutomationProperties.AutomationId="ElementCombo"/>
 
                                 <!-- Value (for SetText, Select, Wait) -->
                                 <StackPanel>
@@ -581,12 +582,12 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Content="📊 Flow Diagram" Style="{StaticResource ActionButtonStyle}" 
-                            Background="#455A64" Click="ShowFlowDiagram_Click"/>
-                    <Button Content="❌ Cancel" Style="{StaticResource ActionButtonStyle}" 
-                            Background="#9E9E9E" Click="Cancel_Click"/>
-                    <Button Content="✅ Save Test" Style="{StaticResource ActionButtonStyle}" 
-                            Background="{StaticResource SuccessBrush}" Click="SaveTest_Click"/>
+                    <Button x:Name="btnFlowDiagram" Content="📊 Flow Diagram" Style="{StaticResource ActionButtonStyle}" 
+                            Background="#455A64" Click="ShowFlowDiagram_Click" AutomationProperties.AutomationId="btnFlowDiagram"/>
+                    <Button x:Name="btnFlowCancel" Content="❌ Cancel" Style="{StaticResource ActionButtonStyle}" 
+                            Background="#9E9E9E" Click="Cancel_Click" AutomationProperties.AutomationId="btnFlowCancel"/>
+                    <Button x:Name="btnFlowSave" Content="✅ Save Test" Style="{StaticResource ActionButtonStyle}" 
+                            Background="{StaticResource SuccessBrush}" Click="SaveTest_Click" AutomationProperties.AutomationId="btnFlowSave"/>
                 </StackPanel>
             </Grid>
         </Border>

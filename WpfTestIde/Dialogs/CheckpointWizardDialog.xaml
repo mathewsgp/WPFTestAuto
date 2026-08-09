@@ -4,7 +4,8 @@
         Title="Checkpoint Wizard" 
         Height="520" Width="550"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        AutomationProperties.AutomationId="CheckpointWizardDialog">
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -22,16 +23,16 @@
         <!-- Step indicator -->
         <TextBlock Grid.Row="0" Grid.ColumnSpan="2" x:Name="StepIndicator" 
                    FontSize="14" FontWeight="Bold" Margin="0,0,0,16"
-                   Text="Step 1: Select Element"/>
+                   Text="Step 1: Select Element" AutomationProperties.AutomationId="StepIndicator"/>
 
         <!-- Element Selection -->
         <TextBlock Grid.Row="1" Grid.Column="0" Text="Element:" VerticalAlignment="Center" Margin="0,0,8,8"/>
         <ComboBox Grid.Row="1" Grid.Column="1" x:Name="ElementCombo" Margin="0,0,0,8"
-                  SelectionChanged="ElementCombo_SelectionChanged"/>
+                  SelectionChanged="ElementCombo_SelectionChanged" AutomationProperties.AutomationId="ElementCombo"/>
         
         <TextBlock Grid.Row="2" Grid.Column="0" Text="Checkpoint Type:" VerticalAlignment="Center" Margin="0,0,8,8"/>
         <ComboBox Grid.Row="2" Grid.Column="1" x:Name="TypeCombo" Margin="0,0,0,8"
-                  SelectionChanged="TypeCombo_SelectionChanged">
+                  SelectionChanged="TypeCombo_SelectionChanged" AutomationProperties.AutomationId="TypeCombo">
             <ComboBoxItem Content="Property Checkpoint" IsSelected="True"/>
             <ComboBoxItem Content="Area Checkpoint (OCR)"/>
             <ComboBoxItem Content="Image Checkpoint"/>
@@ -43,7 +44,7 @@
         <!-- Property Options -->
         <StackPanel Grid.Row="3" Grid.ColumnSpan="2" x:Name="PropertyPanel" Margin="0,8,0,8">
             <TextBlock Text="Property:" Margin="0,0,0,4"/>
-            <ComboBox x:Name="PropertyCombo" Margin="0,0,0,8">
+            <ComboBox x:Name="PropertyCombo" Margin="0,0,0,8" AutomationProperties.AutomationId="PropertyCombo">
                 <ComboBoxItem Content="Text" IsSelected="True"/>
                 <ComboBoxItem Content="IsEnabled"/>
                 <ComboBoxItem Content="IsVisible"/>
@@ -54,10 +55,10 @@
             
             <TextBlock Text="Expected Value:" Margin="0,0,0,4"/>
             <TextBox x:Name="ExpectedValueBox" Height="60" TextWrapping="Wrap" AcceptsReturn="True"
-                     VerticalScrollBarVisibility="Auto"/>
+                     VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="ExpectedValueBox"/>
             
-            <Button Content="Get Current Value" Click="GetCurrentValue_Click" 
-                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4"/>
+            <Button x:Name="btnGetCurrentValue" Content="Get Current Value" Click="GetCurrentValue_Click" 
+                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4" AutomationProperties.AutomationId="btnGetCurrentValue"/>
         </StackPanel>
 
         <!-- Area Options -->
@@ -79,24 +80,24 @@
                 </Grid.RowDefinitions>
                 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="X:" VerticalAlignment="Center" Margin="0,0,8,4"/>
-                <TextBox Grid.Row="0" Grid.Column="1" x:Name="XBox" Margin="0,0,16,4"/>
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="XBox" Margin="0,0,16,4" AutomationProperties.AutomationId="XBox"/>
                 
                 <TextBlock Grid.Row="0" Grid.Column="2" Text="Y:" VerticalAlignment="Center" Margin="0,0,8,4"/>
-                <TextBox Grid.Row="0" Grid.Column="3" x:Name="YBox" Margin="0,0,0,4"/>
+                <TextBox Grid.Row="0" Grid.Column="3" x:Name="YBox" Margin="0,0,0,4" AutomationProperties.AutomationId="YBox"/>
                 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Width:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <TextBox Grid.Row="1" Grid.Column="1" x:Name="WidthBox" Margin="0,0,16,0"/>
+                <TextBox Grid.Row="1" Grid.Column="1" x:Name="WidthBox" Margin="0,0,16,0" AutomationProperties.AutomationId="WidthBox"/>
                 
                 <TextBlock Grid.Row="1" Grid.Column="2" Text="Height:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <TextBox Grid.Row="1" Grid.Column="3" x:Name="HeightBox"/>
+                <TextBox Grid.Row="1" Grid.Column="3" x:Name="HeightBox" AutomationProperties.AutomationId="HeightBox"/>
             </Grid>
             
-            <Button Content="Select Area on Screen" Click="SelectArea_Click" 
-                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4"/>
+            <Button x:Name="btnSelectArea" Content="Select Area on Screen" Click="SelectArea_Click" 
+                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4" AutomationProperties.AutomationId="btnSelectArea"/>
             
             <TextBlock Text="Expected Text (from OCR):" Margin="0,16,0,4"/>
             <TextBox x:Name="OcrTextBox" Height="60" TextWrapping="Wrap" IsReadOnly="True"
-                     VerticalScrollBarVisibility="Auto" Background="#F5F5F5"/>
+                     VerticalScrollBarVisibility="Auto" Background="#F5F5F5" AutomationProperties.AutomationId="OcrTextBox"/>
         </StackPanel>
 
         <!-- Image Options -->
@@ -116,17 +117,17 @@
                 </Grid.RowDefinitions>
                 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="X:" VerticalAlignment="Center" Margin="0,0,8,4"/>
-                <TextBox Grid.Row="0" Grid.Column="1" x:Name="ImageXBox" Margin="0,0,0,4"/>
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="ImageXBox" Margin="0,0,0,4" AutomationProperties.AutomationId="ImageXBox"/>
                 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Y:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <TextBox Grid.Row="1" Grid.Column="1" x:Name="ImageYBox"/>
+                <TextBox Grid.Row="1" Grid.Column="1" x:Name="ImageYBox" AutomationProperties.AutomationId="ImageYBox"/>
             </Grid>
             
-            <Button Content="Capture Area" Click="CaptureArea_Click" 
-                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4"/>
+            <Button x:Name="btnCaptureArea" Content="Capture Area" Click="CaptureArea_Click" 
+                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4" AutomationProperties.AutomationId="btnCaptureArea"/>
             
             <TextBlock Text="Baseline Image Path:" Margin="0,16,0,4"/>
-            <TextBox x:Name="BaselinePathBox" IsReadOnly="True" Background="#F5F5F5"/>
+            <TextBox x:Name="BaselinePathBox" IsReadOnly="True" Background="#F5F5F5" AutomationProperties.AutomationId="BaselinePathBox"/>
         </StackPanel>
 
         <!-- DataGrid Options -->
@@ -137,10 +138,10 @@
             
             <TextBlock Text="Expected Content (CSV):" Margin="0,0,0,4"/>
             <TextBox x:Name="DataGridContentBox" Height="100" TextWrapping="Wrap" AcceptsReturn="True"
-                     VerticalScrollBarVisibility="Auto"/>
+                     VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="DataGridContentBox"/>
             
-            <Button Content="Get Current Content" Click="GetDataGridContent_Click" 
-                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4"/>
+            <Button x:Name="btnGetDataGridContent" Content="Get Current Content" Click="GetDataGridContent_Click" 
+                    HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4" AutomationProperties.AutomationId="btnGetDataGridContent"/>
         </StackPanel>
 
         <!-- Attribute Options -->
@@ -148,10 +149,10 @@
             <TextBlock Text="Attribute Verification" FontWeight="Bold" Margin="0,0,0,8"/>
             
             <TextBlock Text="Attribute Name:" Margin="0,0,0,4"/>
-            <TextBox x:Name="AttributeNameBox" Margin="0,0,0,8"/>
+            <TextBox x:Name="AttributeNameBox" Margin="0,0,0,8" AutomationProperties.AutomationId="AttributeNameBox"/>
             
             <TextBlock Text="Expected Value:" Margin="0,0,0,4"/>
-            <TextBox x:Name="AttributeValueBox" Margin="0,0,0,8"/>
+            <TextBox x:Name="AttributeValueBox" Margin="0,0,0,8" AutomationProperties.AutomationId="AttributeValueBox"/>
         </StackPanel>
 
         <!-- Count Options -->
@@ -159,20 +160,20 @@
             <TextBlock Text="Element Count Verification" FontWeight="Bold" Margin="0,0,0,8"/>
             
             <TextBlock Text="Expected Count:" Margin="0,0,0,4"/>
-            <TextBox x:Name="CountBox" Width="100" HorizontalAlignment="Left"/>
+            <TextBox x:Name="CountBox" Width="100" HorizontalAlignment="Left" AutomationProperties.AutomationId="CountBox"/>
         </StackPanel>
 
         <!-- Description -->
         <TextBlock Grid.Row="4" Grid.Column="0" Text="Description:" VerticalAlignment="Top" Margin="0,8,8,0"/>
         <TextBox Grid.Row="4" Grid.Column="1" x:Name="DescriptionBox" Margin="0,8,0,0" 
-                 Height="40" TextWrapping="Wrap"/>
+                 Height="40" TextWrapping="Wrap" AutomationProperties.AutomationId="DescriptionBox"/>
 
         <!-- Buttons -->
         <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Orientation="Horizontal" 
                     HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click"/>
-            <Button Content="Back" Width="80" Margin="0,0,8,0" Click="Back_Click" x:Name="BackButton"/>
-            <Button Content="Next / Add" Width="100" Click="Next_Click" IsDefault="True"/>
+            <Button x:Name="btnCheckpointCancel" Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click" AutomationProperties.AutomationId="btnCheckpointCancel"/>
+            <Button x:Name="btnCheckpointBack" Content="Back" Width="80" Margin="0,0,8,0" Click="Back_Click" AutomationProperties.AutomationId="btnCheckpointBack"/>
+            <Button x:Name="btnCheckpointNext" Content="Next / Add" Width="100" Click="Next_Click" IsDefault="True" AutomationProperties.AutomationId="btnCheckpointNext"/>
         </StackPanel>
     </Grid>
 </Window>

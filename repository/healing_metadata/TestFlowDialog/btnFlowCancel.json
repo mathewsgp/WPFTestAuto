@@ -1,0 +1,49 @@
+{
+  "alias": "TestFlowDialog.btnFlowCancel",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T08:56:29.230743",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnFlowCancel",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnFlowCancel': Element from XPath '//*[@Au",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 0,
+      "failure_count": 2,
+      "total_duration_ms": 802.0238876342773,
+      "last_success": null,
+      "last_failure": "2026-08-09T08:56:29.230760",
+      "avg_duration_ms": 401.0119438171387
+    },
+    "WPFSpy:XPath": {
+      "success_count": 0,
+      "failure_count": 1,
+      "total_duration_ms": 7093.034744262695,
+      "last_success": null,
+      "last_failure": "2026-08-09T08:56:29.229478",
+      "avg_duration_ms": 7093.034744262695
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    }
+  },
+  "total_interactions": 3,
+  "first_seen": "2026-08-09T08:56:22.133621",
+  "last_interaction": "2026-08-09T08:56:29.230765",
+  "consecutive_failures": 3,
+  "consecutive_successes": 0
+}

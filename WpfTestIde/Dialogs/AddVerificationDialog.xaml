@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Add Verification" Height="220" Width="440"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner"
+        AutomationProperties.AutomationId="AddVerificationDialog">
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -14,17 +15,17 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="Element:" Margin="0,0,0,4"/>
-        <ComboBox Grid.Row="1" x:Name="AliasCombo" Margin="0,0,0,10" SelectionChanged="AliasCombo_SelectionChanged"/>
+        <ComboBox Grid.Row="1" x:Name="AliasCombo" Margin="0,0,0,10" SelectionChanged="AliasCombo_SelectionChanged" AutomationProperties.AutomationId="AliasCombo"/>
 
         <TextBlock Grid.Row="2" Text="Expected text:" Margin="0,0,0,4"/>
-        <TextBox Grid.Row="3" x:Name="ExpectedBox" Margin="0,0,0,10"/>
+        <TextBox Grid.Row="3" x:Name="ExpectedBox" Margin="0,0,0,10" AutomationProperties.AutomationId="ExpectedBox"/>
 
         <TextBlock Grid.Row="4" x:Name="HintText" Foreground="Gray" TextWrapping="Wrap" FontSize="11"
-                   Text="Tip: pick the element and adjust the expected text — this becomes a Verify Element Text step."/>
+                   Text="Tip: pick the element and adjust the expected text — this becomes a Verify Element Text step." AutomationProperties.AutomationId="HintText"/>
 
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click"/>
-            <Button Content="Add" Width="80" Click="Add_Click" IsDefault="True"/>
+            <Button x:Name="btnVerifyCancel" Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click" AutomationProperties.AutomationId="btnVerifyCancel"/>
+            <Button x:Name="btnVerifyAdd" Content="Add" Width="80" Click="Add_Click" IsDefault="True" AutomationProperties.AutomationId="btnVerifyAdd"/>
         </StackPanel>
     </Grid>
 </Window>

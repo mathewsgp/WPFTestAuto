@@ -172,8 +172,12 @@ def _launch_app_for_context(app_context: AppContext) -> subprocess.Popen:
             env["WPFSPY_AGENT_ENABLED"] = "1"
             env["WPFSPY_PIPE_NAME"] = app_context.pipe_name or "WPFSpyAgentPipe"
 
+    cmd = [app_context.app_path] + app_context.launch_args
+    if not app_context.app_path.lower().endswith(".exe"):
+        cmd = ["dotnet"] + cmd
+
     proc = subprocess.Popen(
-        ["dotnet", app_context.app_path] + app_context.launch_args,
+        cmd,
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

@@ -39,7 +39,7 @@ def _load_yaml_dir(subfolder, top_key):
     merged = {}
     pattern = os.path.join(_REPO_ROOT, subfolder, "*.yaml")
     for path in sorted(glob.glob(pattern)):
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
         merged.update(data.get(top_key, {}))
     return merged

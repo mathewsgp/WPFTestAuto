@@ -34,24 +34,24 @@
                            Foreground="#6A737D" Margin="10,0" VerticalAlignment="Center"
                            Visibility="{Binding SearchFilter, Converter={StaticResource EmptyStringToVisibleConverter}}"/>
                 <TextBox x:Name="SearchBox" Text="{Binding SearchFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         Padding="8" FontSize="12"/>
+                         Padding="8" FontSize="12" AutomationProperties.AutomationId="SearchBox"/>
             </Grid>
         </Border>
 
         <!-- Expand/Collapse buttons -->
         <Border DockPanel.Dock="Top" Padding="8,0,8,8">
             <StackPanel Orientation="Horizontal">
-                <Button Content="⬇️ Expand All" Padding="6,2" FontSize="11" 
-                        Command="{Binding ExpandAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand"/>
-                <Button Content="⬆️ Collapse" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                        Command="{Binding CollapseAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand"/>
+                <Button x:Name="btnTreeExpandAll" Content="⬇️ Expand All" Padding="6,2" FontSize="11" 
+                        Command="{Binding ExpandAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnTreeExpandAll"/>
+                <Button x:Name="btnTreeCollapse" Content="⬆️ Collapse" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                        Command="{Binding CollapseAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnTreeCollapse"/>
             </StackPanel>
         </Border>
 
         <!-- Tree View -->
         <TreeView x:Name="ElementTreeViewControl" ItemsSource="{Binding RootNodes}" 
                   SelectedItemChanged="ElementTreeViewControl_SelectedItemChanged"
-                  BorderThickness="0" Background="Transparent">
+                  BorderThickness="0" Background="Transparent" AutomationProperties.AutomationId="ElementTreeViewControl">
             <TreeView.ItemContainerStyle>
                 <Style TargetType="TreeViewItem">
                     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>

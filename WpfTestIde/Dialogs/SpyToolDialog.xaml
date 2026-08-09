@@ -4,7 +4,8 @@
         Title="Spy Tool - Element Inspector" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterOwner"
-        MinWidth="800" MinHeight="500">
+        MinWidth="800" MinHeight="500"
+        AutomationProperties.AutomationId="SpyToolDialog">
     <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -21,22 +22,22 @@
         <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,8">
             <TextBlock Text="App:" VerticalAlignment="Center" Margin="0,0,4,0"/>
             <ComboBox x:Name="AppSelector" Width="180" Margin="0,0,8,0" FontSize="11" SelectedIndex="0"
-                      DisplayMemberPath="DisplayText" SelectedValuePath="AppId"/>
+                      DisplayMemberPath="DisplayText" SelectedValuePath="AppId" AutomationProperties.AutomationId="AppSelector"/>
             
             <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <ComboBox x:Name="ModeSelector" Width="160" Margin="0,0,8,0" FontSize="11" SelectedIndex="0">
+            <ComboBox x:Name="ModeSelector" Width="160" Margin="0,0,8,0" FontSize="11" SelectedIndex="0" AutomationProperties.AutomationId="ModeSelector">
                 <ComboBoxItem Content="WPFSpy Visual Tree" Tag="WPFSpy"/>
                 <ComboBoxItem Content="FlaUI Automation Tree" Tag="FlaUI"/>
             </ComboBox>
             
             <TextBlock Text="Search:" VerticalAlignment="Center" Margin="8,0,8,0"/>
             <TextBox x:Name="SearchBox" Width="200" Padding="4" 
-                     TextChanged="SearchBox_TextChanged"/>
-            <Button Content="🔍" Click="Search_Click" Padding="8,4" Margin="4,0,16,0" ToolTip="Search elements"/>
+                     TextChanged="SearchBox_TextChanged" AutomationProperties.AutomationId="SearchBox"/>
+            <Button x:Name="btnSearch" Content="🔍" Click="Search_Click" Padding="8,4" Margin="4,0,16,0" ToolTip="Search elements" AutomationProperties.AutomationId="btnSearch"/>
             
-            <Button Content="🔄 Refresh Tree" Click="RefreshTree_Click" Padding="8,4" Margin="0,0,8,0"/>
-            <Button Content="📋 Copy XPath" Click="CopyXPath_Click" Padding="8,4" Margin="0,0,8,0"/>
-            <Button Content="📋 Copy All Props" Click="CopyAllProps_Click" Padding="8,4"/>
+            <Button x:Name="btnRefreshTree" Content="🔄 Refresh Tree" Click="RefreshTree_Click" Padding="8,4" Margin="0,0,8,0" AutomationProperties.AutomationId="btnRefreshTree"/>
+            <Button x:Name="btnCopyXPath" Content="📋 Copy XPath" Click="CopyXPath_Click" Padding="8,4" Margin="0,0,8,0" AutomationProperties.AutomationId="btnCopyXPath"/>
+            <Button x:Name="btnCopyAllProps" Content="📋 Copy All Props" Click="CopyAllProps_Click" Padding="8,4" AutomationProperties.AutomationId="btnCopyAllProps"/>
         </StackPanel>
 
         <!-- Left Panel: Visual Tree View -->
@@ -46,7 +47,7 @@
                 <TextBlock DockPanel.Dock="Top" Text="Element Tree" FontWeight="Bold" 
                            Margin="8,8,8,4" Background="#F5F5F5" Padding="4"/>
                 <TreeView x:Name="ElementTree" BorderThickness="0" 
-                          SelectedItemChanged="ElementTree_SelectedItemChanged">
+                          SelectedItemChanged="ElementTree_SelectedItemChanged" AutomationProperties.AutomationId="ElementTree">
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                             <StackPanel Orientation="Horizontal">
@@ -116,7 +117,7 @@
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,8,8,4">
                         <TextBlock Text="XPath" FontWeight="Bold" Background="#F5F5F5" Padding="4"/>
-                        <Button Content="✓ Validate" Click="ValidateXPath_Click" Padding="6,2" Margin="8,0,0,0" FontSize="11"/>
+                        <Button x:Name="btnValidateXPath" Content="✓ Validate" Click="ValidateXPath_Click" Padding="6,2" Margin="8,0,0,0" FontSize="11" AutomationProperties.AutomationId="btnValidateXPath"/>
                     </StackPanel>
                     
                     <TextBox x:Name="XPathEditor" 
@@ -126,7 +127,7 @@
                              VerticalScrollBarVisibility="Auto"
                              MinHeight="80" MaxHeight="120"
                              Background="#1E1E1E" Foreground="#D4D4D4"
-                             BorderThickness="0" Padding="8"/>
+                             BorderThickness="0" Padding="8" AutomationProperties.AutomationId="XPathEditor"/>
                 </DockPanel>
             </Border>
         </Grid>
@@ -137,17 +138,17 @@
                 <TextBlock DockPanel.Dock="Left" Text="XPath Status:" FontWeight="Bold" 
                            VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <TextBlock x:Name="XPathStatus" Text="No element selected" 
-                           Foreground="Gray" VerticalAlignment="Center"/>
+                           Foreground="Gray" VerticalAlignment="Center" AutomationProperties.AutomationId="XPathStatus"/>
             </DockPanel>
         </Border>
 
         <!-- Actions -->
         <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Orientation="Horizontal" 
                     HorizontalAlignment="Right">
-            <Button Content="Add to Repository" Click="AddToRepository_Click" 
+            <Button x:Name="btnAddToRepository" Content="Add to Repository" Click="AddToRepository_Click" 
                     Padding="16,8" Margin="0,0,8,0" 
-                    Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
-            <Button Content="Close" Click="Close_Click" Padding="16,8"/>
+                    Background="#4CAF50" Foreground="White" FontWeight="Bold" AutomationProperties.AutomationId="btnAddToRepository"/>
+            <Button x:Name="btnSpyClose" Content="Close" Click="Close_Click" Padding="16,8" AutomationProperties.AutomationId="btnSpyClose"/>
         </StackPanel>
     </Grid>
 </Window>

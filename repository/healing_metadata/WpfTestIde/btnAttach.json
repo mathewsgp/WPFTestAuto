@@ -1,0 +1,45 @@
+{
+  "alias": "WpfTestIde.MainWindow.btnAttach",
+  "baseline": {
+    "alias": "WpfTestIde.MainWindow.btnAttach",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Attach",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-08-09T11:17:40.293776",
+    "last_verified": "2026-08-09T11:17:40.293787",
+    "verification_count": 33,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnAttach"
+  },
+  "healing_history": [],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 16,
+      "failure_count": 0,
+      "total_duration_ms": 4684.932470321655,
+      "last_success": "2026-08-09T11:17:39.481800",
+      "last_failure": null,
+      "avg_duration_ms": 292.80827939510345
+    },
+    "WPFSpy:XPath": {
+      "success_count": 17,
+      "failure_count": 0,
+      "total_duration_ms": 886.7793083190918,
+      "last_success": "2026-08-09T11:14:58.749782",
+      "last_failure": null,
+      "avg_duration_ms": 52.16348872465246
+    }
+  },
+  "total_interactions": 66,
+  "first_seen": "2026-08-09T01:54:20.915068",
+  "last_interaction": "2026-08-09T11:17:40.293793",
+  "consecutive_failures": 0,
+  "consecutive_successes": 66
+}
