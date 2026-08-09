@@ -267,7 +267,7 @@ elements:
     automationId: "StatusText"
     name: "StatusText"
     parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "Text[@AutomationId='StatusText']"
+    relativeXPath: "TextBlock[@AutomationId='StatusText']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -284,7 +284,7 @@ elements:
     automationId: "PipeStatusText"
     name: "PipeStatusText"
     parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "Text[@AutomationId='PipeStatusText']"
+    relativeXPath: "TextBlock[@AutomationId='PipeStatusText']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -292,7 +292,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Text[@AutomationId='PipeStatusText']"
+          value: "TextBlock[@AutomationId='PipeStatusText']"
           priority: 1
 
   # ================= Driver Settings Checkboxes =================
@@ -371,7 +371,7 @@ elements:
     automationId: "txtOcrResult"
     name: "txtOcrResult"
     parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "Text[@AutomationId='txtOcrResult']"
+    relativeXPath: "TextBox[@AutomationId='txtOcrResult']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -379,7 +379,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Text[@AutomationId='txtOcrResult']"
+          value: "TextBox[@AutomationId='txtOcrResult']"
           priority: 1
 
   # ================= Tabs =================
@@ -578,7 +578,7 @@ elements:
     automationId: "txtGeneratedScript"
     name: "txtGeneratedScript"
     parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "//Text[@AutomationId='txtGeneratedScript']"
+    relativeXPath: "TextBox[@AutomationId='txtGeneratedScript']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -586,7 +586,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "//Text[@AutomationId='txtGeneratedScript']"
+          value: "TextBox[@AutomationId='txtGeneratedScript']"
           priority: 1
 
   # ================= Results Tab Controls =================
@@ -613,7 +613,7 @@ elements:
     automationId: "txtRunOutput"
     name: "txtRunOutput"
     parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "//Text[@AutomationId='txtRunOutput']"
+    relativeXPath: "//TextBox[@AutomationId='txtRunOutput']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -621,7 +621,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "//Text[@AutomationId='txtRunOutput']"
+          value: "//TextBox[@AutomationId='txtRunOutput']"
           priority: 1
 
   # ================= Attach to Process Dialog =================
@@ -642,7 +642,7 @@ elements:
     automationId: "StatusText"
     name: "StatusText"
     parentAlias: "AttachToProcessDialog"
-    relativeXPath: "Text[@AutomationId='StatusText']"
+    relativeXPath: "TextBlock[@AutomationId='StatusText']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -670,6 +670,142 @@ elements:
           value: "Button[@AutomationId='btnAttachCancel']"
           priority: 1
 
+  AttachToProcessDialog.RuntimeAttachRadio:
+    displayName: "Runtime Attach Radio Button"
+    controlType: "RadioButton"
+    automationId: "RuntimeAttachRadio"
+    name: "Runtime Attach (Already Running)"
+    parentAlias: "AttachToProcessDialog"
+    relativeXPath: "RadioButton[@AutomationId='RuntimeAttachRadio']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "RuntimeAttachRadio"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "RadioButton[@AutomationId='RuntimeAttachRadio']"
+          priority: 1
+
+  AttachToProcessDialog.NewProcessRadio:
+    displayName: "New Process Radio Button"
+    controlType: "RadioButton"
+    automationId: "NewProcessRadio"
+    name: "Launch New Process"
+    parentAlias: "AttachToProcessDialog"
+    relativeXPath: "RadioButton[@AutomationId='NewProcessRadio']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "NewProcessRadio"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "RadioButton[@AutomationId='NewProcessRadio']"
+          priority: 1
+
+  AttachToProcessDialog.ApplicationPathBox:
+    displayName: "Application Path Text Box"
+    controlType: "Text"
+    automationId: "ApplicationPathBox"
+    name: "ApplicationPathBox"
+    parentAlias: "AttachToProcessDialog"
+    relativeXPath: "TextBox[@AutomationId='ApplicationPathBox']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "ApplicationPathBox"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "TextBox[@AutomationId='ApplicationPathBox']"
+          priority: 1
+
+  AttachToProcessDialog.btnBrowseApplication:
+    displayName: "Browse Application Button"
+    controlType: "Button"
+    automationId: "btnBrowseApplication"
+    name: "Browse..."
+    parentAlias: "AttachToProcessDialog"
+    relativeXPath: "Button[@AutomationId='btnBrowseApplication']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnBrowseApplication"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnBrowseApplication']"
+          priority: 1
+
+  AttachToProcessDialog.PipeNameBox:
+    displayName: "Pipe Name Text Box"
+    controlType: "Text"
+    automationId: "PipeNameBox"
+    name: "PipeNameBox"
+    parentAlias: "AttachToProcessDialog"
+    relativeXPath: "TextBox[@AutomationId='PipeNameBox']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "PipeNameBox"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "TextBox[@AutomationId='PipeNameBox']"
+          priority: 1
+
+  AttachToProcessDialog.AppIdBox:
+    displayName: "App ID Text Box"
+    controlType: "Text"
+    automationId: "AppIdBox"
+    name: "AppIdBox"
+    parentAlias: "AttachToProcessDialog"
+    relativeXPath: "TextBox[@AutomationId='AppIdBox']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "AppIdBox"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "TextBox[@AutomationId='AppIdBox']"
+          priority: 1
+
+  AttachToProcessDialog.btnAttach:
+    displayName: "Attach Button"
+    controlType: "Button"
+    automationId: "btnAttach"
+    name: "Attach"
+    parentAlias: "AttachToProcessDialog"
+    relativeXPath: "Button[@AutomationId='btnAttach']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnAttach"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnAttach']"
+          priority: 1
+
+  AttachToProcessDialog.ProcessListView:
+    displayName: "Process List View"
+    controlType: "Table"
+    automationId: "ProcessListView"
+    name: "ProcessListView"
+    parentAlias: "AttachToProcessDialog"
+    relativeXPath: "ListView[@AutomationId='ProcessListView']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "ProcessListView"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "ListView[@AutomationId='ProcessListView']"
+          priority: 1
+
   # ================= Multi App Dialog =================
   MultiAppDialog:
     displayName: "Manage Applications Dialog"
@@ -688,7 +824,7 @@ elements:
     automationId: "AppsGrid"
     name: "AppsGrid"
     parentAlias: "MultiAppDialog"
-    relativeXPath: "Table[@AutomationId='AppsGrid']"
+    relativeXPath: "//DataGrid[@AutomationId='AppsGrid']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -696,7 +832,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Table[@AutomationId='AppsGrid']"
+          value: "//DataGrid[@AutomationId='AppsGrid']"
           priority: 1
 
   MultiAppDialog.btnMultiAppClose:
@@ -734,7 +870,7 @@ elements:
     automationId: "StepIndicator"
     name: "StepIndicator"
     parentAlias: "CheckpointWizardDialog"
-    relativeXPath: "Text[@AutomationId='StepIndicator']"
+    relativeXPath: "//TextBlock[@AutomationId='StepIndicator']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -742,7 +878,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Text[@AutomationId='StepIndicator']"
+          value: "//TextBlock[@AutomationId='StepIndicator']"
           priority: 1
 
   CheckpointWizardDialog.btnCheckpointCancel:
@@ -780,7 +916,7 @@ elements:
     automationId: "XPathStatus"
     name: "XPathStatus"
     parentAlias: "SpyToolDialog"
-    relativeXPath: "Text[@AutomationId='XPathStatus']"
+    relativeXPath: "TextBlock[@AutomationId='XPathStatus']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -788,7 +924,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Text[@AutomationId='XPathStatus']"
+          value: "TextBlock[@AutomationId='XPathStatus']"
           priority: 1
 
   SpyToolDialog.btnSpyClose:
@@ -797,7 +933,7 @@ elements:
     automationId: "btnSpyClose"
     name: "Close"
     parentAlias: "SpyToolDialog"
-    relativeXPath: "Button[@AutomationId='btnSpyClose']"
+    relativeXPath: "//Button[@AutomationId='btnSpyClose']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -805,7 +941,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Button[@AutomationId='btnSpyClose']"
+          value: "//Button[@AutomationId='btnSpyClose']"
           priority: 1
 
   # ================= Visual Test Builder Dialog =================
@@ -826,7 +962,7 @@ elements:
     automationId: "TestNameBox"
     name: "TestNameBox"
     parentAlias: "TestFlowDialog"
-    relativeXPath: "Text[@AutomationId='TestNameBox']"
+    relativeXPath: "TextBox[@AutomationId='TestNameBox']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -834,7 +970,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Text[@AutomationId='TestNameBox']"
+          value: "TextBox[@AutomationId='TestNameBox']"
           priority: 1
 
   TestFlowDialog.btnFlowCancel:
@@ -843,7 +979,7 @@ elements:
     automationId: "btnFlowCancel"
     name: "Cancel"
     parentAlias: "TestFlowDialog"
-    relativeXPath: "Button[@AutomationId='btnFlowCancel']"
+    relativeXPath: "//Button[@AutomationId='btnFlowCancel']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -851,6 +987,533 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Button[@AutomationId='btnFlowCancel']"
+          value: "//Button[@AutomationId='btnFlowCancel']"
+          priority: 1
+
+  # ================= Scripts Tab - Sub Tabs =================
+  WpfTestIde.MainWindow.tabVisualSteps:
+    displayName: "Visual Steps Tab"
+    controlType: "TabItem"
+    automationId: "tabVisualSteps"
+    name: "Visual"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "//TabItem[@AutomationId='tabVisualSteps']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "tabVisualSteps"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//TabItem[@AutomationId='tabVisualSteps']"
+          priority: 1
+
+  WpfTestIde.MainWindow.tabRawScript:
+    displayName: "Raw Script Tab"
+    controlType: "TabItem"
+    automationId: "tabRawScript"
+    name: "Raw"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "//TabItem[@AutomationId='tabRawScript']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "tabRawScript"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//TabItem[@AutomationId='tabRawScript']"
+          priority: 1
+
+  WpfTestIde.MainWindow.StepsListBox:
+    displayName: "Steps List Box"
+    controlType: "List"
+    automationId: "StepsListBox"
+    name: "StepsListBox"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "ListBox[@AutomationId='StepsListBox']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "StepsListBox"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "ListBox[@AutomationId='StepsListBox']"
+          priority: 1
+
+  WpfTestIde.MainWindow.chkScriptRecordFlaUI:
+    displayName: "Script Record FlaUI Checkbox"
+    controlType: "CheckBox"
+    automationId: "chkScriptRecordFlaUI"
+    name: "FlaUI"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "CheckBox[@AutomationId='chkScriptRecordFlaUI']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "chkScriptRecordFlaUI"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "CheckBox[@AutomationId='chkScriptRecordFlaUI']"
+          priority: 1
+
+  WpfTestIde.MainWindow.chkScriptRecordWPFSpy:
+    displayName: "Script Record WPFSpy Checkbox"
+    controlType: "CheckBox"
+    automationId: "chkScriptRecordWPFSpy"
+    name: "WPFSpy"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "CheckBox[@AutomationId='chkScriptRecordWPFSpy']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "chkScriptRecordWPFSpy"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "CheckBox[@AutomationId='chkScriptRecordWPFSpy']"
+          priority: 1
+
+  WpfTestIde.MainWindow.chkScriptRecordSikuli:
+    displayName: "Script Record Sikuli Checkbox"
+    controlType: "CheckBox"
+    automationId: "chkScriptRecordSikuli"
+    name: "Sikuli"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "CheckBox[@AutomationId='chkScriptRecordSikuli']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "chkScriptRecordSikuli"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "CheckBox[@AutomationId='chkScriptRecordSikuli']"
+          priority: 1
+
+  WpfTestIde.MainWindow.chkScriptRunFlaUI:
+    displayName: "Script Run FlaUI Checkbox"
+    controlType: "CheckBox"
+    automationId: "chkScriptRunFlaUI"
+    name: "FlaUI"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "CheckBox[@AutomationId='chkScriptRunFlaUI']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "chkScriptRunFlaUI"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "CheckBox[@AutomationId='chkScriptRunFlaUI']"
+          priority: 1
+
+  WpfTestIde.MainWindow.chkScriptRunWPFSpy:
+    displayName: "Script Run WPFSpy Checkbox"
+    controlType: "CheckBox"
+    automationId: "chkScriptRunWPFSpy"
+    name: "WPFSpy"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "CheckBox[@AutomationId='chkScriptRunWPFSpy']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "chkScriptRunWPFSpy"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "CheckBox[@AutomationId='chkScriptRunWPFSpy']"
+          priority: 1
+
+  WpfTestIde.MainWindow.chkScriptRunSikuli:
+    displayName: "Script Run Sikuli Checkbox"
+    controlType: "CheckBox"
+    automationId: "chkScriptRunSikuli"
+    name: "Sikuli"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "CheckBox[@AutomationId='chkScriptRunSikuli']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "chkScriptRunSikuli"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "CheckBox[@AutomationId='chkScriptRunSikuli']"
+          priority: 1
+
+  WpfTestIde.MainWindow.txtRunOutput:
+    displayName: "Run Output Text Box"
+    controlType: "Text"
+    automationId: "txtRunOutput"
+    name: "txtRunOutput"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "//TextBox[@AutomationId='txtRunOutput']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "txtRunOutput"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//TextBox[@AutomationId='txtRunOutput']"
+          priority: 1
+
+  # ================= Additional Toolbar Controls =================
+  WpfTestIde.MainWindow.btnCheckPipe:
+    displayName: "Check Pipe Button"
+    controlType: "Button"
+    automationId: "btnCheckPipe"
+    name: "Check Pipe"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "Button[@AutomationId='btnCheckPipe']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnCheckPipe"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnCheckPipe']"
+          priority: 1
+
+  WpfTestIde.MainWindow.chkRecordSikuli:
+    displayName: "Record Sikuli Checkbox"
+    controlType: "CheckBox"
+    automationId: "chkRecordSikuli"
+    name: "Sikuli"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "CheckBox[@AutomationId='chkRecordSikuli']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "chkRecordSikuli"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "CheckBox[@AutomationId='chkRecordSikuli']"
+          priority: 1
+
+  # ================= Elements Tab Additional Controls =================
+  WpfTestIde.MainWindow.tabRawJson:
+    displayName: "Raw JSON Tab"
+    controlType: "TabItem"
+    automationId: "tabRawJson"
+    name: "Raw JSON"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "TabItem[@AutomationId='tabRawJson']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "tabRawJson"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "TabItem[@AutomationId='tabRawJson']"
+          priority: 1
+
+  WpfTestIde.MainWindow.btnTreeExpandAll:
+    displayName: "Tree Expand All Button"
+    controlType: "Button"
+    automationId: "btnTreeExpandAll"
+    name: "Expand All"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "Button[@AutomationId='btnTreeExpandAll']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnTreeExpandAll"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnTreeExpandAll']"
+          priority: 1
+
+  WpfTestIde.MainWindow.btnTreeCollapse:
+    displayName: "Tree Collapse Button"
+    controlType: "Button"
+    automationId: "btnTreeCollapse"
+    name: "Collapse"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "Button[@AutomationId='btnTreeCollapse']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnTreeCollapse"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnTreeCollapse']"
+          priority: 1
+
+  # ================= Add Verification Dialog =================
+  AddVerificationDialog:
+    displayName: "Add Verification Dialog"
+    controlType: "Window"
+    windowAutomationId: "AddVerificationDialog"
+    parentAlias: null
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "AddVerificationDialog"
+          priority: 1
+
+  AddVerificationDialog.AliasCombo:
+    displayName: "Element Alias Combo Box"
+    controlType: "ComboBox"
+    automationId: "AliasCombo"
+    name: "AliasCombo"
+    parentAlias: "AddVerificationDialog"
+    relativeXPath: "ComboBox[@AutomationId='AliasCombo']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "AliasCombo"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "ComboBox[@AutomationId='AliasCombo']"
+          priority: 1
+
+  AddVerificationDialog.ExpectedBox:
+    displayName: "Expected Value Box"
+    controlType: "Text"
+    automationId: "ExpectedBox"
+    name: "ExpectedBox"
+    parentAlias: "AddVerificationDialog"
+    relativeXPath: "TextBox[@AutomationId='ExpectedBox']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "ExpectedBox"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "TextBox[@AutomationId='ExpectedBox']"
+          priority: 1
+
+  AddVerificationDialog.btnVerifyAdd:
+    displayName: "Add Verification Button"
+    controlType: "Button"
+    automationId: "btnVerifyAdd"
+    name: "Add"
+    parentAlias: "AddVerificationDialog"
+    relativeXPath: "Button[@AutomationId='btnVerifyAdd']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnVerifyAdd"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnVerifyAdd']"
+          priority: 1
+
+  AddVerificationDialog.btnVerifyCancel:
+    displayName: "Cancel Verification Button"
+    controlType: "Button"
+    automationId: "btnVerifyCancel"
+    name: "Cancel"
+    parentAlias: "AddVerificationDialog"
+    relativeXPath: "Button[@AutomationId='btnVerifyCancel']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnVerifyCancel"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnVerifyCancel']"
+          priority: 1
+
+  # ================= Checkpoint Wizard Dialog =================
+  CheckpointWizardDialog.ElementCombo:
+    displayName: "Element Combo Box"
+    controlType: "ComboBox"
+    automationId: "ElementCombo"
+    name: "ElementCombo"
+    parentAlias: "CheckpointWizardDialog"
+    relativeXPath: "ComboBox[@AutomationId='ElementCombo']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "ElementCombo"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "ComboBox[@AutomationId='ElementCombo']"
+          priority: 1
+
+  CheckpointWizardDialog.TypeCombo:
+    displayName: "Checkpoint Type Combo Box"
+    controlType: "ComboBox"
+    automationId: "TypeCombo"
+    name: "TypeCombo"
+    parentAlias: "CheckpointWizardDialog"
+    relativeXPath: "ComboBox[@AutomationId='TypeCombo']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "TypeCombo"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "ComboBox[@AutomationId='TypeCombo']"
+          priority: 1
+
+  CheckpointWizardDialog.PropertyCombo:
+    displayName: "Property Combo Box"
+    controlType: "ComboBox"
+    automationId: "PropertyCombo"
+    name: "PropertyCombo"
+    parentAlias: "CheckpointWizardDialog"
+    relativeXPath: "ComboBox[@AutomationId='PropertyCombo']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "PropertyCombo"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "ComboBox[@AutomationId='PropertyCombo']"
+          priority: 1
+
+  CheckpointWizardDialog.ExpectedValueBox:
+    displayName: "Expected Value Box"
+    controlType: "Text"
+    automationId: "ExpectedValueBox"
+    name: "ExpectedValueBox"
+    parentAlias: "CheckpointWizardDialog"
+    relativeXPath: "TextBox[@AutomationId='ExpectedValueBox']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "ExpectedValueBox"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "TextBox[@AutomationId='ExpectedValueBox']"
+          priority: 1
+
+  CheckpointWizardDialog.btnGetCurrentValue:
+    displayName: "Get Current Value Button"
+    controlType: "Button"
+    automationId: "btnGetCurrentValue"
+    name: "Get Current Value"
+    parentAlias: "CheckpointWizardDialog"
+    relativeXPath: "Button[@AutomationId='btnGetCurrentValue']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnGetCurrentValue"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnGetCurrentValue']"
+          priority: 1
+
+  CheckpointWizardDialog.btnCheckpointNext:
+    displayName: "Next Button"
+    controlType: "Button"
+    automationId: "btnCheckpointNext"
+    name: "Next / Add"
+    parentAlias: "CheckpointWizardDialog"
+    relativeXPath: "Button[@AutomationId='btnCheckpointNext']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnCheckpointNext"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnCheckpointNext']"
+          priority: 1
+
+  CheckpointWizardDialog.btnCheckpointBack:
+    displayName: "Back Button"
+    controlType: "Button"
+    automationId: "btnCheckpointBack"
+    name: "Back"
+    parentAlias: "CheckpointWizardDialog"
+    relativeXPath: "Button[@AutomationId='btnCheckpointBack']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnCheckpointBack"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnCheckpointBack']"
+          priority: 1
+
+  CheckpointWizardDialog.btnCheckpointCancel:
+    displayName: "Cancel Button"
+    controlType: "Button"
+    automationId: "btnCheckpointCancel"
+    name: "Cancel"
+    parentAlias: "CheckpointWizardDialog"
+    relativeXPath: "Button[@AutomationId='btnCheckpointCancel']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnCheckpointCancel"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnCheckpointCancel']"
+          priority: 1
+
+  CheckpointWizardDialog.StepIndicator:
+    displayName: "Step Indicator Text"
+    controlType: "Text"
+    automationId: "StepIndicator"
+    name: "StepIndicator"
+    parentAlias: "CheckpointWizardDialog"
+    relativeXPath: "//TextBlock[@AutomationId='StepIndicator']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "StepIndicator"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//TextBlock[@AutomationId='StepIndicator']"
+          priority: 1
+
+  # ================= Multi App Dialog =================
+  MultiAppDialog.btnSetDefault:
+    displayName: "Set as Default Button"
+    controlType: "Button"
+    automationId: "btnSetDefault"
+    name: "Set as Default"
+    parentAlias: "MultiAppDialog"
+    relativeXPath: "Button[@AutomationId='btnSetDefault']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnSetDefault"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnSetDefault']"
+          priority: 1
+
+  MultiAppDialog.btnDetach:
+    displayName: "Detach Button"
+    controlType: "Button"
+    automationId: "btnDetach"
+    name: "Detach"
+    parentAlias: "MultiAppDialog"
+    relativeXPath: "Button[@AutomationId='btnDetach']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnDetach"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnDetach']"
           priority: 1
 

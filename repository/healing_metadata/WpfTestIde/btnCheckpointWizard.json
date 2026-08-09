@@ -11,27 +11,35 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T08:46:36.232407",
-    "last_verified": "2026-08-09T08:46:36.232423",
-    "verification_count": 20,
-    "driver_used": "FlaUI",
-    "search_method": "AutomationId",
-    "search_value": "btnCheckpointWizard"
+    "captured_at": "2026-08-09T13:57:00.785069",
+    "last_verified": "2026-08-09T13:57:00.785077",
+    "verification_count": 41,
+    "driver_used": "WPFSpy",
+    "search_method": "XPath",
+    "search_value": "Button[@AutomationId='btnCheckpointWizard']"
   },
   "healing_history": [],
   "strategy_stats": {
     "FlaUI:AutomationId": {
+      "success_count": 21,
+      "failure_count": 0,
+      "total_duration_ms": 10938.408136367798,
+      "last_success": "2026-08-09T13:03:22.974884",
+      "last_failure": null,
+      "avg_duration_ms": 520.876577922276
+    },
+    "WPFSpy:XPath": {
       "success_count": 20,
       "failure_count": 0,
-      "total_duration_ms": 10580.628156661987,
-      "last_success": "2026-08-09T08:46:35.399137",
+      "total_duration_ms": 864.7277355194092,
+      "last_success": "2026-08-09T13:57:00.764894",
       "last_failure": null,
-      "avg_duration_ms": 529.0314078330994
+      "avg_duration_ms": 43.23638677597046
     }
   },
-  "total_interactions": 40,
+  "total_interactions": 82,
   "first_seen": "2026-08-09T01:54:35.362318",
-  "last_interaction": "2026-08-09T08:46:36.232437",
+  "last_interaction": "2026-08-09T13:57:00.785084",
   "consecutive_failures": 0,
-  "consecutive_successes": 40
+  "consecutive_successes": 82
 }

@@ -1,6 +1,23 @@
 {
   "alias": "MultiAppDialog.btnMultiAppClose",
-  "baseline": null,
+  "baseline": {
+    "alias": "MultiAppDialog.btnMultiAppClose",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": null,
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-08-09T13:56:07.515257",
+    "last_verified": "2026-08-09T13:56:07.515264",
+    "verification_count": 15,
+    "driver_used": "WPFSpy",
+    "search_method": "XPath",
+    "search_value": "Button[@AutomationId='btnMultiAppClose']"
+  },
   "healing_history": [
     {
       "timestamp": "2026-08-09T08:56:02.206975",
@@ -13,24 +30,48 @@
       "healing_search_value": "N/A",
       "healing_successful": false,
       "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T13:02:20.052811",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnMultiAppClose",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnMultiAppClose': Element from XPath '//*[",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T13:09:00.265542",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnMultiAppClose']",
+      "failure_reason": "No element found for XPath: /Window[@AutomationId='MultiAppDialog']/Button[@AutomationId='btnMultiAp",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
     }
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
       "success_count": 0,
-      "failure_count": 2,
-      "total_duration_ms": 667.9935455322266,
+      "failure_count": 4,
+      "total_duration_ms": 1441.948652267456,
       "last_success": null,
-      "last_failure": "2026-08-09T08:56:02.206985",
-      "avg_duration_ms": 333.9967727661133
+      "last_failure": "2026-08-09T13:02:20.052824",
+      "avg_duration_ms": 360.487163066864
     },
     "WPFSpy:XPath": {
-      "success_count": 0,
-      "failure_count": 1,
-      "total_duration_ms": 7100.729703903198,
-      "last_success": null,
-      "last_failure": "2026-08-09T08:56:02.205935",
-      "avg_duration_ms": 7100.729703903198
+      "success_count": 15,
+      "failure_count": 4,
+      "total_duration_ms": 14454.159021377563,
+      "last_success": "2026-08-09T13:56:07.096131",
+      "last_failure": "2026-08-09T13:09:00.265551",
+      "avg_duration_ms": 963.6106014251709
     },
     "None:N/A": {
       "success_count": 0,
@@ -41,9 +82,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 3,
+  "total_interactions": 38,
   "first_seen": "2026-08-09T08:55:55.103164",
-  "last_interaction": "2026-08-09T08:56:02.206988",
-  "consecutive_failures": 3,
-  "consecutive_successes": 0
+  "last_interaction": "2026-08-09T13:56:07.515271",
+  "consecutive_failures": 0,
+  "consecutive_successes": 22
 }

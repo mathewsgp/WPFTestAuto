@@ -13,6 +13,30 @@
       "healing_search_value": "N/A",
       "healing_successful": false,
       "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T12:26:52.642276",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnFlowCancel']",
+      "failure_reason": "No element found for XPath: /Window[@AutomationId='TestFlowDialog']/Button[@AutomationId='btnFlowCan",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T12:51:37.341338",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "//Button[@AutomationId='btnFlowCancel']",
+      "failure_reason": "No element found for XPath: //Button[@AutomationId='btnFlowCancel']",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
     }
   ],
   "strategy_stats": {
@@ -26,11 +50,11 @@
     },
     "WPFSpy:XPath": {
       "success_count": 0,
-      "failure_count": 1,
-      "total_duration_ms": 7093.034744262695,
+      "failure_count": 5,
+      "total_duration_ms": 9250.629901885986,
       "last_success": null,
-      "last_failure": "2026-08-09T08:56:29.229478",
-      "avg_duration_ms": 7093.034744262695
+      "last_failure": "2026-08-09T12:51:37.341349",
+      "avg_duration_ms": 1850.1259803771973
     },
     "None:N/A": {
       "success_count": 0,
@@ -41,9 +65,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 3,
+  "total_interactions": 7,
   "first_seen": "2026-08-09T08:56:22.133621",
-  "last_interaction": "2026-08-09T08:56:29.230765",
-  "consecutive_failures": 3,
+  "last_interaction": "2026-08-09T12:51:37.341354",
+  "consecutive_failures": 7,
   "consecutive_successes": 0
 }

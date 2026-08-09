@@ -1,0 +1,66 @@
+{
+  "alias": "WpfTestIde.MainWindow.StepsListBox",
+  "baseline": {
+    "alias": "WpfTestIde.MainWindow.StepsListBox",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "10 rows",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-08-09T13:57:12.390465",
+    "last_verified": "2026-08-09T13:57:12.390472",
+    "verification_count": 12,
+    "driver_used": "WPFSpy",
+    "search_method": "XPath",
+    "search_value": "ListBox[@AutomationId='StepsListBox']"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T13:08:33.013111",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "ListBox[@AutomationId='StepsListBox']",
+      "failure_reason": "No element found for XPath: /Window[@AutomationId='MainWindow']/ListBox[@AutomationId='StepsListBox'",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 1,
+      "failure_count": 0,
+      "total_duration_ms": 353.015661239624,
+      "last_success": "2026-08-09T13:03:45.451768",
+      "last_failure": null,
+      "avg_duration_ms": 353.015661239624
+    },
+    "WPFSpy:XPath": {
+      "success_count": 11,
+      "failure_count": 2,
+      "total_duration_ms": 67.50297546386719,
+      "last_success": "2026-08-09T13:57:12.384786",
+      "last_failure": "2026-08-09T13:08:33.013121",
+      "avg_duration_ms": 6.136634133078835
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    }
+  },
+  "total_interactions": 26,
+  "first_seen": "2026-08-09T13:03:45.451760",
+  "last_interaction": "2026-08-09T13:57:12.390478",
+  "consecutive_failures": 0,
+  "consecutive_successes": 22
+}

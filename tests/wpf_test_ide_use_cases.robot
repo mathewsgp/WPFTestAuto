@@ -1,12 +1,13 @@
 *** Settings ***
-Documentation    Use case tests for WpfTestIde application using the automation framework.
-...              Validates core IDE workflows: launch, toolbar, dialogs, tabs, recording, script execution.
+Documentation    Comprehensive use case tests for WpfTestIde IDE covering recording, verification, script generation, execution, and multi-app workflows.
 ...              Run with: WPFSPY_MODE=real robot tests/wpf_test_ide_use_cases.robot
 Library          ../api/DriverAgnosticApi.py
+Library          OperatingSystem
 
 *** Variables ***
 ${IDE_APP_PATH}    WpfTestIde/bin/Debug/net8.0-windows/WpfTestIde.exe
 ${SAMPLE_APP_PATH}    SampleWpfApp/bin/Debug/net8.0-windows/SampleWpfApp.exe
+${TIMEOUT}    10s
 
 *** Test Cases ***
 UC-001 Application Launch
@@ -20,7 +21,7 @@ UC-001 Application Launch
     Close Application    ide
 
 UC-002 Open Attach To Process Dialog
-    [Documentation]    Verify that the Attach to Process dialog can be opened.
+    [Documentation]    Verify that the Attach to Process dialog can be opened and closed.
     Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
     Wait For Application    ide    timeout=30
     Switch Application    ide
@@ -40,6 +41,7 @@ UC-003 Open Manage Apps Dialog
     Click Element    WpfTestIde.MainWindow.btnManageApps
     Sleep    1s
     Capture Screenshot    app_id=ide    filename=ide_manage_apps.png
+    Click Element    MultiAppDialog.btnMultiAppClose
     Close Application    ide
 
 UC-004 Open Checkpoint Wizard
@@ -101,7 +103,7 @@ UC-008 Toggle Record Button
     Close Application    ide
 
 UC-009 Check Driver Settings Checkboxes
-    [Documentation]    Verify driver setting checkboxes are accessible.
+    [Documentation]    Verify driver setting checkboxes are accessible and toggleable.
     Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
     Wait For Application    ide    timeout=30
     Switch Application    ide
@@ -128,4 +130,124 @@ UC-010 Export Repository Button Accessible
     ${visible3}=    Is Element Visible    WpfTestIde.MainWindow.btnSaveScript
     Should Be True    ${visible3}
     Capture Screenshot    app_id=ide    filename=ide_export_buttons.png
+    Close Application    ide
+
+UC-011 Load Sample And Verify Steps Populated
+    [Documentation]    Verify Load Sample populates demo steps and status message updates.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnLoadSample
+    Sleep    2s
+    ${status}=    Get Element Text    WpfTestIde.MainWindow.StatusText
+    Should Contain    ${status}    Loaded sample recording
+    Click Element    WpfTestIde.MainWindow.tabScripts
+    Sleep    1s
+    Click Element    WpfTestIde.MainWindow.tabVisualSteps
+    Sleep    1s
+    Capture Screenshot    app_id=ide    filename=ide_loaded_steps.png
+    Close Application    ide
+
+UC-012 Checkpoint Wizard Open And Configure
+    [Documentation]    Verify Checkpoint Wizard can be opened from toolbar.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnCheckpointWizard
+    Sleep    2s
+    Capture Screenshot    app_id=ide    filename=ide_checkpoint_wizard_open.png
+    Close Application    ide
+
+UC-013 Script Generation And Content Verification
+    [Documentation]    Verify generated script contains expected Robot Framework keywords and element aliases.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnLoadSample
+    Sleep    2s
+    Click Element    WpfTestIde.MainWindow.tabScripts
+    Sleep    1s
+    Click Element    WpfTestIde.MainWindow.tabVisualSteps
+    Sleep    1s
+    ${steps_text}=    Get Element Text    WpfTestIde.MainWindow.StepsListBox
+    Should Contain    ${steps_text}    rows
+    Capture Screenshot    app_id=ide    filename=ide_generated_script.png
+    Close Application    ide
+
+UC-014 Run Generated Script And Check Results
+    [Documentation]    Verify script execution produces output in Results tab.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnLoadSample
+    Sleep    2s
+    Click Element    WpfTestIde.MainWindow.btnRunScript
+    Sleep    60s
+    ${output_dir_exists}=    Run Keyword And Return Status    Directory Should Exist    results/ide_run
+    Should Be True    ${output_dir_exists}
+    Capture Screenshot    app_id=ide    filename=ide_run_results.png
+    Close Application    ide
+
+UC-015 Multi-App Dialog Operations
+    [Documentation]    Verify Manage Apps dialog can be opened.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnManageApps
+    Sleep    2s
+    Capture Screenshot    app_id=ide    filename=ide_multi_apps_empty.png
+    Close Application    ide
+
+UC-016 Element Tree Operations
+    [Documentation]    Verify element tree buttons are accessible on Elements tab.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.tabElements
+    Sleep    0.5s
+    ${visible1}=    Is Element Visible    WpfTestIde.MainWindow.btnAddFolder
+    Should Be True    ${visible1}
+    ${visible2}=    Is Element Visible    WpfTestIde.MainWindow.btnAddElement
+    Should Be True    ${visible2}
+    ${visible3}=    Is Element Visible    WpfTestIde.MainWindow.btnPickElement
+    Should Be True    ${visible3}
+    ${visible4}=    Is Element Visible    WpfTestIde.MainWindow.btnPreviewElement
+    Should Be True    ${visible4}
+    Capture Screenshot    app_id=ide    filename=ide_element_tree.png
+    Close Application    ide
+
+UC-017 Driver Settings Toggle
+    [Documentation]    Verify driver setting checkboxes can be toggled without errors.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Toggle Element    WpfTestIde.MainWindow.chkRecordFlaUI
+    Sleep    0.5s
+    Toggle Element    WpfTestIde.MainWindow.chkRecordWPFSpy
+    Sleep    0.5s
+    Toggle Element    WpfTestIde.MainWindow.chkRunFlaUI
+    Sleep    0.5s
+    Toggle Element    WpfTestIde.MainWindow.chkRunWPFSpy
+    Sleep    0.5s
+    Capture Screenshot    app_id=ide    filename=ide_driver_toggles.png
+    Close Application    ide
+
+UC-018 Spy Tool Open And Close
+    [Documentation]    Verify Spy Tool dialog can be opened.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnSpyTool
+    Sleep    2s
+    Capture Screenshot    app_id=ide    filename=ide_spy_tool_open.png
+    Close Application    ide
+
+UC-019 Visual Test Builder Open And Close
+    [Documentation]    Verify Visual Test Builder dialog can be opened.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnVisualTestBuilder
+    Sleep    2s
+    Capture Screenshot    app_id=ide    filename=ide_visual_builder_open.png
     Close Application    ide

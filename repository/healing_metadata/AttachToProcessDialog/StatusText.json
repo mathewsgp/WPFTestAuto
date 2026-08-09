@@ -11,12 +11,12 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T11:17:42.349055",
-    "last_verified": "2026-08-09T11:17:42.349065",
-    "verification_count": 18,
-    "driver_used": "FlaUI",
-    "search_method": "AutomationId",
-    "search_value": "StatusText"
+    "captured_at": "2026-08-09T13:56:00.430929",
+    "last_verified": "2026-08-09T13:56:00.430939",
+    "verification_count": 34,
+    "driver_used": "WPFSpy",
+    "search_method": "XPath",
+    "search_value": "TextBlock[@AutomationId='StatusText']"
   },
   "healing_history": [
     {
@@ -190,20 +190,20 @@
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 15,
+      "success_count": 16,
       "failure_count": 0,
-      "total_duration_ms": 7544.9254512786865,
-      "last_success": "2026-08-09T11:17:41.763452",
+      "total_duration_ms": 8085.901975631714,
+      "last_success": "2026-08-09T13:01:54.303760",
       "last_failure": null,
-      "avg_duration_ms": 502.9950300852458
+      "avg_duration_ms": 505.3688734769821
     },
     "WPFSpy:XPath": {
-      "success_count": 3,
+      "success_count": 18,
       "failure_count": 28,
-      "total_duration_ms": 99178.32231521606,
-      "last_success": "2026-08-09T11:14:59.943236",
+      "total_duration_ms": 99306.30159378052,
+      "last_success": "2026-08-09T13:56:00.414781",
       "last_failure": "2026-08-09T10:52:51.378991",
-      "avg_duration_ms": 33059.440771738686
+      "avg_duration_ms": 5517.016755210028
     },
     "None:N/A": {
       "success_count": 0,
@@ -214,9 +214,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 64,
+  "total_interactions": 96,
   "first_seen": "2026-08-09T01:56:34.167356",
-  "last_interaction": "2026-08-09T11:17:42.349071",
+  "last_interaction": "2026-08-09T13:56:00.430948",
   "consecutive_failures": 0,
-  "consecutive_successes": 14
+  "consecutive_successes": 46
 }

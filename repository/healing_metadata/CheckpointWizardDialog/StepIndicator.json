@@ -145,6 +145,54 @@
       "healing_search_value": "N/A",
       "healing_successful": false,
       "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T12:25:44.958768",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "TextBlock[@AutomationId='StepIndicator']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='CheckpointWizardDialog']/TextBlock[@Autom",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T12:27:47.240642",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "TextBlock[@AutomationId='StepIndicator']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='CheckpointWizardDialog']/TextBlock[@Autom",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T12:48:44.269130",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "//TextBlock[@AutomationId='StepIndicator']",
+      "failure_reason": "WPFSpy: no element found for XPath '//TextBlock[@AutomationId='StepIndicator']' after 15 attempts",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T12:50:28.646081",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "//TextBlock[@AutomationId='StepIndicator']",
+      "failure_reason": "WPFSpy: no element found for XPath '//TextBlock[@AutomationId='StepIndicator']' after 15 attempts",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
     }
   ],
   "strategy_stats": {
@@ -158,11 +206,11 @@
     },
     "WPFSpy:XPath": {
       "success_count": 0,
-      "failure_count": 12,
-      "total_duration_ms": 88946.38562202454,
+      "failure_count": 20,
+      "total_duration_ms": 117200.5660533905,
       "last_success": null,
-      "last_failure": "2026-08-09T08:43:04.620113",
-      "avg_duration_ms": 7412.198801835378
+      "last_failure": "2026-08-09T12:50:28.646092",
+      "avg_duration_ms": 5860.028302669525
     },
     "None:N/A": {
       "success_count": 0,
@@ -173,9 +221,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 36,
+  "total_interactions": 44,
   "first_seen": "2026-08-09T01:57:10.795685",
-  "last_interaction": "2026-08-09T08:43:04.621998",
-  "consecutive_failures": 36,
+  "last_interaction": "2026-08-09T12:50:28.646095",
+  "consecutive_failures": 44,
   "consecutive_successes": 0
 }
