@@ -7,16 +7,16 @@
     "control_type": null,
     "xpath": null,
     "parent_xpath": null,
-    "text": "",
+    "text": "Login",
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T16:47:39.657730",
-    "last_verified": "2026-08-09T16:47:39.657735",
-    "verification_count": 19,
-    "driver_used": "FlaUI",
-    "search_method": "AutomationId",
-    "search_value": "btnSubmit"
+    "captured_at": "2026-08-12T18:16:17.535905",
+    "last_verified": "2026-08-12T18:16:17.535928",
+    "verification_count": 25,
+    "driver_used": "WPFSpy",
+    "search_method": "XPath",
+    "search_value": "Button[@AutomationId='btnSubmit']"
   },
   "healing_history": [
     {
@@ -436,20 +436,20 @@
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 13,
+      "success_count": 17,
       "failure_count": 30,
-      "total_duration_ms": 24467.2954082489,
-      "last_success": "2026-08-09T16:47:28.003366",
+      "total_duration_ms": 25836.88497543335,
+      "last_success": "2026-08-12T18:15:29.687635",
       "last_failure": "2026-08-09T01:03:35.395013",
-      "avg_duration_ms": 1882.099646788377
+      "avg_duration_ms": 1519.8167632607854
     },
     "WPFSpy:XPath": {
-      "success_count": 44,
+      "success_count": 46,
       "failure_count": 6,
-      "total_duration_ms": 40370.22876739502,
-      "last_success": "2026-08-09T11:20:40.652249",
+      "total_duration_ms": 40378.68046760559,
+      "last_success": "2026-08-12T18:16:17.528831",
       "last_failure": "2026-08-09T01:03:35.389807",
-      "avg_duration_ms": 917.5051992589778
+      "avg_duration_ms": 877.7974014696867
     },
     "Sikuli:Image": {
       "success_count": 0,
@@ -468,9 +468,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 120,
+  "total_interactions": 132,
   "first_seen": "2026-08-08T23:00:13.286318",
-  "last_interaction": "2026-08-09T16:47:39.657742",
+  "last_interaction": "2026-08-12T18:16:17.535933",
   "consecutive_failures": 0,
-  "consecutive_successes": 36
+  "consecutive_successes": 48
 }

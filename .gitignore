@@ -21,3 +21,4 @@ repository/attach_log.txt
 repository/repo_lookup.log
 repository/elements/_ide_recorded.yaml
 tests/ide_generated_test.robot
+graphify-out/

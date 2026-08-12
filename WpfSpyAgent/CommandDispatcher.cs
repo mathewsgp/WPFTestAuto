@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,6 +41,12 @@ namespace WpfSpyAgent
 
         [DllImport("user32.dll")]
         internal static extern bool ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        [DllImport("user32.dll")]
+        internal static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        internal static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
         internal const int SRCCOPY = 0x00CC0020;
     }
@@ -353,16 +360,56 @@ case "GetDataGridContent":
                 }
                 case "GetFullTree":
                 {
-                    // Get the main window and build a tree
-                    var mainWindow = System.Windows.Application.Current?.MainWindow;
-                    if (mainWindow == null)
+                    // Find the active/topmost visible window for this process.
+                    // Application.Current.MainWindow is the startup window and
+                    // does not change when secondary windows (e.g. OrdersWindow)
+                    // are opened, so we resolve the foreground window instead.
+                    Window? targetWindow = null;
+                    
+                    try
                     {
-                        return SpyResponse.Fail("No main window found");
+                        var foregroundHwnd = NativeMethods.GetForegroundWindow();
+                        if (foregroundHwnd != IntPtr.Zero)
+                        {
+                            uint targetPid;
+                            NativeMethods.GetWindowThreadProcessId(foregroundHwnd, out targetPid);
+                            int currentPid = System.Diagnostics.Process.GetCurrentProcess().Id;
+                            
+                            if ((int)targetPid == currentPid)
+                            {
+                                foreach (Window window in System.Windows.Application.Current.Windows)
+                                {
+                                    if (window.IsVisible && new System.Windows.Interop.WindowInteropHelper(window).Handle == foregroundHwnd)
+                                    {
+                                        targetWindow = window;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+
+                    if (targetWindow == null)
+                    {
+                        foreach (Window window in System.Windows.Application.Current.Windows)
+                        {
+                            if (window.IsVisible)
+                            {
+                                targetWindow = window;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (targetWindow == null)
+                    {
+                        return SpyResponse.Fail("No visible window found");
                     }
 
                     var treeData = new
                     {
-                        nodes = new[] { VisualTreeInspector.BuildElementTree(mainWindow) }
+                        nodes = new[] { VisualTreeInspector.BuildElementTree(targetWindow) }
                     };
                     return SpyResponse.Ok(JsonHelper.Serialize(treeData));
                 }

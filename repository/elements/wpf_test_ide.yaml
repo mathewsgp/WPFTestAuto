@@ -944,6 +944,23 @@ elements:
           value: "//Button[@AutomationId='btnSpyClose']"
           priority: 1
 
+  SpyToolDialog.btnRefreshTree:
+    displayName: "Refresh Tree Button"
+    controlType: "Button"
+    automationId: "btnRefreshTree"
+    name: "Refresh Tree"
+    parentAlias: "SpyToolDialog"
+    relativeXPath: "//Button[@AutomationId='btnRefreshTree']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnRefreshTree"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//Button[@AutomationId='btnRefreshTree']"
+          priority: 1
+
   # ================= Visual Test Builder Dialog =================
   TestFlowDialog:
     displayName: "Visual Test Builder Dialog"

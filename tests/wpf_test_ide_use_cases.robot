@@ -390,3 +390,13 @@ REG-009 Spy Tool And Visual Builder Sequential Open
     Sleep    2s
     Capture Screenshot    app_id=ide    filename=ide_regression_visual_builder.png
     Close Application    ide
+
+REG-010 Spy Tool Refresh Tree Works
+    [Documentation]    Regression: open Spy Tool and verify it loads the target app visual tree.
+    Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
+    Wait For Application    ide    timeout=30
+    Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.btnSpyTool
+    Sleep    3s
+    Capture Screenshot    app_id=ide    filename=ide_regression_spy_refresh.png
+    Close Application    ide

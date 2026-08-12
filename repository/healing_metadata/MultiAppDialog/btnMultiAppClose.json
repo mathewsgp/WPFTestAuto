@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-08-09T22:00:37.773732",
-    "last_verified": "2026-08-09T22:00:37.773746",
-    "verification_count": 28,
+    "captured_at": "2026-08-12T18:43:18.644904",
+    "last_verified": "2026-08-12T18:43:18.644916",
+    "verification_count": 29,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "Button[@AutomationId='btnMultiAppClose']"
@@ -66,12 +66,12 @@
       "avg_duration_ms": 360.487163066864
     },
     "WPFSpy:XPath": {
-      "success_count": 28,
+      "success_count": 29,
       "failure_count": 4,
-      "total_duration_ms": 14669.536590576172,
-      "last_success": "2026-08-09T22:00:37.355885",
+      "total_duration_ms": 14690.852642059326,
+      "last_success": "2026-08-12T18:43:18.220958",
       "last_failure": "2026-08-09T13:09:00.265551",
-      "avg_duration_ms": 523.9120210920062
+      "avg_duration_ms": 506.58112558825263
     },
     "None:N/A": {
       "success_count": 0,
@@ -82,9 +82,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 64,
+  "total_interactions": 66,
   "first_seen": "2026-08-09T08:55:55.103164",
-  "last_interaction": "2026-08-09T22:00:37.773757",
+  "last_interaction": "2026-08-12T18:43:18.644925",
   "consecutive_failures": 0,
-  "consecutive_successes": 48
+  "consecutive_successes": 50
 }

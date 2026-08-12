@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-09T22:00:58.723469",
-    "last_verified": "2026-08-09T22:00:58.723546",
-    "verification_count": 66,
+    "captured_at": "2026-08-12T18:43:40.003791",
+    "last_verified": "2026-08-12T18:43:40.003806",
+    "verification_count": 67,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "TabItem[@AutomationId='tabResults']"
@@ -29,17 +29,17 @@
       "avg_duration_ms": 452.5117874145508
     },
     "WPFSpy:XPath": {
-      "success_count": 50,
+      "success_count": 51,
       "failure_count": 0,
-      "total_duration_ms": 477.57434844970703,
-      "last_success": "2026-08-09T22:00:58.705582",
+      "total_duration_ms": 482.8948974609375,
+      "last_success": "2026-08-12T18:43:39.983083",
       "last_failure": null,
-      "avg_duration_ms": 9.55148696899414
+      "avg_duration_ms": 9.468527401194853
     }
   },
-  "total_interactions": 132,
+  "total_interactions": 134,
   "first_seen": "2026-08-09T01:54:59.762345",
-  "last_interaction": "2026-08-09T22:00:58.723568",
+  "last_interaction": "2026-08-12T18:43:40.003814",
   "consecutive_failures": 0,
-  "consecutive_successes": 132
+  "consecutive_successes": 134
 }
