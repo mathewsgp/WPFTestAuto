@@ -50,51 +50,44 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | ID  | Item                                                | Effort       | Status | Notes                                                                                         |
 |-----|-----------------------------------------------------|--------------|--------|-----------------------------------------------------------------------------------------------|
 | E1  | Persist layout & theme to %AppData%\WpfTestIde\layout.json | Medium | ⬜      | Use YamlDotNet (already a dep) or System.Text.Json. Persist window size/pos, theme, last tab, splitter ratios, panel states, toolbar mode. |
-| E2  | Keyboard shortcuts (InputGestureText + KeyBinding)  | Low          | ⬜      | `VsMenuItem` template already reserves a shortcut column.                                    |
+| E2  | Keyboard shortcuts (InputGestureText + KeyBinding)  | Low          | ✅     | Commit `0196b82`. `Ctrl+S` Save · `Ctrl+R`/`F5` Run · `Ctrl+Shift+R` Toggle Record · `F12` Spy. Added Spy Tool menu item under Run. |
 | E3  | Async command wrappers + notification toasts        | Low–Medium   | ⬜      | Fixes Attach/Run/Export UI freezes.                                                           |
 | E4  | Dock Spy/Checkpoint/VisualBuilder as panes, not modals | Medium     | ⏸      | Polished version depends on A6.                                                               |
 
 ---
 
-## Recommended next item: **E2 (Keyboard shortcuts)**
+## Recommended next item: **B2 (Labeled toolbar bands)**
 
-**Why E2 next:**
-- **Low effort, high discoverability payoff.** The `VsMenuItem` template already reserves a shortcut-gesture column that is currently empty — wiring `InputGestureText` is pure XAML with no template work.
-- **No layout/behavior risk.** Unlike A2 / A5 (which reshape panes and touch `MainViewModel`), E2 only adds gesture text and `KeyBinding`s alongside existing commands. It cannot regress any of the A/B/C work already shipped.
-- **Independent of unresolved design questions.** A2 (overlay vs. push semantics) and A5 (duplicate vs. move in-tab output) both have open questions that need a decision before implementation; E2 has none.
-- **Unblocks nothing but blocks nothing.** It's a clean, self-contained win that keeps momentum while the A2/A5 design questions are settled.
+**Why B2 next:**
+- **Low effort, pairs naturally with B1.** The toolbar already has `Separator`s grouping buttons; B2 only adds thin label `TextBlock`s above each band (Session · Record · Run · Export · Tools).
+- **No ViewModel changes.** Pure XAML in `MainWindow.xaml`; a safe follow-up to B1's scrollable toolbar.
+- **Improves scannability** — the most common toolbar complaint now that clipping is fixed.
+- **Doesn't block or depend on anything.** A2/A5 still have open design questions; B2 is a clean self-contained win.
 
-**Scope for E2:**
-
-| Action          | Shortcut         | Target                         |
-|-----------------|------------------|--------------------------------|
-| Save            | `Ctrl+S`         | Save menu item / command        |
-| Run             | `Ctrl+R` and `F5`| Run Script menu item / command  |
-| Toggle Record   | `Ctrl+Shift+R`   | Toggle Record menu item / command |
-| Spy (Pick)      | `F12`            | Spy / Pick menu item / command  |
+**Scope for B2:**
+1. Identify the existing `Separator`-delimited groups in the toolbar (Session: Attach/Manage/CheckPipe; Record: btnRecord/LoadSample/Reset; Run: btnRunScript; Export: btnExportRepo/btnExportScript/btnSaveScript; Tools: OCR/Checkpoint/Spy/VisualBuilder).
+2. Add a small `TextBlock` "header" above each band (e.g. `FontSize="10"`, `Foreground="{DynamicResource TextSecondaryBrush}"`, `Margin="0,0,8,0"`).
+3. Re-wrap the toolbar row so each band is a vertical `StackPanel` (label + buttons) inside the outer horizontal `ScrollViewer` from B1.
 
 **Implementation plan:**
-1. Audit `MainWindow.xaml` menu items and the `ICommand`s they bind to (confirm command names in `MainViewModel`).
-2. Add `InputGestureText="Ctrl+S"` etc. to each `MenuItem` — visible immediately in the reserved shortcut column.
-3. Add `<KeyBinding>` entries to `MainWindow.InputBindings` (or the relevant container's `InputBindings`) bound to the same commands. For two-gesture actions (Run: `Ctrl+R` + `F5`) add two `KeyBinding`s pointing at the same command.
-4. Preserve all AutomationIds and existing command wiring — only add gesture text + key bindings.
-5. Build → commit → push → `graphify update .`.
+1. Read the current toolbar region in `MainWindow.xaml`.
+2. Restructure the toolbar `StackPanel` into band sub-stacks with labels — keeping exact same `Button`s (AutomationIds, commands, order) and the same `Separator`s between bands.
+3. Build → commit → push → refresh this md → `graphify update .`.
 
 ---
 
 ## Suggested overall order (remaining items)
 
-1. **E2** — keyboard shortcuts *(recommended now; low risk, high value)*
-2. **B2** — labeled toolbar bands *(low effort; pairs naturally with B1)*
-3. **D1** — Element Tree filter chip bar *(low effort; user-facing clarity)*
-4. **A7** — per-tab context toolbars *(removes the Scripts/Raw ⇄ Driver-Settings duplication)*
-5. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
-6. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
-7. **D2 / D3 / D4** — pane-content upgrades *(independent; do in any order)*
-8. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
-9. **E3** — async wrappers + toasts
-10. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
-11. **B3** — icon-only compact toolbar *(needs icon assets)*
+1. **B2** — labeled toolbar bands *(recommended now; low effort, pairs with B1)*
+2. **D1** — Element Tree filter chip bar *(low effort; user-facing clarity)*
+3. **A7** — per-tab context toolbars *(removes the Scripts/Raw ⇄ Driver-Settings duplication)*
+4. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
+5. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
+6. **D2 / D3 / D4** — pane-content upgrades *(independent; do in any order)*
+7. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
+8. **E3** — async wrappers + toasts
+9. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
+10. **B3** — icon-only compact toolbar *(needs icon assets)*
 
 ---
 
@@ -110,3 +103,4 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | `51a9ae9`| **A4** — Raw JSON promoted to collapsible bottom `Expander`; YAML repo entry updated. |
 | `3b89a73`| `VsExpander` template rewrite (content `ContentPresenter` + Visibility trigger). |
 | `6da97c3`| **B1** — toolbar horizontally scrollable (no more silent clip).     |
+| `0196b82`| **E2** — keyboard shortcuts (`Ctrl+S`/`Ctrl+R`+`F5`/`Ctrl+Shift+R`/`F12`) + Spy Tool menu item. |
