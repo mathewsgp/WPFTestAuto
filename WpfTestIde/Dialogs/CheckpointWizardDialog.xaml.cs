@@ -56,6 +56,17 @@ namespace WpfTestIde.Dialogs
 
         private void TypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            // InitializeComponent() fires SelectionChanged for the initially-selected
+            // TypeCombo item before the row-3 panels (PropertyPanel, AreaPanel, ...)
+            // have been constructed, so the generated fields are still null. The XAML
+            // already declares the correct default visibility (PropertyPanel visible,
+            // the rest Collapsed), so we can safely skip this early notification.
+            if (PropertyPanel is null || AreaPanel is null || ImagePanel is null
+                || DataGridPanel is null || AttributePanel is null || CountPanel is null)
+            {
+                return;
+            }
+
             // Show/hide appropriate panels based on checkpoint type
             var selectedIndex = TypeCombo.SelectedIndex;
 
