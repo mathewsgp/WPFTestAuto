@@ -19,7 +19,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | A4  | Raw JSON → toggleable bottom Expander               | Medium       | ✅     | Commit `51a9ae9`. `RepositoryPanelExpanded` 2-way; `tabRawJson` AutomationId moved to Expander; YAML repo entry updated. |
 | A5  | Run Output as bottom-docked resizable panel         | Medium       | ⬜      | Touches `MainViewModel` tab model. Mirror A3 auto-expand pattern with `HasRunOutput` bool.    |
 | A6  | Proper docking system (AvalonDock / Dock.WPF)       | High         | ⬜      | Later milestone. Unlocks clean E4.                                                            |
-| A7  | Per-tab context toolbars (de-duplicate toolbar)     | Medium       | ⬜      | Removes the Scripts/Raw ⇄ Driver-Settings-bar duplication noted in the analysis.              |
+| A7  | Per-tab context toolbars (de-duplicate toolbar)     | Medium       | ✅     | Commit `577da42`. Global toolbar keeps Session+Record+Tools only. SCRIPTS & RESULTS tabs each get their own toolbar (Run/Save/Export on SCRIPTS; Run Again/Export/Reset on RESULTS). Removed the 6 in-Raw `chkScript*` checkbox duplicates ( YAML entries dropped). UC-010 + UC-014 Robot tests updated to switch to SCRIPTS first. New AutomationIds `btnResultsRerun`/`btnResultsExportScript`/`btnResultsReset` (YAML entries added). |
 
 ## B. Top toolbar
 
@@ -56,38 +56,36 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 
 ---
 
-## Recommended next item: **A7 (Per-tab context toolbars)**
+## Recommended next item: **D2 (Properties panel: tabbed Inspector Properties / XPath / Preview)**
 
-**Why A7 next:**
-- **Removes the biggest source of UI duplication.** The Scripts → Raw tab still duplicates the Driver Settings checkboxes (Record/Run) that already live in the StatusBar (after C1+C2). Per-tab toolbars unify this — put each tab's actions next to its content, drop the global clutter.
-- **Builds on the work already shipped.** B1 (scrollable toolbar) + B2 (labeled bands) established the toolbar patterns; A7 applies the same patterns per-tab.
-- **Internal clarity win.** Removing duplicated driver controls is a measurable density reduction with no behavior change.
-- **Medium effort, contained scope.** Touches only the MainTabControl region in `MainWindow.xaml`; no VM commands added, just relocation/drive of existing ones.
+**Why D2 next:**
+- **Low–medium effort, pure additive.** Only restructures the `ElementEditorView` (`ElementEditorView.xaml`) into three sub-tabs; no other pane/tab/VM needs touching.
+- **No open design questions**, unlike A2 (collapsible Element Tree: overlay vs. push) and A5 (Run Output: duplicate vs. move in-tab) which both still need a decision before they can start.
+- **Direct clarity win.** Today the Properties editor is a single long vertical form with an awkward squashed XPath multiline box; D2 gives the XPath box its own scrollable area and separates read-only Preview from editable Properties.
+- **Independent of everything.** Can be done in any order alongside D3/D4, but D2 is the smallest of the three.
 
-**Open question (the only blocker):**
-- Should the global top toolbar keep Attach / Manage Apps / Check Pipe / Toggle Recording (bands Session + Record), and per-tab toolbars handle Run/Export/Tools? Or move Record entirely to per-SCRIPTS? Need a one-line decision before starting.
-
-**Scope for A7:**
-1. Themed per-tab `Toolbar` at the top of each `TabItem` content area (ELEMENTS inline toolbar already exists; SCRIPTS needs one; RESULTS / Run needs one).
-2. Move Run-related commands to the SCRIPTS tab toolbar; move OCR/Checkpoint to a Tools area reachable from each tab (or keep global).
-3. Remove the Scripts → Raw ⇄ Driver-Settings duplication (already noted twice in the layout analysis).
-4. Keep the global top toolbar to Attach / Manage Apps / Check Pipe + global Tools.
+**Scope for D2:**
+1. Read `WpfTestIde/Views/ElementEditorView.xaml` and (`ElementEditorView.xaml.cs` if it has one) — map its current structure: Name/AutomationId/ControlType fields + XPath multi-line + Preview text.
+2. Wrap the content in a 3-tab `TabControl`:
+   - **Properties tab:** current Name/AutomationId/ControlType/etc. editable fields.
+   - **XPath tab:** the multi-line `XPath` editor on its own, in a scrollable area with monospaced styling.
+   - **Preview tab:** the read-only Preview text area.
+3. Preserve existing AutomationIds on the inner fields (do not relocate individual AutomationIds — only restructure the container).
+4. Default selected tab = Properties (matching current behavior).
 
 **Implementation plan:**
-1. Confirm the open question above (where Record lives).
-2. Read the SCRIPTS / RAW / RESULTS tabs in `MainWindow.xaml`.
-3. Add per-tab `Border` + `WrapPanel` toolbars with `ToolbarButton` style; relocate existing buttons (preserve AutomationIds).
-4. Remove the duplicated driver-checkboxes region; verify Robot-test YAML locators still resolve (or update `repository/elements/wpf_test_ide.yaml` if an AutomationId relocates).
-5. Build → commit → push → refresh this md → `graphify update .`.
+1. Read `WpfTestIde/Views/ElementEditorView.xaml` (+ its code-behind) to confirm current content + AutomationIds.
+2. Wrap the three content regions in a `TabControl` with three `TabItem`s (the existing `VsTabItem` style applies via the keyless default).
+3. Build → commit → push → refresh this md → `graphify update .`.
 
 ---
 
 ## Suggested overall order (remaining items)
 
-1. **A7** — per-tab context toolbars *(recommended now; removes Scripts/Raw ⇄ Driver-Settings duplication; has one open question — see below)*
-2. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
-3. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
-4. **D2 / D3 / D4** — pane-content upgrades *(independent; do in any order)*
+1. **D2** — Properties panel tabbed Inspector *(recommended now; low-medium effort, no open questions)*
+2. **D3 / D4** — Steps draggable re-order / Run Output log filter *(independent; do in any order)*
+3. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
+4. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
 5. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
 6. **E3** — async wrappers + toasts
 7. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
@@ -111,3 +109,4 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | `d827fa6`| fix(keybinding): `Control+Shift` (was `Control,Shift`) for ToggleRecord binding — resolves runtime `XamlParseException`. |
 | `768572e`| **B2** — toolbar grouped into 5 labeled bands (Session/Record/Run/Export/Tools) inside B1's `ScrollViewer`. |
 | `061b932`| **D1** — Element Tree filter chip bar: Clear chip + `Filter includes parents` toggle + "M / N elements" count; `ApplyFilter` now recursive with ancestor propagation. |
+| `577da42`| **A7** — per-tab context toolbars: Run+Export moved to SCRIPTS tab; RESULTS gets Run Again/Export/Reset toolbar. In-Raw duplicate `chkScript*` removed; UC-010 + UC-014 Robot tests updated. YAML updated (-6 entries, +3 new). |
