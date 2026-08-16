@@ -33,6 +33,17 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
+        <!-- A7: per-tab toolbar Border (sits at the top of each TabItem content).
+             Themed identically to the global toolbar for visual consistency. -->
+        <Style x:Key="TabToolbarBorder" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="0,6,0,6"/>
+            <Setter Property="CornerRadius" Value="3"/>
+        </Style>
+
         <!-- One recorded/verify step row -->
         <DataTemplate x:Key="StepTemplate" DataType="{x:Type models:RecordedStep}">
             <Border Padding="8" Margin="0,0,0,4" CornerRadius="3"
@@ -166,25 +177,11 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Run -->
-                    <StackPanel Style="{StaticResource ToolbarBand}">
-                        <TextBlock Style="{StaticResource ToolbarBandLabel}" Text="Run"/>
-                        <StackPanel Orientation="Horizontal">
-                            <Button x:Name="btnRunScript" Style="{StaticResource ToolbarButton}" Content="Run Script" Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnRunScript"/>
-                            <Separator Margin="8,0"/>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- Export -->
-                    <StackPanel Style="{StaticResource ToolbarBand}">
-                        <TextBlock Style="{StaticResource ToolbarBandLabel}" Text="Export"/>
-                        <StackPanel Orientation="Horizontal">
-                            <Button x:Name="btnExportRepo" Style="{StaticResource ToolbarButton}" Content="Export Repository (.yaml)" Command="{Binding ExportRepositoryCommand}" AutomationProperties.AutomationId="btnExportRepo"/>
-                            <Button x:Name="btnExportScript" Style="{StaticResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
-                            <Button x:Name="btnSaveScript" Style="{StaticResource ToolbarButton}" Content="Save Script" Command="{Binding SaveScriptCommand}" AutomationProperties.AutomationId="btnSaveScript"/>
-                            <Separator Margin="8,0"/>
-                        </StackPanel>
-                    </StackPanel>
+                    <!-- A7: Run + Export bands moved to the SCRIPTS per-tab toolbar
+                         (RunScript/Export Repo/Export Script/Save Script). Global
+                         toolbar now keeps only Session / Record / Tools per the
+                         user's A7 decision. AutomationIds on the moved buttons
+                         are preserved - they merely relocated. -->
 
                     <!-- Tools -->
                     <StackPanel Style="{StaticResource ToolbarBand}">
@@ -363,6 +360,24 @@
             <!-- SCRIPTS Tab -->
             <TabItem x:Name="tabScripts" Header="SCRIPTS" AutomationProperties.AutomationId="tabScripts">
                 <DockPanel Margin="6">
+                    <!-- A7: per-tab toolbar for SCRIPTS. Hosts the Run + Export buttons
+                         that previously lived in the global toolbar (kept AutomationIds:
+                         btnRunScript / btnExportRepo / btnExportScript / btnSaveScript).
+                         Record/Run duplicate driver checkboxes that used to live inside
+                         the inner Raw sub-tab have been removed (they already live once,
+                         canonically, in the StatusBar - see chkRecordFlaUI etc.). -->
+                    <Border DockPanel.Dock="Top" Style="{StaticResource TabToolbarBorder}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="btnRunScript" Style="{StaticResource ToolbarButton}" Content="Run Script" ToolTip="Run the current script (F5)"
+                                    Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnRunScript"/>
+                            <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
+                            <Button x:Name="btnSaveScript" Style="{StaticResource ToolbarButton}" Content="Save Script" ToolTip="Save the generated script (Ctrl+S)"
+                                    Command="{Binding SaveScriptCommand}" AutomationProperties.AutomationId="btnSaveScript"/>
+                            <Button x:Name="btnExportRepo" Style="{StaticResource ToolbarButton}" Content="Export Repository (.yaml)" Command="{Binding ExportRepositoryCommand}" AutomationProperties.AutomationId="btnExportRepo"/>
+                            <Button x:Name="btnExportScript" Style="{StaticResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
+                        </StackPanel>
+                    </Border>
+
                     <TabControl>
                         <!-- Visual: Recorded Steps -->
                         <TabItem x:Name="tabVisualSteps" Header="Visual" AutomationProperties.AutomationId="tabVisualSteps">
@@ -383,18 +398,11 @@
                                     <ComboBox x:Name="cmbRunMode" DockPanel.Dock="Left" SelectedItem="{Binding SelectedMode}"
                                               ItemsSource="{Binding AvailableModes}" Width="80" FontSize="11" AutomationProperties.AutomationId="cmbRunMode"/>
                                 </DockPanel>
-                                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                                    <TextBlock DockPanel.Dock="Left" Text="Record:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <CheckBox x:Name="chkScriptRecordFlaUI" DockPanel.Dock="Left" Content="FlaUI" IsChecked="{Binding RecordFlaUI}" Margin="0,0,8,0" FontSize="11" AutomationProperties.AutomationId="chkScriptRecordFlaUI"/>
-                                    <CheckBox x:Name="chkScriptRecordWPFSpy" DockPanel.Dock="Left" Content="WPFSpy" IsChecked="{Binding RecordWPFSpy}" Margin="0,0,8,0" FontSize="11" AutomationProperties.AutomationId="chkScriptRecordWPFSpy"/>
-                                    <CheckBox x:Name="chkScriptRecordSikuli" DockPanel.Dock="Left" Content="Sikuli" IsChecked="{Binding RecordSikuli}" FontSize="11" AutomationProperties.AutomationId="chkScriptRecordSikuli"/>
-                                </DockPanel>
-                                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                                    <TextBlock DockPanel.Dock="Left" Text="Run:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <CheckBox x:Name="chkScriptRunFlaUI" DockPanel.Dock="Left" Content="FlaUI" IsChecked="{Binding RunFlaUI}" Margin="0,0,8,0" FontSize="11" AutomationProperties.AutomationId="chkScriptRunFlaUI"/>
-                                    <CheckBox x:Name="chkScriptRunWPFSpy" DockPanel.Dock="Left" Content="WPFSpy" IsChecked="{Binding RunWPFSpy}" Margin="0,0,8,0" FontSize="11" AutomationProperties.AutomationId="chkScriptRunWPFSpy"/>
-                                    <CheckBox x:Name="chkScriptRunSikuli" DockPanel.Dock="Left" Content="Sikuli" IsChecked="{Binding RunSikuli}" FontSize="11" AutomationProperties.AutomationId="chkScriptRunSikuli"/>
-                                </DockPanel>
+                                <!-- A7: the duplicate Record/Run driver checkboxes that
+                                     lived here (chkScriptRecordFlaUI / chkScriptRun*
+                                     etc.) have been removed - they duplicated the
+                                     canonical StatusBar ones (chkRecordFlaUI / chkRun*
+                                     in the status bar) and were unused by tests. -->
                                 <TextBox x:Name="txtGeneratedScript" Text="{Binding GeneratedScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
                                          TextWrapping="NoWrap" AcceptsReturn="True"
                                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
@@ -408,6 +416,22 @@
             <!-- RESULTS Tab -->
             <TabItem x:Name="tabResults" Header="RESULTS" AutomationProperties.AutomationId="tabResults">
                 <DockPanel Margin="6">
+                    <!-- A7: per-tab toolbar for RESULTS. Re-runs / re-exports without
+                         switching tabs. New AutomationId btnResultsRerun (toolbar-local)
+                         is added since RESULTS gets its own Run copy; btnExportScript
+                         is reused (bound to the same command, located via reused
+                         AutomationId - acceptable because they live in different tabs). -->
+                    <Border DockPanel.Dock="Top" Style="{StaticResource TabToolbarBorder}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="btnResultsRerun" Style="{StaticResource ToolbarButton}" Content="Run Again" ToolTip="Re-run the current script (F5)"
+                                    Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnResultsRerun"/>
+                            <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
+                            <Button x:Name="btnResultsExportScript" Style="{StaticResource ToolbarButton}" Content="Export Script (.robot)"
+                                    Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnResultsExportScript"/>
+                            <Button x:Name="btnResultsReset" Style="{StaticResource ToolbarButton}" Content="Reset" ToolTip="Reload a fresh sample"
+                                    Command="{Binding ResetCommand}" AutomationProperties.AutomationId="btnResultsReset"/>
+                        </StackPanel>
+                    </Border>
                     <Border DockPanel.Dock="Top" Padding="8" Margin="0,6,0,6" CornerRadius="3"
                             Background="{Binding LastRunSuccess, Converter={StaticResource BoolToStatusBrushConverter}}">
                         <TextBlock x:Name="txtRunSummary" Text="{Binding RunSummaryText}" FontFamily="Consolas" FontWeight="Bold" AutomationProperties.AutomationId="txtRunSummary"/>

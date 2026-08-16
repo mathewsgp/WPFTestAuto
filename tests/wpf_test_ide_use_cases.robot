@@ -119,10 +119,12 @@ UC-009 Check Driver Settings Checkboxes
     Close Application    ide
 
 UC-010 Export Repository Button Accessible
-    [Documentation]    Verify export repository button is accessible from toolbar.
+    [Documentation]    Verify export repository button is accessible from the SCRIPTS tab toolbar (A7: moved off the global toolbar).
     Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
     Wait For Application    ide    timeout=30
     Switch Application    ide
+    Click Element    WpfTestIde.MainWindow.tabScripts
+    Sleep    1s
     ${visible1}=    Is Element Visible    WpfTestIde.MainWindow.btnExportRepo
     Should Be True    ${visible1}
     ${visible2}=    Is Element Visible    WpfTestIde.MainWindow.btnExportScript
@@ -181,6 +183,8 @@ UC-014 Run Generated Script And Check Results
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnLoadSample
     Sleep    2s
+    Click Element    WpfTestIde.MainWindow.tabScripts
+    Sleep    1s
     Click Element    WpfTestIde.MainWindow.btnRunScript
     Sleep    60s
     ${output_dir_exists}=    Run Keyword And Return Status    Directory Should Exist    results/ide_run

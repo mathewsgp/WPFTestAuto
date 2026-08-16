@@ -1,4 +1,4 @@
-# Element Repository — WpfTestIde Main Window
+﻿# Element Repository — WpfTestIde Main Window
 #
 # Hierarchical Element Format with parentAlias
 # ============================================
@@ -1076,108 +1076,6 @@ elements:
           value: "//Button[@AutomationId='btnAddVerification']"
           priority: 1
 
-  WpfTestIde.MainWindow.chkScriptRecordFlaUI:
-    displayName: "Script Record FlaUI Checkbox"
-    controlType: "CheckBox"
-    automationId: "chkScriptRecordFlaUI"
-    name: "FlaUI"
-    parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "CheckBox[@AutomationId='chkScriptRecordFlaUI']"
-    strategies:
-      FlaUI:
-        - searchBy: "AutomationId"
-          value: "chkScriptRecordFlaUI"
-          priority: 1
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "CheckBox[@AutomationId='chkScriptRecordFlaUI']"
-          priority: 1
-
-  WpfTestIde.MainWindow.chkScriptRecordWPFSpy:
-    displayName: "Script Record WPFSpy Checkbox"
-    controlType: "CheckBox"
-    automationId: "chkScriptRecordWPFSpy"
-    name: "WPFSpy"
-    parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "CheckBox[@AutomationId='chkScriptRecordWPFSpy']"
-    strategies:
-      FlaUI:
-        - searchBy: "AutomationId"
-          value: "chkScriptRecordWPFSpy"
-          priority: 1
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "CheckBox[@AutomationId='chkScriptRecordWPFSpy']"
-          priority: 1
-
-  WpfTestIde.MainWindow.chkScriptRecordSikuli:
-    displayName: "Script Record Sikuli Checkbox"
-    controlType: "CheckBox"
-    automationId: "chkScriptRecordSikuli"
-    name: "Sikuli"
-    parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "CheckBox[@AutomationId='chkScriptRecordSikuli']"
-    strategies:
-      FlaUI:
-        - searchBy: "AutomationId"
-          value: "chkScriptRecordSikuli"
-          priority: 1
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "CheckBox[@AutomationId='chkScriptRecordSikuli']"
-          priority: 1
-
-  WpfTestIde.MainWindow.chkScriptRunFlaUI:
-    displayName: "Script Run FlaUI Checkbox"
-    controlType: "CheckBox"
-    automationId: "chkScriptRunFlaUI"
-    name: "FlaUI"
-    parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "CheckBox[@AutomationId='chkScriptRunFlaUI']"
-    strategies:
-      FlaUI:
-        - searchBy: "AutomationId"
-          value: "chkScriptRunFlaUI"
-          priority: 1
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "CheckBox[@AutomationId='chkScriptRunFlaUI']"
-          priority: 1
-
-  WpfTestIde.MainWindow.chkScriptRunWPFSpy:
-    displayName: "Script Run WPFSpy Checkbox"
-    controlType: "CheckBox"
-    automationId: "chkScriptRunWPFSpy"
-    name: "WPFSpy"
-    parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "CheckBox[@AutomationId='chkScriptRunWPFSpy']"
-    strategies:
-      FlaUI:
-        - searchBy: "AutomationId"
-          value: "chkScriptRunWPFSpy"
-          priority: 1
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "CheckBox[@AutomationId='chkScriptRunWPFSpy']"
-          priority: 1
-
-  WpfTestIde.MainWindow.chkScriptRunSikuli:
-    displayName: "Script Run Sikuli Checkbox"
-    controlType: "CheckBox"
-    automationId: "chkScriptRunSikuli"
-    name: "Sikuli"
-    parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "CheckBox[@AutomationId='chkScriptRunSikuli']"
-    strategies:
-      FlaUI:
-        - searchBy: "AutomationId"
-          value: "chkScriptRunSikuli"
-          priority: 1
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "CheckBox[@AutomationId='chkScriptRunSikuli']"
-          priority: 1
-
   WpfTestIde.MainWindow.txtRunOutput:
     displayName: "Run Output Text Box"
     controlType: "Text"
@@ -1518,5 +1416,61 @@ elements:
       WPFSpy:
         - searchBy: "XPath"
           value: "Button[@AutomationId='btnDetach']"
+          priority: 1
+
+  # ================= A7: RESULTS Tab Toolbar =================
+  # Per-tab toolbar introduced in A7. These buttons live on the RESULTS TabItem
+  # (only visible when RESULTS is the active tab). Reuses RunCommand /
+  # ExportScriptCommand / ResetCommand, but with their own AutomationIds so
+  # repository locators can target them distinctly from the SCRIPTS-tab buttons.
+  WpfTestIde.MainWindow.btnResultsRerun:
+    displayName: "Results Tab Run Again Button"
+    controlType: "Button"
+    automationId: "btnResultsRerun"
+    name: "Run Again"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "Button[@AutomationId='btnResultsRerun']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnResultsRerun"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnResultsRerun']"
+          priority: 1
+
+  WpfTestIde.MainWindow.btnResultsExportScript:
+    displayName: "Results Tab Export Script Button"
+    controlType: "Button"
+    automationId: "btnResultsExportScript"
+    name: "Export Script"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "Button[@AutomationId='btnResultsExportScript']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnResultsExportScript"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnResultsExportScript']"
+          priority: 1
+
+  WpfTestIde.MainWindow.btnResultsReset:
+    displayName: "Results Tab Reset Button"
+    controlType: "Button"
+    automationId: "btnResultsReset"
+    name: "Reset"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "Button[@AutomationId='btnResultsReset']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnResultsReset"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnResultsReset']"
           priority: 1
 
