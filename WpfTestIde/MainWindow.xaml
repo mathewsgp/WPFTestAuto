@@ -61,7 +61,7 @@
         <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveScriptCommand}"/>
         <KeyBinding Key="R" Modifiers="Control" Command="{Binding RunCommand}"/>
         <KeyBinding Key="F5" Command="{Binding RunCommand}"/>
-        <KeyBinding Key="R" Modifiers="Control,Shift" Command="{Binding ToggleRecordingCommand}"/>
+        <KeyBinding Key="R" Modifiers="Control+Shift" Command="{Binding ToggleRecordingCommand}"/>
         <KeyBinding Key="F12" Command="{Binding OpenSpyToolCommand}"/>
     </Window.InputBindings>
 
