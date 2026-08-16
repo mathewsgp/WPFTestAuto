@@ -40,7 +40,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 
 | ID  | Item                                                | Effort       | Status | Notes                                                                                         |
 |-----|-----------------------------------------------------|--------------|--------|-----------------------------------------------------------------------------------------------|
-| D1  | Element Tree: filter chip bar + parent context      | Low          | ⬜      | Builds on existing search box; add "Clear ✕" chip + include-parents mode.                     |
+| D1  | Element Tree: filter chip bar + parent context      | Low          | ✅     | Commit `061b932`. Clear chip (btnClearSearch), `FilterIncludesParents` CheckBox (chkFilterIncludesParents, default ON, recursive ScoreNode+PropagateAncestors), `ElementCountText` "N / M elements" (txtElementCount). ApplyFilter now fully recursive. Existing `SearchBox` preserved. |
 | D2  | Properties: tabbed Inspector (Properties/XPath/Preview) | Medium   | ⬜      | Gives the XPath multiline box its own scrollable area.                                       |
 | D3  | Steps ListBox → draggable re-order                   | Medium       | ⬜      | Lift drag pattern from `TestFlowDialog`.                                                      |
 | D4  | Run Output: log-level filter + search (ListView)    | Medium       | ⬜      | Columns Time/Level/Message + Info/Warn/Error toggles.                                         |
@@ -56,38 +56,42 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 
 ---
 
-## Recommended next item: **D1 (Element Tree filter chip bar + parent context)**
+## Recommended next item: **A7 (Per-tab context toolbars)**
 
-**Why D1 next:**
-- **Low effort, user-facing clarity.** `ElementTreeView` already has a working live-filter search box — D1 upgrades it to a filter-chip experience instead of building from scratch.
-- **Independent of everything.** Doesn't touch `MainViewModel`, the toolbar, or pane layout — purely additive on top of the existing tree view.
-- **No open design questions**, unlike A2 (overlay vs. push) and A5 (duplicate vs. move in-tab output), which both still need a decision.
-- **Pairs with the just-shipped B2.** With the toolbar now scannable and labeled, the next natural clarity win is the Element Tree's own filter affordance.
+**Why A7 next:**
+- **Removes the biggest source of UI duplication.** The Scripts → Raw tab still duplicates the Driver Settings checkboxes (Record/Run) that already live in the StatusBar (after C1+C2). Per-tab toolbars unify this — put each tab's actions next to its content, drop the global clutter.
+- **Builds on the work already shipped.** B1 (scrollable toolbar) + B2 (labeled bands) established the toolbar patterns; A7 applies the same patterns per-tab.
+- **Internal clarity win.** Removing duplicated driver controls is a measurable density reduction with no behavior change.
+- **Medium effort, contained scope.** Touches only the MainTabControl region in `MainWindow.xaml`; no VM commands added, just relocation/drive of existing ones.
 
-**Scope for D1:**
-1. Find the existing search box in `ElementTreeView.xaml` and the VM property powering the filter (likely `SearchText` / `FilterText` on the element-tree VM).
-2. Add a "Clear ✕" chip button next to the element count (`N elements`) that appears only when a filter is active and clears `SearchText`.
-3. Add a "Filter includes parents" toggle so deep matches show their ancestor chain (VS Code "Filter includes parents" pattern) — purely a tree-virtualization tweak on the existing filter logic.
-4. Optionally show match count "M / N elements" while a filter is active.
+**Open question (the only blocker):**
+- Should the global top toolbar keep Attach / Manage Apps / Check Pipe / Toggle Recording (bands Session + Record), and per-tab toolbars handle Run/Export/Tools? Or move Record entirely to per-SCRIPTS? Need a one-line decision before starting.
+
+**Scope for A7:**
+1. Themed per-tab `Toolbar` at the top of each `TabItem` content area (ELEMENTS inline toolbar already exists; SCRIPTS needs one; RESULTS / Run needs one).
+2. Move Run-related commands to the SCRIPTS tab toolbar; move OCR/Checkpoint to a Tools area reachable from each tab (or keep global).
+3. Remove the Scripts → Raw ⇄ Driver-Settings duplication (already noted twice in the layout analysis).
+4. Keep the global top toolbar to Attach / Manage Apps / Check Pipe + global Tools.
 
 **Implementation plan:**
-1. Read `WpfTestIde/Views/ElementTreeView.xaml` and its VM to locate the search box + filter plumbing.
-2. Add the chip (toggle `Visibility` on `SearchText` non-empty via `NullToCollapsedConverter`/`BoolToVisibilityConverter`) and the include-parents toggle.
-3. Build → commit → push → refresh this md → `graphify update .`.
+1. Confirm the open question above (where Record lives).
+2. Read the SCRIPTS / RAW / RESULTS tabs in `MainWindow.xaml`.
+3. Add per-tab `Border` + `WrapPanel` toolbars with `ToolbarButton` style; relocate existing buttons (preserve AutomationIds).
+4. Remove the duplicated driver-checkboxes region; verify Robot-test YAML locators still resolve (or update `repository/elements/wpf_test_ide.yaml` if an AutomationId relocates).
+5. Build → commit → push → refresh this md → `graphify update .`.
 
 ---
 
 ## Suggested overall order (remaining items)
 
-1. **D1** — Element Tree filter chip bar *(recommended now; low effort, user-facing clarity)*
-2. **A7** — per-tab context toolbars *(removes the Scripts/Raw ⇄ Driver-Settings duplication)*
-3. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
-4. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
-5. **D2 / D3 / D4** — pane-content upgrades *(independent; do in any order)*
-6. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
-7. **E3** — async wrappers + toasts
-8. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
-9. **B3** — icon-only compact toolbar *(needs icon assets)*
+1. **A7** — per-tab context toolbars *(recommended now; removes Scripts/Raw ⇄ Driver-Settings duplication; has one open question — see below)*
+2. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
+3. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
+4. **D2 / D3 / D4** — pane-content upgrades *(independent; do in any order)*
+5. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
+6. **E3** — async wrappers + toasts
+7. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
+8. **B3** — icon-only compact toolbar *(needs icon assets)*
 
 ---
 
@@ -106,3 +110,4 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | `0196b82`| **E2** — keyboard shortcuts (`Ctrl+S`/`Ctrl+R`+`F5`/`Ctrl+Shift+R`/`F12`) + Spy Tool menu item. |
 | `d827fa6`| fix(keybinding): `Control+Shift` (was `Control,Shift`) for ToggleRecord binding — resolves runtime `XamlParseException`. |
 | `768572e`| **B2** — toolbar grouped into 5 labeled bands (Session/Record/Run/Export/Tools) inside B1's `ScrollViewer`. |
+| `061b932`| **D1** — Element Tree filter chip bar: Clear chip + `Filter includes parents` toggle + "M / N elements" count; `ApplyFilter` now recursive with ancestor propagation. |
