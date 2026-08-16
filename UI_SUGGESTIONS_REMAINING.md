@@ -87,8 +87,8 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 3. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
 4. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
 5. **E3** — async wrappers + toasts
-7. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
-8. **B3** — icon-only compact toolbar *(needs icon assets)*
+6. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
+7. **B3** — icon-only compact toolbar *(needs icon assets)*
 
 ---
 

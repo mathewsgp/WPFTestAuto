@@ -130,9 +130,15 @@ namespace WpfTestIde
                     var target = TryGetStepFromPointEx(listBox, e);
                     if (target != null && !ReferenceEquals(target, dragged))
                     {
+                        int currentIndex = vm.Steps.IndexOf(dragged);
                         int targetIndex = vm.Steps.IndexOf(target);
-                        // Drop above the target row: insert before it. Drop in the lower
-                        // half of the row: insert below it. Matches ListBox reorder UX.
+                        // Standard ListBox reorder: drop in the lower half of a row ->
+                        // insert *after* it. `ObservableCollection.Move` removes the
+                        // source before inserting, so when dragging DOWN (source above
+                        // target) removing the source shifts the target's index down by
+                        // one. Compensate with `targetIndex--` for the down case so the
+                        // step actually lands where the drop visual promised.
+                        bool draggingDown = currentIndex >= 0 && currentIndex < targetIndex;
                         try
                         {
                             var itemContainer = listBox.ItemContainerGenerator.ContainerFromItem(target) as ListBoxItem;
@@ -143,6 +149,7 @@ namespace WpfTestIde
                             }
                         }
                         catch { /* bounds race: fall back to insert-before */ }
+                        if (draggingDown) targetIndex--;
                         vm.MoveStepTo(dragged, targetIndex);
                     }
                 }
@@ -157,14 +164,10 @@ namespace WpfTestIde
             return FindDataContext<RecordedStep>(element);
         }
 
-        // Variant of TryGetStepFromPoint that uses DragEventArgs coordinates.
+        // Thin wrapper that adapts Drop's DragEventArgs to TryGetStepFromPoint,
+        // so the hit-test/tree-walk logic lives in exactly one place.
         private static RecordedStep? TryGetStepFromPointEx(ListBox listBox, DragEventArgs e)
-        {
-            var position = e.GetPosition(listBox);
-            var element = listBox.InputHitTest(position) as DependencyObject;
-            if (element == null) return null;
-            return FindDataContext<RecordedStep>(element);
-        }
+            => TryGetStepFromPoint(listBox, e.GetPosition(listBox));
 
         private static T? FindDataContext<T>(DependencyObject element) where T : class
         {
