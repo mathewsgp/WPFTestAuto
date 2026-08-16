@@ -210,10 +210,11 @@
                         </TabItem>
                     </TabControl>
 
-                    <!-- Tree + Properties side by side -->
+                    <!-- Tree + Properties side by side (resizable) -->
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="1.2*"/>
                         </Grid.ColumnDefinitions>
 
@@ -222,8 +223,19 @@
                             <views:ElementTreeView DataContext="{Binding ElementTree}"/>
                         </Border>
 
+                        <!-- Resizer between the Element Tree and the Properties pane -->
+                        <GridSplitter Grid.Column="1"
+                                      Width="5"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Stretch"
+                                      Background="{DynamicResource AccentBrush}"
+                                      BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,1,0"
+                                      Cursor="SizeWE"
+                                      ResizeBehavior="PreviousAndNext"
+                                      ShowsPreview="False"/>
+
                         <!-- Properties -->
-                        <Border Grid.Column="1" Padding="6" Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3">
+                        <Border Grid.Column="2" Padding="6" Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3">
                             <views:ElementEditorView/>
                         </Border>
                     </Grid>
