@@ -683,41 +683,50 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Expander">
                     <Border Background="{DynamicResource PanelBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="4"
-                            Padding="{TemplateBinding Padding}">
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <ContentPresenter Grid.Column="0"
-                                              Content="{TemplateBinding Header}"
-                                              VerticalAlignment="Center"/>
-                            <ToggleButton Grid.Column="1"
-                                          IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                          Content="▼"
-                                          FontSize="8"
-                                          Background="Transparent"
-                                          BorderThickness="0"
-                                          Padding="4,0"/>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Header row: label + toggle (always visible) -->
+                            <Grid Grid.Row="0" Margin="{TemplateBinding Padding}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0"
+                                                  ContentSource="Header"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"/>
+                                <ToggleButton Grid.Column="1"
+                                              IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                              Content="▼"
+                                              FontSize="8"
+                                              Background="Transparent"
+                                              Foreground="{DynamicResource TextSecondaryBrush}"
+                                              BorderThickness="0"
+                                              Padding="4,0"/>
+                            </Grid>
+
+                            <!-- Content row: visible only when expanded -->
+                            <Border Grid.Row="1"
+                                    x:Name="ContentHost"
+                                    Background="{DynamicResource BackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="0,1,0,0"
+                                    Padding="{TemplateBinding Padding}"
+                                    Visibility="Collapsed">
+                                <ContentPresenter ContentSource="Content"/>
+                            </Border>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsExpanded" Value="True">
-                            <Setter Property="ContentTemplate">
-                                <Setter.Value>
-                                    <DataTemplate>
-                                        <Border Background="{DynamicResource BackgroundBrush}"
-                                                BorderBrush="{DynamicResource BorderBrush}"
-                                                BorderThickness="0,0,1,1"
-                                                Padding="8">
-                                            <ContentPresenter/>
-                                        </Border>
-                                    </DataTemplate>
-                                </Setter.Value>
-                            </Setter>
+                            <Setter Property="Visibility" Value="Visible" TargetName="ContentHost"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
