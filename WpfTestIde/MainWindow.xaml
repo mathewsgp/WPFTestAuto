@@ -353,6 +353,13 @@
                                     Command="{Binding ElementTree.ExpandAllCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnExpandAll"/>
                             <Button x:Name="btnCollapseAll" Content="⬆️ Collapse" ToolTip="Collapse All" Padding="6,2" FontSize="11" Margin="4,0,0,0"
                                     Command="{Binding ElementTree.CollapseAllCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnCollapseAll"/>
+                            <!-- A2: pin/unpin the Element Tree. Push model: when IsChecked=true
+                                 the Tree column shrinks to width 0 and the A1 GridSplitter hides,
+                                 so Properties reclaim the freed width inline. Default pinned(false). -->
+                            <ToggleButton x:Name="btnPinElementTree" Content="📌" ToolTip="Pin/Unpin Element Tree"
+                                          Padding="6,2" FontSize="11" Margin="4,0,0,0" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand"
+                                          IsChecked="{Binding ElementTree.ElementTreeCollapsed, Mode=TwoWay}"
+                                          AutomationProperties.AutomationId="btnPinElementTree"/>
                         </StackPanel>
                     </Border>
 
@@ -384,20 +391,47 @@
                                  AutomationProperties.AutomationId="txtRepositoryYaml"/>
                     </Expander>
 
-                    <!-- Tree + Properties side by side (resizable) -->
+                    <!-- Tree + Properties side by side (resizable). A2: push-collapse
+                         the Element Tree. When ElementTree.ElementTreeCollapsed is true,
+                         column 0 (Tree) shrinks to width 0 and the splitter hides so the
+                         Properties pane reclaims the freed width inline (no overlay). -->
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition x:Name="treeColumn">
+                                <ColumnDefinition.Style>
+                                    <Style TargetType="ColumnDefinition">
+                                        <Setter Property="Width" Value="*"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ElementTree.ElementTreeCollapsed}" Value="True">
+                                                <Setter Property="Width" Value="0"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ColumnDefinition.Style>
+                            </ColumnDefinition>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="1.2*"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- Element Tree -->
                         <Border Grid.Column="0" Margin="0,0,6,0" Padding="6" Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementTree.ElementTreeCollapsed}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
                             <views:ElementTreeView DataContext="{Binding ElementTree}"/>
                         </Border>
 
-                        <!-- Resizer between the Element Tree and the Properties pane -->
+                        <!-- Resizer between the Element Tree and the Properties pane.
+                             A2: hidden when the tree is collapsed so the (now invisible)
+                             column can't be dragged back open by accident; the pin button
+                             is the single re-expand path. -->
                         <GridSplitter Grid.Column="1"
                                       Width="5"
                                       HorizontalAlignment="Center"
@@ -406,7 +440,18 @@
                                       BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,1,0"
                                       Cursor="SizeWE"
                                       ResizeBehavior="PreviousAndNext"
-                                      ShowsPreview="False"/>
+                                      ShowsPreview="False">
+                            <GridSplitter.Style>
+                                <Style TargetType="GridSplitter">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementTree.ElementTreeCollapsed}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </GridSplitter.Style>
+                        </GridSplitter>
 
                         <!-- Properties -->
                         <Border Grid.Column="2" Padding="6" Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3">

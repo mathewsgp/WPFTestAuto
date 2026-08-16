@@ -198,6 +198,17 @@ namespace WpfTestIde.ViewModels
             private set { _visibleElementCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(ElementCountText)); }
         }
 
+        // A2: Element Tree collapsed state (pin/unpin). False = pinned (visible,
+        // default). True = tree column shrinks to width 0 + GridSplitter hidden so
+        // Properties reclaim the freed width. Push model (no floating overlay).
+        // Two-way so the toolbar ToggleButton drives it and the layout reacts live.
+        private bool _elementTreeCollapsed;
+        public bool ElementTreeCollapsed
+        {
+            get => _elementTreeCollapsed;
+            set { _elementTreeCollapsed = value; OnPropertyChanged(); }
+        }
+
         /// <summary>
         /// D1: single binding for the count chip. Renders "N elements" when no
         /// filter is active and "M / N elements" while filtering.
