@@ -102,6 +102,11 @@ namespace WpfTestIde.ViewModels
         private ElementTreeNode? _selectedNode;
         private string _searchFilter = "";
         private ElementEntry? _selectedElement;
+        // D1: when true, deep matches show their ancestor chain (VS Code "Filter includes parents").
+        private bool _filterIncludesParents = true;
+        // D1: total/visible element counters backing properties.
+        private int _elementCount;
+        private int _visibleElementCount;
 
         public ElementTreeViewModel()
         {
@@ -114,6 +119,8 @@ namespace WpfTestIde.ViewModels
             ExpandAllCommand = new RelayCommand(_ => ExpandAll());
             CollapseAllCommand = new RelayCommand(_ => CollapseAll());
             RefreshCommand = new RelayCommand(_ => RefreshTree());
+            // D1: clears the search filter (the SearchFilter setter re-runs ApplyFilter).
+            ClearSearchCommand = new RelayCommand(_ => SearchFilter = "");
         }
 
         public ObservableCollection<ElementTreeNode> RootNodes
@@ -160,6 +167,46 @@ namespace WpfTestIde.ViewModels
             }
         }
 
+        /// <summary>
+        /// D1: when true, deep matches show their ancestor chain (VS Code
+        /// "Filter includes parents"). When false, only leaf matches themselves
+        /// are shown and ancestor folders are hidden unless they themselves
+        /// match the filter.
+        /// </summary>
+        public bool FilterIncludesParents
+        {
+            get => _filterIncludesParents;
+            set
+            {
+                _filterIncludesParents = value;
+                OnPropertyChanged();
+                ApplyFilter();
+            }
+        }
+
+        /// <summary>D1: total number of leaf (non-folder) element nodes in the tree.</summary>
+        public int ElementCount
+        {
+            get => _elementCount;
+            private set { _elementCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(ElementCountText)); }
+        }
+
+        /// <summary>D1: leaf element nodes that pass the current filter.</summary>
+        public int VisibleElementCount
+        {
+            get => _visibleElementCount;
+            private set { _visibleElementCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(ElementCountText)); }
+        }
+
+        /// <summary>
+        /// D1: single binding for the count chip. Renders "N elements" when no
+        /// filter is active and "M / N elements" while filtering.
+        /// </summary>
+        public string ElementCountText =>
+            string.IsNullOrWhiteSpace(_searchFilter)
+                ? $"{ElementCount} elements"
+                : $"{VisibleElementCount} / {ElementCount} elements";
+
         // Commands
         public ICommand AddFolderCommand { get; }
         public ICommand AddElementCommand { get; }
@@ -169,6 +216,8 @@ namespace WpfTestIde.ViewModels
         public ICommand ExpandAllCommand { get; }
         public ICommand CollapseAllCommand { get; }
         public ICommand RefreshCommand { get; }
+        /// <summary>D1: clears the search box (re-runs ApplyFilter via the SearchFilter setter).</summary>
+        public ICommand ClearSearchCommand { get; }
 
         /// <summary>
         /// Loads elements from an ObservableCollection and builds the tree hierarchy.
@@ -234,6 +283,27 @@ namespace WpfTestIde.ViewModels
 
                 RootNodes.Add(ungroupedNode);
             }
+
+            // D1: rebuild element count after the tree is (re)loaded.
+            RecountElements();
+        }
+
+        /// <summary>D1: count all leaf element nodes (not folders) in the tree.</summary>
+        private void RecountElements()
+        {
+            int total = 0;
+            foreach (var root in RootNodes)
+                total += CountLeaves(root);
+            ElementCount = total;
+        }
+
+        private static int CountLeaves(ElementTreeNode node)
+        {
+            if (!node.IsFolder && node.Element != null) return 1;
+            int n = 0;
+            foreach (var child in node.Children)
+                n += CountLeaves(child);
+            return n;
         }
 
         private string GetPrefix(string alias)
@@ -299,23 +369,99 @@ namespace WpfTestIde.ViewModels
             {
                 foreach (var root in RootNodes)
                     SetNodeVisibility(root, true);
+                // D1: when the filter is cleared, every leaf is visible.
+                RecountVisible();
                 return;
             }
 
             var filter = _searchFilter.ToLower();
+            // D1: walk every root recursively, scoring leaf matches. ScoreNode
+            // sets IsVisible only - it deliberately leaves IsExpanded alone so
+            // the user's expand/collapse state is preserved (matching the
+            // pre-D1 behavior on the checkbox-off path).
             foreach (var root in RootNodes)
+                ScoreNode(root, filter);
+
+            // D1: when "Filter includes parents" is on, reveal and expand every
+            // ancestor folder whose subtree contains a matched leaf so deep
+            // matches are actually visible in the UI - this is the VS Code
+            // "Filter includes parents" pattern. When the checkbox is off this
+            // pass is skipped entirely (folders stay in whatever expanded state
+            // the user left them, exactly like the legacy behavior).
+            if (_filterIncludesParents)
             {
-                bool anyVisible = false;
-                foreach (var node in root.Children)
-                {
-                    bool visible = node.Name.ToLower().Contains(filter) ||
-                                   (node.Element?.AutomationId?.ToLower().Contains(filter) ?? false) ||
-                                   (node.Element?.Name?.ToLower().Contains(filter) ?? false);
-                    node.IsVisible = visible;
-                    if (visible) anyVisible = true;
-                }
-                root.IsVisible = anyVisible;
+                foreach (var root in RootNodes)
+                    PropagateAncestors(root);
             }
+
+            RecountVisible();
+        }
+
+        /// <summary>
+        /// Recursively decide a node's IsVisible. A leaf matches if its name,
+        /// alias (AutomationId) or reference Name contains the filter. A folder
+        /// is visible iff any descendant is visible - folder-name-only matches
+        /// are intentionally ignored: what users search for is elements, not
+        /// synthetic group names. IsExpanded is never touched here.
+        /// </summary>
+        private bool ScoreNode(ElementTreeNode node, string filter)
+        {
+            bool leafMatch = !node.IsFolder && node.Element != null && (
+                node.Name.ToLower().Contains(filter) ||
+                (node.Element?.AutomationId?.ToLower().Contains(filter) ?? false) ||
+                (node.Element?.Name?.ToLower().Contains(filter) ?? false));
+
+            bool anyChildVisible = false;
+            foreach (var child in node.Children)
+                if (ScoreNode(child, filter)) anyChildVisible = true;
+
+            bool visible = leafMatch || anyChildVisible;
+            node.IsVisible = visible;
+
+            return visible;
+        }
+
+        /// <summary>
+        /// D1: post-pass (only when FilterIncludesParents is true) that reveals
+        /// and expands every ancestor folder whose subtree contains at least
+        /// one visible leaf, so deep matches are reachable in the UI. Folders
+        /// with no visible leaves keep whatever state ScoreNode left them
+        /// (collapsed/hidden).
+        /// </summary>
+        private bool PropagateAncestors(ElementTreeNode node)
+        {
+            if (!node.IsFolder)
+                return node.IsVisible;
+
+            bool anyVisibleDescendant = false;
+            foreach (var child in node.Children)
+                if (PropagateAncestors(child)) anyVisibleDescendant = true;
+
+            if (anyVisibleDescendant)
+            {
+                node.IsVisible = true;
+                node.IsExpanded = true;
+            }
+            return anyVisibleDescendant;
+        }
+
+        /// <summary>D1: recompute the visible-leaf count after a filter pass.</summary>
+        private void RecountVisible()
+        {
+            int visible = 0;
+            foreach (var root in RootNodes)
+                visible += CountVisibleLeaves(root);
+            VisibleElementCount = visible;
+        }
+
+        private int CountVisibleLeaves(ElementTreeNode node)
+        {
+            if (!node.IsFolder && node.Element != null)
+                return node.IsVisible ? 1 : 0;
+            int n = 0;
+            foreach (var child in node.Children)
+                n += CountVisibleLeaves(child);
+            return n;
         }
 
         private void SetNodeVisibility(ElementTreeNode node, bool visible)

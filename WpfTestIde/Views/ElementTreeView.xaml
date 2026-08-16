@@ -27,15 +27,47 @@
             </Grid>
         </Border>
 
-        <!-- Search Box -->
+        <!-- Search Box + D1 filter chip header -->
         <Border DockPanel.Dock="Top" Padding="8">
-            <Grid>
-                <TextBlock Text="🔍 Search elements..." 
-                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="10,0" VerticalAlignment="Center"
-                           Visibility="{Binding SearchFilter, Converter={StaticResource EmptyStringToVisibleConverter}}"/>
-                <TextBox x:Name="SearchBox" Text="{Binding SearchFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         Padding="8" FontSize="12" AutomationProperties.AutomationId="SearchBox"/>
-            </Grid>
+            <StackPanel Orientation="Vertical">
+                <!-- Search row: TextBox + Clear chip + count badge -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="🔍 Search elements..."
+                               Foreground="{DynamicResource TextSecondaryBrush}" Margin="10,0" VerticalAlignment="Center"
+                               Visibility="{Binding SearchFilter, Converter={StaticResource EmptyStringToVisibleConverter}}"/>
+                    <TextBox x:Name="SearchBox" Grid.Column="0"
+                             Text="{Binding SearchFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Padding="8" FontSize="12" AutomationProperties.AutomationId="SearchBox"/>
+
+                    <!-- D1: Clear chip - visible only when SearchFilter is non-empty -->
+                    <Button Grid.Column="1" Content="✕" ToolTip="Clear filter"
+                            Padding="6,2" Margin="4,0,0,0" FontSize="11"
+                            Command="{Binding ClearSearchCommand}"
+                            Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand"
+                            AutomationProperties.AutomationId="btnClearSearch"
+                            Visibility="{Binding SearchFilter, Converter={StaticResource EmptyStringToCollapsedConverter}}"/>
+
+                    <!-- D1: count badge - "N elements" or "M / N elements" -->
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding ElementCountText, Mode=OneWay}"
+                               VerticalAlignment="Center" Margin="8,0,0,0"
+                               FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                               AutomationProperties.AutomationId="txtElementCount"/>
+                </Grid>
+
+                <!-- D1: "Filter includes parents" toggle - default ON, auto-expands deep matches -->
+                <CheckBox Content="Filter includes parents"
+                          IsChecked="{Binding FilterIncludesParents, Mode=TwoWay}"
+                          FontSize="11" Margin="0,6,0,0"
+                          Foreground="{DynamicResource TextPrimaryBrush}"
+                          ToolTip="When checked, deep matches reveal and auto-expand their ancestor folders (VS Code pattern)"
+                          AutomationProperties.AutomationId="chkFilterIncludesParents"/>
+            </StackPanel>
         </Border>
 
         <!-- Expand/Collapse buttons -->
