@@ -5,6 +5,7 @@
         Height="520" Width="550"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         AutomationProperties.AutomationId="CheckpointWizardDialog">
     <Grid Margin="16">
         <Grid.RowDefinitions>

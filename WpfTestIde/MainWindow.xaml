@@ -9,11 +9,11 @@
         AutomationProperties.AutomationId="MainWindow">
 
     <Window.Resources>
-        <Style x:Key="ToolbarButton" TargetType="Button">
+        <Style x:Key="ToolbarButton" TargetType="Button" BasedOn="{StaticResource VsButton}">
             <Setter Property="Padding" Value="10,5"/>
             <Setter Property="Margin" Value="0,0,8,0"/>
         </Style>
-        <Style TargetType="TabItem">
+        <Style TargetType="TabItem" BasedOn="{StaticResource VsTabItem}">
             <Setter Property="Padding" Value="10,5"/>
         </Style>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -113,7 +113,7 @@
                 <Button x:Name="btnLoadSample" Style="{StaticResource ToolbarButton}" Content="Load Sample" Command="{Binding LoadSampleCommand}" AutomationProperties.AutomationId="btnLoadSample"/>
                 <Button x:Name="btnReset" Style="{StaticResource ToolbarButton}" Content="Reset" Command="{Binding ResetCommand}" AutomationProperties.AutomationId="btnReset"/>
                 <Separator Margin="8,0"/>
-                <Button x:Name="btnRunScript" Style="{StaticResource ToolbarButton}" Content="Run Script" Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" AutomationProperties.AutomationId="btnRunScript"/>
+                <Button x:Name="btnRunScript" Style="{StaticResource ToolbarButton}" Content="Run Script" Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnRunScript"/>
                 <Separator Margin="8,0"/>
                 <Button x:Name="btnExportRepo" Style="{StaticResource ToolbarButton}" Content="Export Repository (.yaml)" Command="{Binding ExportRepositoryCommand}" AutomationProperties.AutomationId="btnExportRepo"/>
                 <Button x:Name="btnExportScript" Style="{StaticResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
@@ -125,7 +125,7 @@
                 <Separator Margin="8,0"/>
                 <Button x:Name="btnSpyTool" Style="{StaticResource ToolbarButton}" Content="Spy Tool" Command="{Binding OpenSpyToolCommand}" AutomationProperties.AutomationId="btnSpyTool"/>
                 <Separator Margin="8,0"/>
-                <Button x:Name="btnVisualTestBuilder" Style="{StaticResource ToolbarButton}" Content="Visual Test Builder" Command="{Binding OpenVisualTestBuilderCommand}" Background="{DynamicResource SuccessBrush}" AutomationProperties.AutomationId="btnVisualTestBuilder"/>
+                <Button x:Name="btnVisualTestBuilder" Style="{StaticResource ToolbarButton}" Content="Visual Test Builder" Command="{Binding OpenVisualTestBuilderCommand}" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnVisualTestBuilder"/>
             </StackPanel>
         </Border>
 

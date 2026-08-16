@@ -4,6 +4,7 @@
         Title="Attach to Process" Height="600" Width="650"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         AutomationProperties.AutomationId="AttachToProcessDialog">
 
     <Window.Resources>

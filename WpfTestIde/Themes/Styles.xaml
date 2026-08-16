@@ -370,8 +370,10 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="4,4,0,0"
                             Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"/>
+                        <ContentPresenter ContentSource="Header"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsSelected" Value="True">
@@ -516,6 +518,162 @@
         <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource BorderBrush}"/>
     </Style>
 
+    <!-- =================================================================== -->
+    <!-- Default (keyless) styles: apply Vs* theme to bare controls app-wide. -->
+    <!-- These make every <Button>, <TextBox>, <ComboBox>, etc. flip with the  -->
+    <!-- theme even when the author omitted Style=. The keyed Vs* styles     -->
+    <!-- above remain available for explicit use.                            -->
+    <!-- =================================================================== -->
+
+    <!-- Default TreeView/TreeViewItem, Menu/MenuItem, Separator, ContextMenu, -->
+    <!-- ScrollViewer and GridSplitter: these have no keyed Vs* counterpart,    -->
+    <!-- so we declare their themed defaults here. Bare controls pick them up.  -->
+
+    <!-- Default TreeView/TreeViewItem: adopt dark theme palette via DynamicResource -->
+    <Style TargetType="TreeView">
+        <Setter Property="Background" Value="{DynamicResource BackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style TargetType="TreeViewItem">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="2"/>
+    </Style>
+
+    <!-- Default Menu: themed container. MenuItem style defined further below. -->
+    <Style TargetType="Menu">
+        <Setter Property="Background" Value="{DynamicResource ToolbarBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="FontSize" Value="12"/>
+    </Style>
+
+    <!-- Default MenuItem: themed for both top-level and submenu. Handles the -->
+    <!-- dropdown popup background (which the keyed VsMenuItem style does not). -->
+    <Style TargetType="MenuItem">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="MenuItem">
+                    <Border x:Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="0"
+                            Padding="{TemplateBinding Padding}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIcon"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemShortcut"/>
+                            </Grid.ColumnDefinitions>
+                            <ContentPresenter x:Name="Icon"
+                                              Grid.Column="0"
+                                              ContentSource="Icon"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,8,0"
+                                              Width="16" Height="16"/>
+                            <ContentPresenter Grid.Column="1"
+                                              ContentSource="Header"
+                                              RecognizesAccessKey="True"
+                                              VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2"
+                                       Text="{TemplateBinding InputGestureText}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="16,0,0,0"/>
+                            <Popup x:Name="PART_Popup"
+                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Placement="Bottom"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Fade">
+                                <Border Background="{DynamicResource PanelBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="3"
+                                        Padding="2">
+                                    <ItemsPresenter/>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Role" Value="TopLevelHeader">
+                            <Setter Property="Padding" Value="10,4"/>
+                            <Setter Property="Grid.IsSharedSizeScope" Value="True"/>
+                        </Trigger>
+                        <Trigger Property="Role" Value="SubmenuHeader">
+                            <Setter Property="Grid.IsSharedSizeScope" Value="True"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource StatusBarTextBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource TextDisabledBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Role" Value="SubmenuHeader">
+                <Setter Property="Header" Value="{Binding Header, RelativeSource={RelativeSource Self}}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Default Separator: themed line for menus and toolbars. -->
+    <Style TargetType="Separator">
+        <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="Height" Value="1"/>
+        <Setter Property="Margin" Value="4,2"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Border Background="{TemplateBinding Background}"
+                            Height="{TemplateBinding Height}"
+                            Margin="{TemplateBinding Margin}"
+                            SnapsToDevicePixels="True"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Default ContextMenu: themed popup container used by TreeView etc. -->
+    <Style TargetType="ContextMenu">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="2"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3"
+                            Padding="{TemplateBinding Padding}">
+                        <ItemsPresenter/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Default GridSplitter (if used) themed to be visible on dark. -->
+    <Style TargetType="GridSplitter">
+        <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="ResizeBehavior" Value="PreviousAndNext"/>
+    </Style>
+
     <!-- Expander Style -->
     <Style x:Key="VsExpander" TargetType="Expander">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
@@ -565,6 +723,50 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- =================================================================== -->
+    <!-- Default (keyless) styles that derive from the keyed Vs* styles.      -->
+    <!-- Declared AFTER the keyed styles so StaticResource BasedOn resolves.  -->
+    <!-- These cause bare <Button>, <TextBox>, <ComboBox>, ... controls used  -->
+    <!-- in MainWindow/Views/Dialogs to automatically pick up the theme.    -->
+    <!-- =================================================================== -->
+    <Style BasedOn="{StaticResource VsButton}" TargetType="Button"/>
+    <Style BasedOn="{StaticResource VsTextBox}" TargetType="TextBox"/>
+    <Style BasedOn="{StaticResource VsComboBox}" TargetType="ComboBox"/>
+    <Style BasedOn="{StaticResource VsCheckBox}" TargetType="CheckBox"/>
+    <Style BasedOn="{StaticResource VsRadioButton}" TargetType="RadioButton"/>
+    <Style BasedOn="{StaticResource VsListBoxItem}" TargetType="ListBoxItem"/>
+    <Style BasedOn="{StaticResource VsTabItem}" TargetType="TabItem"/>
+    <Style BasedOn="{StaticResource VsTabControl}" TargetType="TabControl"/>
+    <Style BasedOn="{StaticResource VsStatusBar}" TargetType="StatusBar"/>
+    <Style BasedOn="{StaticResource VsListView}" TargetType="ListView"/>
+    <Style BasedOn="{StaticResource VsDataGrid}" TargetType="DataGrid"/>
+    <Style BasedOn="{StaticResource VsGroupBox}" TargetType="GroupBox"/>
+    <Style BasedOn="{StaticResource VsExpander}" TargetType="Expander"/>
+    <Style BasedOn="{StaticResource VsTextBlock}" TargetType="TextBlock"/>
+    <Style BasedOn="{StaticResource VsScrollBar}" TargetType="ScrollBar"/>
+
+    <!-- Default GridViewColumnHeader (used by ListView in column mode).       -->
+    <!-- We do NOT re-template it: WPF's default template relies on a Thumb     -->
+    <!-- (PART_HeaderGripper) and the Role enum (Padding/Floating) for column   -->
+    <!-- resize and drag-drop. Replacing that template silently breaks these.  -->
+    <!-- Instead we only set themed property values that WPF's default chrome  -->
+    <!-- already honors, so dark-theme headers stay readable.                  -->
+    <Style TargetType="GridViewColumnHeader">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="Padding" Value="6,4"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Style.Triggers>
+            <Trigger Property="Role" Value="Padding">
+                <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource PanelBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PanelBrush}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
 </ResourceDictionary>

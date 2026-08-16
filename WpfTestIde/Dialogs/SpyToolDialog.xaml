@@ -5,6 +5,7 @@
         Height="700" Width="1000"
         WindowStartupLocation="CenterOwner"
         MinWidth="800" MinHeight="500"
+        Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         AutomationProperties.AutomationId="SpyToolDialog">
     <Grid Margin="8">
         <Grid.RowDefinitions>
