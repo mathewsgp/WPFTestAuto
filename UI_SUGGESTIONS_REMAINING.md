@@ -41,7 +41,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | ID  | Item                                                | Effort       | Status | Notes                                                                                         |
 |-----|-----------------------------------------------------|--------------|--------|-----------------------------------------------------------------------------------------------|
 | D1  | Element Tree: filter chip bar + parent context      | Low          | ✅     | Commit `061b932`. Clear chip (btnClearSearch), `FilterIncludesParents` CheckBox (chkFilterIncludesParents, default ON, recursive ScoreNode+PropagateAncestors), `ElementCountText` "N / M elements" (txtElementCount). ApplyFilter now fully recursive. Existing `SearchBox` preserved. |
-| D2  | Properties: tabbed Inspector (Properties/XPath/Preview) | Medium   | ⬜      | Gives the XPath multiline box its own scrollable area.                                       |
+| D2  | Properties: tabbed Inspector (Properties/XPath/Preview) | Medium   | ❌ reverted     | Was `cfa4693`; reverted in `0cbfcf4` per user feedback. The three-tab restructure wasn't useful and the Preview strip surfaced only internal logs with no user-facing value. Properties panel is back to single-form with XPath inside it; Preview strip removed. Not worth retrying as designed — dropping D2 from the queue. |
 | D3  | Steps ListBox → draggable re-order                   | Medium       | ⬜      | Lift drag pattern from `TestFlowDialog`.                                                      |
 | D4  | Run Output: log-level filter + search (ListView)    | Medium       | ⬜      | Columns Time/Level/Message + Info/Warn/Error toggles.                                         |
 
@@ -56,34 +56,36 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 
 ---
 
-## Recommended next item: **D2 (Properties panel: tabbed Inspector Properties / XPath / Preview)**
+## Recommended next item: **D3 (Steps ListBox → draggable re-order)**
 
-**Why D2 next:**
-- **Low–medium effort, pure additive.** Only restructures the `ElementEditorView` (`ElementEditorView.xaml`) into three sub-tabs; no other pane/tab/VM needs touching.
-- **No open design questions**, unlike A2 (collapsible Element Tree: overlay vs. push) and A5 (Run Output: duplicate vs. move in-tab) which both still need a decision before they can start.
-- **Direct clarity win.** Today the Properties editor is a single long vertical form with an awkward squashed XPath multiline box; D2 gives the XPath box its own scrollable area and separates read-only Preview from editable Properties.
-- **Independent of everything.** Can be done in any order alongside D3/D4, but D2 is the smallest of the three.
+**Why D3 next:**
+- **Medium effort, pattern already exists.** `TestFlowDialog` already implements drag-to-reorder steps; D3 simply lifts that pattern into the SCRIPTS-tab `StepsListBox`. No new UI primitives needed.
+- **No open design questions**, unlike A2 (collapsible Element Tree: overlay vs. push) and A5 (Run Output: duplicate vs. move in-tab).
+- **High user-facing value for script authoring.** Today, recorded steps can't be reordered from the SCRIPTS Visual tab — users have to delete and re-add. D3 removes that friction.
+- **Pure additive behavior.** Adds drag handles to each step row + `AllowDrop` + reordering command. The Step RowTemplate's existing content and AutomationId (`btnAddVerification`) preserved.
 
-**Scope for D2:**
-1. Read `WpfTestIde/Views/ElementEditorView.xaml` and (`ElementEditorView.xaml.cs` if it has one) — map its current structure: Name/AutomationId/ControlType fields + XPath multi-line + Preview text.
-2. Wrap the content in a 3-tab `TabControl`:
-   - **Properties tab:** current Name/AutomationId/ControlType/etc. editable fields.
-   - **XPath tab:** the multi-line `XPath` editor on its own, in a scrollable area with monospaced styling.
-   - **Preview tab:** the read-only Preview text area.
-3. Preserve existing AutomationIds on the inner fields (do not relocate individual AutomationIds — only restructure the container).
-4. Default selected tab = Properties (matching current behavior).
+**Scope for D3:**
+1. Read `WpfTestIde/Dialogs/TestFlowDialog.xaml` (and `.xaml.cs`) to extract the implemented drag-reorder pattern.
+2. Read `tests/wpf_test_ide_use_cases.robot` for `StepsListBox` AutomationId usage and any reorder-related test to make sure drag handles don't break that contract.
+3. Lift the drag pattern into the `StepTemplate` `DataTemplate` in `MainWindow.xaml`:
+   - Add a drag handle icon per row (☰ icon is cited in the suggestions menu; the existing rows are `Border`+`Grid` with content in column 0 — add a small handle column).
+   - Set `AllowDrop="True"` on the `ListBox` and subscribe `DragOver` / `Drop` handlers (or use a MVVM-friendly RelayCommand approach if `TestFlowDialog` does that).
+4. Wire the reordering command into `MainViewModel` (`Steps` is an `ObservableCollection<RecordedStep>`).
+5. Build → commit → push → refresh this md → `graphify update .`.
 
 **Implementation plan:**
-1. Read `WpfTestIde/Views/ElementEditorView.xaml` (+ its code-behind) to confirm current content + AutomationIds.
-2. Wrap the three content regions in a `TabControl` with three `TabItem`s (the existing `VsTabItem` style applies via the keyless default).
-3. Build → commit → push → refresh this md → `graphify update .`.
+1. Read `WpfTestIde/Dialogs/TestFlowDialog.xaml` + `.xaml.cs` for the existing drag pattern.
+2. Confirm `MainViewModel.Steps` reorder primitives (`Move`, `Insert`, `RemoveAt`) and verify `RecordedStep` is reference-stable (so reordering doesn't break `verify-after` bindings).
+3. Implement the draggable rows in `StepTemplate` using the lifted pattern.
+4. Add a Robot test stub covering drag-reorder (verify the first step can be moved below the second — via two new AutomationIds like `stepRow0` / `stepRow1`).
+5. Build, verify 0 errors, push, update md, `graphify update .`.
 
 ---
 
 ## Suggested overall order (remaining items)
 
-1. **D2** — Properties panel tabbed Inspector *(recommended now; low-medium effort, no open questions)*
-2. **D3 / D4** — Steps draggable re-order / Run Output log filter *(independent; do in any order)*
+1. **D3** — Steps ListBox draggable re-order *(recommended now; lift pattern from `TestFlowDialog`)*
+2. **D4** — Run Output log-level filter + search *(independent of D3)*
 3. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
 4. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
 5. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
