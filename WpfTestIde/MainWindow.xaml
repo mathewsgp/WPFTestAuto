@@ -298,6 +298,40 @@
                      MaxHeight="120" AutomationProperties.AutomationId="txtOcrResult"/>
         </Expander>
 
+        <!-- ================= Run Output (collapsible bottom panel) =================
+             A5: a bottom-docked tail of RunOutputText so the live Robot log stream
+             is glanceable across any tab (ELEMENTS/SCRIPTS/RESULTS) without leaving
+             the current view. This DUPLICATES the RESULTS-tab txtRunOutput editor
+             (deliberate per the A5 design decision); both bind to RunOutputText
+             computed from RunOutputLines, so they stay in sync. Collapsed by
+             default; auto-expanded by RunViewModel.RunAsync when a run begins and
+             re-collapsed by Reset(). Honors manual collapse via two-way binding. -->
+        <Expander DockPanel.Dock="Bottom"
+                  IsExpanded="{Binding RunOutputPanelExpanded, Mode=TwoWay}"
+                  Padding="8,4"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="0,1,0,0"
+                  AutomationProperties.AutomationId="RunOutputTailExpander">
+            <Expander.Header>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Run Output" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <!-- "(empty)" badge when no run has produced output yet. Once the
+                         first line streams in, RunOutputText becomes non-empty and this
+                         badge hides while the TextBox below shows the live tail. -->
+                    <TextBlock Text="(empty)" FontSize="10" Margin="8,0,0,0" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               Visibility="{Binding RunOutputText, Converter={StaticResource EmptyStringToVisibleConverter}, Mode=OneWay}"/>
+                </StackPanel>
+            </Expander.Header>
+            <TextBox x:Name="txtRunOutputTail" Text="{Binding RunOutputText, Mode=OneWay}" FontFamily="Consolas" FontSize="11"
+                     IsReadOnly="True" IsReadOnlyCaretVisible="True"
+                     TextWrapping="NoWrap" AcceptsReturn="True"
+                     Style="{StaticResource VsCodeEditor}"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     MinHeight="100" MaxHeight="260"
+                     AutomationProperties.AutomationId="txtRunOutputTail"/>
+        </Expander>
+
         <!-- ================= Main Tabs ================= -->
         <TabControl x:Name="MainTabControl" Margin="10" AutomationProperties.AutomationId="MainTabControl">
             <!-- ELEMENTS Tab -->

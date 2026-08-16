@@ -17,7 +17,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | A2  | Collapsible Element Tree pane (pin/unpin flyout)    | Medium       | ⬜      | Coordinate with A1 splitter (hide it when collapsed).                                         |
 | A3  | OCR Result → collapsible bottom Expander             | Low          | ✅     | Commit `4c760ea`. `OcrPanelExpanded` 2-way, auto-expand on new text, `(empty)` badge.          |
 | A4  | Raw JSON → toggleable bottom Expander               | Medium       | ✅     | Commit `51a9ae9`. `RepositoryPanelExpanded` 2-way; `tabRawJson` AutomationId moved to Expander; YAML repo entry updated. |
-| A5  | Run Output as bottom-docked resizable panel         | Medium       | ⬜      | Touches `MainViewModel` tab model. Mirror A3 auto-expand pattern with `HasRunOutput` bool.    |
+| A5  | Run Output as bottom-docked resizable panel         | Medium       | ✅     | Duplicate bottom dock (per design decision). New collapsible `Expander` `RunOutputTailExpander` between OCR + MainTabControl hosts a read-only `txtRunOutputTail` bound to `RunOutputText` (same source as RESULTS-tab `txtRunOutput` — stays in sync). `RunOutputPanelExpanded` 2-way bool; auto-expanded in `RunAsync` when a run begins, re-collapsed in `Reset()`. `(empty)` badge via existing `EmptyStringToVisibleConverter`. RESULTS-tab `txtRunOutput` entry unchanged. YAML: 2 new entries. |
 | A6  | Proper docking system (AvalonDock / Dock.WPF)       | High         | ⬜      | Later milestone. Unlocks clean E4.                                                            |
 | A7  | Per-tab context toolbars (de-duplicate toolbar)     | Medium       | ✅     | Commit `577da42`. Global toolbar keeps Session+Record+Tools only. SCRIPTS & RESULTS tabs each get their own toolbar (Run/Save/Export on SCRIPTS; Run Again/Export/Reset on RESULTS). Removed the 6 in-Raw `chkScript*` checkbox duplicates ( YAML entries dropped). UC-010 + UC-014 Robot tests updated to switch to SCRIPTS first. New AutomationIds `btnResultsRerun`/`btnResultsExportScript`/`btnResultsReset` (YAML entries added). |
 
@@ -43,7 +43,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | D1  | Element Tree: filter chip bar + parent context      | Low          | ✅     | Commit `061b932`. Clear chip (btnClearSearch), `FilterIncludesParents` CheckBox (chkFilterIncludesParents, default ON, recursive ScoreNode+PropagateAncestors), `ElementCountText` "N / M elements" (txtElementCount). ApplyFilter now fully recursive. Existing `SearchBox` preserved. |
 | D2  | Properties: tabbed Inspector (Properties/XPath/Preview) | Medium   | ❌ reverted     | Was `cfa4693`; reverted in `0cbfcf4` per user feedback. The three-tab restructure wasn't useful and the Preview strip surfaced only internal logs with no user-facing value. Properties panel is back to single-form with XPath inside it; Preview strip removed. Not worth retrying as designed — dropping D2 from the queue. |
 | D3  | Steps ListBox → draggable re-order                   | Medium       | ✅     | Commit `a342bda`. Drag-to-reorder + ↑/↓ buttons. `StepTemplate` gained a handle column (☰ + `btnStepUp`/`btnStepDown`); `StepsListBox` wired `AllowDrop`+PreviewMouseLeftButtonDown/PreviewMouseMove/DragOver/Drop handlers in `MainWindow.xaml.cs` (drag suppressed over Buttons). `MainViewModel.MoveStepTo` (clamps + `ObservableCollection.Move` + `RegenerateScript`). YAML: 2 new entries (`btnStepUp`/`btnStepDown`). |
-| D4  | Run Output: log-level filter + search (ListView)    | Medium       | ⬜      | Columns Time/Level/Message + Info/Warn/Error toggles.                                         |
+| D4  | Run Output: log-level filter + search (ListView)    | Medium       | ⬜ (design verified, not yet started) | Columns Time/Level/Message + Info/Warn/Error toggles. **Design question resolved during A5 exploration:** `RunOutputLines` is `ObservableCollection<string>` of Robot's structured stdout (`YYYYMMDD HH:MM:SS.nnn \| LEVEL \| msg`), so parsing into `LogEntry { Time, Level, Message }` for a `ListView` is viable (the tracker's preferred shape). Skipped before A5 per user direction; can resume here next time. |
 
 ## E. Global / window
 
@@ -56,39 +56,39 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 
 ---
 
-## Recommended next item: **D4 (Run Output: log-level filter + search)**
+## Recommended next item: **A2 (Collapsible Element Tree pane — pin / unpin flyout)**
 
-**Why D4 next:**
-- **Medium effort, standalone.** Only touches the RESULTS-tab Run Output area + a small VM addition for the filter state. No inter-pane contracts to coordinate.
-- **D3 is shipped** — `StepsListBox` now supports drag-to-reorder + ↑/↓ buttons; the Visual script editor is finished.
-- **Direct debugging value.** Today Run Output is a single text box; with log levels and search you can isolate failures fast in long runs.
-- **Open design question to settle before coding** (see *Scope* below): whether to re-color the existing `txtRunOutput` `TextBox` in place (cheap, no schema change), or upgrade to a `ListView`/`DataGrid` with Time/Level/Message columns (richer but needs a parsed-log model). The original suggestion named a `ListView`, so lean towards the columns model unless `txtRunOutput`'s current content is unstructured free text that can't be parsed into (time, level, message) rows.
+**Why A2 next:**
+- **A5 is shipped** — Run Output has a bottom-docked collapsible tail that auto-opens on run start; script authoring + run-watching both work now.
+- **Direct layout value.** Today the Element Tree occupies its full column permanently; a collapse/pin/unpin flyout would free that space for the Properties editor when the user isn't tree-browsing — mirrors the dock-tool UX in VS.
+- **Open design question to settle before coding** (see *Scope* below): *overlay flyout* (the tree floats over content while un-pinned, like VS's auto-hide tool windows) vs. *push* (collapsing the tree simply shrinks the row back to a sliver / reclaims its column for Properties). The A1 `GridSplitter` already gives the user a manual width control; A2 must define its relationship to that splitter (e.g. collapse hides the splitter).
+- **Medium effort, pure additive.** Adds a pin/unpin button + an `ElementTreePinned` bool + behaviors. No AutomationId on existing tree/internal controls needs to move; the new pin button gets a fresh AutomationId.
 
-**Scope for D4:**
-1. Read `WpfTestIde/MainWindow.xaml` RESULTS tab + `MainViewModel` `RunOutput`/`txtRunOutput` to understand the current shape (is it pre-formatted log text, or already line-structured?).
-2. Decide: columns `ListView` (parse the existing log lines into `LogEntry { Time, Level, Message }`) vs. in-place filter on the existing `TextBox`. Prefer the `ListView` to satisfy the suggestion as written, fall back to in-place if the log source isn't line-structured.
-3. Add filter checkboxes (Info / Warn / Error) + a search box above the log; wire a `CollectionViewSource` filter or a re-query into `FilteredRunOutput`.
-4. Preserve `txtRunOutput` AutomationId. If switching to `ListView`, add a new AutomationId on it (e.g. `lstRunOutput`) + entry in `wpf_test_ide.yaml`; keep the old one as a hidden-in-place control only if still referenced by Robot tests (check `wpf_test_ide_use_cases.robot`).
-5. Build → commit → push → refresh this md → `graphify update .`.
+**Scope for A2:**
+1. Decide overlay-vs-push (the one open question). Read `WpfTestIde/Views/ElementTreeView.xaml` + its host region in `MainWindow.xaml` and the A1 `GridSplitter` geometry to pick the model.
+2. Add an `ElementTreePinned` (or `ElementTreeCollapsed`) bool on `ElementTreeViewModel` with 2-way expand-state semantics.
+3. Add a pin/unpin `ToggleButton` to theELEMENTS-tab toolbar (fresh AutomationId `btnPinElementTree`); in the chosen overlay/push model, bind the tree's `Visibility`/`Width`/`ZIndex` to the pin state.
+4. Handle the A1 `GridSplitter`: when the tree collapses, hide or disable the splitter so it doesn't drag an invisible column.
+5. Add `btnPinElementTree` to `repository/elements/wpf_test_ide.yaml`; update `wpf_test_ide_use_cases.robot` only if a test interaction depends on tree visibility.
+6. Build → commit → push → refresh this md → `graphify update .`.
 
 **Implementation plan:**
-1. Read the RESULTS tab region in `MainWindow.xaml` + the `RunOutput` setter + any Robot test referencing `txtRunOutput`.
-2. Decide ListView-vs-inplace and capture the decision in the D4 row's Notes when committing.
-3. Implement the chosen shape + Info/Warn/Error toggles + search box + filter logic in VM.
-4. Update YAML if a new AutomationId is introduced; update `wpf_test_ide_use_cases.robot` if a locator changes.
+1. Read `ElementTreeView.xaml` + its `MainWindow.xaml` host (the A1 3-col `Grid` with the splitter).
+2. Pick overlay vs. push and capture the decision in the A2 row Notes on commit.
+3. Implement the chosen shape + pin button + `ElementTreePinned` 2-way bool + splitter coordination.
+4. YAML entry for the new AutomationId; Robot test update if needed.
 5. Build, verify 0 errors, push, update md, `graphify update .`.
 
 ---
 
 ## Suggested overall order (remaining items)
 
-1. **D4** — Run Output log-level filter + search *(recommended now)*
-2. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
-3. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
-4. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
-5. **E3** — async wrappers + toasts
-6. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
-7. **B3** — icon-only compact toolbar *(needs icon assets)*
+1. **A2** — collapsible Element Tree pane *(recommended now; settle overlay-vs-push first)*
+2. **D4** — Run Output log-level filter + search *(design verified; can pick up anytime)*
+3. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2)*
+4. **E3** — async wrappers + toasts
+5. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
+6. **B3** — icon-only compact toolbar *(needs icon assets)*
 
 ---
 
@@ -110,3 +110,4 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | `061b932`| **D1** — Element Tree filter chip bar: Clear chip + `Filter includes parents` toggle + "M / N elements" count; `ApplyFilter` now recursive with ancestor propagation. |
 | `577da42`| **A7** — per-tab context toolbars: Run+Export moved to SCRIPTS tab; RESULTS gets Run Again/Export/Reset toolbar. In-Raw duplicate `chkScript*` removed; UC-010 + UC-014 Robot tests updated. YAML updated (-6 entries, +3 new). |
 | `a342bda`| **D3** — Steps ListBox draggable re-order: `StepTemplate` handle column (☰ + `btnStepUp`/`btnStepDown`) + `StepsListBox` AllowDrop/drag handlers + `MainViewModel.MoveStepTo` (clamps, `ObservableCollection.Move`, `RegenerateScript`). YAML +2 entries. |
+| `<pending>`| **A5** — bottom-docked collapsible Run Output tail panel (`RunOutputTailExpander` + `txtRunOutputTail`); duplicate of RESULTS-tab `txtRunOutput`, auto-expands on run start, re-collapses in `Reset()`. YAML +2 entries. |

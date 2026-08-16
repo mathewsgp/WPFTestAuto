@@ -1183,6 +1183,44 @@ elements:
           value: "Expander[@AutomationId='tabRawJson']"
           priority: 1
 
+  # A5: bottom-docked collapsible Run Output tail, DUPLICATING the RESULTS-tab
+  # txtRunOutput editor (both bind to RunOutputText so they stay in sync). The
+  # tail lets the user watch the live Robot log stream without switching tabs.
+  # The RESULTS-tab txtRunOutput entry below is unchanged.
+  WpfTestIde.MainWindow.RunOutputTailExpander:
+    displayName: "Run Output Tail Panel"
+    controlType: "Expander"
+    automationId: "RunOutputTailExpander"
+    name: "Run Output"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "Expander[@AutomationId='RunOutputTailExpander']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "RunOutputTailExpander"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Expander[@AutomationId='RunOutputTailExpander']"
+          priority: 1
+
+  WpfTestIde.MainWindow.txtRunOutputTail:
+    displayName: "Run Output Tail Text Box"
+    controlType: "Text"
+    automationId: "txtRunOutputTail"
+    name: "txtRunOutputTail"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "TextBox[@AutomationId='txtRunOutputTail']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "txtRunOutputTail"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "TextBox[@AutomationId='txtRunOutputTail']"
+          priority: 1
+
   WpfTestIde.MainWindow.btnTreeExpandAll:
     displayName: "Tree Expand All Button"
     controlType: "Button"

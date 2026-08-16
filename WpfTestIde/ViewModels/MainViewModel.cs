@@ -241,6 +241,22 @@ namespace WpfTestIde.ViewModels
             }
         }
 
+        // A5: bottom-docked Run Output tail panel, collapsed by default. Two-way so
+        // the user can collapse it again. Auto-expanded in RunAsync when a run begins
+        // (mirrors the OCR auto-expand on arrival pattern) — gives a glanceable live
+        // tail across any tab without leaving the SCRIPTS/ELEMENTS view. This is a
+        // duplicate of the RESULTS-tab txtRunOutput; that editor stays unchanged.
+        private bool _runOutputPanelExpanded;
+        public bool RunOutputPanelExpanded
+        {
+            get => _runOutputPanelExpanded;
+            set
+            {
+                _runOutputPanelExpanded = value;
+                OnPropertyChanged();
+            }
+        }
+
         public ICommand ToggleRecordingCommand { get; }
         public ICommand AttachCommand { get; }
         public ICommand AddVerificationCommand { get; }
@@ -828,6 +844,9 @@ namespace WpfTestIde.ViewModels
          {
              RunOutputLines.Clear();
              RunSummaryText = "Running...";
+             // A5: pop open the bottom tail so the user sees the live stream as the
+             // run begins. Two-way binding honors manual collapse afterwards.
+             RunOutputPanelExpanded = true;
 
              string testsDir = Path.Combine(FrameworkRoot, "tests");
              Directory.CreateDirectory(testsDir);
@@ -967,6 +986,9 @@ namespace WpfTestIde.ViewModels
             Elements.Clear();
             RunOutputLines.Clear();
             RunSummaryText = "";
+            // A5: collapse the bottom tail back to its default hidden state so a
+            // fresh sample doesn't look like the last run is still streaming.
+            RunOutputPanelExpanded = false;
             EditingElement = null;
             SelectedElement = null;
         }
