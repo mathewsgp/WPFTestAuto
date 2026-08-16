@@ -169,25 +169,41 @@ namespace WpfTestIde
         private static RecordedStep? TryGetStepFromPointEx(ListBox listBox, DragEventArgs e)
             => TryGetStepFromPoint(listBox, e.GetPosition(listBox));
 
-        private static T? FindDataContext<T>(DependencyObject element) where T : class
+        private static T? FindDataContext<T>(DependencyObject? element) where T : class
         {
             while (element != null && element is not Window)
             {
                 if (element is FrameworkContentElement fce && fce.DataContext is T t) return t;
                 if (element is FrameworkElement fe && fe.DataContext is T t2) return t2;
-                element = System.Windows.Media.VisualTreeHelper.GetParent(element);
+                element = GetParentSafe(element);
             }
             return null;
         }
 
-        private static T? FindAncestor<T>(DependencyObject element) where T : DependencyObject
+        private static T? FindAncestor<T>(DependencyObject? element) where T : DependencyObject
         {
             while (element != null)
             {
                 if (element is T t) return t;
-                element = System.Windows.Media.VisualTreeHelper.GetParent(element);
+                element = GetParentSafe(element);
             }
             return null;
+        }
+
+        /// <summary>WPF elements inside text (Run, Inline, Hyperlink, ContentElement)
+        /// are not Visual/Visual3D, so VisualTreeHelper.GetParent throws on them. Walk
+        /// the logical tree (LogicalTreeHelper.GetParent) for those, and the visual tree
+        /// for Visual elements; fall back to logical for anything else. Used by
+        /// FindAncestor/FindDataContext so drag hit-testing never throws.</summary>
+        private static DependencyObject? GetParentSafe(DependencyObject element)
+        {
+            // Visual -> visual tree.
+            if (element is System.Windows.Media.Visual)
+            {
+                return System.Windows.Media.VisualTreeHelper.GetParent(element);
+            }
+            // ContentElement / FrameworkContentElement / other DependencyObject -> logical tree.
+            return System.Windows.LogicalTreeHelper.GetParent(element);
         }
     }
 }
