@@ -417,10 +417,18 @@
             <TabItem x:Name="tabResults" Header="RESULTS" AutomationProperties.AutomationId="tabResults">
                 <DockPanel Margin="6">
                     <!-- A7: per-tab toolbar for RESULTS. Re-runs / re-exports without
-                         switching tabs. New AutomationId btnResultsRerun (toolbar-local)
-                         is added since RESULTS gets its own Run copy; btnExportScript
-                         is reused (bound to the same command, located via reused
-                         AutomationId - acceptable because they live in different tabs). -->
+                         switching tabs. RESULTS deliberately uses DISTINCT AutomationIds
+                         (btnResultsRerun / btnResultsExportScript / btnResultsReset) -
+                         not the SCRIPTS-tab IDs (btnRunScript / btnExportScript /
+                         btnSaveScript). Cross-tab AutomationId reuse would be unsafe:
+                         WPF TabControls (no virtualization here) keep every TabItem's
+                         content in the visual tree, so a reused AutomationId would
+                         resolve ambiguously when repository/elements/wpf_test_ide.yaml
+                         searches by relativeXPath="Button[@AutomationId='...']".
+                         The commands themselves (RunCommand / ExportScriptCommand /
+                         ResetCommand) are intentionally bound to multiple buttons -
+                         that's safe because the AutomationIds, not the commands, are
+                         the locators. -->
                     <Border DockPanel.Dock="Top" Style="{StaticResource TabToolbarBorder}">
                         <StackPanel Orientation="Horizontal">
                             <Button x:Name="btnResultsRerun" Style="{StaticResource ToolbarButton}" Content="Run Again" ToolTip="Re-run the current script (F5)"
