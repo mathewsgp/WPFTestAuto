@@ -182,7 +182,50 @@ namespace WpfTestIde.ViewModels
         public string PreviewText { get => _previewText; set { _previewText = value; OnPropertyChanged(); } }
 
         private string _ocrResultText = "";
-        public string OcrResultText { get => _ocrResultText; set { _ocrResultText = value; OnPropertyChanged(); } }
+        public string OcrResultText
+        {
+            get => _ocrResultText;
+            set
+            {
+                _ocrResultText = value;
+                OnPropertyChanged();
+                // Only raise HasOcrResult on a real state change to avoid spamming
+                // change notifications for identical content.
+                var hasResult = !string.IsNullOrEmpty(value);
+                if (hasResult != _hasOcrResult)
+                {
+                    HasOcrResult = hasResult;
+                }
+                // Auto-open the OCR panel whenever fresh OCR content arrives so the
+                // user sees it without hunting for the collapsed expander. Manual
+                // collapse is still honored afterwards.
+                if (hasResult)
+                {
+                    OcrPanelExpanded = true;
+                }
+            }
+        }
+
+        // True when there is OCR text to show; drives the Expander's caret/empty hint
+        // and is computed from OcrResultText so consumers don't have to re-test it.
+        private bool _hasOcrResult;
+        public bool HasOcrResult
+        {
+            get => _hasOcrResult;
+            set { _hasOcrResult = value; OnPropertyChanged(); }
+        }
+
+        // Two-way: user can collapse/expand manually, OCR arrival auto-expands.
+        private bool _ocrPanelExpanded;
+        public bool OcrPanelExpanded
+        {
+            get => _ocrPanelExpanded;
+            set
+            {
+                _ocrPanelExpanded = value;
+                OnPropertyChanged();
+            }
+        }
 
         public ICommand ToggleRecordingCommand { get; }
         public ICommand AttachCommand { get; }

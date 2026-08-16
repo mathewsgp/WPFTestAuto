@@ -164,17 +164,32 @@
             </Grid>
         </Border>
 
-        <!-- ================= OCR Result ================= -->
-        <Border DockPanel.Dock="Bottom" Background="{DynamicResource BackgroundBrush}" Padding="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Text="OCR Result" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                <TextBox x:Name="txtOcrResult" Text="{Binding OcrResultText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         FontFamily="Consolas" FontSize="11" TextWrapping="Wrap" AcceptsReturn="True"
-                         Style="{StaticResource VsCodeEditor}"
-                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                         MaxHeight="120" AutomationProperties.AutomationId="txtOcrResult"/>
-            </DockPanel>
-        </Border>
+        <!-- ================= OCR Result (collapsible bottom panel) =================
+             A3: previously a permanently-docked strip consuming ~120px even when
+             no OCR was running. Now an Expander collapsed by default; expands
+             automatically (via OcrPanelExpanded) when fresh OCR text arrives, and
+             the user can collapse it again. Frees the vertical space otherwise. -->
+        <Expander DockPanel.Dock="Bottom"
+                  IsExpanded="{Binding OcrPanelExpanded, Mode=TwoWay}"
+                  Padding="8,4"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="0,1,0,0"
+                  AutomationProperties.AutomationId="OcrResultExpander">
+            <Expander.Header>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="OCR Result" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <!-- "(empty)" badge when no OCR text has been produced yet -->
+                     <TextBlock Text="(empty)" FontSize="10" Margin="6,0,0,0" VerticalAlignment="Center"
+                                Foreground="{DynamicResource TextSecondaryBrush}"
+                                Visibility="{Binding OcrResultText, Converter={StaticResource EmptyStringToVisibleConverter}, Mode=OneWay}"/>
+                </StackPanel>
+            </Expander.Header>
+            <TextBox x:Name="txtOcrResult" Text="{Binding OcrResultText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     FontFamily="Consolas" FontSize="11" TextWrapping="Wrap" AcceptsReturn="True"
+                     Style="{StaticResource VsCodeEditor}"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     MaxHeight="120" AutomationProperties.AutomationId="txtOcrResult"/>
+        </Expander>
 
         <!-- ================= Main Tabs ================= -->
         <TabControl x:Name="MainTabControl" Margin="10" AutomationProperties.AutomationId="MainTabControl">
