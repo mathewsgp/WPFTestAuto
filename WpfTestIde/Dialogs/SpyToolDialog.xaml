@@ -42,10 +42,10 @@
 
         <!-- Left Panel: Visual Tree View -->
         <Border Grid.Row="1" Grid.Column="0" Margin="0,0,4,8" 
-                BorderBrush="#DDD" BorderThickness="1" CornerRadius="4">
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Text="Element Tree" FontWeight="Bold" 
-                           Margin="8,8,8,4" Background="#F5F5F5" Padding="4"/>
+                           Margin="8,8,8,4" Background="{DynamicResource PanelBrush}" Padding="4"/>
                 <TreeView x:Name="ElementTree" BorderThickness="0" 
                           SelectedItemChanged="ElementTree_SelectedItemChanged" AutomationProperties.AutomationId="ElementTree">
                     <TreeView.ItemTemplate>
@@ -58,13 +58,13 @@
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding HasAutomationId}" Value="True">
                                                     <Setter Property="FontWeight" Value="Bold"/>
-                                                    <Setter Property="Foreground" Value="#2563EB"/>
+                                                     <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
-                                <TextBlock Text="{Binding ControlTypeSuffix}" Foreground="Gray" Margin="4,0,0,0"/>
+                                <TextBlock Text="{Binding ControlTypeSuffix}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="4,0,0,0"/>
                             </StackPanel>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>
@@ -81,10 +81,10 @@
 
             <!-- Property Grid -->
             <Border Grid.Row="0" Margin="0,0,0,8" 
-                    BorderBrush="#DDD" BorderThickness="1" CornerRadius="4">
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="Properties" FontWeight="Bold" 
-                               Margin="8,8,8,4" Background="#F5F5F5" Padding="4"/>
+                               Margin="8,8,8,4" Background="{DynamicResource PanelBrush}" Padding="4"/>
                     
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <Grid x:Name="PropertyGrid">
@@ -113,10 +113,10 @@
             </Border>
 
             <!-- XPath Editor -->
-            <Border Grid.Row="1" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4">
+            <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,8,8,4">
-                        <TextBlock Text="XPath" FontWeight="Bold" Background="#F5F5F5" Padding="4"/>
+                        <TextBlock Text="XPath" FontWeight="Bold" Background="{DynamicResource PanelBrush}" Padding="4"/>
                         <Button x:Name="btnValidateXPath" Content="✓ Validate" Click="ValidateXPath_Click" Padding="6,2" Margin="8,0,0,0" FontSize="11" AutomationProperties.AutomationId="btnValidateXPath"/>
                     </StackPanel>
                     
@@ -126,7 +126,7 @@
                              HorizontalScrollBarVisibility="Auto"
                              VerticalScrollBarVisibility="Auto"
                              MinHeight="80" MaxHeight="120"
-                             Background="#1E1E1E" Foreground="#D4D4D4"
+                             Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
                              BorderThickness="0" Padding="8" AutomationProperties.AutomationId="XPathEditor"/>
                 </DockPanel>
             </Border>
@@ -138,7 +138,7 @@
                 <TextBlock DockPanel.Dock="Left" Text="XPath Status:" FontWeight="Bold" 
                            VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <TextBlock x:Name="XPathStatus" Text="No element selected" 
-                           Foreground="Gray" VerticalAlignment="Center" AutomationProperties.AutomationId="XPathStatus"/>
+                           Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" AutomationProperties.AutomationId="XPathStatus"/>
             </DockPanel>
         </Border>
 
@@ -147,7 +147,7 @@
                     HorizontalAlignment="Right">
             <Button x:Name="btnAddToRepository" Content="Add to Repository" Click="AddToRepository_Click" 
                     Padding="16,8" Margin="0,0,8,0" 
-                    Background="#4CAF50" Foreground="White" FontWeight="Bold" AutomationProperties.AutomationId="btnAddToRepository"/>
+                    Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource StatusBarTextBrush}" FontWeight="Bold" AutomationProperties.AutomationId="btnAddToRepository"/>
             <Button x:Name="btnSpyClose" Content="Close" Click="Close_Click" Padding="16,8" AutomationProperties.AutomationId="btnSpyClose"/>
         </StackPanel>
     </Grid>

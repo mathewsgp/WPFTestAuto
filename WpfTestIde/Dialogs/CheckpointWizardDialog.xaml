@@ -65,7 +65,7 @@
         <StackPanel Grid.Row="3" Grid.ColumnSpan="2" x:Name="AreaPanel" Visibility="Collapsed" Margin="0,8,0,8">
             <TextBlock Text="Area Selection" FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock Text="Click 'Select Area' then draw on screen to capture area." 
-                       Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                       Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
             
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -97,14 +97,14 @@
             
             <TextBlock Text="Expected Text (from OCR):" Margin="0,16,0,4"/>
             <TextBox x:Name="OcrTextBox" Height="60" TextWrapping="Wrap" IsReadOnly="True"
-                     VerticalScrollBarVisibility="Auto" Background="#F5F5F5" AutomationProperties.AutomationId="OcrTextBox"/>
+                     VerticalScrollBarVisibility="Auto" Background="{DynamicResource InputBackgroundBrush}" AutomationProperties.AutomationId="OcrTextBox"/>
         </StackPanel>
 
         <!-- Image Options -->
         <StackPanel Grid.Row="3" Grid.ColumnSpan="2" x:Name="ImagePanel" Visibility="Collapsed" Margin="0,8,0,8">
             <TextBlock Text="Image Capture" FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock Text="Capture a baseline image for visual comparison." 
-                       Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                       Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
             
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -127,14 +127,14 @@
                     HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,4" AutomationProperties.AutomationId="btnCaptureArea"/>
             
             <TextBlock Text="Baseline Image Path:" Margin="0,16,0,4"/>
-            <TextBox x:Name="BaselinePathBox" IsReadOnly="True" Background="#F5F5F5" AutomationProperties.AutomationId="BaselinePathBox"/>
+            <TextBox x:Name="BaselinePathBox" IsReadOnly="True" Background="{DynamicResource InputBackgroundBrush}" AutomationProperties.AutomationId="BaselinePathBox"/>
         </StackPanel>
 
         <!-- DataGrid Options -->
         <StackPanel Grid.Row="3" Grid.ColumnSpan="2" x:Name="DataGridPanel" Visibility="Collapsed" Margin="0,8,0,8">
             <TextBlock Text="DataGrid Content Verification" FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock Text="Verifies the content of a DataGrid control." 
-                       Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                       Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
             
             <TextBlock Text="Expected Content (CSV):" Margin="0,0,0,4"/>
             <TextBox x:Name="DataGridContentBox" Height="100" TextWrapping="Wrap" AcceptsReturn="True"

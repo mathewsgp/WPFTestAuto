@@ -20,7 +20,7 @@
         <TextBlock Grid.Row="2" Text="Expected text:" Margin="0,0,0,4"/>
         <TextBox Grid.Row="3" x:Name="ExpectedBox" Margin="0,0,0,10" AutomationProperties.AutomationId="ExpectedBox"/>
 
-        <TextBlock Grid.Row="4" x:Name="HintText" Foreground="Gray" TextWrapping="Wrap" FontSize="11"
+        <TextBlock Grid.Row="4" x:Name="HintText" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" FontSize="11"
                    Text="Tip: pick the element and adjust the expected text — this becomes a Verify Element Text step." AutomationProperties.AutomationId="HintText"/>
 
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">

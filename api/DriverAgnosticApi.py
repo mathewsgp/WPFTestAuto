@@ -128,56 +128,79 @@ def _kill_sample_wpf_app():
 def _start_sample_wpf_app():
     """Starts SampleWpfApp with the WPFSpy agent startup hook.
     
-    Uses the RuntimeInjector for proper process launching with Spy Agent injection.
+    Searches for the StartupHook DLL in multiple locations and launches
+    the app with DOTNET_STARTUP_HOOKS set so the agent initializes.
     """
     global _SAMPLE_WPF_APP_PROCESS
     
     app_path = _get_sample_wpf_app_path()
     
-    # Try to use RuntimeInjector if available
-    try:
-        from runtime_injector import RuntimeInjector, AppLauncher
-        injector = RuntimeInjector()
-        
-        if injector.startup_hook_path:
-            print(f'[DriverAgnosticApi] Using RuntimeInjector with hook: {injector.startup_hook_path}')
-            
-            # Build environment
-            env = os.environ.copy()
-            env["DOTNET_STARTUP_HOOKS"] = injector.startup_hook_path
-            env["WPFSPY_AGENT_ENABLED"] = "1"
-            env["WPFSPY_PIPE_NAME"] = "WPFSpyAgentPipe"
-            
-            _SAMPLE_WPF_APP_PROCESS = subprocess.Popen(
-                ["dotnet", app_path],
-                env=env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            time.sleep(5)  # Give the app time to start and the agent to initialize
-            return
-    except ImportError:
-        pass  # Fall back to inline implementation
+    # Find the StartupHook DLL in common locations
+    startup_hook = None
     
-    # Fallback: inline implementation
-    startup_hook = os.path.join(
-        os.path.dirname(os.path.dirname(app_path)),
-        "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net8.0-windows",
-        "WpfSpyAgent.StartupHook.dll"
-    )
+    # 1. Check same directory as the app (copied during build)
+    app_dir = os.path.dirname(app_path)
+    candidate = os.path.join(app_dir, "WpfSpyAgent.StartupHook.dll")
+    if os.path.exists(candidate):
+        startup_hook = candidate
+    
+    # 2. Check solution-level WpfSpyAgent.StartupHook output
+    if not startup_hook:
+        candidate = os.path.join(_THIS_DIR, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.StartupHook.dll")
+        if os.path.exists(candidate):
+            startup_hook = candidate
+    
+    # 3. Check runtime_injector's search paths
+    if not startup_hook:
+        try:
+            from runtime_injector import RuntimeInjector
+            injector = RuntimeInjector()
+            if injector.startup_hook_path:
+                startup_hook = injector.startup_hook_path
+        except (ImportError, Exception):
+            pass
     
     env = os.environ.copy()
     env["WPFSPY_AGENT_ENABLED"] = "1"
-    if os.path.exists(startup_hook):
+    env["WPFSPY_PIPE_NAME"] = "WPFSpyAgentPipe"
+    if startup_hook:
         env["DOTNET_STARTUP_HOOKS"] = startup_hook
+        print(f'[DriverAgnosticApi] Using startup hook: {startup_hook}')
+    else:
+        print('[DriverAgnosticApi] WARNING: Startup hook DLL not found, WPFSpy agent will not be injected')
     
+    cmd = ["dotnet", app_path]
     _SAMPLE_WPF_APP_PROCESS = subprocess.Popen(
-        ["dotnet", app_path],
+        cmd,
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    time.sleep(5)  # Give the app time to start and the agent to initialize
+    
+    # Wait for the app and agent to initialize (startup hook polls up to 10s)
+    time.sleep(8)
+    
+    # Verify the agent is ready
+    try:
+        import win32file
+        pipe_path = r"\\.\pipe\WPFSpyAgentPipe"
+        for _ in range(10):
+            try:
+                handle = win32file.CreateFile(
+                    pipe_path,
+                    win32file.GENERIC_READ,
+                    0, None,
+                    win32file.OPEN_EXISTING,
+                    0, None,
+                )
+                win32file.CloseHandle(handle)
+                print('[DriverAgnosticApi] WPFSpy agent is ready on pipe')
+                return
+            except Exception:
+                time.sleep(1)
+        print('[DriverAgnosticApi] WARNING: WPFSpy agent did not become ready within timeout')
+    except ImportError:
+        pass  # pywin32 not available, skip readiness check
 
 def _is_sample_wpf_app_running():
     """Check if SampleWpfApp is already running by window title."""
@@ -233,6 +256,7 @@ def _reset_real_app():
             _kill_sample_wpf_app()
             time.sleep(2)
             _start_sample_wpf_app()
+            _reload_drivers()  # Re-attach drivers to the new process
         else:
             # Mock mode: reset the mock app
             print('[DriverAgnosticApi] Mock mode: resetting mock app')

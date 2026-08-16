@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-08-12T18:43:11.895725",
-    "last_verified": "2026-08-12T18:43:11.895733",
-    "verification_count": 51,
+    "captured_at": "2026-08-16T00:30:00.613835",
+    "last_verified": "2026-08-16T00:30:00.613843",
+    "verification_count": 56,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "Button[@AutomationId='btnAttachCancel']"
@@ -29,17 +29,17 @@
       "avg_duration_ms": 450.6736099720001
     },
     "WPFSpy:XPath": {
-      "success_count": 35,
+      "success_count": 40,
       "failure_count": 0,
-      "total_duration_ms": 579.6983242034912,
-      "last_success": "2026-08-12T18:43:11.472366",
+      "total_duration_ms": 658.611536026001,
+      "last_success": "2026-08-16T00:30:00.188317",
       "last_failure": null,
-      "avg_duration_ms": 16.562809262956893
+      "avg_duration_ms": 16.465288400650024
     }
   },
-  "total_interactions": 102,
+  "total_interactions": 112,
   "first_seen": "2026-08-09T01:56:35.609652",
-  "last_interaction": "2026-08-12T18:43:11.895738",
+  "last_interaction": "2026-08-16T00:30:00.613848",
   "consecutive_failures": 0,
-  "consecutive_successes": 102
+  "consecutive_successes": 112
 }

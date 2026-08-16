@@ -72,7 +72,10 @@ def launch_application(app_path, arguments=None, pipe_name="WPFSpyAgentPipe", ti
     
     cmd = [app_path]
     if arguments:
-        cmd.append(str(arguments))
+        if isinstance(arguments, list):
+            cmd.extend(arguments)
+        else:
+            cmd.append(str(arguments))
     
     process = subprocess.Popen(
         cmd,

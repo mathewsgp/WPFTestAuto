@@ -36,7 +36,7 @@
             </Grid.ColumnDefinitions>
 
             <Button Grid.Column="1" x:Name="btnSetDefault" Content="Set as Default" Width="100" Margin="0,0,8,0" Click="SetDefault_Click" AutomationProperties.AutomationId="btnSetDefault"/>
-            <Button Grid.Column="2" x:Name="btnDetach" Content="Detach" Width="80" Margin="0,0,8,0" Click="Detach_Click" Background="#FFE0E0" AutomationProperties.AutomationId="btnDetach"/>
+            <Button Grid.Column="2" x:Name="btnDetach" Content="Detach" Width="80" Margin="0,0,8,0" Click="Detach_Click" Background="{DynamicResource ErrorBrush}" AutomationProperties.AutomationId="btnDetach"/>
             <Button Grid.Column="3" x:Name="btnMultiAppClose" Content="Close" Width="80" Click="Close_Click" AutomationProperties.AutomationId="btnMultiAppClose"/>
         </Grid>
     </Grid>

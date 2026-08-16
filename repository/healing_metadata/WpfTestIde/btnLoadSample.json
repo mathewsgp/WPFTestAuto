@@ -11,22 +11,47 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-12T18:47:55.457653",
-    "last_verified": "2026-08-12T18:47:55.457667",
-    "verification_count": 124,
+    "captured_at": "2026-08-16T00:34:40.486278",
+    "last_verified": "2026-08-16T00:34:40.486288",
+    "verification_count": 149,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "Button[@AutomationId='btnLoadSample']"
   },
-  "healing_history": [],
+  "healing_history": [
+    {
+      "timestamp": "2026-08-16T01:22:57.068336",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnLoadSample']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-16T08:07:35.579924",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnLoadSample']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
   "strategy_stats": {
     "WPFSpy:XPath": {
-      "success_count": 121,
-      "failure_count": 0,
-      "total_duration_ms": 5176.828861236572,
-      "last_success": "2026-08-12T18:47:55.085208",
-      "last_failure": null,
-      "avg_duration_ms": 42.78370959699647
+      "success_count": 146,
+      "failure_count": 4,
+      "total_duration_ms": 26382.638454437256,
+      "last_success": "2026-08-16T00:34:40.116534",
+      "last_failure": "2026-08-16T08:07:35.579931",
+      "avg_duration_ms": 175.88425636291504
     },
     "FlaUI:AutomationId": {
       "success_count": 3,
@@ -35,11 +60,19 @@
       "last_success": "2026-08-09T13:03:51.241430",
       "last_failure": null,
       "avg_duration_ms": 301.1488119761149
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 248,
+  "total_interactions": 302,
   "first_seen": "2026-08-09T12:21:09.380999",
-  "last_interaction": "2026-08-12T18:47:55.457675",
-  "consecutive_failures": 0,
-  "consecutive_successes": 248
+  "last_interaction": "2026-08-16T08:07:35.579934",
+  "consecutive_failures": 4,
+  "consecutive_successes": 0
 }

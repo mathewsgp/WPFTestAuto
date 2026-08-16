@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-12T18:46:14.960295",
-    "last_verified": "2026-08-12T18:46:14.960308",
-    "verification_count": 112,
+    "captured_at": "2026-08-16T00:34:43.541843",
+    "last_verified": "2026-08-16T00:34:43.541852",
+    "verification_count": 137,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "TextBlock[@AutomationId='StatusText']"
@@ -42,6 +42,42 @@
       "healing_search_value": "N/A",
       "healing_successful": false,
       "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-16T01:09:14.840916",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "TextBlock[@AutomationId='StatusText']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-16T01:20:46.780806",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "TextBlock[@AutomationId='StatusText']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-16T08:05:25.309055",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "TextBlock[@AutomationId='StatusText']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
     }
   ],
   "strategy_stats": {
@@ -54,12 +90,12 @@
       "avg_duration_ms": 472.20633029937744
     },
     "WPFSpy:XPath": {
-      "success_count": 92,
-      "failure_count": 4,
-      "total_duration_ms": 9437.009334564209,
-      "last_success": "2026-08-12T18:46:14.951699",
-      "last_failure": "2026-08-09T09:36:53.887774",
-      "avg_duration_ms": 102.57618841917619
+      "success_count": 117,
+      "failure_count": 10,
+      "total_duration_ms": 39889.43600654602,
+      "last_success": "2026-08-16T00:34:43.534013",
+      "last_failure": "2026-08-16T08:05:25.309068",
+      "avg_duration_ms": 314.09004729563793
     },
     "None:N/A": {
       "success_count": 0,
@@ -70,9 +106,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 228,
+  "total_interactions": 284,
   "first_seen": "2026-08-09T01:53:52.803162",
-  "last_interaction": "2026-08-12T18:46:14.960317",
-  "consecutive_failures": 0,
-  "consecutive_successes": 196
+  "last_interaction": "2026-08-16T08:05:25.309073",
+  "consecutive_failures": 6,
+  "consecutive_successes": 0
 }

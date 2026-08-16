@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Light Theme Colors (VS Code Light+) -->
+    <SolidColorBrush x:Key="BackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="SidebarBrush" Color="#F3F3F3"/>
+    <SolidColorBrush x:Key="PanelBrush" Color="#E7E7E7"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="#D0D0D0"/>
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#C0C0C0"/>
+    
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#333333"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#666666"/>
+    <SolidColorBrush x:Key="TextDisabledBrush" Color="#999999"/>
+    
+    <SolidColorBrush x:Key="AccentBrush" Color="#007ACC"/>
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#0098FF"/>
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="#0062A3"/>
+    
+    <SolidColorBrush x:Key="SuccessBrush" Color="#4CAF50"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="#FF9800"/>
+    <SolidColorBrush x:Key="ErrorBrush" Color="#F44336"/>
+    
+    <SolidColorBrush x:Key="ToolbarBrush" Color="#F3F3F3"/>
+    <SolidColorBrush x:Key="StatusBarBrush" Color="#007ACC"/>
+    <SolidColorBrush x:Key="StatusBarTextBrush" Color="#FFFFFF"/>
+    
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#E8E8E8"/>
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#D0D0D0"/>
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#B8B8B8"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#C0C0C0"/>
+    
+    <SolidColorBrush x:Key="TabActiveBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="TabInactiveBrush" Color="#E7E7E7"/>
+    <SolidColorBrush x:Key="TabBorderBrush" Color="#D0D0D0"/>
+    
+    <SolidColorBrush x:Key="ListBoxItemHoverBrush" Color="#E8E8E8"/>
+    <SolidColorBrush x:Key="ListBoxItemSelectedBrush" Color="#CCE8FF"/>
+    <SolidColorBrush x:Key="ListBoxItemSelectedBorderBrush" Color="#007ACC"/>
+
+</ResourceDictionary>

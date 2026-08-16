@@ -15,7 +15,7 @@
         <Style x:Key="StatusText" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Consolas"/>
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="#666"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         </Style>
     </Window.Resources>
 
@@ -95,17 +95,17 @@
             <TextBlock Grid.Row="2" Text="Arguments (optional):" Style="{StaticResource SectionHeader}" Margin="0,0,0,4"/>
             <TextBox Grid.Row="3" x:Name="ArgumentsBox" Margin="0,0,0,8" AutomationProperties.AutomationId="ArgumentsBox"/>
 
-            <Border Grid.Row="4" Background="#E8F4FD" Padding="10" CornerRadius="4" Margin="0,8,0,0">
+            <Border Grid.Row="4" Background="{DynamicResource InputBackgroundBrush}" Padding="10" CornerRadius="4" Margin="0,8,0,0">
                 <StackPanel>
                     <TextBlock Text="Environment Variables for Spy Agent Injection:" 
                               FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <TextBlock FontFamily="Consolas" FontSize="11">
                         <Run Text="DOTNET_STARTUP_HOOKS="/>
-                        <Run Text="C:\path\to\WpfSpyAgent.StartupHook.dll" Foreground="#0066CC"/>
+                        <Run Text="C:\path\to\WpfSpyAgent.StartupHook.dll" Foreground="{DynamicResource AccentBrush}"/>
                     </TextBlock>
                     <TextBlock FontFamily="Consolas" FontSize="11">
                         <Run Text="WPFSPY_AGENT_ENABLED="/>
-                        <Run Text="1" Foreground="#0066CC"/>
+                        <Run Text="1" Foreground="{DynamicResource AccentBrush}"/>
                     </TextBlock>
                 </StackPanel>
             </Border>
@@ -149,7 +149,7 @@
                 <Button x:Name="btnAttachCancel" Content="Cancel" Width="80" Margin="0,0,8,0" 
                        Click="Cancel_Click" IsCancel="True" AutomationProperties.AutomationId="btnAttachCancel"/>
                 <Button x:Name="btnAttach" Content="Attach" Width="100" Click="Attach_Click" 
-                       IsDefault="True" Background="#E8F4FD" AutomationProperties.AutomationId="btnAttach"/>
+                       IsDefault="True" Background="{DynamicResource InputBackgroundBrush}" AutomationProperties.AutomationId="btnAttach"/>
             </StackPanel>
         </Grid>
     </Grid>

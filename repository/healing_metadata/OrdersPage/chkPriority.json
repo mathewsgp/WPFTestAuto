@@ -1,0 +1,53 @@
+{
+  "alias": "OrdersPage.OrdersWindow.chkPriority",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-08-16T01:08:02.753191",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "CheckBox[@Name='chkPriority']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='OrdersWindow']/CheckBox[@Name='chkPriorit",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-16T01:08:31.624795",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "CheckBox[@Name='chkPriority']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='OrdersWindow']/CheckBox[@Name='chkPriorit",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 0,
+      "failure_count": 4,
+      "total_duration_ms": 14100.675582885742,
+      "last_success": null,
+      "last_failure": "2026-08-16T01:08:31.624801",
+      "avg_duration_ms": 3525.1688957214355
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    }
+  },
+  "total_interactions": 4,
+  "first_seen": "2026-08-16T01:08:02.751952",
+  "last_interaction": "2026-08-16T01:08:31.624804",
+  "consecutive_failures": 4,
+  "consecutive_successes": 0
+}

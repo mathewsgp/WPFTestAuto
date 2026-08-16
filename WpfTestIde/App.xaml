@@ -4,14 +4,21 @@
              xmlns:conv="clr-namespace:WpfTestIde.Converters"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <conv:StepKindToBrushConverter x:Key="StepKindToBrushConverter"/>
-        <conv:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
-        <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <conv:BoolToStatusBrushConverter x:Key="BoolToStatusBrushConverter"/>
-        <conv:EmptyStringToVisibleConverter x:Key="EmptyStringToVisibleConverter"/>
-        <conv:EmptyStringToCollapsedConverter x:Key="EmptyStringToCollapsedConverter"/>
-        <conv:EmptyToVisibleConverter x:Key="EmptyToVisibleConverter"/>
-        <conv:ZeroToVisibleConverter x:Key="ZeroToVisibleConverter"/>
-        <conv:NullToVisibleConverter x:Key="NullToVisibleConverter"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Colors.xaml"/>
+                <ResourceDictionary Source="Themes/Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            
+            <conv:StepKindToBrushConverter x:Key="StepKindToBrushConverter"/>
+            <conv:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
+            <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+            <conv:BoolToStatusBrushConverter x:Key="BoolToStatusBrushConverter"/>
+            <conv:EmptyStringToVisibleConverter x:Key="EmptyStringToVisibleConverter"/>
+            <conv:EmptyStringToCollapsedConverter x:Key="EmptyStringToCollapsedConverter"/>
+            <conv:EmptyToVisibleConverter x:Key="EmptyToVisibleConverter"/>
+            <conv:ZeroToVisibleConverter x:Key="ZeroToVisibleConverter"/>
+            <conv:NullToVisibleConverter x:Key="NullToVisibleConverter"/>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

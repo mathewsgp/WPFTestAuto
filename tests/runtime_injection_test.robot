@@ -16,7 +16,7 @@ Library          OperatingSystem
 ${SAMPLE_APP_DIR}    ${CURDIR}${/}..${/}SampleWpfApp${/}bin${/}Debug
 ${APP_DOTNET}        ${SAMPLE_APP_DIR}${/}net8.0-windows${/}SampleWpfApp.dll
 ${APP_FW}            ${SAMPLE_APP_DIR}${/}net461${/}SampleWpfApp.exe
-${NATIVE_DLL_DIR}    ${SAMPLE_APP_DIR}${/}..${/}WpfSpyAgent.NativeInject${/}bin${/}Debug${/}x64
+${NATIVE_DLL_DIR}    ${CURDIR}${/}..${/}WpfSpyAgent.NativeInject${/}bin${/}Debug${/}x64
 ${NATIVE_DLL}        ${NATIVE_DLL_DIR}${/}WpfSpyAgent.NativeInject.dll
 ${PIPE_NAME}         WPFSpyAgentPipe
 ${WPFSPY_ROOT}       ${CURDIR}${/}..

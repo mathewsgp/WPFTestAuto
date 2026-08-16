@@ -108,19 +108,19 @@ elements:
   LoginPage.MainWindow.lblError:
     displayName: "Error Label"
     controlType: "Label"
-    automationId: "lblError"
+    name: "lblError"
     parentAlias: "LoginPage.MainWindow"
-    relativeXPath: "Label[@AutomationId='lblError']"
+    relativeXPath: "Label[@Name='lblError']"
     defaultTimeout: 5
     tags: ["login", "verification"]
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
+        - searchBy: "Name"
           value: "lblError"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "Label[@AutomationId='lblError']"
+          value: "Label[@Name='lblError']"
           priority: 1
       Sikuli:
         - searchBy: "Image"

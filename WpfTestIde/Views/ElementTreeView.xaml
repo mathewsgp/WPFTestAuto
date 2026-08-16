@@ -6,9 +6,9 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </UserControl.Resources>
 
-    <DockPanel Background="#F8F9FA">
+    <DockPanel Background="{DynamicResource BackgroundBrush}">
         <!-- Header -->
-        <Border DockPanel.Dock="Top" Background="#24292E" Padding="8">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource PanelBrush}" Padding="8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -16,13 +16,13 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="🌳" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBlock Text="Element Tree" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                    <TextBlock Text="Element Tree" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="+" ToolTip="Add Folder" Padding="6,2" FontSize="12" 
-                            Command="{Binding AddFolderCommand}" Background="#0366D6" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                            Command="{Binding AddFolderCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" Cursor="Hand"/>
                     <Button Content="➕" ToolTip="Add Element" Padding="4,2" FontSize="10" Margin="4,0,0,0"
-                            Command="{Binding AddElementCommand}" Background="#28A745" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                            Command="{Binding AddElementCommand}" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" Cursor="Hand"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -31,7 +31,7 @@
         <Border DockPanel.Dock="Top" Padding="8">
             <Grid>
                 <TextBlock Text="🔍 Search elements..." 
-                           Foreground="#6A737D" Margin="10,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="10,0" VerticalAlignment="Center"
                            Visibility="{Binding SearchFilter, Converter={StaticResource EmptyStringToVisibleConverter}}"/>
                 <TextBox x:Name="SearchBox" Text="{Binding SearchFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Padding="8" FontSize="12" AutomationProperties.AutomationId="SearchBox"/>
@@ -42,9 +42,9 @@
         <Border DockPanel.Dock="Top" Padding="8,0,8,8">
             <StackPanel Orientation="Horizontal">
                 <Button x:Name="btnTreeExpandAll" Content="⬇️ Expand All" Padding="6,2" FontSize="11" 
-                        Command="{Binding ExpandAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnTreeExpandAll"/>
+                        Command="{Binding ExpandAllCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnTreeExpandAll"/>
                 <Button x:Name="btnTreeCollapse" Content="⬆️ Collapse" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                        Command="{Binding CollapseAllCommand}" Background="#E1E4E8" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnTreeCollapse"/>
+                        Command="{Binding CollapseAllCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnTreeCollapse"/>
             </StackPanel>
         </Border>
 
@@ -69,18 +69,18 @@
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Text" Value="{Binding Name}"/>
                                     <Setter Property="FontWeight" Value="Normal"/>
-                                    <Setter Property="Foreground" Value="#586069"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsFolder}" Value="True">
                                             <Setter Property="FontWeight" Value="SemiBold"/>
-                                            <Setter Property="Foreground" Value="#24292E"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource PanelBrush}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
                         <TextBlock Text="{Binding ControlType, StringFormat=' ({0})'}" 
-                                   Foreground="#6A737D" FontSize="10" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" VerticalAlignment="Center"
                                    Visibility="{Binding ControlType, Converter={StaticResource EmptyStringToCollapsedConverter}}"/>
                     </StackPanel>
                 </HierarchicalDataTemplate>

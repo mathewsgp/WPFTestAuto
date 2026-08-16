@@ -11,6 +11,7 @@ using System.Windows.Input;
 using WpfTestIde.Execution;
 using WpfTestIde.Models;
 using WpfTestIde.Recording;
+using WpfTestIde.Themes;
 
 namespace WpfTestIde.ViewModels
 {
@@ -234,6 +235,21 @@ namespace WpfTestIde.ViewModels
             OpenMultiAppDialogCommand = new RelayCommand(_ => OpenMultiAppDialog(), _ => AttachedApps.Count > 0);
             MoveElementPriorityUpCommand = new RelayCommand(_ => MoveElementPriorityUp(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
             MoveElementPriorityDownCommand = new RelayCommand(_ => MoveElementPriorityDown(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
+
+            // Menu commands
+            ToggleThemeCommand = new RelayCommand(_ => ToggleTheme());
+            ShowElementsCommand = new RelayCommand(_ => SelectedTabIndex = 0);
+            ShowScriptsCommand = new RelayCommand(_ => SelectedTabIndex = 1);
+            ShowResultsCommand = new RelayCommand(_ => SelectedTabIndex = 2);
+            ShowSearchCommand = new RelayCommand(_ => { /* TODO: implement search */ });
+            OpenSettingsCommand = new RelayCommand(_ => { /* TODO: implement settings */ });
+            ExitCommand = new RelayCommand(_ => Application.Current.Shutdown());
+            AboutCommand = new RelayCommand(_ => ShowAbout());
+            DocumentationCommand = new RelayCommand(_ => { /* TODO: open docs */ });
+            OpenScriptCommand = new RelayCommand(_ => { /* TODO: open script */ });
+            UndoCommand = new RelayCommand(_ => { /* TODO: implement undo */ });
+            RedoCommand = new RelayCommand(_ => { /* TODO: implement redo */ });
+            StopRecordingCommand = new RelayCommand(_ => ToggleRecording(), _ => IsAttached && IsRecording);
 
             Steps.CollectionChanged += (_, __) => RegenerateScript();
             Elements.CollectionChanged += (_, __) => { RegenerateRepository(); RefreshElementTree(); };
@@ -1217,6 +1233,38 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
             public string ControlType { get; set; } = "";
             public string? Text { get; set; }
             public string? XPath { get; set; }
+        }
+
+        public ICommand ToggleThemeCommand { get; }
+        public ICommand ShowElementsCommand { get; }
+        public ICommand ShowScriptsCommand { get; }
+        public ICommand ShowResultsCommand { get; }
+        public ICommand ShowSearchCommand { get; }
+        public ICommand OpenSettingsCommand { get; }
+        public ICommand ExitCommand { get; }
+        public ICommand AboutCommand { get; }
+        public ICommand DocumentationCommand { get; }
+        public ICommand OpenScriptCommand { get; }
+        public ICommand UndoCommand { get; }
+        public ICommand RedoCommand { get; }
+        public ICommand StopRecordingCommand { get; }
+
+        public int SelectedTabIndex
+        {
+            get => _selectedTabIndex;
+            set { _selectedTabIndex = value; OnPropertyChanged(); }
+        }
+        private int _selectedTabIndex;
+
+        private void ToggleTheme()
+        {
+            Themes.ThemeManager.ToggleTheme();
+            StatusText = ThemeManager.CurrentTheme == "Dark" ? "Dark theme applied" : "Light theme applied";
+        }
+
+        private void ShowAbout()
+        {
+            MessageBox.Show("WPF Test IDE\nVersion 1.0\n\nA VS Code-like IDE for WPF test automation.", "About WPF Test IDE", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

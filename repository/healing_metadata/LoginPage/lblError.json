@@ -1,0 +1,106 @@
+{
+  "alias": "LoginPage.MainWindow.lblError",
+  "baseline": {
+    "alias": "LoginPage.MainWindow.lblError",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Invalid username or password",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-08-16T01:07:21.407983",
+    "last_verified": "2026-08-16T01:07:21.407994",
+    "verification_count": 2,
+    "driver_used": "WPFSpy",
+    "search_method": "XPath",
+    "search_value": "Label[@Name='lblError']"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-08-15T22:38:03.652942",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Label[@AutomationId='lblError']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblErro",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-15T22:56:09.566904",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Label[@AutomationId='lblError']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblErro",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-15T23:09:46.584453",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Label[@AutomationId='lblError']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblErro",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-15T23:18:55.035714",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Label[@AutomationId='lblError']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblErro",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-16T00:28:04.395672",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Label[@AutomationId='lblError']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblErro",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 2,
+      "failure_count": 10,
+      "total_duration_ms": 35345.65615653992,
+      "last_success": "2026-08-16T01:07:21.399588",
+      "last_failure": "2026-08-16T00:28:04.395680",
+      "avg_duration_ms": 17672.82807826996
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    }
+  },
+  "total_interactions": 14,
+  "first_seen": "2026-08-15T22:38:03.651891",
+  "last_interaction": "2026-08-16T01:07:21.408001",
+  "consecutive_failures": 0,
+  "consecutive_successes": 4
+}

@@ -22,7 +22,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
-    <ProjectGuid>{C3D4E5F6-A7B8-9012-CDEF-12345678903}</ProjectGuid>
+    <ProjectGuid>{0DA5DFBE-462E-4C91-B080-7110511E07DB}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>WpfSpyAgentNativeInject</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
@@ -30,7 +30,6 @@
     <WindowsSDKDesktopARMTargetPlatformVersion>10.0.18362.0</WindowsSDKDesktopARMTargetPlatformVersion>
     <WindowsSDKDesktopARM64TargetPlatformVersion>10.0.18362.0</WindowsSDKDesktopARM64TargetPlatformVersion>
   </PropertyGroup>
-  
   <!-- 
     Platform Toolset Selection (must be before Microsoft.Cpp.Default.props):
     - v145 = VS 2022
@@ -45,16 +44,13 @@
   <PropertyGroup>
     <PlatformToolset Condition="'$(PlatformToolset)' == ''">v145</PlatformToolset>
   </PropertyGroup>
-  
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  
   <PropertyGroup Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <!-- Keep consistent DLL name across VS versions -->
     <TargetName>WpfSpyAgent.NativeInject</TargetName>
   </PropertyGroup>
-  
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
     <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -63,7 +59,6 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
-  
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -73,7 +68,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  
   <!-- Output directories -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\x64\</OutDir>
@@ -91,7 +85,6 @@
     <OutDir>$(SolutionDir)bin\$(Configuration)\x86\</OutDir>
     <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\x86\</IntDir>
   </PropertyGroup>
-  
   <!-- Common compiler settings -->
   <ItemDefinitionGroup>
     <ClCompile>
@@ -113,7 +106,6 @@
       </DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
-  
   <!-- Debug settings -->
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
@@ -122,7 +114,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
   </ItemDefinitionGroup>
-  
   <!-- Release settings -->
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
@@ -138,11 +129,9 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  
   <ItemGroup>
     <ClCompile Include="WpfSpyAgent.NativeInject.cpp" />
   </ItemGroup>
-  
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
