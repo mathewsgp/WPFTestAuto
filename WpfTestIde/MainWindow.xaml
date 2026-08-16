@@ -55,12 +55,22 @@
         </DataTemplate>
     </Window.Resources>
 
+    <!-- E2: global keyboard shortcuts. Bound to the same VM commands as the menu/toolbar.
+         Gestures also surfaced via InputGestureText on the MenuItem templates' reserved column. -->
+    <Window.InputBindings>
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveScriptCommand}"/>
+        <KeyBinding Key="R" Modifiers="Control" Command="{Binding RunCommand}"/>
+        <KeyBinding Key="F5" Command="{Binding RunCommand}"/>
+        <KeyBinding Key="R" Modifiers="Control,Shift" Command="{Binding ToggleRecordingCommand}"/>
+        <KeyBinding Key="F12" Command="{Binding OpenSpyToolCommand}"/>
+    </Window.InputBindings>
+
     <DockPanel>
         <!-- ================= Menu Bar ================= -->
         <Menu DockPanel.Dock="Top" Background="{DynamicResource ToolbarBrush}" Height="26">
             <MenuItem Header="_File">
                 <MenuItem Header="_Open Script..." Command="{Binding OpenScriptCommand}"/>
-                <MenuItem Header="_Save Script" Command="{Binding SaveScriptCommand}"/>
+                <MenuItem Header="_Save Script" Command="{Binding SaveScriptCommand}" InputGestureText="Ctrl+S"/>
                 <Separator/>
                 <MenuItem Header="E_xit" Command="{Binding ExitCommand}"/>
             </MenuItem>
@@ -80,9 +90,11 @@
                 <MenuItem Header="_Results" Command="{Binding ShowResultsCommand}"/>
             </MenuItem>
             <MenuItem Header="_Run">
-                <MenuItem Header="_Run Script" Command="{Binding RunCommand}"/>
-                <MenuItem Header="Record _Toggle" Command="{Binding ToggleRecordingCommand}"/>
+                <MenuItem Header="_Run Script" Command="{Binding RunCommand}" InputGestureText="Ctrl+R / F5"/>
+                <MenuItem Header="Record _Toggle" Command="{Binding ToggleRecordingCommand}" InputGestureText="Ctrl+Shift+R"/>
                 <MenuItem Header="_Stop Recording" Command="{Binding StopRecordingCommand}"/>
+                <Separator/>
+                <MenuItem Header="Spy _Tool" Command="{Binding OpenSpyToolCommand}" InputGestureText="F12"/>
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_About" Command="{Binding AboutCommand}"/>
