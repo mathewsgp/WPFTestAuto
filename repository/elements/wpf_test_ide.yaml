@@ -537,26 +537,6 @@ elements:
           value: "//Button[@AutomationId='btnCollapseAll']"
           priority: 1
 
-  # A2: pin/unpin the Element Tree. WPF ToggleButton is a ButtonBase subclass (not
-  # a Button) so the WPFSpy relativeXPath uses ToggleButton[...] rather than Button.
-  # FlaUI search-by-AutomationId is type-agnostic so it resolves the same control.
-  WpfTestIde.MainWindow.btnPinElementTree:
-    displayName: "Pin Element Tree Button"
-    controlType: "Button"
-    automationId: "btnPinElementTree"
-    name: "btnPinElementTree"
-    parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "//ToggleButton[@AutomationId='btnPinElementTree']"
-    strategies:
-      FlaUI:
-        - searchBy: "AutomationId"
-          value: "btnPinElementTree"
-          priority: 1
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "//ToggleButton[@AutomationId='btnPinElementTree']"
-          priority: 1
-
   # ================= Scripts Tab Controls =================
   WpfTestIde.MainWindow.cmbRunDriver:
     displayName: "Run Driver Combo"

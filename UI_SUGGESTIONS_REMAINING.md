@@ -14,7 +14,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | ID  | Item                                                | Effort       | Status | Notes                                                                                         |
 |-----|-----------------------------------------------------|--------------|--------|-----------------------------------------------------------------------------------------------|
 | A1  | Resizable Element Tree ↔ Properties split (GridSplitter) | Low          | ✅     | Commit `2e51580`. 3-col Grid + AccentBrush thumb.                                             |
-| A2  | Collapsible Element Tree pane (pin/unpin flyout)    | Medium       | ✅     | Push model (per design decision). `ToggleButton` `btnPinElementTree` in ELEMENTS toolbar toggles `ElementTree.ElementTreeCollapsed` (2-way bool, default pinned/visible). `DataTrigger` on column 0 swaps `Width` * → 0; tree `Border` + `GridSplitter` `Visibility` → `Collapsed` when down. Properties reclaim the freed width inline (no floating overlay). A1 `GridSplitter` is the existing resizer when expanded; hidden when collapsed. YAML: 1 new entry (`btnPinElementTree`, `ToggleButton[...]` XPath — ToggleButton is a ButtonBase not Button). |
+| A2  | Collapsible Element Tree pane (pin/unpin flyout)    | Medium       | ❌ reverted     | Was `2676c02` (push-model: `ToggleButton` `btnPinElementTree` → `ElementTree.ElementTreeCollapsed` 2-way bool + `DataTrigger` swaps column 0 `Width` * → 0 + hides `GridSplitter`); reverted in `0e43d23` / `0e43d23+1` per user feedback. Worth retrying as an **overlay flyout** (VS auto-hide style) next time — the push model added a toolbar pin button that the user didn't find useful.                              |
 | A3  | OCR Result → collapsible bottom Expander             | Low          | ✅     | Commit `4c760ea`. `OcrPanelExpanded` 2-way, auto-expand on new text, `(empty)` badge.          |
 | A4  | Raw JSON → toggleable bottom Expander               | Medium       | ✅     | Commit `51a9ae9`. `RepositoryPanelExpanded` 2-way; `tabRawJson` AutomationId moved to Expander; YAML repo entry updated. |
 | A5  | Run Output as bottom-docked resizable panel         | Medium       | ✅     | Duplicate bottom dock (per design decision). New collapsible `Expander` `RunOutputTailExpander` between OCR + MainTabControl hosts a read-only `txtRunOutputTail` bound to `RunOutputText` (same source as RESULTS-tab `txtRunOutput` — stays in sync). `RunOutputPanelExpanded` 2-way bool; auto-expanded in `RunAsync` when a run begins, re-collapsed in `Reset()`. `(empty)` badge via existing `EmptyStringToVisibleConverter`. RESULTS-tab `txtRunOutput` entry unchanged. YAML: 2 new entries. |
@@ -59,32 +59,24 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 ## Recommended next item: **D4 (Run Output: log-level filter + search as a ListView)**
 
 **Why D4 next:**
-- **A2 is shipped** — Element Tree is now pin/unpin collapsible (push model); the ELEMENTS / Properties layout is finished.
+- **A2 reverted** — the push-model pin/unpin button (`btnPinElementTree`) wasn't useful per user feedback; A2 is dropped from the active queue as implemented. Worth retrying as an overlay-flyout only if the user wants the feature back (see the A2 row Notes); until then D4 is the natural next item.
 - **Design already verified** during A5 exploration: `RunOutputLines` is `ObservableCollection<string>` of Robot Framework's structured stdout (`YYYYMMDD HH:MM:SS.nnn | LEVEL | msg`), so parsing each line into a `LogEntry { Time, Level, Message }` is feasible. The tracker's preferred `ListView` (Time/Level/Message columns + Info/Warn/Error toggles + search) can therefore be implemented directly — no remaining open design questions.
 - **High debugging value.** Today A5's tail (and the RESULTS-tab `txtRunOutput`) are a single text box; with levels + search the user isolates failures fast in long runs. Pairs naturally with A5's bottom tail for live filtering.
-- **Standalone, additive.** Touches the RESULTS-tab Run Output area + a small VM addition (parsed-log model + filter state). Existing `txtRunOutput` AutomationId can move onto the new `ListView`; if so, update the one Robot-test reference (`wpf_test_ide_use_cases.robot` only *clicks* `tabResults`, doesn't read `txtRunOutput` content — so safe).
+- **Standalone, additive.** Touches the RESULTS-tab Run Output area + a small VM addition (parsed-log model + filter state). Existing `txtRunOutput` AutomationId can move onto the new `ListView`; no Robot test reads its content — only clicks `tabResults` — so safe.
 
 **Scope for D4:**
 1. Add `LogEntry { Time, Level, Message }` model + a `LogLineParser` regex for Robot's `'YYYYMMDD HH:MM:SS.nnn | LEVEL | msg'` format; lines that don't match (separators `'====...'`, headers) become `Level = "Info"` (or a distinct `"Raw"` level) with the full line as Message.
 2. `MainViewModel`: add `RunOutputLog ObservableCollection<LogEntry>` seeded from each new `RunOutputLines` line; add filter state (`ShowInfo`/`ShowWarn`/`ShowError` checkboxes, default all true) + `LogSearchText`; expose `RunOutputFiltered` (via `CollectionViewSource` filter or a re-query). Keep `RunOutputLines`/`RunOutputText` for back-compat (A5 tail + RESULTS tab still bind to the raw text).
 3. `MainWindow.xaml` RESULTS-tab `txtRunOutput`: replace the `TextBox` with a `ListView`/`DataGrid` (Time / Level / Message columns), preserving the `txtRunOutput` AutomationId. Add the filter strip above it: 3 level checkboxes (`chkLogLevelInfo`/`chkLogLevelWarn`/`chkLogLevelError`) + a search `TextBox` (`txtLogSearch`).
-4. Optionally also upgrade the A5 tail (`txtRunOutputTail`) — keep it as a raw `TextBox` for now (live tail favors plain text over filtered rows); revisit later.
-5. YAML: keep `txtRunOutput` entry but update `controlType` Text → List, `relativeXPath` `TextBox[...]` → `ListView[...]` (or `DataGrid[...]`); add `chkLogLevelInfo`/`chkLogLevelWarn`/`chkLogLevelError` + `txtLogSearch` entries.
-6. Build → commit → push → refresh this md → `graphify update .`.
-
-**Implementation plan:**
-1. Add `LogEntry` model + `LogLineParser`.
-2. Wire `RunOutputLines.CollectionChanged` to also seed `RunOutputLog`; add filter checkboxes + search text props + a `RunOutputFiltered` view.
-3. Replace RESULTS-tab `txtRunOutput` `TextBox` with a `ListView`; add the filter strip.
-4. Update YAML (txtRunOutput controlType + the 4 new AutomationIds); no Robot-test edit needed (no test reads `txtRunOutput`).
-5. Build, verify 0 errors, push, update md, `graphify update .`.
+4. YAML: keep `txtRunOutput` entry but update `controlType` Text → List, `relativeXPath` `TextBox[...]` → `ListView[...]` (or `DataGrid[...]`); add `chkLogLevelInfo`/`chkLogLevelWarn`/`chkLogLevelError` + `txtLogSearch` entries.
+5. Build → commit → push → refresh this md → `graphify update .`
 
 ---
 
 ## Suggested overall order (remaining items)
 
 1. **D4** — Run Output log-level filter + search *(recommended now; design verified, no open questions)*
-2. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — A2/A5 now shipped, so it's unblocked; could go before D4 if a stable layout is preferred first)*
+2. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — A2/A5 now shipped or reverted, so it's unblocked)*
 3. **E3** — async wrappers + toasts
 4. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
 5. **B3** — icon-only compact toolbar *(needs icon assets)*
@@ -110,4 +102,3 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | `577da42`| **A7** — per-tab context toolbars: Run+Export moved to SCRIPTS tab; RESULTS gets Run Again/Export/Reset toolbar. In-Raw duplicate `chkScript*` removed; UC-010 + UC-014 Robot tests updated. YAML updated (-6 entries, +3 new). |
 | `a342bda`| **D3** — Steps ListBox draggable re-order: `StepTemplate` handle column (☰ + `btnStepUp`/`btnStepDown`) + `StepsListBox` AllowDrop/drag handlers + `MainViewModel.MoveStepTo` (clamps, `ObservableCollection.Move`, `RegenerateScript`). YAML +2 entries. |
 | `7f99327`| **A5** — bottom-docked collapsible Run Output tail panel (`RunOutputTailExpander` + `txtRunOutputTail`); duplicate of RESULTS-tab `txtRunOutput`, auto-expands on run start, re-collapses in `Reset()`. YAML +2 entries. |
-| `2676c02`| **A2** — collapsible Element Tree pane (push model): `ToggleButton` `btnPinElementTree` → `ElementTree.ElementTreeCollapsed` 2-way bool; `DataTrigger` swaps column 0 `Width` * → 0 and hides tree `Border` + `GridSplitter`. Properties reclaim width inline; no overlay. YAML +1 entry. |
