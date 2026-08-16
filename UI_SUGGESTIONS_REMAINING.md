@@ -26,7 +26,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | ID  | Item                                                | Effort       | Status | Notes                                                                                         |
 |-----|-----------------------------------------------------|--------------|--------|-----------------------------------------------------------------------------------------------|
 | B1  | Toolbar overflow → horizontal scroll                 | Low–Medium   | ✅     | Commit `6da97c3`. Toolbar `StackPanel` wrapped in horizontal `ScrollViewer`.                 |
-| B2  | Labeled toolbar "bands" (Session/Record/Run/…)      | Low          | ⬜      | Separators exist; add thin label TextBlocks above each band.                                  |
+| B2  | Labeled toolbar "bands" (Session/Record/Run/…)      | Low          | ✅     | Commit `768572e`. 5 vertical band sub-stacks (label + button row) inside B1's `ScrollViewer`. `ToolbarBandLabel`/`ToolbarBand` styles added. All AutomationIds/order/inter-Tools `Separator`s preserved. |
 | B3  | Icon-only compact toolbar mode (View menu toggle)   | Low          | ⬜      | Needs icon assets. Gates behind a "Compact Toolbar" toggle.                                  |
 
 ## C. Status bar
@@ -56,38 +56,38 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 
 ---
 
-## Recommended next item: **B2 (Labeled toolbar bands)**
+## Recommended next item: **D1 (Element Tree filter chip bar + parent context)**
 
-**Why B2 next:**
-- **Low effort, pairs naturally with B1.** The toolbar already has `Separator`s grouping buttons; B2 only adds thin label `TextBlock`s above each band (Session · Record · Run · Export · Tools).
-- **No ViewModel changes.** Pure XAML in `MainWindow.xaml`; a safe follow-up to B1's scrollable toolbar.
-- **Improves scannability** — the most common toolbar complaint now that clipping is fixed.
-- **Doesn't block or depend on anything.** A2/A5 still have open design questions; B2 is a clean self-contained win.
+**Why D1 next:**
+- **Low effort, user-facing clarity.** `ElementTreeView` already has a working live-filter search box — D1 upgrades it to a filter-chip experience instead of building from scratch.
+- **Independent of everything.** Doesn't touch `MainViewModel`, the toolbar, or pane layout — purely additive on top of the existing tree view.
+- **No open design questions**, unlike A2 (overlay vs. push) and A5 (duplicate vs. move in-tab output), which both still need a decision.
+- **Pairs with the just-shipped B2.** With the toolbar now scannable and labeled, the next natural clarity win is the Element Tree's own filter affordance.
 
-**Scope for B2:**
-1. Identify the existing `Separator`-delimited groups in the toolbar (Session: Attach/Manage/CheckPipe; Record: btnRecord/LoadSample/Reset; Run: btnRunScript; Export: btnExportRepo/btnExportScript/btnSaveScript; Tools: OCR/Checkpoint/Spy/VisualBuilder).
-2. Add a small `TextBlock` "header" above each band (e.g. `FontSize="10"`, `Foreground="{DynamicResource TextSecondaryBrush}"`, `Margin="0,0,8,0"`).
-3. Re-wrap the toolbar row so each band is a vertical `StackPanel` (label + buttons) inside the outer horizontal `ScrollViewer` from B1.
+**Scope for D1:**
+1. Find the existing search box in `ElementTreeView.xaml` and the VM property powering the filter (likely `SearchText` / `FilterText` on the element-tree VM).
+2. Add a "Clear ✕" chip button next to the element count (`N elements`) that appears only when a filter is active and clears `SearchText`.
+3. Add a "Filter includes parents" toggle so deep matches show their ancestor chain (VS Code "Filter includes parents" pattern) — purely a tree-virtualization tweak on the existing filter logic.
+4. Optionally show match count "M / N elements" while a filter is active.
 
 **Implementation plan:**
-1. Read the current toolbar region in `MainWindow.xaml`.
-2. Restructure the toolbar `StackPanel` into band sub-stacks with labels — keeping exact same `Button`s (AutomationIds, commands, order) and the same `Separator`s between bands.
+1. Read `WpfTestIde/Views/ElementTreeView.xaml` and its VM to locate the search box + filter plumbing.
+2. Add the chip (toggle `Visibility` on `SearchText` non-empty via `NullToCollapsedConverter`/`BoolToVisibilityConverter`) and the include-parents toggle.
 3. Build → commit → push → refresh this md → `graphify update .`.
 
 ---
 
 ## Suggested overall order (remaining items)
 
-1. **B2** — labeled toolbar bands *(recommended now; low effort, pairs with B1)*
-2. **D1** — Element Tree filter chip bar *(low effort; user-facing clarity)*
-3. **A7** — per-tab context toolbars *(removes the Scripts/Raw ⇄ Driver-Settings duplication)*
-4. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
-5. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
-6. **D2 / D3 / D4** — pane-content upgrades *(independent; do in any order)*
-7. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
-8. **E3** — async wrappers + toasts
-9. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
-10. **B3** — icon-only compact toolbar *(needs icon assets)*
+1. **D1** — Element Tree filter chip bar *(recommended now; low effort, user-facing clarity)*
+2. **A7** — per-tab context toolbars *(removes the Scripts/Raw ⇄ Driver-Settings duplication)*
+3. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
+4. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
+5. **D2 / D3 / D4** — pane-content upgrades *(independent; do in any order)*
+6. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
+7. **E3** — async wrappers + toasts
+8. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
+9. **B3** — icon-only compact toolbar *(needs icon assets)*
 
 ---
 
@@ -104,3 +104,5 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | `3b89a73`| `VsExpander` template rewrite (content `ContentPresenter` + Visibility trigger). |
 | `6da97c3`| **B1** — toolbar horizontally scrollable (no more silent clip).     |
 | `0196b82`| **E2** — keyboard shortcuts (`Ctrl+S`/`Ctrl+R`+`F5`/`Ctrl+Shift+R`/`F12`) + Spy Tool menu item. |
+| `d827fa6`| fix(keybinding): `Control+Shift` (was `Control,Shift`) for ToggleRecord binding — resolves runtime `XamlParseException`. |
+| `768572e`| **B2** — toolbar grouped into 5 labeled bands (Session/Record/Run/Export/Tools) inside B1's `ScrollViewer`. |
