@@ -42,7 +42,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 |-----|-----------------------------------------------------|--------------|--------|-----------------------------------------------------------------------------------------------|
 | D1  | Element Tree: filter chip bar + parent context      | Low          | ✅     | Commit `061b932`. Clear chip (btnClearSearch), `FilterIncludesParents` CheckBox (chkFilterIncludesParents, default ON, recursive ScoreNode+PropagateAncestors), `ElementCountText` "N / M elements" (txtElementCount). ApplyFilter now fully recursive. Existing `SearchBox` preserved. |
 | D2  | Properties: tabbed Inspector (Properties/XPath/Preview) | Medium   | ❌ reverted     | Was `cfa4693`; reverted in `0cbfcf4` per user feedback. The three-tab restructure wasn't useful and the Preview strip surfaced only internal logs with no user-facing value. Properties panel is back to single-form with XPath inside it; Preview strip removed. Not worth retrying as designed — dropping D2 from the queue. |
-| D3  | Steps ListBox → draggable re-order                   | Medium       | ⬜      | Lift drag pattern from `TestFlowDialog`.                                                      |
+| D3  | Steps ListBox → draggable re-order                   | Medium       | ✅     | Drag-to-reorder + ↑/↓ buttons. `StepTemplate` gained a handle column (☰ + `btnStepUp`/`btnStepDown`); `StepsListBox` wired `AllowDrop`+PreviewMouseLeftButtonDown/PreviewMouseMove/DragOver/Drop handlers in `MainWindow.xaml.cs`. `MainViewModel.MoveStepTo` (clamps + regenerates script). YAML: 2 new entries. |
 | D4  | Run Output: log-level filter + search (ListView)    | Medium       | ⬜      | Columns Time/Level/Message + Info/Warn/Error toggles.                                         |
 
 ## E. Global / window
@@ -56,40 +56,37 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 
 ---
 
-## Recommended next item: **D3 (Steps ListBox → draggable re-order)**
+## Recommended next item: **D4 (Run Output: log-level filter + search)**
 
-**Why D3 next:**
-- **Medium effort, pattern already exists.** `TestFlowDialog` already implements drag-to-reorder steps; D3 simply lifts that pattern into the SCRIPTS-tab `StepsListBox`. No new UI primitives needed.
-- **No open design questions**, unlike A2 (collapsible Element Tree: overlay vs. push) and A5 (Run Output: duplicate vs. move in-tab).
-- **High user-facing value for script authoring.** Today, recorded steps can't be reordered from the SCRIPTS Visual tab — users have to delete and re-add. D3 removes that friction.
-- **Pure additive behavior.** Adds drag handles to each step row + `AllowDrop` + reordering command. The Step RowTemplate's existing content and AutomationId (`btnAddVerification`) preserved.
+**Why D4 next:**
+- **Medium effort, standalone.** Only touches the RESULTS-tab Run Output area + a small VM addition for the filter state. No inter-pane contracts to coordinate.
+- **D3 is shipped** — `StepsListBox` now supports drag-to-reorder + ↑/↓ buttons; the Visual script editor is finished.
+- **Direct debugging value.** Today Run Output is a single text box; with log levels and search you can isolate failures fast in long runs.
+- **Open design question to settle before coding** (see *Scope* below): whether to re-color the existing `txtRunOutput` `TextBox` in place (cheap, no schema change), or upgrade to a `ListView`/`DataGrid` with Time/Level/Message columns (richer but needs a parsed-log model). The original suggestion named a `ListView`, so lean towards the columns model unless `txtRunOutput`'s current content is unstructured free text that can't be parsed into (time, level, message) rows.
 
-**Scope for D3:**
-1. Read `WpfTestIde/Dialogs/TestFlowDialog.xaml` (and `.xaml.cs`) to extract the implemented drag-reorder pattern.
-2. Read `tests/wpf_test_ide_use_cases.robot` for `StepsListBox` AutomationId usage and any reorder-related test to make sure drag handles don't break that contract.
-3. Lift the drag pattern into the `StepTemplate` `DataTemplate` in `MainWindow.xaml`:
-   - Add a drag handle icon per row (☰ icon is cited in the suggestions menu; the existing rows are `Border`+`Grid` with content in column 0 — add a small handle column).
-   - Set `AllowDrop="True"` on the `ListBox` and subscribe `DragOver` / `Drop` handlers (or use a MVVM-friendly RelayCommand approach if `TestFlowDialog` does that).
-4. Wire the reordering command into `MainViewModel` (`Steps` is an `ObservableCollection<RecordedStep>`).
+**Scope for D4:**
+1. Read `WpfTestIde/MainWindow.xaml` RESULTS tab + `MainViewModel` `RunOutput`/`txtRunOutput` to understand the current shape (is it pre-formatted log text, or already line-structured?).
+2. Decide: columns `ListView` (parse the existing log lines into `LogEntry { Time, Level, Message }`) vs. in-place filter on the existing `TextBox`. Prefer the `ListView` to satisfy the suggestion as written, fall back to in-place if the log source isn't line-structured.
+3. Add filter checkboxes (Info / Warn / Error) + a search box above the log; wire a `CollectionViewSource` filter or a re-query into `FilteredRunOutput`.
+4. Preserve `txtRunOutput` AutomationId. If switching to `ListView`, add a new AutomationId on it (e.g. `lstRunOutput`) + entry in `wpf_test_ide.yaml`; keep the old one as a hidden-in-place control only if still referenced by Robot tests (check `wpf_test_ide_use_cases.robot`).
 5. Build → commit → push → refresh this md → `graphify update .`.
 
 **Implementation plan:**
-1. Read `WpfTestIde/Dialogs/TestFlowDialog.xaml` + `.xaml.cs` for the existing drag pattern.
-2. Confirm `MainViewModel.Steps` reorder primitives (`Move`, `Insert`, `RemoveAt`) and verify `RecordedStep` is reference-stable (so reordering doesn't break `verify-after` bindings).
-3. Implement the draggable rows in `StepTemplate` using the lifted pattern.
-4. Add a Robot test stub covering drag-reorder (verify the first step can be moved below the second — via two new AutomationIds like `stepRow0` / `stepRow1`).
+1. Read the RESULTS tab region in `MainWindow.xaml` + the `RunOutput` setter + any Robot test referencing `txtRunOutput`.
+2. Decide ListView-vs-inplace and capture the decision in the D4 row's Notes when committing.
+3. Implement the chosen shape + Info/Warn/Error toggles + search box + filter logic in VM.
+4. Update YAML if a new AutomationId is introduced; update `wpf_test_ide_use_cases.robot` if a locator changes.
 5. Build, verify 0 errors, push, update md, `graphify update .`.
 
 ---
 
 ## Suggested overall order (remaining items)
 
-1. **D3** — Steps ListBox draggable re-order *(recommended now; lift pattern from `TestFlowDialog`)*
-2. **D4** — Run Output log-level filter + search *(independent of D3)*
-3. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
-4. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
-5. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
-6. **E3** — async wrappers + toasts
+1. **D4** — Run Output log-level filter + search *(recommended now)*
+2. **A2** — collapsible Element Tree pane *(needs overlay-vs-push decision first)*
+3. **A5** — bottom-docked Run Output panel *(needs duplicate-vs-move decision first)*
+4. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — i.e. after A2/A5)*
+5. **E3** — async wrappers + toasts
 7. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
 8. **B3** — icon-only compact toolbar *(needs icon assets)*
 
@@ -112,3 +109,5 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | `768572e`| **B2** — toolbar grouped into 5 labeled bands (Session/Record/Run/Export/Tools) inside B1's `ScrollViewer`. |
 | `061b932`| **D1** — Element Tree filter chip bar: Clear chip + `Filter includes parents` toggle + "M / N elements" count; `ApplyFilter` now recursive with ancestor propagation. |
 | `577da42`| **A7** — per-tab context toolbars: Run+Export moved to SCRIPTS tab; RESULTS gets Run Again/Export/Reset toolbar. In-Raw duplicate `chkScript*` removed; UC-010 + UC-014 Robot tests updated. YAML updated (-6 entries, +3 new). |
+
+Commit hash for **D3** (Steps ListBox → draggable re-order) will be filled in by the follow-up md commit.

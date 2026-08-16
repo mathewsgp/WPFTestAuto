@@ -245,6 +245,10 @@ namespace WpfTestIde.ViewModels
         public ICommand AttachCommand { get; }
         public ICommand AddVerificationCommand { get; }
         public ICommand DeleteStepCommand { get; }
+        // D3: re-order recorded steps. Two explicit commands (up/down buttons) plus
+        // a drag-drop path that calls MoveStep directly from MainWindow code-behind.
+        public ICommand MoveStepUpCommand { get; }
+        public ICommand MoveStepDownCommand { get; }
         public ICommand RunCommand { get; }
         public ICommand ExportRepositoryCommand { get; }
         public ICommand ExportScriptCommand { get; }
@@ -271,6 +275,8 @@ namespace WpfTestIde.ViewModels
             AttachCommand = new RelayCommand(_ => Attach());
             AddVerificationCommand = new RelayCommand(param => AddVerification(param as RecordedStep));
             DeleteStepCommand = new RelayCommand(param => DeleteStep(param as RecordedStep));
+            MoveStepUpCommand = new RelayCommand(param => MoveStep(param as RecordedStep, -1));
+            MoveStepDownCommand = new RelayCommand(param => MoveStep(param as RecordedStep, +1));
             RunCommand = new RelayCommand(async _ => await RunAsync(), _ => Steps.Count > 0);
             ExportRepositoryCommand = new RelayCommand(_ => ExportRepository());
             ExportScriptCommand = new RelayCommand(_ => ExportScript());
@@ -733,6 +739,28 @@ namespace WpfTestIde.ViewModels
             {
                 Steps.Remove(step);
             }
+        }
+
+        /// <summary>D3: move a step by a relative delta (±1) from the up/down buttons.</summary>
+        private void MoveStep(RecordedStep? step, int delta)
+        {
+            if (step == null) return;
+            var index = Steps.IndexOf(step);
+            if (index < 0) return;
+            MoveStepTo(step, index + delta);
+        }
+
+        /// <summary>D3: move a step to an absolute index. Called by the relative
+        /// overload (buttons) and by the drag-drop handler in MainWindow. Clamps to
+        /// valid bounds and regenerates the Raw script so the order change is visible.</summary>
+        public void MoveStepTo(RecordedStep step, int newIndex)
+        {
+            var currentIndex = Steps.IndexOf(step);
+            if (currentIndex < 0) return;
+            newIndex = Math.Clamp(newIndex, 0, Steps.Count - 1);
+            if (newIndex == currentIndex) return;
+            Steps.Move(currentIndex, newIndex);
+            RegenerateScript();
         }
 
         // ------------------------------------------------------------

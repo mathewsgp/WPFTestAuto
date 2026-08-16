@@ -44,18 +44,43 @@
             <Setter Property="CornerRadius" Value="3"/>
         </Style>
 
-        <!-- One recorded/verify step row -->
+        <!-- One recorded/verify step row.
+             D3: added a drag-handle column (column 0) with a ☰ glyph as a visual
+             affordance for re-ordering. The entire row is the drag source; the
+             handle just signals it. Up/Down buttons (btnStepUp/btnStepDown) give
+             an explicit reorder path for users who don't discover drag. Existing
+             btnAddVerification + the X delete button are moved to columns 3/4. -->
         <DataTemplate x:Key="StepTemplate" DataType="{x:Type models:RecordedStep}">
             <Border Padding="8" Margin="0,0,0,4" CornerRadius="3"
                     Background="{Binding Kind, Converter={StaticResource StepKindToBrushConverter}}"
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
+
+                    <!-- D3: drag handle + explicit up/down reorder buttons.
+                         The handle is the visual cue; the whole Border above is
+                         the actual drag source (wired in StepsListBox handlers). -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                        <TextBlock Text="&#x2630;" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,2,0" ToolTip="Drag to reorder"/>
+                        <Button Content="&#x25B2;" FontSize="9" Padding="4,2" Margin="1,0" VerticalAlignment="Center"
+                                ToolTip="Move up"
+                                Command="{Binding DataContext.MoveStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"
+                                AutomationProperties.AutomationId="btnStepUp"/>
+                        <Button Content="&#x25BC;" FontSize="9" Padding="4,2" Margin="1,0" VerticalAlignment="Center"
+                                ToolTip="Move down"
+                                Command="{Binding DataContext.MoveStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"
+                                AutomationProperties.AutomationId="btnStepDown"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1">
                         <TextBlock FontFamily="Consolas" FontSize="12">
                             <Run Text="{Binding DisplayVerb, Mode=OneWay}" FontWeight="Bold"/>
                             <Run Text="  "/>
@@ -67,12 +92,12 @@
                         <TextBlock FontSize="10" Foreground="{DynamicResource WarningBrush}" Text="Warning: custom control - resolved via WPFSpy"
                                    Visibility="{Binding NonStandard, Converter={StaticResource BoolToVisibilityConverter}}"/>
                     </StackPanel>
-                    <Button Grid.Column="1" Content="+ verify after"
+                    <Button Grid.Column="2" Content="+ verify after"
                             Command="{Binding DataContext.AddVerificationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"
                             FontSize="10" Padding="4,2" Margin="4,0" VerticalAlignment="Center"
                             AutomationProperties.AutomationId="btnAddVerification"/>
-                    <Button Grid.Column="2" Content="X"
+                    <Button Grid.Column="3" Content="X"
                             Command="{Binding DataContext.DeleteStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"
                             FontSize="10" Padding="4,2" VerticalAlignment="Center"/>
@@ -381,9 +406,26 @@
                     <TabControl>
                         <!-- Visual: Recorded Steps -->
                         <TabItem x:Name="tabVisualSteps" Header="Visual" AutomationProperties.AutomationId="tabVisualSteps">
+                            <!-- D3: AllowDrop + PreviewMouseLeftButtonDown/DragOver/Drop enable
+                                 drag-to-reorder of recorded steps. Handlers live in MainWindow.xaml.cs.
+                                 ItemContainerStyle is added so the per-row ListBoxItem stretches to
+                                 the full usable width (default ListBoxItem is left-aligned + clipped). -->
                             <ListBox x:Name="StepsListBox" ItemsSource="{Binding Steps}" ItemTemplate="{StaticResource StepTemplate}"
                                      BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                     Margin="0,6,0,0" AutomationProperties.AutomationId="StepsListBox"/>
+                                     Margin="0,6,0,0" AutomationProperties.AutomationId="StepsListBox"
+                                     AllowDrop="True"
+                                     PreviewMouseLeftButtonDown="StepsListBox_PreviewMouseLeftButtonDown"
+                                     PreviewMouseMove="StepsListBox_PreviewMouseMove"
+                                     DragOver="StepsListBox_DragOver"
+                                     Drop="StepsListBox_Drop">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
                         </TabItem>
                         <!-- Raw: Generated Script -->
                         <TabItem x:Name="tabRawScript" Header="Raw" AutomationProperties.AutomationId="tabRawScript">

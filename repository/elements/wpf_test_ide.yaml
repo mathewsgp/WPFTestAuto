@@ -1076,6 +1076,40 @@ elements:
           value: "//Button[@AutomationId='btnAddVerification']"
           priority: 1
 
+  WpfTestIde.MainWindow.btnStepUp:
+    displayName: "Move Step Up Button"
+    controlType: "Button"
+    automationId: "btnStepUp"
+    name: "btnStepUp"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "//Button[@AutomationId='btnStepUp']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnStepUp"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//Button[@AutomationId='btnStepUp']"
+          priority: 1
+
+  WpfTestIde.MainWindow.btnStepDown:
+    displayName: "Move Step Down Button"
+    controlType: "Button"
+    automationId: "btnStepDown"
+    name: "btnStepDown"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "//Button[@AutomationId='btnStepDown']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnStepDown"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//Button[@AutomationId='btnStepDown']"
+          priority: 1
+
   WpfTestIde.MainWindow.txtRunOutput:
     displayName: "Run Output Text Box"
     controlType: "Text"
