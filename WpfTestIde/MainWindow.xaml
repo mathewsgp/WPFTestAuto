@@ -103,30 +103,38 @@
             </StackPanel>
         </Border>
 
-        <!-- ================= Toolbar ================= -->
+        <!-- ================= Toolbar =================
+             B1: wrap the toolbar in a horizontal ScrollViewer so that when the
+             window narrows the buttons scroll instead of being silently clipped
+             (a StackPanel inside a Border just clips the right-hand buttons at
+             small widths). All AutomationIds/commands are preserved; the scroll
+             bar appears only when the content overflows. Vertical scrolling is
+             disabled to keep the toolbar a single-row strip. -->
         <Border DockPanel.Dock="Top" Background="{DynamicResource ToolbarBrush}" Padding="10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal">
-                <Button x:Name="btnAttach" Style="{StaticResource ToolbarButton}" Content="Attach to Process..." Command="{Binding AttachCommand}" AutomationProperties.AutomationId="btnAttach"/>
-                <Button x:Name="btnManageApps" Style="{StaticResource ToolbarButton}" Content="Manage Apps" Command="{Binding OpenMultiAppDialogCommand}" ToolTip="Manage attached applications" AutomationProperties.AutomationId="btnManageApps"/>
-                <Button x:Name="btnCheckPipe" Style="{StaticResource ToolbarButton}" Content="Check Pipe" Command="{Binding CheckPipeConnectionCommand}" AutomationProperties.AutomationId="btnCheckPipe"/>
-                <Button x:Name="btnRecord" Style="{StaticResource ToolbarButton}" Content="{Binding RecordButtonLabel}" Command="{Binding ToggleRecordingCommand}" AutomationProperties.AutomationId="btnRecord"/>
-                <Button x:Name="btnLoadSample" Style="{StaticResource ToolbarButton}" Content="Load Sample" Command="{Binding LoadSampleCommand}" AutomationProperties.AutomationId="btnLoadSample"/>
-                <Button x:Name="btnReset" Style="{StaticResource ToolbarButton}" Content="Reset" Command="{Binding ResetCommand}" AutomationProperties.AutomationId="btnReset"/>
-                <Separator Margin="8,0"/>
-                <Button x:Name="btnRunScript" Style="{StaticResource ToolbarButton}" Content="Run Script" Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnRunScript"/>
-                <Separator Margin="8,0"/>
-                <Button x:Name="btnExportRepo" Style="{StaticResource ToolbarButton}" Content="Export Repository (.yaml)" Command="{Binding ExportRepositoryCommand}" AutomationProperties.AutomationId="btnExportRepo"/>
-                <Button x:Name="btnExportScript" Style="{StaticResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
-                <Button x:Name="btnSaveScript" Style="{StaticResource ToolbarButton}" Content="Save Script" Command="{Binding SaveScriptCommand}" AutomationProperties.AutomationId="btnSaveScript"/>
-                <Separator Margin="8,0"/>
-                <Button x:Name="btnOcrDataGrid" Style="{StaticResource ToolbarButton}" Content="OCR DataGrid" Command="{Binding GetDataGridContentOcrCommand}" AutomationProperties.AutomationId="btnOcrDataGrid"/>
-                <Separator Margin="8,0"/>
-                <Button x:Name="btnCheckpointWizard" Style="{StaticResource ToolbarButton}" Content="Checkpoint Wizard" Command="{Binding OpenCheckpointWizardCommand}" AutomationProperties.AutomationId="btnCheckpointWizard"/>
-                <Separator Margin="8,0"/>
-                <Button x:Name="btnSpyTool" Style="{StaticResource ToolbarButton}" Content="Spy Tool" Command="{Binding OpenSpyToolCommand}" AutomationProperties.AutomationId="btnSpyTool"/>
-                <Separator Margin="8,0"/>
-                <Button x:Name="btnVisualTestBuilder" Style="{StaticResource ToolbarButton}" Content="Visual Test Builder" Command="{Binding OpenVisualTestBuilderCommand}" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnVisualTestBuilder"/>
-            </StackPanel>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Padding="0">
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="btnAttach" Style="{StaticResource ToolbarButton}" Content="Attach to Process..." Command="{Binding AttachCommand}" AutomationProperties.AutomationId="btnAttach"/>
+                    <Button x:Name="btnManageApps" Style="{StaticResource ToolbarButton}" Content="Manage Apps" Command="{Binding OpenMultiAppDialogCommand}" ToolTip="Manage attached applications" AutomationProperties.AutomationId="btnManageApps"/>
+                    <Button x:Name="btnCheckPipe" Style="{StaticResource ToolbarButton}" Content="Check Pipe" Command="{Binding CheckPipeConnectionCommand}" AutomationProperties.AutomationId="btnCheckPipe"/>
+                    <Button x:Name="btnRecord" Style="{StaticResource ToolbarButton}" Content="{Binding RecordButtonLabel}" Command="{Binding ToggleRecordingCommand}" AutomationProperties.AutomationId="btnRecord"/>
+                    <Button x:Name="btnLoadSample" Style="{StaticResource ToolbarButton}" Content="Load Sample" Command="{Binding LoadSampleCommand}" AutomationProperties.AutomationId="btnLoadSample"/>
+                    <Button x:Name="btnReset" Style="{StaticResource ToolbarButton}" Content="Reset" Command="{Binding ResetCommand}" AutomationProperties.AutomationId="btnReset"/>
+                    <Separator Margin="8,0"/>
+                    <Button x:Name="btnRunScript" Style="{StaticResource ToolbarButton}" Content="Run Script" Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnRunScript"/>
+                    <Separator Margin="8,0"/>
+                    <Button x:Name="btnExportRepo" Style="{StaticResource ToolbarButton}" Content="Export Repository (.yaml)" Command="{Binding ExportRepositoryCommand}" AutomationProperties.AutomationId="btnExportRepo"/>
+                    <Button x:Name="btnExportScript" Style="{StaticResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
+                    <Button x:Name="btnSaveScript" Style="{StaticResource ToolbarButton}" Content="Save Script" Command="{Binding SaveScriptCommand}" AutomationProperties.AutomationId="btnSaveScript"/>
+                    <Separator Margin="8,0"/>
+                    <Button x:Name="btnOcrDataGrid" Style="{StaticResource ToolbarButton}" Content="OCR DataGrid" Command="{Binding GetDataGridContentOcrCommand}" AutomationProperties.AutomationId="btnOcrDataGrid"/>
+                    <Separator Margin="8,0"/>
+                    <Button x:Name="btnCheckpointWizard" Style="{StaticResource ToolbarButton}" Content="Checkpoint Wizard" Command="{Binding OpenCheckpointWizardCommand}" AutomationProperties.AutomationId="btnCheckpointWizard"/>
+                    <Separator Margin="8,0"/>
+                    <Button x:Name="btnSpyTool" Style="{StaticResource ToolbarButton}" Content="Spy Tool" Command="{Binding OpenSpyToolCommand}" AutomationProperties.AutomationId="btnSpyTool"/>
+                    <Separator Margin="8,0"/>
+                    <Button x:Name="btnVisualTestBuilder" Style="{StaticResource ToolbarButton}" Content="Visual Test Builder" Command="{Binding OpenVisualTestBuilderCommand}" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnVisualTestBuilder"/>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
 
         <!-- ================= Status bar (C1+C2: real StatusBar with slots) =================
