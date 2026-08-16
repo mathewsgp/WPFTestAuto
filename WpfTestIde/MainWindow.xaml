@@ -225,15 +225,33 @@
                         </StackPanel>
                     </Border>
 
-                    <TabControl DockPanel.Dock="Bottom" Height="200" Margin="0,6,0,0">
-                        <!-- Raw JSON -->
-                        <TabItem x:Name="tabRawJson" Header="Raw JSON" AutomationProperties.AutomationId="tabRawJson">
-                            <TextBox x:Name="txtRepositoryYaml" Text="{Binding RepositoryYaml, Mode=OneWay}" FontFamily="Consolas" FontSize="11"
-                                     IsReadOnly="True" TextWrapping="NoWrap" AcceptsReturn="True"
-                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                     Style="{StaticResource VsCodeEditor}" AutomationProperties.AutomationId="txtRepositoryYaml"/>
-                        </TabItem>
-                    </TabControl>
+                    <!-- ================= Raw JSON / Repository (A4: collapsible bottom panel) =================
+                         Previously an inner TabControl+TabItem locked at Height=200 inside the
+                         ELEMENTS tab. Now a bottom-docked Expander collapsed by default so the
+                         tree+properties above get all the vertical space. The user expands to
+                         inspect the live-generated YAML. AutomationId tabRawJson is preserved
+                         (now on the Expander, see repository/elements/wpf_test_ide.yaml which
+                         has been updated to controlType=Expander + Expander XPath); the YAML
+                         TextBox AutomationId txtRepositoryYaml is unchanged. -->
+                    <Expander DockPanel.Dock="Bottom"
+                              IsExpanded="{Binding RepositoryPanelExpanded, Mode=TwoWay}"
+                              Padding="8,4"
+                              BorderBrush="{DynamicResource BorderBrush}"
+                              BorderThickness="0,1,0,0"
+                              AutomationProperties.AutomationId="tabRawJson">
+                        <Expander.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Repository (YAML)" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="read-only - regenerates live as elements are added" FontSize="10" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Expander.Header>
+                        <TextBox x:Name="txtRepositoryYaml" Text="{Binding RepositoryYaml, Mode=OneWay}" FontFamily="Consolas" FontSize="11"
+                                 IsReadOnly="True" TextWrapping="NoWrap" AcceptsReturn="True"
+                                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                 Style="{StaticResource VsCodeEditor}"
+                                 MinHeight="120" MaxHeight="280"
+                                 AutomationProperties.AutomationId="txtRepositoryYaml"/>
+                    </Expander>
 
                     <!-- Tree + Properties side by side (resizable) -->
                     <Grid>

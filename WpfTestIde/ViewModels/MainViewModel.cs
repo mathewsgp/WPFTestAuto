@@ -227,6 +227,20 @@ namespace WpfTestIde.ViewModels
             }
         }
 
+        // A4: Raw-JSON/repository panel collapsed by default so the ELEMENTS tab
+        // tree+properties get maximum vertical space. Two-way so the user can
+        // expand/collapse it at will. The YAML itself regenerates live regardless.
+        private bool _repositoryPanelExpanded;
+        public bool RepositoryPanelExpanded
+        {
+            get => _repositoryPanelExpanded;
+            set
+            {
+                _repositoryPanelExpanded = value;
+                OnPropertyChanged();
+            }
+        }
+
         public ICommand ToggleRecordingCommand { get; }
         public ICommand AttachCommand { get; }
         public ICommand AddVerificationCommand { get; }

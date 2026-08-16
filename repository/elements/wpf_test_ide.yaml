@@ -1231,13 +1231,16 @@ elements:
           priority: 1
 
   # ================= Elements Tab Additional Controls =================
+  # A4: tabRawJson migrated from an inner TabItem into a bottom-docked Expander.
+  # controlType and the WPFSpy relativeXPath were updated accordingly; the
+  # AutomationId is unchanged so existing aliases still resolve.
   WpfTestIde.MainWindow.tabRawJson:
-    displayName: "Raw JSON Tab"
-    controlType: "TabItem"
+    displayName: "Raw JSON / Repository Panel"
+    controlType: "Expander"
     automationId: "tabRawJson"
-    name: "Raw JSON"
+    name: "Repository (YAML)"
     parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "TabItem[@AutomationId='tabRawJson']"
+    relativeXPath: "Expander[@AutomationId='tabRawJson']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -1245,7 +1248,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "TabItem[@AutomationId='tabRawJson']"
+          value: "Expander[@AutomationId='tabRawJson']"
           priority: 1
 
   WpfTestIde.MainWindow.btnTreeExpandAll:
