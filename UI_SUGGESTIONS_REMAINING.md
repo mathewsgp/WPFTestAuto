@@ -43,7 +43,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | D1  | Element Tree: filter chip bar + parent context      | Low          | ✅     | Commit `061b932`. Clear chip (btnClearSearch), `FilterIncludesParents` CheckBox (chkFilterIncludesParents, default ON, recursive ScoreNode+PropagateAncestors), `ElementCountText` "N / M elements" (txtElementCount). ApplyFilter now fully recursive. Existing `SearchBox` preserved. |
 | D2  | Properties: tabbed Inspector (Properties/XPath/Preview) | Medium   | ❌ reverted     | Was `cfa4693`; reverted in `0cbfcf4` per user feedback. The three-tab restructure wasn't useful and the Preview strip surfaced only internal logs with no user-facing value. Properties panel is back to single-form with XPath inside it; Preview strip removed. Not worth retrying as designed — dropping D2 from the queue. |
 | D3  | Steps ListBox → draggable re-order                   | Medium       | ✅     | Commit `a342bda`. Drag-to-reorder + ↑/↓ buttons. `StepTemplate` gained a handle column (☰ + `btnStepUp`/`btnStepDown`); `StepsListBox` wired `AllowDrop`+PreviewMouseLeftButtonDown/PreviewMouseMove/DragOver/Drop handlers in `MainWindow.xaml.cs` (drag suppressed over Buttons). `MainViewModel.MoveStepTo` (clamps + `ObservableCollection.Move` + `RegenerateScript`). YAML: 2 new entries (`btnStepUp`/`btnStepDown`). |
-| D4  | Run Output: log-level filter + search (ListView)    | Medium       | ⬜ (design verified, not yet started) | Columns Time/Level/Message + Info/Warn/Error toggles. **Design question resolved during A5 exploration:** `RunOutputLines` is `ObservableCollection<string>` of Robot's structured stdout (`YYYYMMDD HH:MM:SS.nnn \| LEVEL \| msg`), so parsing into `LogEntry { Time, Level, Message }` for a `ListView` is viable (the tracker's preferred shape). Skipped before A5 per user direction; can resume here next time. |
+| D4  | Run Output: log-level filter + search (ListView)    | Medium       | ✅     | Commit `ed8f214`. `Models/LogEntry.cs` (`LogEntry { Raw, Time, Level, Message, LevelText }` + `LogLevel` enum incl. `Raw` for unstructured lines + static `LogLineParser` with compiled regex `YYYYMMDD HH:MM:SS.nnn \| LEVEL \| msg`; non-matching lines → `LogLevel.Raw`, Raw=full line as Message, Time=null). `MainViewModel`: `RunOutputLog ObservableCollection<LogEntry>` mirrored off `RunOutputLines.CollectionChanged` (Raw text collection kept for A5 tail + `RunOutputText`); `RunOutputFiltered` via `CollectionViewSource.GetDefaultView(RunOutputLog)` with `FilterLogEntry` predicate; INPC `ShowInfo`/`ShowWarn`/`ShowError` (all default true; TRACE/DEBUG/Raw group under Info) + `LogSearchText`; `RefreshLogFilter` re-pumps the view on each setter. `MainWindow.xaml` RESULTS-tab: replaced `txtRunOutput` TextBox with `ListView` (Time 160 / Level 70 / Message 600 columns, binds `RunOutputFiltered`); kept `txtRunOutput` AutomationId on the ListView (3 existing Robot locators still work). New filter-strip `Border`: `chkLogLevelInfo`/`chkLogLevelWarn`/`chkLogLevelError` (CheckBoxes) + `txtLogSearch` (TextBox). `RunAsync`/`Reset` now clear `RunOutputLog` alongside `RunOutputLines`. YAML: 2 `txtRunOutput` entries Text→List, TextBox→ListView; +4 new (chkLogLevelInfo/Warn/Error + txtLogSearch). |
 
 ## E. Global / window
 
@@ -56,29 +56,26 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 
 ---
 
-## Recommended next item: **D4 (Run Output: log-level filter + search as a ListView)**
+## Recommended next item: **E3 (Async command wrappers + notification toasts)**
 
-**Why D4 next:**
-- **E1 shipped** — layout + theme now persists to `%AppData%\WpfTestIde\layout.json` (window geometry/theme/last-tab/A1 splitter widths/A3-A5 panel bools); D4 is the natural next standalone item.
-- **Design already verified** during A5 exploration: `RunOutputLines` is `ObservableCollection<string>` of Robot Framework's structured stdout (`YYYYMMDD HH:MM:SS.nnn | LEVEL | msg`), so parsing each line into a `LogEntry { Time, Level, Message }` is feasible. The tracker's preferred `ListView` (Time/Level/Message columns + Info/Warn/Error toggles + search) can therefore be implemented directly — no remaining open design questions.
-- **High debugging value.** Today A5's tail (and the RESULTS-tab `txtRunOutput`) are a single text box; with levels + search the user isolates failures fast in long runs. Pairs naturally with A5's bottom tail for live filtering.
-- **Standalone, additive.** Touches the RESULTS-tab Run Output area + a small VM addition (parsed-log model + filter state). Existing `txtRunOutput` AutomationId can move onto the new `ListView`; no Robot test reads its content — only clicks `tabResults` — so safe.
+**Why E3 next:**
+- **D4 shipped** — Run Output is now a structured `ListView` with Time/Level/Message columns + Info/Warn/Error toggles + a free-text search (`txtLogSearch`). The A5 bottom tail remains on the raw `RunOutputText`. Standalone change which surfaces failures fast in long Robot runs.
+- **E3 is the next standalone item** after D4 per the suggested overall order: async wrappers fix Attach/Run/Export UI freezes and notification toasts pair well with the structured Run Output.
+- **No open design questions** — E3 is "fix existing freeze + add a small toast surface"; nothing upstream blocks it.
 
-**Scope for D4:**
-1. Add `LogEntry { Time, Level, Message }` model + a `LogLineParser` regex for Robot's `'YYYYMMDD HH:MM:SS.nnn | LEVEL | msg'` format; lines that don't match (separators `'====...'`, headers) become `Level = "Info"` (or a distinct `"Raw"` level) with the full line as Message.
-2. `MainViewModel`: add `RunOutputLog ObservableCollection<LogEntry>` seeded from each new `RunOutputLines` line; add filter state (`ShowInfo`/`ShowWarn`/`ShowError` checkboxes, default all true) + `LogSearchText`; expose `RunOutputFiltered` (via `CollectionViewSource` filter or a re-query). Keep `RunOutputLines`/`RunOutputText` for back-compat (A5 tail + RESULTS tab still bind to the raw text).
-3. `MainWindow.xaml` RESULTS-tab `txtRunOutput`: replace the `TextBox` with a `ListView`/`DataGrid` (Time / Level / Message columns), preserving the `txtRunOutput` AutomationId. Add the filter strip above it: 3 level checkboxes (`chkLogLevelInfo`/`chkLogLevelWarn`/`chkLogLevelError`) + a search `TextBox` (`txtLogSearch`).
-4. YAML: keep `txtRunOutput` entry but update `controlType` Text → List, `relativeXPath` `TextBox[...]` → `ListView[...]` (or `DataGrid[...]`); add `chkLogLevelInfo`/`chkLogLevelWarn`/`chkLogLevelError` + `txtLogSearch` entries.
-5. Build → commit → push → refresh this md → `graphify update .`
+**Scope for E3:**
+1. Wrap `RunCommand` / `AttachCommand` / `ExportScriptCommand` / `SaveScriptCommand` in async-relay patterns so the Dispatcher stays responsive (the robot runner path is already async; rewire the others for consistency + eliminate the `ToggleRecording` UI stutter).
+2. Add a lightweight toast notifier surface (a `Border` adorning the status bar or a transient `Popup`) for "Run finished — N passed/M failed" + "Saved" / "Exported" confirmations, gated to a 3-5s fade.
+3. Keep_status text on existing surfaces; the toast only amplifies critical transitions — don't duplicate everything that already lands in `StatusText`.
+4. Build → commit → push → refresh this md → `graphify update .`
 
 ---
 
 ## Suggested overall order (remaining items)
 
-1. **D4** — Run Output log-level filter + search *(recommended now; design verified, no open questions)*
-2. **E3** — async wrappers + toasts
-3. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
-4. **B3** — icon-only compact toolbar *(needs icon assets)*
+1. **E3** — async wrappers + toasts *(recommended now)*
+2. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
+3. **B3** — icon-only compact toolbar *(needs icon assets)*
 
 ---
 
@@ -102,3 +99,4 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | `a342bda`| **D3** — Steps ListBox draggable re-order: `StepTemplate` handle column (☰ + `btnStepUp`/`btnStepDown`) + `StepsListBox` AllowDrop/drag handlers + `MainViewModel.MoveStepTo` (clamps, `ObservableCollection.Move`, `RegenerateScript`). YAML +2 entries. |
 | `7f99327`| **A5** — bottom-docked collapsible Run Output tail panel (`RunOutputTailExpander` + `txtRunOutputTail`); duplicate of RESULTS-tab `txtRunOutput`, auto-expands on run start, re-collapses in `Reset()`. YAML +2 entries. |
 | `24d2423`| **E1** — layout/theme persistence to `%AppData%\WpfTestIde\layout.json`: `Helpers/LayoutState.cs` POCO + `LayoutPersistence` (System.Text.Json). `App.OnStartup` loads → `MainWindow.OnLoaded` applies (window geometry/theme/last-tab/A1 splitter px widths/A3-A5 panel bools w/ on-screen guards) → `OnClosing` snapshots + saves. `MainTabControl.SelectedIndex` 2-way-bound to `MainViewModel.SelectedTabIndex` (fixes latent unbound-VM bug). No AutomationIds added → no YAML edits. |
+| `ed8f214`| **D4** — Run Output as structured `ListView`: `Models/LogEntry.cs` (`LogEntry` + `LogLevel` + `LogLineParser` regex for `YYYYMMDD HH:MM:SS.nnn \| LEVEL \| msg`, non-matching → `LogLevel.Raw`); `MainViewModel.RunOutputLog` mirrored off `RunOutputLines.CollectionChanged`, `RunOutputFiltered` via `CollectionViewSource` filter, INPC `ShowInfo`/`ShowWarn`/`ShowError`/`LogSearchText` (all ON by default; TRACE/DEBUG/Raw grouped under Info); `MainWindow.xaml` RESULTS-tab `txtRunOutput` TextBox → `ListView` (Time/Level/Message cols, AutomationId preserved) + filter-strip `chkLogLevelInfo`/`chkLogLevelWarn`/`chkLogLevelError` + `txtLogSearch`; YAML 2 `txtRunOutput` entries Text→List/TextBox→ListView + 4 new entries (chkLogLevelInfo/Warn/Error + txtLogSearch). |
