@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:models="clr-namespace:WpfTestIde.Models"
         xmlns:views="clr-namespace:WpfTestIde.Views"
+        xmlns:avalonDock="https://github.com/Dirkster99/AvalonDock"
         Title="WPF Test IDE" Height="760" Width="1400"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BackgroundBrush}"
@@ -362,8 +363,14 @@
         </Expander>
 
         <!-- ================= Main Tabs ================= -->
-        <TabControl x:Name="MainTabControl" Margin="10" AutomationProperties.AutomationId="MainTabControl"
-                     SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
+        <!-- A6 step 1: minimal DockingManager host wrapping the legacy MainTabControl.
+             No Layout/DockLayout binding yet (Step 3 promotes the 3 tabs into
+             ToolboxBase panes). For now, MainTabControl stays the docked content;
+             the host exists only so ThemeManager.ApplyTheme can wire dock chrome.
+             Indentation kept at the original width to minimize diff churn. -->
+        <avalonDock:DockingManager x:Name="dockManager">
+            <TabControl x:Name="MainTabControl" Margin="10" AutomationProperties.AutomationId="MainTabControl"
+                         SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
             <!-- ELEMENTS Tab -->
             <TabItem x:Name="tabElements" Header="ELEMENTS" AutomationProperties.AutomationId="tabElements">
                 <DockPanel Margin="6">
@@ -620,6 +627,7 @@
                     </ListView>
                 </DockPanel>
             </TabItem>
-        </TabControl>
+            </TabControl>
+        </avalonDock:DockingManager>
     </DockPanel>
 </Window>
