@@ -1,0 +1,77 @@
+<UserControl x:Class="WpfTestIde.Docking.Views.ScriptsPane"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             DataContext="{Binding ., RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}">
+    <!-- A6+E4 Step 3: extracted verbatim from MainWindow.xaml tabScripts body (lines 460-528). 
+         The inner TabControl (Visual/Raw) and all AutomationIds are preserved.
+         Drag-reorder event handlers are wired to ScriptsPane.xaml.cs. -->
+                <DockPanel Margin="6">
+                    <!-- A7: per-tab toolbar for SCRIPTS. Hosts the Run + Export buttons
+                         that previously lived in the global toolbar (kept AutomationIds:
+                         btnRunScript / btnExportRepo / btnExportScript / btnSaveScript).
+                         Record/Run duplicate driver checkboxes that used to live inside
+                         the inner Raw sub-tab have been removed (they already live once,
+                         canonically, in the StatusBar - see chkRecordFlaUI etc.). -->
+                    <Border DockPanel.Dock="Top" Style="{DynamicResource TabToolbarBorder}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="btnRunScript" Style="{DynamicResource ToolbarButton}" Content="Run Script" ToolTip="Run the current script (F5)"
+                                    Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnRunScript"/>
+                            <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
+                            <Button x:Name="btnSaveScript" Style="{DynamicResource ToolbarButton}" Content="Save Script" ToolTip="Save the generated script (Ctrl+S)"
+                                    Command="{Binding SaveScriptCommand}" AutomationProperties.AutomationId="btnSaveScript"/>
+                            <Button x:Name="btnExportRepo" Style="{DynamicResource ToolbarButton}" Content="Export Repository (.yaml)" Command="{Binding ExportRepositoryCommand}" AutomationProperties.AutomationId="btnExportRepo"/>
+                            <Button x:Name="btnExportScript" Style="{DynamicResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
+                        </StackPanel>
+                    </Border>
+
+                    <TabControl>
+                        <!-- Visual: Recorded Steps -->
+                        <TabItem x:Name="tabVisualSteps" Header="Visual" AutomationProperties.AutomationId="tabVisualSteps">
+                            <!-- D3: AllowDrop + PreviewMouseLeftButtonDown/DragOver/Drop enable
+                                 drag-to-reorder of recorded steps. Handlers live in MainWindow.xaml.cs.
+                                 ItemContainerStyle is added so the per-row ListBoxItem stretches to
+                                 the full usable width (default ListBoxItem is left-aligned + clipped). -->
+                            <ListBox x:Name="StepsListBox" ItemsSource="{Binding Steps}" ItemTemplate="{DynamicResource StepTemplate}"
+                                     BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     Margin="0,6,0,0" AutomationProperties.AutomationId="StepsListBox"
+                                     AllowDrop="True"
+                                     PreviewMouseLeftButtonDown="StepsListBox_PreviewMouseLeftButtonDown"
+                                     PreviewMouseMove="StepsListBox_PreviewMouseMove"
+                                     DragOver="StepsListBox_DragOver"
+                                     Drop="StepsListBox_Drop">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </TabItem>
+                        <!-- Raw: Generated Script -->
+                        <TabItem x:Name="tabRawScript" Header="Raw" AutomationProperties.AutomationId="tabRawScript">
+                            <DockPanel Margin="0,6,0,0">
+                                <TextBlock DockPanel.Dock="Top" Text="Raw Layer 3 calls - review/refactor before committing to the suite."
+                                           FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                                    <TextBlock DockPanel.Dock="Left" Text="Run Driver:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <ComboBox x:Name="cmbRunDriver" DockPanel.Dock="Left" SelectedItem="{Binding SelectedDriver}"
+                                              ItemsSource="{Binding AvailableDrivers}" Width="100" FontSize="11" AutomationProperties.AutomationId="cmbRunDriver"/>
+                                    <TextBlock DockPanel.Dock="Left" Text="  Mode:" VerticalAlignment="Center" Margin="8,0,4,0" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <ComboBox x:Name="cmbRunMode" DockPanel.Dock="Left" SelectedItem="{Binding SelectedMode}"
+                                              ItemsSource="{Binding AvailableModes}" Width="80" FontSize="11" AutomationProperties.AutomationId="cmbRunMode"/>
+                                </DockPanel>
+                                <!-- A7: the duplicate Record/Run driver checkboxes that
+                                     lived here (chkScriptRecordFlaUI / chkScriptRun*
+                                     etc.) have been removed - they duplicated the
+                                     canonical StatusBar ones (chkRecordFlaUI / chkRun*
+                                     in the status bar) and were unused by tests. -->
+                                <TextBox x:Name="txtGeneratedScript" Text="{Binding GeneratedScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
+                                         TextWrapping="NoWrap" AcceptsReturn="True"
+                                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                                                                   Style="{DynamicResource VsCodeEditor}" AutomationProperties.AutomationId="txtGeneratedScript"/>
+                            </DockPanel>
+                        </TabItem>
+                    </TabControl>
+                </DockPanel>
+</UserControl>

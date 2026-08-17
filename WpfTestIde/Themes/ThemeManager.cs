@@ -1,6 +1,8 @@
 using System;
 using System.Windows;
 using System.Windows.Media;
+using AvalonDock;
+using AvalonDock.Themes.VS;
 
 namespace WpfTestIde.Themes;
 
@@ -136,12 +138,15 @@ public static class ThemeManager
         // Store current theme
         app.Resources[ThemeMarkerKey] = theme;
 
-        // A6+E4: dock-chrome theming deferred to Step 3 — the DockingManager host
-        // in MainWindow.xaml is currently standalone + unbound (no Layout set yet),
-        // and its Theme is null by default. When the host gets a Layout bound and
-        // panes are registered (Steps 3+), theme-interplay goes here via the same
-        // null-guarded MainWindow.dockManager access pattern that lives in
-        // ThemeManager.ApplyTheme. For now ApplyTheme is unchanged from E3/E1.
+        // A6+E4 Step 3: flip the dock chrome when the app theme changes. The
+        // DockingManager now carries a real Layout (Step 3 rewired MainWindow.xaml),
+        // so setting .Theme is safe at theme-toggle time. Null-guarded because
+        // ApplyTheme can still run before MainWindow is constructed (App.OnStartup).
+        if (Application.Current?.MainWindow is MainWindow { dockManager: not null } win
+            && win.dockManager.Layout is not null)
+        {
+            win.dockManager.Theme = isDark ? new VS2022DarkTheme() : new VS2022LightTheme();
+        }
     }
     
     private static void ReplaceBrush(Application app, string key, SolidColorBrush newBrush)

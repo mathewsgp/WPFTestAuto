@@ -1684,10 +1684,16 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
 
         public int SelectedTabIndex
         {
-            get => _selectedTabIndex;
-            set { _selectedTabIndex = value; OnPropertyChanged(); }
+            get => ActivePaneId switch { "Scripts" => 1, "Results" => 2, _ => 0 };
+            set => ActivePaneId = value switch { 1 => "Scripts", 2 => "Results", _ => "Elements" };
         }
-        private int _selectedTabIndex;
+
+        private string? _activePaneId;
+        public string? ActivePaneId
+        {
+            get => _activePaneId;
+            set { _activePaneId = value; OnPropertyChanged(); }
+        }
 
         private void ToggleTheme()
         {

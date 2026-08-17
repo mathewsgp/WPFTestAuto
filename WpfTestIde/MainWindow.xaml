@@ -4,6 +4,7 @@
         xmlns:models="clr-namespace:WpfTestIde.Models"
         xmlns:views="clr-namespace:WpfTestIde.Views"
         xmlns:avalonDock="https://github.com/Dirkster99/AvalonDock"
+        xmlns:dockViews="clr-namespace:WpfTestIde.Docking.Views"
         Title="WPF Test IDE" Height="760" Width="1400"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BackgroundBrush}"
@@ -296,7 +297,7 @@
                     <TextBlock Text="Run:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     <CheckBox x:Name="chkRunFlaUI" Content="FlaUI" IsChecked="{Binding RunFlaUI}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRunFlaUI"/>
                     <CheckBox x:Name="chkRunWPFSpy" Content="WPFSpy" IsChecked="{Binding RunWPFSpy}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRunWPFSpy"/>
-                    <CheckBox x:Name="chkRunSikuli" Content="Sikuli" IsChecked="{Binding RunSikuli}" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRunSikuli"/>
+                    <CheckBox x:Name="chkRunSikuli" Content="Sikuli" IsChecked="{Binding RunSikuli}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRunSikuli"/>
                 </StackPanel>
             </StatusBarItem>
         </StatusBar>
@@ -362,284 +363,42 @@
                      AutomationProperties.AutomationId="txtRunOutputTail"/>
         </Expander>
 
-        <!-- ================= Main Tabs =================
-             A6+E4 Step 1 (refactored): the DockingManager host no longer wraps
-             MainTabControl directly — v5's Layout DP rejects a plain TabControl
-             (it wants a Layout/ILayoutRoot). The host is kept below as a
-             standalone element only so ThemeManager.ApplyTheme can target a
-             real DockingManager for dock-chrome theming; it's not yet bound
-             Layout or DocumentsSource. MainTabControl remains the fill child
-             of the DockPanel exactly as before; Steps 3-6 register the real
-             panes and replace this content with pane-hosted DockLayout. -->
-        <TabControl x:Name="MainTabControl" Margin="10" AutomationProperties.AutomationId="MainTabControl"
-                     SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
-            <!-- ELEMENTS Tab -->
-            <TabItem x:Name="tabElements" Header="ELEMENTS" AutomationProperties.AutomationId="tabElements">
-                <DockPanel Margin="6">
-                    <!-- Toolbar -->
-                    <Border DockPanel.Dock="Top" Margin="0,6,0,6" Padding="4" Background="{DynamicResource PanelBrush}" CornerRadius="3">
-                        <StackPanel Orientation="Horizontal">
-                            <Button x:Name="btnAddFolder" Content="+ Folder" ToolTip="Add Folder" Padding="6,2" FontSize="11"
-                                    Command="{Binding ElementTree.AddFolderCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnAddFolder"/>
-                            <Button x:Name="btnAddElement" Content="+ Element" ToolTip="Add Element to selected folder" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                                    Command="{Binding ElementTree.AddElementCommand}" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnAddElement"/>
-                            <Button x:Name="btnPickElement" Content="🔍 Pick" ToolTip="Pick Element from target app" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                                    Command="{Binding PickElementCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnPickElement"/>
-                            <Button x:Name="btnPreviewElement" Content="👁 Preview" ToolTip="Preview selected element" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                                    Command="{Binding PreviewElementCommand}" Background="{DynamicResource WarningBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnPreviewElement"/>
-                            <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                            <Button x:Name="btnExpandAll" Content="⬇️ Expand All" ToolTip="Expand All" Padding="6,2" FontSize="11"
-                                    Command="{Binding ElementTree.ExpandAllCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnExpandAll"/>
-                            <Button x:Name="btnCollapseAll" Content="⬆️ Collapse" ToolTip="Collapse All" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                                    Command="{Binding ElementTree.CollapseAllCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnCollapseAll"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- ================= Raw JSON / Repository (A4: collapsible bottom panel) =================
-                         Previously an inner TabControl+TabItem locked at Height=200 inside the
-                         ELEMENTS tab. Now a bottom-docked Expander collapsed by default so the
-                         tree+properties above get all the vertical space. The user expands to
-                         inspect the live-generated YAML. AutomationId tabRawJson is preserved
-                         (now on the Expander, see repository/elements/wpf_test_ide.yaml which
-                         has been updated to controlType=Expander + Expander XPath); the YAML
-                         TextBox AutomationId txtRepositoryYaml is unchanged. -->
-                    <Expander DockPanel.Dock="Bottom"
-                              IsExpanded="{Binding RepositoryPanelExpanded, Mode=TwoWay}"
-                              Padding="8,4"
-                              BorderBrush="{DynamicResource BorderBrush}"
-                              BorderThickness="0,1,0,0"
-                              AutomationProperties.AutomationId="tabRawJson">
-                        <Expander.Header>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Repository (YAML)" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBlock Text="read-only - regenerates live as elements are added" FontSize="10" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            </StackPanel>
-                        </Expander.Header>
-                        <TextBox x:Name="txtRepositoryYaml" Text="{Binding RepositoryYaml, Mode=OneWay}" FontFamily="Consolas" FontSize="11"
-                                 IsReadOnly="True" TextWrapping="NoWrap" AcceptsReturn="True"
-                                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                 Style="{StaticResource VsCodeEditor}"
-                                 MinHeight="120" MaxHeight="280"
-                                 AutomationProperties.AutomationId="txtRepositoryYaml"/>
-                    </Expander>
-
-                    <!-- Tree + Properties side by side (resizable). -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" x:Name="colTree"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="1.2*" x:Name="colProperties"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Element Tree -->
-                        <Border Grid.Column="0" Margin="0,0,6,0" Padding="6" Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3">
-                            <views:ElementTreeView DataContext="{Binding ElementTree}"/>
-                        </Border>
-
-                        <!-- Resizer between the Element Tree and the Properties pane -->
-                        <GridSplitter Grid.Column="1"
-                                      Width="5"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Stretch"
-                                      Background="{DynamicResource AccentBrush}"
-                                      BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,1,0"
-                                      Cursor="SizeWE"
-                                      ResizeBehavior="PreviousAndNext"
-                                      ShowsPreview="False"/>
-
-                        <!-- Properties -->
-                        <Border Grid.Column="2" Padding="6" Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3">
-                            <views:ElementEditorView/>
-                        </Border>
-                    </Grid>
-                </DockPanel>
-            </TabItem>
-
-            <!-- SCRIPTS Tab -->
-            <TabItem x:Name="tabScripts" Header="SCRIPTS" AutomationProperties.AutomationId="tabScripts">
-                <DockPanel Margin="6">
-                    <!-- A7: per-tab toolbar for SCRIPTS. Hosts the Run + Export buttons
-                         that previously lived in the global toolbar (kept AutomationIds:
-                         btnRunScript / btnExportRepo / btnExportScript / btnSaveScript).
-                         Record/Run duplicate driver checkboxes that used to live inside
-                         the inner Raw sub-tab have been removed (they already live once,
-                         canonically, in the StatusBar - see chkRecordFlaUI etc.). -->
-                    <Border DockPanel.Dock="Top" Style="{StaticResource TabToolbarBorder}">
-                        <StackPanel Orientation="Horizontal">
-                            <Button x:Name="btnRunScript" Style="{StaticResource ToolbarButton}" Content="Run Script" ToolTip="Run the current script (F5)"
-                                    Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnRunScript"/>
-                            <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                            <Button x:Name="btnSaveScript" Style="{StaticResource ToolbarButton}" Content="Save Script" ToolTip="Save the generated script (Ctrl+S)"
-                                    Command="{Binding SaveScriptCommand}" AutomationProperties.AutomationId="btnSaveScript"/>
-                            <Button x:Name="btnExportRepo" Style="{StaticResource ToolbarButton}" Content="Export Repository (.yaml)" Command="{Binding ExportRepositoryCommand}" AutomationProperties.AutomationId="btnExportRepo"/>
-                            <Button x:Name="btnExportScript" Style="{StaticResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
-                        </StackPanel>
-                    </Border>
-
-                    <TabControl>
-                        <!-- Visual: Recorded Steps -->
-                        <TabItem x:Name="tabVisualSteps" Header="Visual" AutomationProperties.AutomationId="tabVisualSteps">
-                            <!-- D3: AllowDrop + PreviewMouseLeftButtonDown/DragOver/Drop enable
-                                 drag-to-reorder of recorded steps. Handlers live in MainWindow.xaml.cs.
-                                 ItemContainerStyle is added so the per-row ListBoxItem stretches to
-                                 the full usable width (default ListBoxItem is left-aligned + clipped). -->
-                            <ListBox x:Name="StepsListBox" ItemsSource="{Binding Steps}" ItemTemplate="{StaticResource StepTemplate}"
-                                     BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                     Margin="0,6,0,0" AutomationProperties.AutomationId="StepsListBox"
-                                     AllowDrop="True"
-                                     PreviewMouseLeftButtonDown="StepsListBox_PreviewMouseLeftButtonDown"
-                                     PreviewMouseMove="StepsListBox_PreviewMouseMove"
-                                     DragOver="StepsListBox_DragOver"
-                                     Drop="StepsListBox_Drop">
-                                <ListBox.ItemContainerStyle>
-                                    <Style TargetType="ListBoxItem">
-                                        <Setter Property="Padding" Value="0"/>
-                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                        <Setter Property="Background" Value="Transparent"/>
-                                    </Style>
-                                </ListBox.ItemContainerStyle>
-                            </ListBox>
-                        </TabItem>
-                        <!-- Raw: Generated Script -->
-                        <TabItem x:Name="tabRawScript" Header="Raw" AutomationProperties.AutomationId="tabRawScript">
-                            <DockPanel Margin="0,6,0,0">
-                                <TextBlock DockPanel.Dock="Top" Text="Raw Layer 3 calls - review/refactor before committing to the suite."
-                                           FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
-                                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                                    <TextBlock DockPanel.Dock="Left" Text="Run Driver:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <ComboBox x:Name="cmbRunDriver" DockPanel.Dock="Left" SelectedItem="{Binding SelectedDriver}"
-                                              ItemsSource="{Binding AvailableDrivers}" Width="100" FontSize="11" AutomationProperties.AutomationId="cmbRunDriver"/>
-                                    <TextBlock DockPanel.Dock="Left" Text="  Mode:" VerticalAlignment="Center" Margin="8,0,4,0" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <ComboBox x:Name="cmbRunMode" DockPanel.Dock="Left" SelectedItem="{Binding SelectedMode}"
-                                              ItemsSource="{Binding AvailableModes}" Width="80" FontSize="11" AutomationProperties.AutomationId="cmbRunMode"/>
-                                </DockPanel>
-                                <!-- A7: the duplicate Record/Run driver checkboxes that
-                                     lived here (chkScriptRecordFlaUI / chkScriptRun*
-                                     etc.) have been removed - they duplicated the
-                                     canonical StatusBar ones (chkRecordFlaUI / chkRun*
-                                     in the status bar) and were unused by tests. -->
-                                <TextBox x:Name="txtGeneratedScript" Text="{Binding GeneratedScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
-                                         TextWrapping="NoWrap" AcceptsReturn="True"
-                                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                         Style="{StaticResource VsCodeEditor}" AutomationProperties.AutomationId="txtGeneratedScript"/>
-                            </DockPanel>
-                        </TabItem>
-                    </TabControl>
-                </DockPanel>
-            </TabItem>
-
-            <!-- RESULTS Tab -->
-            <TabItem x:Name="tabResults" Header="RESULTS" AutomationProperties.AutomationId="tabResults">
-                <DockPanel Margin="6">
-                    <!-- A7: per-tab toolbar for RESULTS. Re-runs / re-exports without
-                         switching tabs. RESULTS deliberately uses DISTINCT AutomationIds
-                         (btnResultsRerun / btnResultsExportScript / btnResultsReset) -
-                         not the SCRIPTS-tab IDs (btnRunScript / btnExportScript /
-                         btnSaveScript). Cross-tab AutomationId reuse would be unsafe:
-                         WPF TabControls (no virtualization here) keep every TabItem's
-                         content in the visual tree, so a reused AutomationId would
-                         resolve ambiguously when repository/elements/wpf_test_ide.yaml
-                         searches by relativeXPath="Button[@AutomationId='...']".
-                         The commands themselves (RunCommand / ExportScriptCommand /
-                         ResetCommand) are intentionally bound to multiple buttons -
-                         that's safe because the AutomationIds, not the commands, are
-                         the locators. -->
-                    <Border DockPanel.Dock="Top" Style="{StaticResource TabToolbarBorder}">
-                        <StackPanel Orientation="Horizontal">
-                            <Button x:Name="btnResultsRerun" Style="{StaticResource ToolbarButton}" Content="Run Again" ToolTip="Re-run the current script (F5)"
-                                    Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnResultsRerun"/>
-                            <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                            <Button x:Name="btnResultsExportScript" Style="{StaticResource ToolbarButton}" Content="Export Script (.robot)"
-                                    Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnResultsExportScript"/>
-                            <Button x:Name="btnResultsReset" Style="{StaticResource ToolbarButton}" Content="Reset" ToolTip="Reload a fresh sample"
-                                    Command="{Binding ResetCommand}" AutomationProperties.AutomationId="btnResultsReset"/>
-                        </StackPanel>
-                    </Border>
-                    <Border DockPanel.Dock="Top" Padding="8" Margin="0,6,0,6" CornerRadius="3"
-                            Background="{Binding LastRunSuccess, Converter={StaticResource BoolToStatusBrushConverter}}">
-                        <TextBlock x:Name="txtRunSummary" Text="{Binding RunSummaryText}" FontFamily="Consolas" FontWeight="Bold" AutomationProperties.AutomationId="txtRunSummary"/>
-                    </Border>
-                    <!-- D4: log-level filter strip. Three independent toggles bound
-                         to MainViewModel.ShowInfo/ShowWarn/ShowError (all ON by
-                         default). The free-text search binds to LogSearchText.
-                         All four re-pump RunOutputFiltered.CollectionView through
-                         RefreshLogFilter on the VM side. Distinct AutomationIds so
-                         repository locators + Robot tests can drive them. -->
-                    <Border DockPanel.Dock="Top" Padding="6" Margin="0,0,0,6"
-                            Background="{DynamicResource PanelBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1" CornerRadius="3">
-                        <StackPanel Orientation="Horizontal">
-                            <CheckBox Content="INFO" IsChecked="{Binding ShowInfo, Mode=TwoWay}"
-                                      Margin="0,0,12,0" VerticalAlignment="Center"
-                                      Foreground="{DynamicResource TextPrimaryBrush}"
-                                      ToolTip="Show INFO/TRACE/DEBUG lines and raw non-matching Robot output"
-                                      AutomationProperties.AutomationId="chkLogLevelInfo"/>
-                            <CheckBox Content="WARN" IsChecked="{Binding ShowWarn, Mode=TwoWay}"
-                                      Margin="0,0,12,0" VerticalAlignment="Center"
-                                      Foreground="{DynamicResource TextPrimaryBrush}"
-                                      ToolTip="Show WARN lines"
-                                      AutomationProperties.AutomationId="chkLogLevelWarn"/>
-                            <CheckBox Content="ERROR" IsChecked="{Binding ShowError, Mode=TwoWay}"
-                                      Margin="0,0,12,0" VerticalAlignment="Center"
-                                      Foreground="{DynamicResource TextPrimaryBrush}"
-                                      ToolTip="Show ERROR and FAIL lines"
-                                      AutomationProperties.AutomationId="chkLogLevelError"/>
-                            <Separator Margin="8,2" Background="{DynamicResource BorderBrush}" Width="1"/>
-                            <TextBlock Text="🔍" Margin="8,0,4,0" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            <TextBox x:Name="txtLogSearch"
-                                     Width="220" Padding="4" FontSize="12"
-                                     Text="{Binding LogSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Filter the Run Output ListView by any text in the raw line (case-insensitive)"
-                                     AutomationProperties.AutomationId="txtLogSearch"/>
-                        </StackPanel>
-                    </Border>
-                    <!-- D4: structured ListView replaces the txtRunOutput TextBox.
-                         The TextBox + its AutomationId='txtRunOutput' are kept on
-                         this ListView (AutomationProperties.AutomationId) so
-                         existing repository/elements/wpf_test_ide.yaml +
-                         Robot test locators still resolve —
-                         "//ListView[@AutomationId='txtRunOutput']" (data file
-                         updated in the same D4 change). Time/Level/Message
-                         columns pinned at sensible widths; Message wraps so
-                         long Robot lines do not push the columnar alignment
-                         out the right edge. ItemsSource binds to the VM's
-                         filtered CollectionView over the structured log. -->
-                    <ListView x:Name="txtRunOutput"
-                              ItemsSource="{Binding RunOutputFiltered, Mode=OneWay}"
-                              FontFamily="Consolas" FontSize="11.5"
-                              Background="{DynamicResource BackgroundBrush}"
-                              Foreground="{DynamicResource TextPrimaryBrush}"
-                              BorderBrush="{DynamicResource BorderBrush}"
-                              BorderThickness="1"
-                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              AutomationProperties.AutomationId="txtRunOutput">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Header="Time" Width="160"
-                                                DisplayMemberBinding="{Binding Time}"/>
-                                <GridViewColumn Header="Level" Width="70"
-                                                DisplayMemberBinding="{Binding LevelText}"/>
-                                <GridViewColumn Header="Message" Width="600"
-                                                DisplayMemberBinding="{Binding Message}"/>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
-                </DockPanel>
-            </TabItem>
-        </TabControl>
-
-        <!-- A6+E4 Step 1: dock host retained as a standalone (unbound) instance
-             so ThemeManager.ApplyTheme + Steps 3+ can drive AvalonDock chrome once
-             panes are registered. Kept zero-sized (Width/Height=0) instead of
-             Visibility=Collapsed so the field is non-null + layout-inert without
-             touching the DockPanel's visual layering. Not bound Layout yet —
-             Step 3 wires Layout/AnchorablesSource. -->
-        <avalonDock:DockingManager x:Name="dockManager"
-                                   Width="0"
-                                   Height="0"/>
+        <!-- ================= Docked Panes (A6 Step 3) =================
+             The 3 legacy MainTabControl TabItems have been promoted to
+             dockable LayoutAnchorable panes under DockingManager.Layout. The
+             TabItem bodies now live verbatim in
+             Docking/Views/{Elements,Scripts,Results}Pane.xaml and are inlined
+             here as LayoutAnchorable child content. Each LayoutAnchorable keeps
+             the legacy tab-header AutomationId (tabElements/tabScripts/tabResults)
+             so UC-010/UC-014 `Click Element` locators still resolve. The
+             standalone width=0 host from Step 1 is replaced by this real Layout.
+             (AnchorablesSource was rejected — the probe showed it auto-builds a
+             LayoutDocumentPaneGroup, not tool panes.) -->
+        <avalonDock:DockingManager x:Name="dockManager">
+            <avalonDock:DockingManager.Layout>
+                <avalonDock:LayoutRoot>
+                    <avalonDock:LayoutRoot.RootPanel>
+                        <avalonDock:LayoutPanel>
+                            <avalonDock:LayoutAnchorablePane>
+                                <avalonDock:LayoutAnchorable AutomationProperties.AutomationId="tabElements" Title="ELEMENTS">
+                                    <dockViews:ElementsPane/>
+                                </avalonDock:LayoutAnchorable>
+                            </avalonDock:LayoutAnchorablePane>
+                            <avalonDock:LayoutAnchorablePane>
+                                <avalonDock:LayoutAnchorable AutomationProperties.AutomationId="tabScripts" Title="SCRIPTS">
+                                    <dockViews:ScriptsPane/>
+                                </avalonDock:LayoutAnchorable>
+                            </avalonDock:LayoutAnchorablePane>
+                            <avalonDock:LayoutAnchorablePane>
+                                <avalonDock:LayoutAnchorable AutomationProperties.AutomationId="tabResults" Title="RESULTS">
+                                    <dockViews:ResultsPane/>
+                                </avalonDock:LayoutAnchorable>
+                            </avalonDock:LayoutAnchorablePane>
+                        </avalonDock:LayoutPanel>
+                    </avalonDock:LayoutRoot.RootPanel>
+                </avalonDock:LayoutRoot>
+            </avalonDock:DockingManager.Layout>
+        </avalonDock:DockingManager>
 
     </DockPanel>
 </Window>

@@ -1,7 +1,12 @@
 using System;
+using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using AvalonDock;
+using AvalonDock.Layout;
+using AvalonDock.Serializer.Json;
 using WpfTestIde.Helpers;
 using WpfTestIde.Models;
 using WpfTestIde.ViewModels;
@@ -14,6 +19,8 @@ namespace WpfTestIde
         {
             InitializeComponent();
             DataContext = new MainViewModel();
+            if (DataContext is MainViewModel vm)
+                vm.PropertyChanged += Vm_PropertyChanged;
             Loaded += MainWindow_Loaded;
             Closing += MainWindow_Closing;
         }
@@ -35,26 +42,26 @@ namespace WpfTestIde
                 vm.OcrPanelExpanded = state.OcrPanelExpanded;
                 vm.RepositoryPanelExpanded = state.RepositoryPanelExpanded;
                 vm.RunOutputPanelExpanded = state.RunOutputPanelExpanded;
-                if (state.SelectedTabIndex >= 0 && state.SelectedTabIndex < MainTabControl.Items.Count)
-                {
-                    vm.SelectedTabIndex = state.SelectedTabIndex;
-                }
             }
 
-            // A6+E4 step 2: dock layout restore. No-op for now — Steps 3-6 will
-            // register toolboxes with AvalonDock's DockLayoutService and populate
-            // this branch with `var serializer = new JsonLayoutSerializer();
-            // serializer.Deserialize(dockManager, state.DockLayoutJson);` and
-            // `_dockService.ActivateAnchorable(state.ActivePaneId);`. The guard
-            // is in place so the persistence round-trip is exercised before the
-            // actual consumption path lands.
+            // A6+E4 step 3: dock layout restore + pane activation.
             if (!string.IsNullOrWhiteSpace(state.DockLayoutJson))
             {
-                // TODO (Step 3+): dockManager hosted layout restore.
+                try
+                {
+                    var serializer = new JsonLayoutSerializer(dockManager);
+                    using var stream = new MemoryStream(Encoding.UTF8.GetBytes(state.DockLayoutJson));
+                    serializer.Deserialize(stream);
+                }
+                catch { }
             }
             if (!string.IsNullOrWhiteSpace(state.ActivePaneId))
             {
-                // TODO (Step 3+): pane activation via _dockService.ActivateAnchorableById.
+                ShowPane(state.ActivePaneId);
+            }
+            else if (state.SelectedTabIndex >= 0 && state.SelectedTabIndex < 3)
+            {
+                ShowPane(state.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" });
             }
 
             // Window geometry. Only apply if the persisted size is reasonable;
@@ -91,13 +98,14 @@ namespace WpfTestIde
                 }
             }
 
-            // A1 splitter widths (pixels). Both columns must be non-trivially
-            // sized; otherwise fall back to the XAML star defaults (* / 1.2*).
-            if (state.TreeColumnWidth > 20 && state.PropertiesColumnWidth > 20)
-            {
-                colTree.Width = new GridLength(state.TreeColumnWidth, GridUnitType.Pixel);
-                colProperties.Width = new GridLength(state.PropertiesColumnWidth, GridUnitType.Pixel);
-            }
+            // A1 splitter widths (pixels). The splitter now lives on the promoted
+            // Elements pane (Docking/Views/ElementsPane.xaml), so its GridLength state
+            // is restored there via ElementsPane.ApplySplitterState — which must be
+            // resolved from the LayoutAnchorable's content after the DockingManager
+            // materializes the pane. For Step 3 compilability the legacy MainWindow
+            // colTree/colProperties refs are removed (the fields moved with the body).
+            // TODO Step 4: invoke ElementsPane.ApplySplitterState(state.TreeColumnWidth,
+            //      state.PropertiesColumnWidth) once pane content is reachable here.
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -112,17 +120,18 @@ namespace WpfTestIde
                 Height = ActualHeight > 0 ? ActualHeight : Height,
                 Theme = Themes.ThemeManager.CurrentTheme,
                 SelectedTabIndex = vm.SelectedTabIndex,
-                TreeColumnWidth = colTree.ActualWidth > 0 ? colTree.ActualWidth : colTree.Width.Value,
-                PropertiesColumnWidth = colProperties.ActualWidth > 0 ? colProperties.ActualWidth : colProperties.Width.Value,
+                // A1 splitter: state migrated to ElementsPane.xaml.cs (ApplySplitterState /
+                // SnapshotSplitterState). MainWindow no longer owns colTree/colProperties.
+                // Step 3: pane snapshot not yet reachable from MainWindow -> placeholder
+                // zeros so star-column defaults apply on next load; Step 4 wires real
+                // values from the LayoutAnchorable's pane content.
+                TreeColumnWidth = 0,
+                PropertiesColumnWidth = 0,
                 OcrPanelExpanded = vm.OcrPanelExpanded,
                 RepositoryPanelExpanded = vm.RepositoryPanelExpanded,
                 RunOutputPanelExpanded = vm.RunOutputPanelExpanded,
-                // A6+E4 step 2: snapshot the dock layout JSON + active pane id. Null
-                // for now because no panes are registered yet — Steps 3+ populate
-                // ActivePaneId via vm.ActivePaneId and DockLayoutJson via
-                // `new JsonLayoutSerializer().Serialize(dockManager)` once panes exist.
-                ActivePaneId = null,
-                DockLayoutJson = null,
+                ActivePaneId = vm.ActivePaneId ?? (vm.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" }),
+                DockLayoutJson = SerializeLayout(dockManager),
             };
             LayoutPersistence.Save(state);
         }
@@ -316,6 +325,62 @@ namespace WpfTestIde
             }
             // ContentElement / FrameworkContentElement / other DependencyObject -> logical tree.
             return System.Windows.LogicalTreeHelper.GetParent(element);
+        }
+
+        private void Vm_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainViewModel.ActivePaneId))
+            {
+                if (DataContext is MainViewModel vm && vm.ActivePaneId is string paneId)
+                {
+                    ShowPane(paneId);
+                }
+            }
+        }
+
+        private void ShowPane(string paneId)
+        {
+            if (dockManager.Layout == null) return;
+            // v5 traversal: LayoutRoot->RootPanel (LayoutPanel, implements
+            // ILayoutContainer w/ Children) -> recurse Children for the first
+            // LayoutAnchorable whose Title matches the requested pane id.
+            // (v4's Descenents() extension does NOT exist in v5.)
+            var anchorable = FindAnchorableByTitle(dockManager.Layout.RootPanel, paneId);
+            anchorable?.Show();
+        }
+
+        private static LayoutAnchorable? FindAnchorableByTitle(LayoutPanel root, string title)
+        {
+            if (root == null) return null;
+            foreach (var child in root.Children)
+            {
+                if (child is LayoutAnchorable anchorable && string.Equals(anchorable.Title, title, StringComparison.OrdinalIgnoreCase))
+                    return anchorable;
+                if (child is LayoutAnchorablePane pane && pane.Children.Count > 0)
+                {
+                    foreach (var grand in pane.Children)
+                    {
+                        if (grand is LayoutAnchorable match && string.Equals(match.Title, title, StringComparison.OrdinalIgnoreCase))
+                            return match;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private string SerializeLayout(DockingManager dm)
+        {
+            try
+            {
+                var serializer = new JsonLayoutSerializer(dm);
+                using var stream = new MemoryStream();
+                serializer.Serialize(stream);
+                return Encoding.UTF8.GetString(stream.ToArray());
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }
