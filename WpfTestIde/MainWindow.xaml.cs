@@ -41,6 +41,22 @@ namespace WpfTestIde
                 }
             }
 
+            // A6+E4 step 2: dock layout restore. No-op for now — Steps 3-6 will
+            // register toolboxes with AvalonDock's DockLayoutService and populate
+            // this branch with `var serializer = new JsonLayoutSerializer();
+            // serializer.Deserialize(dockManager, state.DockLayoutJson);` and
+            // `_dockService.ActivateAnchorable(state.ActivePaneId);`. The guard
+            // is in place so the persistence round-trip is exercised before the
+            // actual consumption path lands.
+            if (!string.IsNullOrWhiteSpace(state.DockLayoutJson))
+            {
+                // TODO (Step 3+): dockManager hosted layout restore.
+            }
+            if (!string.IsNullOrWhiteSpace(state.ActivePaneId))
+            {
+                // TODO (Step 3+): pane activation via _dockService.ActivateAnchorableById.
+            }
+
             // Window geometry. Only apply if the persisted size is reasonable;
             // ignore obviously-broken values (zero/negative) so a corrupted file
             // can't push the window off-screen or shrink it to nothing.
@@ -101,6 +117,12 @@ namespace WpfTestIde
                 OcrPanelExpanded = vm.OcrPanelExpanded,
                 RepositoryPanelExpanded = vm.RepositoryPanelExpanded,
                 RunOutputPanelExpanded = vm.RunOutputPanelExpanded,
+                // A6+E4 step 2: snapshot the dock layout JSON + active pane id. Null
+                // for now because no panes are registered yet — Steps 3+ populate
+                // ActivePaneId via vm.ActivePaneId and DockLayoutJson via
+                // `new JsonLayoutSerializer().Serialize(dockManager)` once panes exist.
+                ActivePaneId = null,
+                DockLayoutJson = null,
             };
             LayoutPersistence.Save(state);
         }

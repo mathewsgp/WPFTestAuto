@@ -54,6 +54,27 @@ namespace WpfTestIde.Helpers
         public bool OcrPanelExpanded { get; set; }
         public bool RepositoryPanelExpanded { get; set; }
         public bool RunOutputPanelExpanded { get; set; }
+
+        // A6+E4: persisted dock state — Exercise Step 1 introduced the DockingManager
+        // host; Steps 3-6 promote tabs/dialogs into dockable panes whose arrangement
+        // should round-trip across IDE restarts. ActivePaneId takes over forward from
+        // SelectedTabIndex (which is kept for backward-compat — old layout.json files
+        // still load and source applies SelectedTabIndex->pane-id fallback). DockLayoutJson
+        // is the AvalonDock.Serializer.JsonLayoutSerializer serialized dock arrangement,
+        // verbatim. Both default to null on a fresh layout.json — the apply-path treats
+        // null DockLayoutJson as "use dock-manager default layout" and null ActivePaneId
+        // as "fall back to SelectedTabIndex hint".
+        /// <summary>The active dockable pane id selected on close. null on first run or
+        /// when no pane host is registered. Forward successor to SelectedTabIndex (which
+        /// is kept for backward-compat; the apply-path falls back to SelectedTabIndex when
+        /// this is null).</summary>
+        public string? ActivePaneId { get; set; }
+
+        /// <summary>Serialized dock layout JSON from AvalonDock.Serializer.Json's
+        /// LayoutSerializer (the v5 dock-manager.Layout round-tripped verbatim). null
+        /// until Steps 3-6 register panes; the apply-path treats null as "use dock
+        /// default layout".</summary>
+        public string? DockLayoutJson { get; set; }
     }
 
     /// <summary>Load/save LayoutState to %AppData%\WpfTestIde\layout.json.

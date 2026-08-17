@@ -362,15 +362,17 @@
                      AutomationProperties.AutomationId="txtRunOutputTail"/>
         </Expander>
 
-        <!-- ================= Main Tabs ================= -->
-        <!-- A6 step 1: minimal DockingManager host wrapping the legacy MainTabControl.
-             No Layout/DockLayout binding yet (Step 3 promotes the 3 tabs into
-             ToolboxBase panes). For now, MainTabControl stays the docked content;
-             the host exists only so ThemeManager.ApplyTheme can wire dock chrome.
-             Indentation kept at the original width to minimize diff churn. -->
-        <avalonDock:DockingManager x:Name="dockManager">
-            <TabControl x:Name="MainTabControl" Margin="10" AutomationProperties.AutomationId="MainTabControl"
-                         SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
+        <!-- ================= Main Tabs =================
+             A6+E4 Step 1 (refactored): the DockingManager host no longer wraps
+             MainTabControl directly — v5's Layout DP rejects a plain TabControl
+             (it wants a Layout/ILayoutRoot). The host is kept below as a
+             standalone element only so ThemeManager.ApplyTheme can target a
+             real DockingManager for dock-chrome theming; it's not yet bound
+             Layout or DocumentsSource. MainTabControl remains the fill child
+             of the DockPanel exactly as before; Steps 3-6 register the real
+             panes and replace this content with pane-hosted DockLayout. -->
+        <TabControl x:Name="MainTabControl" Margin="10" AutomationProperties.AutomationId="MainTabControl"
+                     SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
             <!-- ELEMENTS Tab -->
             <TabItem x:Name="tabElements" Header="ELEMENTS" AutomationProperties.AutomationId="tabElements">
                 <DockPanel Margin="6">
@@ -627,7 +629,14 @@
                     </ListView>
                 </DockPanel>
             </TabItem>
-            </TabControl>
-        </avalonDock:DockingManager>
+        </TabControl>
+
+        <!-- A6+E4 Step 1: dock host retained as a standalone (unbound) instance
+             so ThemeManager.ApplyTheme can theme AvalonDock chrome once panes
+             are registered in Steps 3+. Not bound Layout/DockLayout yet. -->
+        <avalonDock:DockingManager x:Name="dockManager"
+                                   VerticalAlignment="Collapsed"
+                                   HorizontalAlignment="Collapsed"/>
+
     </DockPanel>
 </Window>
