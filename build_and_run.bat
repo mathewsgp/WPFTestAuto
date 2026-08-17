@@ -116,7 +116,7 @@ if /i "%TARGET_FW%"=="net461" (
 )
 if defined NATIVE_BUILT (
     copy /Y "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%SAMPLE_APP_DIR%\" >nul
-    copy /Y "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%WpfTestIde\bin\%CONFIGURATION%\net8.0-windows\" >nul 2>nul
+    copy /Y "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%WpfTestIde\bin\%CONFIGURATION%\net9.0-windows\" >nul 2>nul
 )
 
 echo.
@@ -145,7 +145,7 @@ if /i "%INJECTION_MODE%"=="runtime" (
 
 if /i "%RUN_IDE%"=="true" (
     echo Launching IDE...
-    start "" /D "%FW_ROOT%" dotnet run --project "%IDE_PROJECT%" -f net8.0-windows -c %CONFIGURATION%
+    start "" /D "%FW_ROOT%" dotnet run --project "%IDE_PROJECT%" -f net9.0-windows -c %CONFIGURATION%
 )
 
 echo.

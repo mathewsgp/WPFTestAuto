@@ -46,6 +46,6 @@ echo.
 echo Launching WPF Test IDE...
 echo.
 cd /d "%ROOT%"
-dotnet run --project WpfTestIde\WpfTestIde.csproj -c Debug -f net8.0-windows
+dotnet run --project WpfTestIde\WpfTestIde.csproj -c Debug -f net9.0-windows
 
 endlocal

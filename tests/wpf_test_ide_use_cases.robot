@@ -5,7 +5,7 @@ Library          ../api/DriverAgnosticApi.py
 Library          OperatingSystem
 
 *** Variables ***
-${IDE_APP_PATH}    WpfTestIde/bin/Debug/net8.0-windows/WpfTestIde.exe
+${IDE_APP_PATH}    WpfTestIde/bin/Debug/net9.0-windows/WpfTestIde.exe
 ${SAMPLE_APP_PATH}    SampleWpfApp/bin/Debug/net8.0-windows/SampleWpfApp.exe
 ${TIMEOUT}    10s
 
