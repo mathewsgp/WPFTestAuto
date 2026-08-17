@@ -46,6 +46,12 @@ namespace WpfTestIde
                 Resources[key] = new System.Windows.Media.SolidColorBrush(color);
             }
 
+            // E1: load the persisted layout/theme snapshot into
+            // Application.Current.Properties so MainWindow can apply it on
+            // Loaded. Best-effort - LayoutPersistence.Load() catches IO/parse
+            // errors and returns a default LayoutState, so this never throws.
+            Properties["LayoutState"] = WpfTestIde.Helpers.LayoutPersistence.Load();
+
             base.OnStartup(e);
         }
     }

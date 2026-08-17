@@ -49,7 +49,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 
 | ID  | Item                                                | Effort       | Status | Notes                                                                                         |
 |-----|-----------------------------------------------------|--------------|--------|-----------------------------------------------------------------------------------------------|
-| E1  | Persist layout & theme to %AppData%\WpfTestIde\layout.json | Medium | ⬜      | Use YamlDotNet (already a dep) or System.Text.Json. Persist window size/pos, theme, last tab, splitter ratios, panel states, toolbar mode. |
+| E1  | Persist layout & theme to %AppData%\WpfTestIde\layout.json | Medium | ✅     | `Helpers/LayoutState.cs` POCO + `LayoutPersistence` Load/Save (System.Text.Json, indented, best-effort try/catch). Persisted: window State/Top/Left/Width/Height, Theme key (`ThemeManager.ApplyTheme`), `SelectedTabIndex`, A1 splitter column widths in px (named `colTree`/`colProperties`), A3/A4/A5 panel-expanded bools. `App.OnStartup` loads → `Application.Current.Properties["LayoutState"]`; `MainWindow.OnLoaded` applies (with on-screen/size guards + center fallback for off-monitor positions); `MainWindow.OnClosing` snapshots + saves. `MainTabControl.SelectedIndex` now 2-way-bound to `MainViewModel.SelectedTabIndex` (fixes a latent bug where the show-commands set an unbound VM value). No AutomationIds added → no YAML edits. |
 | E2  | Keyboard shortcuts (InputGestureText + KeyBinding)  | Low          | ✅     | Commit `0196b82`. `Ctrl+S` Save · `Ctrl+R`/`F5` Run · `Ctrl+Shift+R` Toggle Record · `F12` Spy. Added Spy Tool menu item under Run. |
 | E3  | Async command wrappers + notification toasts        | Low–Medium   | ⬜      | Fixes Attach/Run/Export UI freezes.                                                           |
 | E4  | Dock Spy/Checkpoint/VisualBuilder as panes, not modals | Medium     | ⏸      | Polished version depends on A6.                                                               |
@@ -59,7 +59,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 ## Recommended next item: **D4 (Run Output: log-level filter + search as a ListView)**
 
 **Why D4 next:**
-- **A2 reverted** — the push-model pin/unpin button (`btnPinElementTree`) wasn't useful per user feedback; A2 is dropped from the active queue as implemented. Worth retrying as an overlay-flyout only if the user wants the feature back (see the A2 row Notes); until then D4 is the natural next item.
+- **E1 shipped** — layout + theme now persists to `%AppData%\WpfTestIde\layout.json` (window geometry/theme/last-tab/A1 splitter widths/A3-A5 panel bools); D4 is the natural next standalone item.
 - **Design already verified** during A5 exploration: `RunOutputLines` is `ObservableCollection<string>` of Robot Framework's structured stdout (`YYYYMMDD HH:MM:SS.nnn | LEVEL | msg`), so parsing each line into a `LogEntry { Time, Level, Message }` is feasible. The tracker's preferred `ListView` (Time/Level/Message columns + Info/Warn/Error toggles + search) can therefore be implemented directly — no remaining open design questions.
 - **High debugging value.** Today A5's tail (and the RESULTS-tab `txtRunOutput`) are a single text box; with levels + search the user isolates failures fast in long runs. Pairs naturally with A5's bottom tail for live filtering.
 - **Standalone, additive.** Touches the RESULTS-tab Run Output area + a small VM addition (parsed-log model + filter state). Existing `txtRunOutput` AutomationId can move onto the new `ListView`; no Robot test reads its content — only clicks `tabResults` — so safe.
@@ -76,10 +76,9 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 ## Suggested overall order (remaining items)
 
 1. **D4** — Run Output log-level filter + search *(recommended now; design verified, no open questions)*
-2. **E1** — layout/theme persistence *(do after the layout it persists stabilizes — A2/A5 now shipped or reverted, so it's unblocked)*
-3. **E3** — async wrappers + toasts
-4. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
-5. **B3** — icon-only compact toolbar *(needs icon assets)*
+2. **E3** — async wrappers + toasts
+3. **A6** → **E4** — docking system then non-modal tool panes *(final milestone)*
+4. **B3** — icon-only compact toolbar *(needs icon assets)*
 
 ---
 
@@ -102,3 +101,4 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started · ⏸ blocked / depends
 | `577da42`| **A7** — per-tab context toolbars: Run+Export moved to SCRIPTS tab; RESULTS gets Run Again/Export/Reset toolbar. In-Raw duplicate `chkScript*` removed; UC-010 + UC-014 Robot tests updated. YAML updated (-6 entries, +3 new). |
 | `a342bda`| **D3** — Steps ListBox draggable re-order: `StepTemplate` handle column (☰ + `btnStepUp`/`btnStepDown`) + `StepsListBox` AllowDrop/drag handlers + `MainViewModel.MoveStepTo` (clamps, `ObservableCollection.Move`, `RegenerateScript`). YAML +2 entries. |
 | `7f99327`| **A5** — bottom-docked collapsible Run Output tail panel (`RunOutputTailExpander` + `txtRunOutputTail`); duplicate of RESULTS-tab `txtRunOutput`, auto-expands on run start, re-collapses in `Reset()`. YAML +2 entries. |
+| `<pending>`| **E1** — layout/theme persistence to `%AppData%\WpfTestIde\layout.json`: `Helpers/LayoutState.cs` POCO + `LayoutPersistence` (System.Text.Json). `App.OnStartup` loads → `MainWindow.OnLoaded` applies (window geometry/theme/last-tab/A1 splitter px widths/A3-A5 panel bools w/ on-screen guards) → `OnClosing` snapshots + saves. `MainTabControl.SelectedIndex` 2-way-bound to `MainViewModel.SelectedTabIndex` (fixes latent unbound-VM bug). No AutomationIds added → no YAML edits. |

@@ -333,7 +333,8 @@
         </Expander>
 
         <!-- ================= Main Tabs ================= -->
-        <TabControl x:Name="MainTabControl" Margin="10" AutomationProperties.AutomationId="MainTabControl">
+        <TabControl x:Name="MainTabControl" Margin="10" AutomationProperties.AutomationId="MainTabControl"
+                     SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
             <!-- ELEMENTS Tab -->
             <TabItem x:Name="tabElements" Header="ELEMENTS" AutomationProperties.AutomationId="tabElements">
                 <DockPanel Margin="6">
@@ -384,12 +385,12 @@
                                  AutomationProperties.AutomationId="txtRepositoryYaml"/>
                     </Expander>
 
-                    <!-- Tree + Properties side by side (resizable) -->
+                    <!-- Tree + Properties side by side (resizable). -->
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*" x:Name="colTree"/>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="1.2*" x:Name="colProperties"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- Element Tree -->

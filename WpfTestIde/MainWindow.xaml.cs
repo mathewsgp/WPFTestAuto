@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using WpfTestIde.Helpers;
 using WpfTestIde.Models;
 using WpfTestIde.ViewModels;
 
@@ -13,6 +14,95 @@ namespace WpfTestIde
         {
             InitializeComponent();
             DataContext = new MainViewModel();
+            Loaded += MainWindow_Loaded;
+            Closing += MainWindow_Closing;
+        }
+
+        // ------------------------------------------------------------
+        // E1: layout + theme persistence.
+        // On Loaded apply the snapshot loaded by App.OnStartup; on Closing
+        // capture the live window/panel/splitter state back into a new
+        // LayoutState and save it via LayoutPersistence.
+        // ------------------------------------------------------------
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (Application.Current?.Properties["LayoutState"] is not LayoutState state) return;
+
+            // Theme first so the rest of the UI paints in the user's theme.
+            Themes.ThemeManager.ApplyTheme(string.IsNullOrWhiteSpace(state.Theme) ? "Light" : state.Theme);
+            if (DataContext is MainViewModel vm)
+            {
+                vm.OcrPanelExpanded = state.OcrPanelExpanded;
+                vm.RepositoryPanelExpanded = state.RepositoryPanelExpanded;
+                vm.RunOutputPanelExpanded = state.RunOutputPanelExpanded;
+                if (state.SelectedTabIndex >= 0 && state.SelectedTabIndex < MainTabControl.Items.Count)
+                {
+                    vm.SelectedTabIndex = state.SelectedTabIndex;
+                }
+            }
+
+            // Window geometry. Only apply if the persisted size is reasonable;
+            // ignore obviously-broken values (zero/negative) so a corrupted file
+            // can't push the window off-screen or shrink it to nothing.
+            if (state.Width > 100 && state.Height > 100)
+            {
+                Width = state.Width;
+                Height = state.Height;
+            }
+            if (System.Windows.WindowState.Normal <= (System.Windows.WindowState)state.WindowState
+                && (System.Windows.WindowState)state.WindowState <= System.Windows.WindowState.Maximized)
+            {
+                WindowState = (System.Windows.WindowState)state.WindowState;
+            }
+            // Position only when Normal (a maximized window has Top/Left off-screen
+            // on some multi-monitor configs). Restore to TopLeft so windows reopen
+            // where they were; guard against off-screen placement.
+            if (WindowState == System.Windows.WindowState.Normal)
+            {
+                if (state.Left >= SystemParameters.VirtualScreenLeft - 10
+                    && state.Top >= SystemParameters.VirtualScreenTop - 10
+                    && state.Left < SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 100
+                    && state.Top < SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 100)
+                {
+                    Left = state.Left;
+                    Top = state.Top;
+                }
+                else
+                {
+                    // Persisted position is off the current monitor layout -> fall
+                    // back to centering so the window stays reachable.
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                }
+            }
+
+            // A1 splitter widths (pixels). Both columns must be non-trivially
+            // sized; otherwise fall back to the XAML star defaults (* / 1.2*).
+            if (state.TreeColumnWidth > 20 && state.PropertiesColumnWidth > 20)
+            {
+                colTree.Width = new GridLength(state.TreeColumnWidth, GridUnitType.Pixel);
+                colProperties.Width = new GridLength(state.PropertiesColumnWidth, GridUnitType.Pixel);
+            }
+        }
+
+        private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (DataContext is not MainViewModel vm) return;
+            var state = new LayoutState
+            {
+                WindowState = (int)WindowState,
+                Top = Top,
+                Left = Left,
+                Width = ActualWidth > 0 ? ActualWidth : Width,
+                Height = ActualHeight > 0 ? ActualHeight : Height,
+                Theme = Themes.ThemeManager.CurrentTheme,
+                SelectedTabIndex = vm.SelectedTabIndex,
+                TreeColumnWidth = colTree.ActualWidth > 0 ? colTree.ActualWidth : colTree.Width.Value,
+                PropertiesColumnWidth = colProperties.ActualWidth > 0 ? colProperties.ActualWidth : colProperties.Width.Value,
+                OcrPanelExpanded = vm.OcrPanelExpanded,
+                RepositoryPanelExpanded = vm.RepositoryPanelExpanded,
+                RunOutputPanelExpanded = vm.RunOutputPanelExpanded,
+            };
+            LayoutPersistence.Save(state);
         }
 
         private void ActivityElements_Click(object sender, RoutedEventArgs e)
