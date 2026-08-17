@@ -1,20 +1,37 @@
 {
   "alias": "OrdersPage.cmbSku",
-  "baseline": null,
+  "baseline": {
+    "alias": "OrdersPage.cmbSku",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "SKU-1001",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-08-17T09:03:50.700861",
+    "last_verified": "2026-08-17T09:03:50.700871",
+    "verification_count": 1,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "cmbSku"
+  },
   "healing_history": [],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 0,
+      "success_count": 1,
       "failure_count": 1,
-      "total_duration_ms": 2065.16432762146,
-      "last_success": null,
+      "total_duration_ms": 2738.9328479766846,
+      "last_success": "2026-08-17T09:03:50.438505",
       "last_failure": "2026-08-16T11:27:37.670134",
-      "avg_duration_ms": 2065.16432762146
+      "avg_duration_ms": 2738.9328479766846
     }
   },
-  "total_interactions": 1,
+  "total_interactions": 3,
   "first_seen": "2026-08-16T11:27:37.670119",
-  "last_interaction": "2026-08-16T11:27:37.670137",
-  "consecutive_failures": 1,
-  "consecutive_successes": 0
+  "last_interaction": "2026-08-17T09:03:50.700875",
+  "consecutive_failures": 0,
+  "consecutive_successes": 2
 }
