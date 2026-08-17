@@ -33,6 +33,150 @@ namespace WpfTestIde.ViewModels
         // RunOutputLines.CollectionChanged signal so the two never get out of sync.
         public ObservableCollection<LogEntry> RunOutputLog { get; } = new();
 
+        // E3: transient notification toasts. Single-slot queue (capped at 1
+        // visible): a new arrival replaces any current toast. The XAML binds
+        // <c>ActiveToasts[0].Text</c> / <c>ActiveToasts[0].Kind</c> and a single
+        // INPC bool <see cref="IsToastVisible"/> gates the <c>ToastBar</c>
+        // Border's <c>Visibility</c>. The two-phase removal (hide-then-dequeue
+        // on the next dispatcher tick) keeps the <c>ActiveToasts[0]</c>
+        // indexer binding from re-evaluating against an empty collection while
+        // the Border is still in the visible tree — see the E3 risk register.
+        public ObservableCollection<ToastMessage> ActiveToasts { get; } = new();
+
+        private bool _isToastVisible;
+        /// <summary>Single source of truth for the XAML's <c>ToastBar</c>
+        /// <c>Visibility</c> binding (via <c>BoolToVisibilityConverter</c>).
+        /// Set <see langword="false"/> before an active toast is removed from
+        /// <see cref="ActiveToasts"/> so the indexer binding never sees the
+        /// empty edge case while the Border is visible.</summary>
+        public bool IsToastVisible
+        {
+            get => _isToastVisible;
+            private set { _isToastVisible = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// E3: push a single transient toast, automatically removed
+        /// after ~4 s. The queue is capped at one: a later arrival drops any
+        /// existing toast (replace, not stack). All collection + visibility
+        /// mutations marshal onto the dispatcher because this can be called
+        /// from a ThreadPool thread (e.g. the
+        /// <see cref="CheckPipeConnectionAsync"/> worker).</summary>
+        public void EnqueueToast(string text, ToastKind kind)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher is null)
+            {
+                EnqueueToastCore(text, kind);
+                return;
+            }
+            dispatcher.BeginInvoke(new Action(() => EnqueueToastCore(text, kind)));
+        }
+
+        // E3: the single outstanding toast-removal timer. Tracked as a field
+        // (not a per-call local) so a replacement toast's Enqueue-toast can
+        // Dispose the previous toast's still-pending timer — otherwise the
+        // prior timer's 4-s callback fires against whatever toast is currently
+        // shown and hides it early (the toast-overlap bug called out in the
+        // E3 review).
+        private System.Threading.Timer? _toastTimer;
+
+        private void EnqueueToastCore(string text, ToastKind kind)
+        {
+            // Cancel any prior in-flight removal timer before starting a new
+            // one — guarantees only one removal timer is outstanding at a
+            // time, so it can never fire against a replacement toast.
+            var oldTimer = _toastTimer;
+            _toastTimer = null;
+            oldTimer?.Dispose();
+
+            // Two-phase hide-then-replace: collapse the Border first so the
+            // ActiveToasts[0] indexer binding isn't re-evaluated against the
+            // collection while we mutate it. The Visibility flip is flushed
+            // via the deferred reveal below (a fresh dispatcher tick at
+            // Render priority) so WPF actually sees a Collapsed→Visible
+            // transition and the fade-in Storyboard re-fires per toast.
+            IsToastVisible = false;
+
+            // In-place swap when a toast is already showing — raises
+            // NotifyCollectionChangedAction.Replace (not Reset) so the
+            // ActiveToasts[0] indexer bindings never re-evaluate against a
+            // 0-length collection (avoids the WPF trace binding errors that
+            // Clear()+Add() would emit on the replace path).
+            if (ActiveToasts.Count == 1)
+            {
+                ActiveToasts[0] = new ToastMessage(text, kind);
+            }
+            else
+            {
+                if (ActiveToasts.Count > 0) ActiveToasts.Clear();
+                ActiveToasts.Add(new ToastMessage(text, kind));
+            }
+
+            // Defer the reveal one render tick so the Collapsed transition
+            // flushes through the binding pipeline before Visibility flips
+            // back to Visible (fixes both the fade-re-fire and the indexer-
+            // binding-before-Visible-edge on the way out of a replacement).
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher is null)
+            {
+                IsToastVisible = true;
+            }
+            else
+            {
+                dispatcher.BeginInvoke(new Action(() => IsToastVisible = true),
+                    System.Windows.Threading.DispatcherPriority.Render);
+            }
+
+            // One-shot 4-s removal. The Timer Disposes itself in a try/finally
+            // that wraps the dispatcher hop (NOT inside the BeginInvoke
+            // callback) so the native handle is always freed — even if the
+            // Dispatcher is shutting down when the timer fires (window closing
+            // mid-toast) and the queued callback is dropped/throws.
+            System.Threading.Timer? timer = null;
+            timer = new System.Threading.Timer(_ =>
+            {
+                try
+                {
+                    // Only act if this timer is still THE current one. A
+                    // replacement toast Disposes this timer (above) and
+                    // sets _toastTimer to its own — in that case this
+                    // callback's captured `timer` ref equals the disposed
+                    // old timer and we silently no-op.
+                    if (timer != _toastTimer) return;
+
+                    var d = Application.Current?.Dispatcher;
+                    if (d is null)
+                    {
+                        IsToastVisible = false;
+                        if (ActiveToasts.Count > 0) ActiveToasts.Clear();
+                        return;
+                    }
+                    d.BeginInvoke(new Action(() =>
+                    {
+                        // Hide first; the Border collapses so the bound
+                        // TextBlock + indexer go quiescent, then the ActiveToasts
+                        // item is removed. Order matters — see the E3 risk
+                        // register.
+                        IsToastVisible = false;
+                        if (ActiveToasts.Count > 0) ActiveToasts.Clear();
+                    }));
+                }
+                finally
+                {
+                    // Dispose from the timer's own ThreadPool thread (NOT
+                    // inside the BeginInvoke callback). try/finally guarantees
+                    // the Dispose runs even if BeginInvoke throws because the
+                    // Dispatcher is shutting down — no native-handle leak and
+                    // the VM/ActiveToasts closure is release-able on window
+                    // close.
+                    timer?.Dispose();
+                    if (_toastTimer == timer) _toastTimer = null;
+                }
+            }, null, TimeSpan.FromSeconds(4), TimeSpan.FromMilliseconds(-1));
+            _toastTimer = timer;
+        }
+
         /// <summary>Default view over <see cref="RunOutputLog"/> surfaced to the
         /// View. Filtered in-place by the Show* / search props below; re-evaluated
         /// whenever a filter input changes via <see cref="RefreshLogFilter"/>.
@@ -329,13 +473,13 @@ namespace WpfTestIde.ViewModels
             DeleteStepCommand = new RelayCommand(param => DeleteStep(param as RecordedStep));
             MoveStepUpCommand = new RelayCommand(param => MoveStep(param as RecordedStep, -1));
             MoveStepDownCommand = new RelayCommand(param => MoveStep(param as RecordedStep, +1));
-            RunCommand = new RelayCommand(async _ => await RunAsync(), _ => Steps.Count > 0);
+            RunCommand = new AsyncRelayCommand(_ => RunAsync(), _ => Steps.Count > 0);
             ExportRepositoryCommand = new RelayCommand(_ => ExportRepository());
             ExportScriptCommand = new RelayCommand(_ => ExportScript());
             SaveScriptCommand = new RelayCommand(_ => SaveScript());
             LoadSampleCommand = new RelayCommand(_ => LoadSample());
             ResetCommand = new RelayCommand(_ => Reset());
-            CheckPipeConnectionCommand = new RelayCommand(_ => CheckPipeConnection(), _ => IsAttached);
+            CheckPipeConnectionCommand = new AsyncRelayCommand(_ => CheckPipeConnectionAsync(), _ => IsAttached);
             AddElementCommand = new RelayCommand(_ => AddElement());
             EditElementCommand = new RelayCommand(param => EditElement(param as ElementEntry));
             SaveElementCommand = new RelayCommand(_ => SaveElement());
@@ -558,62 +702,123 @@ namespace WpfTestIde.ViewModels
             return $"app_{processId}";
         }
 
-        private void CheckPipeConnection()
+        /// <summary>
+        /// E3: pipe-connection probe offloaded onto a ThreadPool thread so the
+        /// UI thread stays responsive for the ~3 s the 3-attempt loop takes
+        /// (the only behaviour change vs. the previous sync probe is that the
+        /// status bar no longer freezes; the operator-observable per-attempt
+        /// <see cref="PipeStatusText"/> messages are identical). Runs the
+        /// 3-attempt loop + the synchronous <see cref="SpyAgentClient"/>
+        /// <c>Send</c> + the 1-second back-off sleeps on a ThreadPool thread.
+        /// All <see cref="PipeStatusText"/> setter writes (and the
+        /// <see cref="EnqueueToast"/> calls) marshal back onto the dispatcher —
+        /// the worker thread must not touch the bound string property directly.
+        /// </summary>
+        private async System.Threading.Tasks.Task CheckPipeConnectionAsync()
         {
             if (string.IsNullOrEmpty(PipeName))
             {
-                PipeStatusText = "No pipe name configured.";
+                Application.Current.Dispatcher.Invoke(() => PipeStatusText = "No pipe name configured.");
                 return;
             }
 
             const int maxAttempts = 3;
             const int delayMs = 1000;
+            string pipeName = PipeName; // capture before crossing thread boundary
             string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pipe_check_log.txt");
 
-            void Log(string msg)
+            (string message, bool ok, string? data) result =
+                await System.Threading.Tasks.Task.Run<(string message, bool ok, string? data)>(async () =>
             {
-                System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {msg}{Environment.NewLine}");
-            }
+                void Log(string msg)
+                {
+                    System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {msg}{Environment.NewLine}");
+                }
 
-            Log($"=== Pipe check started, pipe={PipeName} ===");
+                // The pipe responses (response.Data, response.Error, the
+                // message of any exception thrown by SpyAgentClient) come from
+                // the SpyAgent server which runs in the *attached target
+                // process* — a separate trust boundary. They are
+                // operator-readable here but their CRLF contents are not — a
+                // hostile or compromised attached process could otherwise
+                // forge arbitrary lines into the audit log
+                // (pipe_check_log.txt) by embedding \r\n. Strip control
+                // characters before interpolating into any log line so each
+                // untrusted segment renders on a single physical line.
+                static string SanitizeForLog(string? s) =>
+                    (s ?? string.Empty)
+                        .Replace("\r", "\\r")
+                        .Replace("\n", "\\n")
+                        .Replace("\0", "\\0");
 
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+                Log($"=== Pipe check started, pipe={pipeName} ===");
+
+                for (int attempt = 1; attempt <= maxAttempts; attempt++)
+                {
+                    try
+                    {
+                        Log($"Attempt {attempt}/{maxAttempts}: connecting...");
+                        var client = new SpyAgentClient(pipeName);
+                        var response = client.Send("GetMainWindowTitle");
+                        Log($"Attempt {attempt}: response => Success={response.Success}, Data={SanitizeForLog(response.Data ?? "(null)")}, Error={SanitizeForLog(response.Error ?? "(null)")}");
+
+                        if (response.Success && !string.IsNullOrEmpty(response.Data))
+                        {
+                            Log($"Result: Pipe OK — attached app main window: {SanitizeForLog(response.Data)}");
+                            return ($"Pipe OK — attached app main window: {response.Data}", true, response.Data);
+                        }
+                        if (response.Success)
+                        {
+                            // Log parity with the original sync
+                            // CheckPipeConnection: the "Result:" line was
+                            // emitted on both the data and no-data success
+                            // branches; restore it here.
+                            Log("Result: Pipe OK — attached app has no main window title.");
+                            return ("Pipe OK — attached app has no main window title.", true, null);
+                        }
+                        Log($"Result: Pipe check failed (attempt {attempt}/{maxAttempts}): {SanitizeForLog(response.Error ?? "unknown error")}");
+                        Application.Current.Dispatcher.Invoke(() =>
+                            PipeStatusText = $"Pipe check failed (attempt {attempt}/{maxAttempts}): {response.Error ?? "unknown error"}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Exception: {ex.GetType().Name}: {SanitizeForLog(ex.Message)}");
+                        Application.Current.Dispatcher.Invoke(() =>
+                            PipeStatusText = $"Pipe check failed (attempt {attempt}/{maxAttempts}): {ex.Message}");
+                    }
+
+                    if (attempt < maxAttempts)
+                    {
+                        await System.Threading.Tasks.Task.Delay(delayMs);
+                    }
+                }
+
+                Log("=== Pipe check finished ===");
+                return ($"Pipe check failed (attempt {maxAttempts}/{maxAttempts})", false, null);
+            });
+
+            // Single dispatcher hop to commit the final status text + toast.
+            // Both the success and failure paths funnel through here so the
+            // worker thread's only UI-thread touches are these marshaled writes.
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                try
+                if (result.ok)
                 {
-                    Log($"Attempt {attempt}/{maxAttempts}: connecting...");
-                    var client = new SpyAgentClient(PipeName);
-                    var response = client.Send("GetMainWindowTitle");
-                    Log($"Attempt {attempt}: response => Success={response.Success}, Data={(response.Data ?? "(null)")}, Error={(response.Error ?? "(null)")}");
-
-                    if (response.Success && !string.IsNullOrEmpty(response.Data))
-                    {
-                        PipeStatusText = $"Pipe OK — attached app main window: {response.Data}";
-                        Log($"Result: {PipeStatusText}");
-                        return;
-                    }
-                    if (response.Success)
-                    {
-                        PipeStatusText = "Pipe OK — attached app has no main window title.";
-                        Log($"Result: {PipeStatusText}");
-                        return;
-                    }
-                    PipeStatusText = $"Pipe check failed (attempt {attempt}/{maxAttempts}): {response.Error ?? "unknown error"}";
-                    Log($"Result: {PipeStatusText}");
+                    PipeStatusText = result.message;
+                    // Mirror the status text exactly: on the empty-data
+                    // success branch result.message is "Pipe OK — attached
+                    // app has no main window title." (NOT a "connected"
+                    // fallback) so the toast and the status bar don't
+                    // contradict each other.
+                    EnqueueToast(result.message, ToastKind.Success);
                 }
-                catch (Exception ex)
+                else
                 {
-                    PipeStatusText = $"Pipe check failed (attempt {attempt}/{maxAttempts}): {ex.Message}";
-                    Log($"Exception: {ex.GetType().Name}: {ex.Message}");
+                    // The per-attempt failure string was already written inside
+                    // the loop above; leave PipeStatusText on the last attempt.
+                    EnqueueToast("Pipe check failed", ToastKind.Warning);
                 }
-
-                if (attempt < maxAttempts)
-                {
-                    Thread.Sleep(delayMs);
-                }
-            }
-
-            Log("=== Pipe check finished ===");
+            });
         }
 
         private void ToggleRecording()
@@ -995,6 +1200,19 @@ namespace WpfTestIde.ViewModels
              RunSummaryText = summary.Total > 0
                  ? $"{summary.Total} tests, {summary.Passed} passed, {summary.Failed} failed"
                  : "No summary line found — check the output above for errors.";
+
+             // E3: amplify the run result with a transient toast. Suppress on
+             // the "no test summary line" branch (the operator needs to read the
+             // log to diagnose those) — the banner RunSummaryText above stays
+             // the authoritative read for everyone, the toast only mirrors the
+             // pass/fail outcome for glancability when the operator is on a
+             // different tab.
+             if (summary.Total > 0)
+             {
+                 EnqueueToast(
+                     $"Run finished — {summary.Passed} passed, {summary.Failed} failed",
+                     summary.Success ? ToastKind.Success : ToastKind.Error);
+             }
          }
 
         // ------------------------------------------------------------
@@ -1025,6 +1243,10 @@ namespace WpfTestIde.ViewModels
             if (dialog.ShowDialog() == true)
             {
                 File.WriteAllText(dialog.FileName, GeneratedScript);
+                // E3: announce the export with a transient Info toast; the user
+                // may be on a different tab when the Save dialog closes, and the
+                // toast is independent of the active tab.
+                EnqueueToast($"Exported script: {dialog.FileName}", ToastKind.Info);
             }
         }
 
@@ -1040,6 +1262,9 @@ namespace WpfTestIde.ViewModels
             {
                 File.WriteAllText(dialog.FileName, GeneratedScript);
                 StatusText = $"Script saved to {dialog.FileName}";
+                // E3: mirror the StatusText line with a green Success toast so
+                // a save from a different tab is still noticed at a glance.
+                EnqueueToast($"Saved: {dialog.FileName}", ToastKind.Success);
             }
         }
 

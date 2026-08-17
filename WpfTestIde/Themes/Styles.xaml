@@ -756,6 +756,29 @@
     <Style BasedOn="{StaticResource VsTextBlock}" TargetType="TextBlock"/>
     <Style BasedOn="{StaticResource VsScrollBar}" TargetType="ScrollBar"/>
 
+    <!-- E3 ToastBar fade-in. Keyed style (only the ToastBar Border uses it) —
+         a property Trigger on Visibility=Visible runs a 250 ms Opacity 0->1
+         DoubleAnimation so the toast eases in rather than popping. No exit
+         fade: when IsToastVisible flips back to Collapsed the Border simply
+         disappears. The whole ToastBar lifecycle (one-shot, capped at one) is
+         owned by MainViewModel.EnqueueToast; the storyboard only paints the
+         appearance transition. -->
+    <Style x:Key="ToastBar" TargetType="Border">
+        <Setter Property="Opacity" Value="1"/>
+        <Style.Triggers>
+            <Trigger Property="Visibility" Value="Visible">
+                <Trigger.EnterActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                             From="0" To="1" Duration="0:0:0.25"/>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </Trigger.EnterActions>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Default GridViewColumnHeader (used by ListView in column mode).       -->
     <!-- We do NOT re-template it: WPF's default template relies on a Thumb     -->
     <!-- (PART_HeaderGripper) and the Role enum (Padding/Floating) for column   -->

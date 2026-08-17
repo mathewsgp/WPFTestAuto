@@ -295,6 +295,46 @@ elements:
           value: "TextBlock[@AutomationId='PipeStatusText']"
           priority: 1
 
+  # ================= E3 Notifications (transient toasts) =================
+  # Additive to E3: the ToastBar Border + its inner ToastText TextBlock. The
+  # Border is Visibility=Collapsed when no toast is active; parented at the
+  # window (WpfTestIde.MainWindow) matching StatusText/PipeStatusText — the
+  # StatusBar itself isn't aliased in this repo, so locators reach the Border
+  # via its own AutomationId/XPath strategies.
+  WpfTestIde.MainWindow.ToastBar:
+    displayName: "Toast Bar"
+    controlType: "Pane"
+    automationId: "ToastBar"
+    name: "ToastBar"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "Border[@AutomationId='ToastBar']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "ToastBar"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Border[@AutomationId='ToastBar']"
+          priority: 1
+
+  WpfTestIde.MainWindow.ToastText:
+    displayName: "Toast Text"
+    controlType: "Text"
+    automationId: "ToastText"
+    name: "ToastText"
+    parentAlias: "WpfTestIde.MainWindow.ToastBar"
+    relativeXPath: "TextBlock[@AutomationId='ToastText']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "ToastText"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "TextBlock[@AutomationId='ToastText']"
+          priority: 1
+
   # ================= Driver Settings Checkboxes =================
   WpfTestIde.MainWindow.chkRecordFlaUI:
     displayName: "Record FlaUI Checkbox"

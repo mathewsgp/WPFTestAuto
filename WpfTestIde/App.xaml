@@ -19,6 +19,7 @@
             <conv:EmptyToVisibleConverter x:Key="EmptyToVisibleConverter"/>
             <conv:ZeroToVisibleConverter x:Key="ZeroToVisibleConverter"/>
             <conv:NullToVisibleConverter x:Key="NullToVisibleConverter"/>
+            <conv:ToastKindToBrushConverter x:Key="ToastKindToBrushConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
