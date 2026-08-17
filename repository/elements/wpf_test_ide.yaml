@@ -608,12 +608,12 @@ elements:
           priority: 1
 
   WpfTestIde.MainWindow.txtRunOutput:
-    displayName: "Run Output Text Box"
-    controlType: "Text"
+    displayName: "Run Output ListView"
+    controlType: "List"
     automationId: "txtRunOutput"
     name: "txtRunOutput"
     parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "//TextBox[@AutomationId='txtRunOutput']"
+    relativeXPath: "//ListView[@AutomationId='txtRunOutput']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -621,7 +621,7 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "//TextBox[@AutomationId='txtRunOutput']"
+          value: "//ListView[@AutomationId='txtRunOutput']"
           priority: 1
 
   # ================= Attach to Process Dialog =================
@@ -1111,12 +1111,12 @@ elements:
           priority: 1
 
   WpfTestIde.MainWindow.txtRunOutput:
-    displayName: "Run Output Text Box"
-    controlType: "Text"
+    displayName: "Run Output ListView"
+    controlType: "List"
     automationId: "txtRunOutput"
     name: "txtRunOutput"
     parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "//TextBox[@AutomationId='txtRunOutput']"
+    relativeXPath: "//ListView[@AutomationId='txtRunOutput']"
     strategies:
       FlaUI:
         - searchBy: "AutomationId"
@@ -1124,7 +1124,79 @@ elements:
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
-          value: "//TextBox[@AutomationId='txtRunOutput']"
+          value: "//ListView[@AutomationId='txtRunOutput']"
+          priority: 1
+
+  # ================= D4: Results Log Filter Strip =================
+  # Controls sitting on the filter strip above the Run Output ListView. Each
+  # propagates an INPC prop on MainViewModel (ShowInfo/ShowWarn/ShowError/
+  # LogSearchText) which re-pumps RunOutputFiltered.
+  WpfTestIde.MainWindow.chkLogLevelInfo:
+    displayName: "Log Level Info Filter Checkbox"
+    controlType: "CheckBox"
+    automationId: "chkLogLevelInfo"
+    name: "chkLogLevelInfo"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "//CheckBox[@AutomationId='chkLogLevelInfo']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "chkLogLevelInfo"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//CheckBox[@AutomationId='chkLogLevelInfo']"
+          priority: 1
+
+  WpfTestIde.MainWindow.chkLogLevelWarn:
+    displayName: "Log Level Warn Filter Checkbox"
+    controlType: "CheckBox"
+    automationId: "chkLogLevelWarn"
+    name: "chkLogLevelWarn"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "//CheckBox[@AutomationId='chkLogLevelWarn']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "chkLogLevelWarn"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//CheckBox[@AutomationId='chkLogLevelWarn']"
+          priority: 1
+
+  WpfTestIde.MainWindow.chkLogLevelError:
+    displayName: "Log Level Error Filter Checkbox"
+    controlType: "CheckBox"
+    automationId: "chkLogLevelError"
+    name: "chkLogLevelError"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "//CheckBox[@AutomationId='chkLogLevelError']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "chkLogLevelError"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//CheckBox[@AutomationId='chkLogLevelError']"
+          priority: 1
+
+  WpfTestIde.MainWindow.txtLogSearch:
+    displayName: "Run Output Log Search Box"
+    controlType: "Edit"
+    automationId: "txtLogSearch"
+    name: "txtLogSearch"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: "//TextBox[@AutomationId='txtLogSearch']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "txtLogSearch"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "//TextBox[@AutomationId='txtLogSearch']"
           priority: 1
 
   # ================= Additional Toolbar Controls =================

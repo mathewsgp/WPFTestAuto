@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
 using WpfTestIde.Execution;
 using WpfTestIde.Models;
@@ -24,6 +25,41 @@ namespace WpfTestIde.ViewModels
         public ObservableCollection<ElementEntry> Elements { get; } = new();
         public ObservableCollection<string> RunOutputLines { get; } = new();
         public string RunOutputText { get => string.Join(Environment.NewLine, RunOutputLines); }
+
+        // D4: structured mirror of RunOutputLines. The raw string collection above
+        // is kept (A5 bottom tail binds to it) so existing Robot-line plumbing is
+        // untouched; this second collection holds the parsed LogEntry that the
+        // RESULTS-tab ListView binds to. Seeded in the ctor off the same
+        // RunOutputLines.CollectionChanged signal so the two never get out of sync.
+        public ObservableCollection<LogEntry> RunOutputLog { get; } = new();
+
+        /// <summary>Default view over <see cref="RunOutputLog"/> surfaced to the
+        /// View. Filtered in-place by the Show* / search props below; re-evaluated
+        /// whenever a filter input changes via <see cref="RefreshLogFilter"/>.
+        /// Exposed as a property (not a method) so XAML can bind
+        /// <c>ItemsSource="{Binding RunOutputFiltered}"</c> — a stable object ref
+        /// through filter changes keeps the ListView from re-templating.</summary>
+        public ICollectionView RunOutputFiltered { get; }
+
+        // D4: filter-strip state. Three independent level toggles + a free-text
+        // search. Each is the canonical INPC pattern already used by the other
+        // VM props; setters call RefreshLogFilter so the live Robot stream filters
+        // without re-running the collection source.
+        private bool _showInfo = true;
+        public bool ShowInfo { get => _showInfo; set { _showInfo = value; OnPropertyChanged(); RefreshLogFilter(); } }
+
+        private bool _showWarn = true;
+        public bool ShowWarn { get => _showWarn; set { _showWarn = value; OnPropertyChanged(); RefreshLogFilter(); } }
+
+        private bool _showError = true;
+        public bool ShowError { get => _showError; set { _showError = value; OnPropertyChanged(); RefreshLogFilter(); } }
+
+        private string _logSearchText = "";
+        public string LogSearchText
+        {
+            get => _logSearchText;
+            set { _logSearchText = value; OnPropertyChanged(); RefreshLogFilter(); }
+        }
         
         // Element Tree ViewModel
         public ElementTreeViewModel ElementTree { get; } = new();
@@ -333,6 +369,29 @@ namespace WpfTestIde.ViewModels
             Steps.CollectionChanged += (_, __) => RegenerateScript();
             Elements.CollectionChanged += (_, __) => { RegenerateRepository(); RefreshElementTree(); };
             RunOutputLines.CollectionChanged += (_, __) => OnPropertyChanged(nameof(RunOutputText));
+            // D4: also parse each new raw line into RunOutputLog. Reset tag handler
+            // (sender == Collection clearing) replays nothing here because we
+            // separately clear RunOutputLog in Reset()/RunAsync below. Insert of
+            // a single line at the end → LogLineParser.Parse + add to RunOutputLog;
+            // batch scenarios are not produced by the current Robot runner.
+            RunOutputLines.CollectionChanged += (sender, args) =>
+            {
+                if (sender != RunOutputLines) return;
+                if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset) return;
+                if (args.NewItems != null)
+                {
+                    foreach (string line in args.NewItems)
+                    {
+                        RunOutputLog.Add(LogLineParser.Parse(line));
+                    }
+                }
+            };
+
+            // D4: filtered view wired once in the ctor. Predicate uses the current
+            // state of the three Show* props + LogSearchText; RefreshLogFilter
+            // re-pumps the view whenever any of those change.
+            RunOutputFiltered = CollectionViewSource.GetDefaultView(RunOutputLog);
+            RunOutputFiltered.Filter = FilterLogEntry;
             
             // Initialize element tree
             RefreshElementTree();
@@ -341,6 +400,46 @@ namespace WpfTestIde.ViewModels
         private void RefreshElementTree()
         {
             ElementTree.LoadFromElements(Elements);
+        }
+
+        /// <summary>D4 filter predicate applied by RunOutputFiltered. exhibited
+        /// when Level matches an enabled checkbox AND LogSearchText (if any) is
+        /// contained in Raw. Raw rather than Message because the search strip is
+        /// used to find timestamps/source control-characters too.</summary>
+        private bool FilterLogEntry(object obj)
+        {
+            if (obj is not LogEntry e) return false;
+            if (!LevelVisible(e.Level)) return false;
+            if (string.IsNullOrWhiteSpace(LogSearchText)) return true;
+            return (e.Raw ?? "").IndexOf(LogSearchText, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>Maps the three Show* checkboxes to LogLevels. TRACE/DEBUG are
+        /// rolled under ShowInfo on purpose — Robot's quiet trace/debug lines are
+        /// noise most of the time and the DM filter strip only exposes Info/Warn/
+        /// Error. Raw lines (unstructured Robot output: separator bars, blank
+        /// lines, ASCII boxes) are shown when ShowInfo is on, hidden otherwise;
+        /// that matches the RESULTS tab's pre-D4 behavior where they appeared
+        /// unconditionally.</summary>
+        private bool LevelVisible(LogLevel level) => level switch
+        {
+            LogLevel.Info => ShowInfo,
+            LogLevel.Raw => ShowInfo,
+            LogLevel.Trace => ShowInfo,
+            LogLevel.Debug => ShowInfo,
+            LogLevel.Warn => ShowWarn,
+            LogLevel.Error => ShowError,
+            LogLevel.Fail => ShowError,
+            _ => true,
+        };
+
+        /// <summary>Re-evaluates the RunOutputFiltered predicate. Called on every
+        /// Show*/LogSearchText setter. CollectionViewSource default view re-raises
+        /// Filter on every item on Refresh, but log counts are small (Robot runs
+        /// are capped ~hundreds of lines), so the cost is negligible.</summary>
+        private void RefreshLogFilter()
+        {
+            RunOutputFiltered?.Refresh();
         }
 
         // ------------------------------------------------------------
@@ -843,6 +942,7 @@ namespace WpfTestIde.ViewModels
          private async System.Threading.Tasks.Task RunAsync()
          {
              RunOutputLines.Clear();
+             RunOutputLog.Clear();
              RunSummaryText = "Running...";
              // A5: pop open the bottom tail so the user sees the live stream as the
              // run begins. Two-way binding honors manual collapse afterwards.
@@ -985,6 +1085,7 @@ namespace WpfTestIde.ViewModels
             Steps.Clear();
             Elements.Clear();
             RunOutputLines.Clear();
+            RunOutputLog.Clear();
             RunSummaryText = "";
             // A5: collapse the bottom tail back to its default hidden state so a
             // fresh sample doesn't look like the last run is still streaming.

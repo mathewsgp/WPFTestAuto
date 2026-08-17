@@ -521,12 +521,74 @@
                             Background="{Binding LastRunSuccess, Converter={StaticResource BoolToStatusBrushConverter}}">
                         <TextBlock x:Name="txtRunSummary" Text="{Binding RunSummaryText}" FontFamily="Consolas" FontWeight="Bold" AutomationProperties.AutomationId="txtRunSummary"/>
                     </Border>
-                    <TextBox x:Name="txtRunOutput" Text="{Binding RunOutputText, Mode=OneWay}" FontFamily="Consolas" FontSize="11.5"
-                             Style="{StaticResource VsCodeEditor}"
-                             IsReadOnly="True" IsReadOnlyCaretVisible="False"
-                             VerticalScrollBarVisibility="Auto"
-                             TextOptions.TextFormattingMode="Display"
-                             AcceptsReturn="True" TextWrapping="Wrap" AutomationProperties.AutomationId="txtRunOutput"/>
+                    <!-- D4: log-level filter strip. Three independent toggles bound
+                         to MainViewModel.ShowInfo/ShowWarn/ShowError (all ON by
+                         default). The free-text search binds to LogSearchText.
+                         All four re-pump RunOutputFiltered.CollectionView through
+                         RefreshLogFilter on the VM side. Distinct AutomationIds so
+                         repository locators + Robot tests can drive them. -->
+                    <Border DockPanel.Dock="Top" Padding="6" Margin="0,0,0,6"
+                            Background="{DynamicResource PanelBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1" CornerRadius="3">
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox Content="INFO" IsChecked="{Binding ShowInfo, Mode=TwoWay}"
+                                      Margin="0,0,12,0" VerticalAlignment="Center"
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      ToolTip="Show INFO/TRACE/DEBUG lines and raw non-matching Robot output"
+                                      AutomationProperties.AutomationId="chkLogLevelInfo"/>
+                            <CheckBox Content="WARN" IsChecked="{Binding ShowWarn, Mode=TwoWay}"
+                                      Margin="0,0,12,0" VerticalAlignment="Center"
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      ToolTip="Show WARN lines"
+                                      AutomationProperties.AutomationId="chkLogLevelWarn"/>
+                            <CheckBox Content="ERROR" IsChecked="{Binding ShowError, Mode=TwoWay}"
+                                      Margin="0,0,12,0" VerticalAlignment="Center"
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      ToolTip="Show ERROR and FAIL lines"
+                                      AutomationProperties.AutomationId="chkLogLevelError"/>
+                            <Separator Margin="8,2" Background="{DynamicResource BorderBrush}" Width="1"/>
+                            <TextBlock Text="🔍" Margin="8,0,4,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBox x:Name="txtLogSearch"
+                                     Width="220" Padding="4" FontSize="12"
+                                     Text="{Binding LogSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Filter the Run Output ListView by any text in the raw line (case-insensitive)"
+                                     AutomationProperties.AutomationId="txtLogSearch"/>
+                        </StackPanel>
+                    </Border>
+                    <!-- D4: structured ListView replaces the txtRunOutput TextBox.
+                         The TextBox + its AutomationId='txtRunOutput' are kept on
+                         this ListView (AutomationProperties.AutomationId) so
+                         existing repository/elements/wpf_test_ide.yaml +
+                         Robot test locators still resolve —
+                         "//ListView[@AutomationId='txtRunOutput']" (data file
+                         updated in the same D4 change). Time/Level/Message
+                         columns pinned at sensible widths; Message wraps so
+                         long Robot lines do not push the columnar alignment
+                         out the right edge. ItemsSource binds to the VM's
+                         filtered CollectionView over the structured log. -->
+                    <ListView x:Name="txtRunOutput"
+                              ItemsSource="{Binding RunOutputFiltered, Mode=OneWay}"
+                              FontFamily="Consolas" FontSize="11.5"
+                              Background="{DynamicResource BackgroundBrush}"
+                              Foreground="{DynamicResource TextPrimaryBrush}"
+                              BorderBrush="{DynamicResource BorderBrush}"
+                              BorderThickness="1"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              AutomationProperties.AutomationId="txtRunOutput">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Time" Width="160"
+                                                DisplayMemberBinding="{Binding Time}"/>
+                                <GridViewColumn Header="Level" Width="70"
+                                                DisplayMemberBinding="{Binding LevelText}"/>
+                                <GridViewColumn Header="Message" Width="600"
+                                                DisplayMemberBinding="{Binding Message}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
                 </DockPanel>
             </TabItem>
         </TabControl>
