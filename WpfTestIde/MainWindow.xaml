@@ -632,11 +632,14 @@
         </TabControl>
 
         <!-- A6+E4 Step 1: dock host retained as a standalone (unbound) instance
-             so ThemeManager.ApplyTheme can theme AvalonDock chrome once panes
-             are registered in Steps 3+. Not bound Layout/DockLayout yet. -->
+             so ThemeManager.ApplyTheme + Steps 3+ can drive AvalonDock chrome once
+             panes are registered. Kept zero-sized (Width/Height=0) instead of
+             Visibility=Collapsed so the field is non-null + layout-inert without
+             touching the DockPanel's visual layering. Not bound Layout yet —
+             Step 3 wires Layout/AnchorablesSource. -->
         <avalonDock:DockingManager x:Name="dockManager"
-                                   VerticalAlignment="Collapsed"
-                                   HorizontalAlignment="Collapsed"/>
+                                   Width="0"
+                                   Height="0"/>
 
     </DockPanel>
 </Window>
