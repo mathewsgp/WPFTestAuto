@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using AvalonDock;
 using AvalonDock.Layout;
 using AvalonDock.Serializer.Json;
@@ -74,6 +75,12 @@ namespace WpfTestIde
             {
                 ShowPane(state.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" });
             }
+
+            // Force a layout pass so the DockingManager processes auto-hide state
+            // (LeftSide/RightSide panes) that JsonLayoutSerializer restored but
+            // the visual tree hasn't realized yet.
+            Dispatcher.BeginInvoke(new Action(() => dockManager.UpdateLayout()),
+                DispatcherPriority.Loaded);
 
             // Window geometry. Only apply if the persisted size is reasonable;
             // ignore obviously-broken values (zero/negative) so a corrupted file
