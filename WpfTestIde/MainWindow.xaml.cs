@@ -60,6 +60,10 @@ namespace WpfTestIde
                     
                     System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER DESERIALIZE ===");
                     LogLayoutStructure("After Deserialize", dockManager.Layout);
+                    
+                    // JsonLayoutSerializer v5 BUG: does NOT deserialize LeftSide/RightSide/TopSide/BottomSide
+                    // auto-hide panes. Manually restore them from the saved JSON.
+                    RestoreAutoHidePanesFromJson(state.DockLayoutJson);
                 }
                 catch (Exception ex)
                 {
@@ -531,6 +535,111 @@ namespace WpfTestIde
             var resultsPaneHost = new LayoutAnchorablePane();
             resultsPaneHost.Children.Add(resultsPane);
             rootPanel.Children.Add(resultsPaneHost);
+        }
+
+        // ------------------------------------------------------------
+        // JsonLayoutSerializer v5 BUG WORKAROUND:
+        // The serializer does NOT deserialize LeftSide/RightSide/TopSide/BottomSide
+        // (auto-hide panes). Parse the saved JSON and manually rebuild them.
+        // ------------------------------------------------------------
+        private void RestoreAutoHidePanesFromJson(string json)
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                
+                // Restore LeftSide (auto-hide on left edge)
+                if (root.TryGetProperty("LeftSide", out var leftSide) && leftSide.TryGetProperty("Children", out var leftChildren))
+                {
+                    RestoreAnchorSide(leftChildren, dockManager.Layout.LeftSide, "Left");
+                }
+                
+                // Restore RightSide
+                if (root.TryGetProperty("RightSide", out var rightSide) && rightSide.TryGetProperty("Children", out var rightChildren))
+                {
+                    RestoreAnchorSide(rightChildren, dockManager.Layout.RightSide, "Right");
+                }
+                
+                // Restore TopSide
+                if (root.TryGetProperty("TopSide", out var topSide) && topSide.TryGetProperty("Children", out var topChildren))
+                {
+                    RestoreAnchorSide(topChildren, dockManager.Layout.TopSide, "Top");
+                }
+                
+                // Restore BottomSide
+                if (root.TryGetProperty("BottomSide", out var bottomSide) && bottomSide.TryGetProperty("Children", out var bottomChildren))
+                {
+                    RestoreAnchorSide(bottomChildren, dockManager.Layout.BottomSide, "Bottom");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"RestoreAutoHidePanesFromJson failed: {ex.Message}");
+            }
+        }
+
+        private void RestoreAnchorSide(System.Text.Json.JsonElement childrenArray, LayoutAnchorSide anchorSide, string sideName)
+        {
+            try
+            {
+                if (anchorSide == null) return;
+                
+                anchorSide.Children.Clear();
+                
+                foreach (var paneElement in childrenArray.EnumerateArray())
+                {
+                    if (!paneElement.TryGetProperty("Children", out var anchorableArray)) continue;
+                    
+                    var group = new LayoutAnchorGroup();
+                    
+                    foreach (var anchorableElement in anchorableArray.EnumerateArray())
+                    {
+                        var anchorable = new LayoutAnchorable();
+                        
+                        // Copy all anchorable properties
+                        anchorable.Title = anchorableElement.TryGetProperty("Title", out var t) ? t.GetString() ?? "" : "";
+                        anchorable.CanHide = anchorableElement.TryGetProperty("CanHide", out var ch) && ch.GetBoolean();
+                        anchorable.CanAutoHide = anchorableElement.TryGetProperty("CanAutoHide", out var cah) && cah.GetBoolean();
+                        anchorable.AutoHideWidth = anchorableElement.TryGetProperty("AutoHideWidth", out var ahw) ? ahw.GetDouble() : 0;
+                        anchorable.AutoHideHeight = anchorableElement.TryGetProperty("AutoHideHeight", out var ahh) ? ahh.GetDouble() : 0;
+                        anchorable.AutoHideMinWidth = anchorableElement.TryGetProperty("AutoHideMinWidth", out var ahmw) ? ahmw.GetDouble() : 100;
+                        anchorable.AutoHideMinHeight = anchorableElement.TryGetProperty("AutoHideMinHeight", out var ahmh) ? ahmh.GetDouble() : 100;
+                        anchorable.CanDockAsTabbedDocument = anchorableElement.TryGetProperty("CanDockAsTabbedDocument", out var cdatd) && cdatd.GetBoolean();
+                        anchorable.CanMove = anchorableElement.TryGetProperty("CanMove", out var cm) && cm.GetBoolean();
+                        anchorable.IsDetached = anchorableElement.TryGetProperty("IsDetached", out var idet) && idet.GetBoolean();
+                        anchorable.CanClose = anchorableElement.TryGetProperty("CanClose", out var cc) && cc.GetBoolean();
+                        anchorable.CanFloat = anchorableElement.TryGetProperty("CanFloat", out var cf) && cf.GetBoolean();
+                        anchorable.CanShowOnHover = anchorableElement.TryGetProperty("CanShowOnHover", out var csh) && csh.GetBoolean();
+                        
+                        // Inject content for our known panes
+                        if (!string.IsNullOrEmpty(anchorable.Title))
+                        {
+                            anchorable.Content = anchorable.Title switch
+                            {
+                                "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
+                                "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
+                                "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
+                                _ => anchorable.Content
+                            };
+                        }
+                        
+                        // Add anchorable directly to group (LayoutAnchorGroup.Children expects LayoutAnchorable)
+                        group.Children.Add(anchorable);
+                    }
+                    
+                    if (group.Children.Count > 0)
+                    {
+                        anchorSide.Children.Add(group);
+                    }
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"Restored {anchorSide.Children.Count} auto-hide group(s) to {sideName}Side");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"RestoreAnchorSide({sideName}) failed: {ex.Message}");
+            }
         }
 
         private static object CreatePaneContent(UserControl pane, string automationId)
