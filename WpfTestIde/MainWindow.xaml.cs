@@ -444,66 +444,68 @@ namespace WpfTestIde
         {
             if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return;
             
-            // If the deserialized layout lost our anchorable panes entirely
-            // (e.g., serializer produced an empty LayoutDocumentPane instead),
-            // recreate the three expected panes from scratch.
-            bool hasAnchorablePanes = false;
-            foreach (var child in rootPanel.Children)
-            {
-                if (child is LayoutAnchorablePane) hasAnchorablePanes = true;
-            }
+            // Walk the entire layout tree and inject content into any
+            // LayoutAnchorable whose Content is null after deserialization.
+            // Do NOT clear/recreate the layout — the serializer may wrap
+            // LayoutAnchorablePanes inside LayoutDocumentPanes or otherwise
+            // reorganize the tree; we only fix missing Content.
+            bool foundAnyAnchorable = false;
+            RestoreDockPaneContentRecursive(rootPanel, ref foundAnyAnchorable);
             
-            if (!hasAnchorablePanes)
+            // If no anchorables were found at all (e.g., completely corrupted
+            // layout), recreate the three expected panes from scratch.
+            if (!foundAnyAnchorable)
             {
-                rootPanel.Children.Clear();
-                
-                var elementsPane = new LayoutAnchorable { Title = "ELEMENTS", IsActive = true };
-                elementsPane.Content = CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements");
-                var elementsPaneHost = new LayoutAnchorablePane();
-                elementsPaneHost.Children.Add(elementsPane);
-                rootPanel.Children.Add(elementsPaneHost);
-                
-                var scriptsPane = new LayoutAnchorable { Title = "SCRIPTS" };
-                scriptsPane.Content = CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts");
-                var scriptsPaneHost = new LayoutAnchorablePane();
-                scriptsPaneHost.Children.Add(scriptsPane);
-                rootPanel.Children.Add(scriptsPaneHost);
-                
-                var resultsPane = new LayoutAnchorable { Title = "RESULTS" };
-                resultsPane.Content = CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults");
-                var resultsPaneHost = new LayoutAnchorablePane();
-                resultsPaneHost.Children.Add(resultsPane);
-                rootPanel.Children.Add(resultsPaneHost);
-            }
-            else
-            {
-                // Panes exist but Content may be null after deserialization.
-                foreach (var child in rootPanel.Children)
-                {
-                    RestoreDockPaneContentRecursive(child);
-                }
+                RecreateDefaultDockPanes(rootPanel);
             }
         }
 
-        private static void RestoreDockPaneContentRecursive(ILayoutElement element)
+        private static void RestoreDockPaneContentRecursive(ILayoutElement element, ref bool foundAny)
         {
-            if (element is LayoutAnchorable anchorable && anchorable.Content == null)
+            if (element is LayoutAnchorable anchorable)
             {
-                anchorable.Content = anchorable.Title switch
+                foundAny = true;
+                if (anchorable.Content == null)
                 {
-                    "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
-                    "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
-                    "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
-                    _ => null
-                };
+                    anchorable.Content = anchorable.Title switch
+                    {
+                        "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
+                        "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
+                        "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
+                        _ => null
+                    };
+                }
             }
             if (element is ILayoutContainer container)
             {
                 foreach (var child in container.Children)
                 {
-                    RestoreDockPaneContentRecursive(child);
+                    RestoreDockPaneContentRecursive(child, ref foundAny);
                 }
             }
+        }
+
+        private static void RecreateDefaultDockPanes(LayoutPanel rootPanel)
+        {
+            rootPanel.Children.Clear();
+            
+            var elementsPane = new LayoutAnchorable { Title = "ELEMENTS", IsActive = true };
+            elementsPane.Content = CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements");
+            var elementsPaneHost = new LayoutAnchorablePane();
+            elementsPaneHost.Children.Add(elementsPane);
+            rootPanel.Children.Add(elementsPaneHost);
+            
+            var scriptsPane = new LayoutAnchorable { Title = "SCRIPTS" };
+            scriptsPane.Content = CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts");
+            var scriptsPaneHost = new LayoutAnchorablePane();
+            scriptsPaneHost.Children.Add(scriptsPane);
+            rootPanel.Children.Add(scriptsPaneHost);
+            
+            var resultsPane = new LayoutAnchorable { Title = "RESULTS" };
+            resultsPane.Content = CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults");
+            var resultsPaneHost = new LayoutAnchorablePane();
+            resultsPaneHost.Children.Add(resultsPane);
+            rootPanel.Children.Add(resultsPaneHost);
         }
 
         private static object CreatePaneContent(UserControl pane, string automationId)
