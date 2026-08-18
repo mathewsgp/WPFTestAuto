@@ -76,6 +76,30 @@ namespace WpfTestIde.Helpers
         /// until Steps 3-6 register panes; the apply-path treats null as "use dock
         /// default layout".</summary>
         public string? DockLayoutJson { get; set; }
+
+        // ------------------------------------------------------------
+        // E1: docked ELEMENTS/SCRIPTS/RESULTS pane widths.
+        //
+        // JsonLayoutSerializer v5 DOES round-trip LayoutAnchorablePane.DockWidth
+        // (star "1*" or absolute pixels "300"), but in practice the docked columns
+        // still do not reliably keep their width across restarts: the layout is
+        // deserialized/replaced while the window is still at its XAML size and
+        // before the pane content is materialized, and an exception during
+        // serialize (window tearing down) silently writes DockLayoutJson=null.
+        //
+        // To make the three pane widths robust, we ALSO persist them here as plain
+        // absolute pixel values keyed by pane title. Only absolute (>0) widths are
+        // stored — star widths are intentionally omitted (the XAML default is star,
+        // and there is no single pixel value that captures a star ratio). The
+        // apply-path re-applies them after the window is sized and the DockingManager
+        // has realized its content, so they win over whatever the (possibly corrupt
+        // or default) dock layout produced.
+        // ------------------------------------------------------------
+        /// <summary>Absolute docked pane widths in device-independent pixels, keyed
+        /// by pane title (e.g. "Elements", "Scripts", "Results"). Empty on first run
+        /// or when no pane was resized; the apply-path then leaves the dock defaults
+        /// in place.</summary>
+        public Dictionary<string, double> PaneWidths { get; set; } = new();
     }
 
     /// <summary>Load/save LayoutState to %AppData%\WpfTestIde\layout.json.
@@ -105,7 +129,12 @@ namespace WpfTestIde.Helpers
                 if (!File.Exists(FilePath)) return new LayoutState();
                 var json = File.ReadAllText(FilePath);
                 if (string.IsNullOrWhiteSpace(json)) return new LayoutState();
-                return JsonSerializer.Deserialize<LayoutState>(json, Options) ?? new LayoutState();
+                var state = JsonSerializer.Deserialize<LayoutState>(json, Options) ?? new LayoutState();
+                // Migrate older layout.json files written before PaneWidths existed:
+                // a missing/null entry must resolve to an empty dictionary so callers
+                // can safely iterate and so the next Save() writes a clean object.
+                state.PaneWidths ??= new Dictionary<string, double>();
+                return state;
             }
             catch
             {

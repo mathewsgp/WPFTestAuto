@@ -48,6 +48,52 @@ namespace WpfTestIde
                 vm.RunOutputPanelExpanded = state.RunOutputPanelExpanded;
             }
 
+            // -------- Window geometry FIRST --------
+            // Apply size/state/position before deserializing the dock layout so the
+            // DockingManager rebuilds into an already-correctly-sized host. Previously
+            // geometry was applied AFTER the dock restore, which meant AvalonDock laid
+            // out against the transient XAML default size and the pane widths drifted
+            // from what was saved. Only apply if the persisted size is reasonable;
+            // ignore obviously-broken values (zero/negative) so a corrupted file
+            // can't push the window off-screen or shrink it to nothing.
+            if (state.Width > 100 && state.Height > 100)
+            {
+                Width = state.Width;
+                Height = state.Height;
+            }
+            if (System.Windows.WindowState.Normal <= (System.Windows.WindowState)state.WindowState
+                && (System.Windows.WindowState)state.WindowState <= System.Windows.WindowState.Maximized)
+            {
+                WindowState = (System.Windows.WindowState)state.WindowState;
+            }
+            // Position only when Normal (a maximized window has Top/Left off-screen
+            // on some multi-monitor configs). Restore to TopLeft so windows reopen
+            // where they were; guard against off-screen placement.
+            // Treat 0,0 as "unset" (fresh layout.json) and fall back to centering.
+            if (WindowState == System.Windows.WindowState.Normal)
+            {
+                if (state.Left > 0 || state.Top > 0)
+                {
+                    if (state.Left >= SystemParameters.VirtualScreenLeft - 10
+                        && state.Top >= SystemParameters.VirtualScreenTop - 10
+                        && state.Left < SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 100
+                        && state.Top < SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 100)
+                    {
+                        Left = state.Left;
+                        Top = state.Top;
+                    }
+                    else
+                    {
+                        // Persisted position is off the current monitor layout -> fall
+                        // back to centering so the window stays reachable.
+                        WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                    }
+                }
+                else
+                {
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                }
+            }
             // A6+E4 step 3: dock layout restore + pane activation.
             if (!string.IsNullOrWhiteSpace(state.DockLayoutJson))
             {
@@ -93,61 +139,24 @@ namespace WpfTestIde
                 ShowPane(state.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" });
             }
 
-            // Force a layout pass so the DockingManager processes auto-hide state
-            // (LeftSide/RightSide panes) that JsonLayoutSerializer restored but
-            // the visual tree hasn't realized yet.
-            Dispatcher.BeginInvoke(new Action(() => 
+            // Defer the post-restore layout pass + pane-width re-application until the
+            // visual tree has realized the docked pane content. Two phases so the order
+            // is deterministic:
+            //   1) UpdateLayout - processes auto-hide sides JsonLayoutSerializer restored
+            //      but the visual tree hadn't realized yet, and realizes pane content.
+            //   2) ApplyPaneWidths / ApplySplitterState - re-assert the persisted absolute
+            //      pane widths AFTER the dock layout has been (re)built, so they win
+            //      regardless of whether the dock JSON round-tripped them correctly or
+            //      fell back to defaults.
+            Dispatcher.BeginInvoke(new Action(() =>
             {
                 dockManager.UpdateLayout();
-                
+                ApplyPaneWidths(state.PaneWidths);
+                ApplySplitterState(state);
+
                 System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER UPDATELAYOUT ===");
                 LogLayoutStructure("After UpdateLayout", dockManager.Layout);
-                
-                ApplySplitterState(state);
-            }),
-                DispatcherPriority.Loaded);
-
-            // Window geometry. Only apply if the persisted size is reasonable;
-            // ignore obviously-broken values (zero/negative) so a corrupted file
-            // can't push the window off-screen or shrink it to nothing.
-            if (state.Width > 100 && state.Height > 100)
-            {
-                Width = state.Width;
-                Height = state.Height;
-            }
-            if (System.Windows.WindowState.Normal <= (System.Windows.WindowState)state.WindowState
-                && (System.Windows.WindowState)state.WindowState <= System.Windows.WindowState.Maximized)
-            {
-                WindowState = (System.Windows.WindowState)state.WindowState;
-            }
-            // Position only when Normal (a maximized window has Top/Left off-screen
-            // on some multi-monitor configs). Restore to TopLeft so windows reopen
-            // where they were; guard against off-screen placement.
-            // Treat 0,0 as "unset" (fresh layout.json) and fall back to centering.
-            if (WindowState == System.Windows.WindowState.Normal)
-            {
-                if (state.Left > 0 || state.Top > 0)
-                {
-                    if (state.Left >= SystemParameters.VirtualScreenLeft - 10
-                        && state.Top >= SystemParameters.VirtualScreenTop - 10
-                        && state.Left < SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 100
-                        && state.Top < SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 100)
-                    {
-                        Left = state.Left;
-                        Top = state.Top;
-                    }
-                    else
-                    {
-                        // Persisted position is off the current monitor layout -> fall
-                        // back to centering so the window stays reachable.
-                        WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                    }
-                }
-                else
-                {
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                }
-            }
+            }), DispatcherPriority.Loaded);
         }
 
         private void ApplySplitterState(LayoutState state)
@@ -162,7 +171,12 @@ namespace WpfTestIde
                     elementsPane?.ApplySplitterState(state.TreeColumnWidth, state.PropertiesColumnWidth);
                 }
             }
-            catch { /* non-fatal */ }
+            catch (Exception ex)
+            {
+                // Stop hiding the cause: a silent no-op here means the Element Tree
+                // <-> Properties splitter width is silently lost.
+                System.Diagnostics.Debug.WriteLine($"ElementsPane splitter restore skipped: {ex.Message}");
+            }
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -184,7 +198,12 @@ namespace WpfTestIde
                     }
                 }
             }
-            catch { /* non-fatal: persist zeros if pane not reachable */ }
+            catch (Exception ex)
+            {
+                // Persist zeros if the pane isn't reachable, but stop hiding the cause:
+                // a silent no-op here means the splitter width is silently lost.
+                System.Diagnostics.Debug.WriteLine($"ElementsPane splitter snapshot skipped: {ex.Message}");
+            }
             
             var state = new LayoutState
             {
@@ -204,6 +223,8 @@ namespace WpfTestIde
                 RunOutputPanelExpanded = vm.RunOutputPanelExpanded,
                 ActivePaneId = vm.ActivePaneId ?? (vm.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" }),
                 DockLayoutJson = SerializeLayout(dockManager),
+                // E1: explicit absolute pane widths, independent of the dock JSON.
+                PaneWidths = SnapshotPaneWidths(),
             };
             LayoutPersistence.Save(state);
         }
@@ -461,10 +482,89 @@ namespace WpfTestIde
                 serializer.Serialize(stream);
                 return Encoding.UTF8.GetString(stream.ToArray());
             }
-            catch
+            catch (Exception ex)
             {
+                // Stop swallowing this silently: a null DockLayoutJson here means the
+                // next launch falls back to XAML defaults and ALL docked pane widths
+                // (and auto-hide/float state) are lost with no diagnostic.
+                System.Diagnostics.Debug.WriteLine($"SerializeLayout failed: {ex.Message}");
                 return null;
             }
+        }
+
+        // ------------------------------------------------------------
+        // E1: docked ELEMENTS/SCRIPTS/RESULTS pane-width persistence.
+        //
+        // JsonLayoutSerializer v5 round-trips LayoutAnchorablePane.DockWidth in
+        // principle, but in practice the three docked columns still did not keep
+        // their width across restarts: the layout is deserialized/replaced before
+        // the window reaches its saved size and before the pane content is
+        // materialized, and an exception during serialize (window tearing down)
+        // silently wrote DockLayoutJson=null. To make the pane widths reliable we
+        // ALSO persist them here as plain absolute pixel values and re-apply them
+        // after the DockingManager has been (re)built and UpdateLayout has run.
+        //
+        // We snapshot DockWidth (not ActualWidth) so the value is independent of
+        // whether the visual tree has rendered. Only ABSOLUTE widths are recorded:
+        // star widths ("1*") are the XAML default and carry no single pixel value,
+        // so they are intentionally omitted and the apply-path leaves them alone.
+        // ------------------------------------------------------------
+        /// <summary>Snapshots the absolute DockWidth of every docked
+        /// LayoutAnchorablePane in the root panel, keyed by the title of its first
+        /// child anchorable (Elements/Scripts/Results). Star widths are skipped.</summary>
+        private Dictionary<string, double> SnapshotPaneWidths()
+        {
+            var widths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return widths;
+                foreach (var child in rootPanel.Children.OfType<LayoutAnchorablePane>())
+                {
+                    var anchorable = child.Children.FirstOrDefault();
+                    if (string.IsNullOrWhiteSpace(anchorable?.Title)) continue;
+                    var dockWidth = child.DockWidth;
+                    // Only absolute pixel widths are meaningful to persist; star widths
+                    // are the default and have no single pixel representation.
+                    if (dockWidth.IsAbsolute && dockWidth.Value > 0)
+                    {
+                        widths[anchorable.Title] = dockWidth.Value;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SnapshotPaneWidths failed: {ex.Message}");
+            }
+            return widths;
+        }
+
+        /// <summary>Re-applies persisted absolute pane widths to the docked
+        /// LayoutAnchorablePanes, matched by the title of their first child
+        /// anchorable. Called after UpdateLayout so the (possibly deserialized or
+        /// default) dock tree has been realized. Star entries are left untouched.</summary>
+        private void ApplyPaneWidths(IReadOnlyDictionary<string, double>? paneWidths)
+        {
+            if (paneWidths == null || paneWidths.Count == 0) return;
+            if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return;
+
+            int applied = 0;
+            foreach (var child in rootPanel.Children.OfType<LayoutAnchorablePane>())
+            {
+                var anchorable = child.Children.FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(anchorable?.Title)) continue;
+                if (paneWidths.TryGetValue(anchorable.Title, out var width) && width > 0)
+                {
+                    child.DockWidth = new GridLength(width, GridUnitType.Pixel);
+                    applied++;
+                }
+            }
+            if (applied > 0)
+            {
+                // Re-run a layout pass so the new absolute widths take effect visually
+                // immediately rather than on the next user interaction.
+                dockManager.UpdateLayout();
+            }
+            System.Diagnostics.Debug.WriteLine($"ApplyPaneWidths: matched {applied}/{paneWidths.Count} pane width(s)");
         }
 
         // ------------------------------------------------------------
