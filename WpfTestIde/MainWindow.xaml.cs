@@ -423,6 +423,9 @@ namespace WpfTestIde
         {
             try
             {
+                // Force pending layout passes so runtime changes (auto-hide, float, dock)
+                // are committed to the model before serialization.
+                dm.UpdateLayout();
                 var serializer = new JsonLayoutSerializer(dm);
                 using var stream = new MemoryStream();
                 serializer.Serialize(stream);
