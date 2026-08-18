@@ -1,7 +1,7 @@
 <UserControl x:Class="WpfTestIde.Docking.Views.ResultsPane"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             DataContext="{Binding ., RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}">
+             DataContext="{Binding DataContext, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}">
     <!-- A6+E4 Step 3: extracted verbatim from MainWindow.xaml tabResults body (lines 533-630). 
          All AutomationIds and bindings preserved. -->
                 <DockPanel Margin="6">

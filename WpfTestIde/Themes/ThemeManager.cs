@@ -142,8 +142,7 @@ public static class ThemeManager
         // DockingManager now carries a real Layout (Step 3 rewired MainWindow.xaml),
         // so setting .Theme is safe at theme-toggle time. Null-guarded because
         // ApplyTheme can still run before MainWindow is constructed (App.OnStartup).
-        if (Application.Current?.MainWindow is MainWindow { dockManager: not null } win
-            && win.dockManager.Layout is not null)
+        if (Application.Current?.MainWindow is MainWindow { dockManager: not null } win)
         {
             win.dockManager.Theme = isDark ? new VS2022DarkTheme() : new VS2022LightTheme();
         }

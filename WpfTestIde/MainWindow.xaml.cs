@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using AvalonDock;
@@ -53,8 +54,18 @@ namespace WpfTestIde
                     using var stream = new MemoryStream(Encoding.UTF8.GetBytes(state.DockLayoutJson));
                     serializer.Deserialize(stream);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Dock layout deserialize failed: {ex.Message}");
+                    // Fall back to the XAML-defined default layout (already set).
+                }
             }
+            
+            // JsonLayoutSerializer cannot persist UIElement Content (UserControls),
+            // so deserialized LayoutAnchorables arrive with null Content. Re-inject
+            // the pane UserControls here so the three tabs are visible after restart.
+            RestoreDockPaneContent();
+            
             if (!string.IsNullOrWhiteSpace(state.ActivePaneId))
             {
                 ShowPane(state.ActivePaneId);
@@ -80,20 +91,28 @@ namespace WpfTestIde
             // Position only when Normal (a maximized window has Top/Left off-screen
             // on some multi-monitor configs). Restore to TopLeft so windows reopen
             // where they were; guard against off-screen placement.
+            // Treat 0,0 as "unset" (fresh layout.json) and fall back to centering.
             if (WindowState == System.Windows.WindowState.Normal)
             {
-                if (state.Left >= SystemParameters.VirtualScreenLeft - 10
-                    && state.Top >= SystemParameters.VirtualScreenTop - 10
-                    && state.Left < SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 100
-                    && state.Top < SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 100)
+                if (state.Left > 0 || state.Top > 0)
                 {
-                    Left = state.Left;
-                    Top = state.Top;
+                    if (state.Left >= SystemParameters.VirtualScreenLeft - 10
+                        && state.Top >= SystemParameters.VirtualScreenTop - 10
+                        && state.Left < SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 100
+                        && state.Top < SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 100)
+                    {
+                        Left = state.Left;
+                        Top = state.Top;
+                    }
+                    else
+                    {
+                        // Persisted position is off the current monitor layout -> fall
+                        // back to centering so the window stays reachable.
+                        WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                    }
                 }
                 else
                 {
-                    // Persisted position is off the current monitor layout -> fall
-                    // back to centering so the window stays reachable.
                     WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 }
             }
@@ -102,31 +121,54 @@ namespace WpfTestIde
             // Elements pane (Docking/Views/ElementsPane.xaml), so its GridLength state
             // is restored there via ElementsPane.ApplySplitterState — which must be
             // resolved from the LayoutAnchorable's content after the DockingManager
-            // materializes the pane. For Step 3 compilability the legacy MainWindow
-            // colTree/colProperties refs are removed (the fields moved with the body).
-            // TODO Step 4: invoke ElementsPane.ApplySplitterState(state.TreeColumnWidth,
-            //      state.PropertiesColumnWidth) once pane content is reachable here.
+            // materializes the pane.
+            try
+            {
+                var elementsAnchorable = FindAnchorableByTitle(dockManager.Layout.RootPanel, "Elements");
+                if (elementsAnchorable?.Content is FrameworkElement fe)
+                {
+                    var elementsPane = fe.FindName("ElementsPaneRoot") as Docking.Views.ElementsPane
+                        ?? FindVisualChild<Docking.Views.ElementsPane>(fe);
+                    elementsPane?.ApplySplitterState(state.TreeColumnWidth, state.PropertiesColumnWidth);
+                }
+            }
+            catch { /* layout not yet materialized or pane not found — non-fatal */ }
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             if (DataContext is not MainViewModel vm) return;
+            
+            // Snapshot ElementsPane splitter state from the live pane content.
+            double treeWidth = 0, propsWidth = 0;
+            try
+            {
+                var elementsAnchorable = FindAnchorableByTitle(dockManager.Layout.RootPanel, "Elements");
+                if (elementsAnchorable?.Content is FrameworkElement fe)
+                {
+                    var elementsPane = fe.FindName("ElementsPaneRoot") as Docking.Views.ElementsPane
+                        ?? FindVisualChild<Docking.Views.ElementsPane>(fe);
+                    if (elementsPane != null)
+                    {
+                        (treeWidth, propsWidth) = elementsPane.SnapshotSplitterState();
+                    }
+                }
+            }
+            catch { /* non-fatal: persist zeros if pane not reachable */ }
+            
             var state = new LayoutState
             {
                 WindowState = (int)WindowState,
                 Top = Top,
                 Left = Left,
-                Width = ActualWidth > 0 ? ActualWidth : Width,
-                Height = ActualHeight > 0 ? ActualHeight : Height,
+                // When maximized/minimized, ActualWidth/Height are the maximized
+                // size; save RestoreBounds instead so the "restored" size is correct.
+                Width = WindowState == System.Windows.WindowState.Normal && ActualWidth > 0 ? ActualWidth : RestoreBounds.Width,
+                Height = WindowState == System.Windows.WindowState.Normal && ActualHeight > 0 ? ActualHeight : RestoreBounds.Height,
                 Theme = Themes.ThemeManager.CurrentTheme,
                 SelectedTabIndex = vm.SelectedTabIndex,
-                // A1 splitter: state migrated to ElementsPane.xaml.cs (ApplySplitterState /
-                // SnapshotSplitterState). MainWindow no longer owns colTree/colProperties.
-                // Step 3: pane snapshot not yet reachable from MainWindow -> placeholder
-                // zeros so star-column defaults apply on next load; Step 4 wires real
-                // values from the LayoutAnchorable's pane content.
-                TreeColumnWidth = 0,
-                PropertiesColumnWidth = 0,
+                TreeColumnWidth = treeWidth,
+                PropertiesColumnWidth = propsWidth,
                 OcrPanelExpanded = vm.OcrPanelExpanded,
                 RepositoryPanelExpanded = vm.RepositoryPanelExpanded,
                 RunOutputPanelExpanded = vm.RunOutputPanelExpanded,
@@ -311,6 +353,23 @@ namespace WpfTestIde
             return null;
         }
 
+        /// <summary>Walks the visual tree downward to find the first child of
+        /// type <typeparamref name="T"/>. Used to locate the ElementsPane UserControl
+        /// from the LayoutAnchorable's Content host.</summary>
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) return null;
+            int count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                if (child is T t) return t;
+                var found = FindVisualChild<T>(child);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
         /// <summary>WPF elements inside text (Run, Inline, Hyperlink, ContentElement)
         /// are not Visual/Visual3D, so VisualTreeHelper.GetParent throws on them. Walk
         /// the logical tree (LogicalTreeHelper.GetParent) for those, and the visual tree
@@ -341,28 +400,20 @@ namespace WpfTestIde
         private void ShowPane(string paneId)
         {
             if (dockManager.Layout == null) return;
-            // v5 traversal: LayoutRoot->RootPanel (LayoutPanel, implements
-            // ILayoutContainer w/ Children) -> recurse Children for the first
-            // LayoutAnchorable whose Title matches the requested pane id.
-            // (v4's Descenents() extension does NOT exist in v5.)
             var anchorable = FindAnchorableByTitle(dockManager.Layout.RootPanel, paneId);
             anchorable?.Show();
         }
 
-        private static LayoutAnchorable? FindAnchorableByTitle(LayoutPanel root, string title)
+        private static LayoutAnchorable? FindAnchorableByTitle(ILayoutElement element, string title)
         {
-            if (root == null) return null;
-            foreach (var child in root.Children)
+            if (element is LayoutAnchorable anchorable && string.Equals(anchorable.Title, title, StringComparison.OrdinalIgnoreCase))
+                return anchorable;
+            if (element is ILayoutContainer container)
             {
-                if (child is LayoutAnchorable anchorable && string.Equals(anchorable.Title, title, StringComparison.OrdinalIgnoreCase))
-                    return anchorable;
-                if (child is LayoutAnchorablePane pane && pane.Children.Count > 0)
+                foreach (var child in container.Children)
                 {
-                    foreach (var grand in pane.Children)
-                    {
-                        if (grand is LayoutAnchorable match && string.Equals(match.Title, title, StringComparison.OrdinalIgnoreCase))
-                            return match;
-                    }
+                    var found = FindAnchorableByTitle(child, title);
+                    if (found != null) return found;
                 }
             }
             return null;
@@ -381,6 +432,86 @@ namespace WpfTestIde
             {
                 return null;
             }
+        }
+
+        // ------------------------------------------------------------
+        // A6+E4 layout content restoration.
+        // JsonLayoutSerializer cannot persist UIElement Content (UserControls),
+        // so deserialized LayoutAnchorables arrive with null Content. Without
+        // re-injection the three dock tabs are invisible after restart.
+        // ------------------------------------------------------------
+        private void RestoreDockPaneContent()
+        {
+            if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return;
+            
+            // If the deserialized layout lost our anchorable panes entirely
+            // (e.g., serializer produced an empty LayoutDocumentPane instead),
+            // recreate the three expected panes from scratch.
+            bool hasAnchorablePanes = false;
+            foreach (var child in rootPanel.Children)
+            {
+                if (child is LayoutAnchorablePane) hasAnchorablePanes = true;
+            }
+            
+            if (!hasAnchorablePanes)
+            {
+                rootPanel.Children.Clear();
+                
+                var elementsPane = new LayoutAnchorable { Title = "ELEMENTS", IsActive = true };
+                elementsPane.Content = CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements");
+                var elementsPaneHost = new LayoutAnchorablePane();
+                elementsPaneHost.Children.Add(elementsPane);
+                rootPanel.Children.Add(elementsPaneHost);
+                
+                var scriptsPane = new LayoutAnchorable { Title = "SCRIPTS" };
+                scriptsPane.Content = CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts");
+                var scriptsPaneHost = new LayoutAnchorablePane();
+                scriptsPaneHost.Children.Add(scriptsPane);
+                rootPanel.Children.Add(scriptsPaneHost);
+                
+                var resultsPane = new LayoutAnchorable { Title = "RESULTS" };
+                resultsPane.Content = CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults");
+                var resultsPaneHost = new LayoutAnchorablePane();
+                resultsPaneHost.Children.Add(resultsPane);
+                rootPanel.Children.Add(resultsPaneHost);
+            }
+            else
+            {
+                // Panes exist but Content may be null after deserialization.
+                foreach (var child in rootPanel.Children)
+                {
+                    RestoreDockPaneContentRecursive(child);
+                }
+            }
+        }
+
+        private static void RestoreDockPaneContentRecursive(ILayoutElement element)
+        {
+            if (element is LayoutAnchorable anchorable && anchorable.Content == null)
+            {
+                anchorable.Content = anchorable.Title switch
+                {
+                    "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
+                    "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
+                    "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
+                    _ => null
+                };
+            }
+            if (element is ILayoutContainer container)
+            {
+                foreach (var child in container.Children)
+                {
+                    RestoreDockPaneContentRecursive(child);
+                }
+            }
+        }
+
+        private static object CreatePaneContent(UserControl pane, string automationId)
+        {
+            var grid = new Grid();
+            AutomationProperties.SetAutomationId(grid, automationId);
+            grid.Children.Add(pane);
+            return grid;
         }
     }
 }

@@ -380,18 +380,24 @@
                     <avalonDock:LayoutRoot.RootPanel>
                         <avalonDock:LayoutPanel>
                             <avalonDock:LayoutAnchorablePane>
-                                <avalonDock:LayoutAnchorable AutomationProperties.AutomationId="tabElements" Title="ELEMENTS">
-                                    <dockViews:ElementsPane/>
+                                <avalonDock:LayoutAnchorable Title="ELEMENTS" IsActive="True">
+                                    <Grid AutomationProperties.AutomationId="tabElements">
+                                        <dockViews:ElementsPane/>
+                                    </Grid>
                                 </avalonDock:LayoutAnchorable>
                             </avalonDock:LayoutAnchorablePane>
                             <avalonDock:LayoutAnchorablePane>
-                                <avalonDock:LayoutAnchorable AutomationProperties.AutomationId="tabScripts" Title="SCRIPTS">
-                                    <dockViews:ScriptsPane/>
+                                <avalonDock:LayoutAnchorable Title="SCRIPTS">
+                                    <Grid AutomationProperties.AutomationId="tabScripts">
+                                        <dockViews:ScriptsPane/>
+                                    </Grid>
                                 </avalonDock:LayoutAnchorable>
                             </avalonDock:LayoutAnchorablePane>
                             <avalonDock:LayoutAnchorablePane>
-                                <avalonDock:LayoutAnchorable AutomationProperties.AutomationId="tabResults" Title="RESULTS">
-                                    <dockViews:ResultsPane/>
+                                <avalonDock:LayoutAnchorable Title="RESULTS">
+                                    <Grid AutomationProperties.AutomationId="tabResults">
+                                        <dockViews:ResultsPane/>
+                                    </Grid>
                                 </avalonDock:LayoutAnchorable>
                             </avalonDock:LayoutAnchorablePane>
                         </avalonDock:LayoutPanel>
