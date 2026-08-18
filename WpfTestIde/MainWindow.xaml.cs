@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Automation;
@@ -61,9 +63,16 @@ namespace WpfTestIde
                     System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER DESERIALIZE ===");
                     LogLayoutStructure("After Deserialize", dockManager.Layout);
                     
+                    // JsonLayoutSerializer cannot persist UIElement Content (UserControls),
+                    // so deserialized LayoutAnchorables arrive with null Content. Re-inject
+                    // the pane UserControls here so the three tabs are visible after restart.
+                    RestoreDockPaneContent();
+                    
                     // JsonLayoutSerializer v5 BUG: does NOT deserialize LeftSide/RightSide/TopSide/BottomSide
                     // auto-hide panes. Manually restore them from the saved JSON.
                     RestoreAutoHidePanesFromJson(state.DockLayoutJson);
+                    
+                    DeduplicateLayout();
                 }
                 catch (Exception ex)
                 {
@@ -71,11 +80,6 @@ namespace WpfTestIde
                     // Fall back to the XAML-defined default layout (already set).
                 }
             }
-            
-            // JsonLayoutSerializer cannot persist UIElement Content (UserControls),
-            // so deserialized LayoutAnchorables arrive with null Content. Re-inject
-            // the pane UserControls here so the three tabs are visible after restart.
-            RestoreDockPaneContent();
             
             System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER CONTENT RESTORE ===");
             LogLayoutStructure("After RestoreDockPaneContent", dockManager.Layout);
@@ -98,6 +102,8 @@ namespace WpfTestIde
                 
                 System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER UPDATELAYOUT ===");
                 LogLayoutStructure("After UpdateLayout", dockManager.Layout);
+                
+                ApplySplitterState(state);
             }),
                 DispatcherPriority.Loaded);
 
@@ -142,15 +148,13 @@ namespace WpfTestIde
                     WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 }
             }
+        }
 
-            // A1 splitter widths (pixels). The splitter now lives on the promoted
-            // Elements pane (Docking/Views/ElementsPane.xaml), so its GridLength state
-            // is restored there via ElementsPane.ApplySplitterState — which must be
-            // resolved from the LayoutAnchorable's content after the DockingManager
-            // materializes the pane.
+        private void ApplySplitterState(LayoutState state)
+        {
             try
             {
-                var elementsAnchorable = FindAnchorableByTitle(dockManager.Layout.RootPanel, "Elements");
+                var elementsAnchorable = FindAnchorableByTitle(dockManager.Layout, "Elements");
                 if (elementsAnchorable?.Content is FrameworkElement fe)
                 {
                     var elementsPane = fe.FindName("ElementsPaneRoot") as Docking.Views.ElementsPane
@@ -158,7 +162,7 @@ namespace WpfTestIde
                     elementsPane?.ApplySplitterState(state.TreeColumnWidth, state.PropertiesColumnWidth);
                 }
             }
-            catch { /* layout not yet materialized or pane not found — non-fatal */ }
+            catch { /* non-fatal */ }
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -169,7 +173,7 @@ namespace WpfTestIde
             double treeWidth = 0, propsWidth = 0;
             try
             {
-                var elementsAnchorable = FindAnchorableByTitle(dockManager.Layout.RootPanel, "Elements");
+                var elementsAnchorable = FindAnchorableByTitle(dockManager.Layout, "Elements");
                 if (elementsAnchorable?.Content is FrameworkElement fe)
                 {
                     var elementsPane = fe.FindName("ElementsPaneRoot") as Docking.Views.ElementsPane
@@ -468,22 +472,29 @@ namespace WpfTestIde
         // JsonLayoutSerializer cannot persist UIElement Content (UserControls),
         // so deserialized LayoutAnchorables arrive with null Content. Without
         // re-injection the three dock tabs are invisible after restart.
+        // Note: JsonLayoutSerializer can wrap our LayoutAnchorablePanes inside
+        // a LayoutDocumentPane. The recursive walker below handles whatever
+        // structure the serializer produces.
         // ------------------------------------------------------------
         private void RestoreDockPaneContent()
         {
             if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return;
             
-            // Walk the entire layout tree and inject content into any
-            // LayoutAnchorable whose Content is null after deserialization.
-            // Do NOT clear/recreate the layout — the serializer may wrap
-            // LayoutAnchorablePanes inside LayoutDocumentPanes or otherwise
-            // reorganize the tree; we only fix missing Content.
-            bool foundAnyAnchorable = false;
-            RestoreDockPaneContentRecursive(rootPanel, ref foundAnyAnchorable);
+            // Only recreate if RootPanel is completely empty (no layout elements at all).
+            // After deserialization, the serializer may produce a LayoutDocumentPane
+            // containing our panes — that's fine, we just inject content into it.
+            if (rootPanel.Children.Count == 0)
+            {
+                RecreateDefaultDockPanes(rootPanel);
+                return;
+            }
             
-            // If no anchorables were found at all (e.g., completely corrupted
+            bool foundAny = false;
+            RestoreDockPaneContentRecursive(rootPanel, ref foundAny);
+            
+            // If no anchorables/documents were found at all (completely corrupted
             // layout), recreate the three expected panes from scratch.
-            if (!foundAnyAnchorable)
+            if (!foundAny)
             {
                 RecreateDefaultDockPanes(rootPanel);
             }
@@ -491,20 +502,36 @@ namespace WpfTestIde
 
         private static void RestoreDockPaneContentRecursive(ILayoutElement element, ref bool foundAny)
         {
-            if (element is LayoutAnchorable anchorable)
+            switch (element)
             {
-                foundAny = true;
-                if (anchorable.Content == null)
-                {
-                    anchorable.Content = anchorable.Title switch
+                case LayoutAnchorable anchorable:
+                    foundAny = true;
+                    if (anchorable.Content == null)
                     {
-                        "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
-                        "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
-                        "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
-                        _ => null
-                    };
-                }
+                        anchorable.Content = anchorable.Title switch
+                        {
+                            "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
+                            "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
+                            "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
+                            _ => null
+                        };
+                    }
+                    break;
+                case LayoutDocument document:
+                    foundAny = true;
+                    if (document.Content == null)
+                    {
+                        document.Content = document.Title switch
+                        {
+                            "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
+                            "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
+                            "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
+                            _ => null
+                        };
+                    }
+                    break;
             }
+            
             if (element is ILayoutContainer container)
             {
                 foreach (var child in container.Children)
@@ -538,9 +565,128 @@ namespace WpfTestIde
         }
 
         // ------------------------------------------------------------
+        // Post-restore deduplication: JsonLayoutSerializer can leave ghost
+        // copies of auto-hidden panes in unexpected containers. After all
+        // restoration steps, walk the layout tree and remove any anchorable
+        // whose Title appears more than once, keeping only the first instance.
+        // ------------------------------------------------------------
+        private void DeduplicateLayout()
+        {
+            if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return;
+            
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var removed = 0;
+            
+            removed += RemoveDuplicatesInPanel(rootPanel, seen);
+            removed += RemoveDuplicatesInSide(dockManager.Layout.LeftSide, seen);
+            removed += RemoveDuplicatesInSide(dockManager.Layout.RightSide, seen);
+            removed += RemoveDuplicatesInSide(dockManager.Layout.TopSide, seen);
+            removed += RemoveDuplicatesInSide(dockManager.Layout.BottomSide, seen);
+            
+            removed += RemoveEmptyGroupsFromSide(dockManager.Layout.LeftSide);
+            removed += RemoveEmptyGroupsFromSide(dockManager.Layout.RightSide);
+            removed += RemoveEmptyGroupsFromSide(dockManager.Layout.TopSide);
+            removed += RemoveEmptyGroupsFromSide(dockManager.Layout.BottomSide);
+            
+            if (removed > 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"DeduplicateLayout removed {removed} duplicate anchorable(s) or empty group(s)");
+            }
+        }
+
+        private static int RemoveEmptyGroupsFromSide(LayoutAnchorSide side)
+        {
+            if (side == null) return 0;
+            
+            int removed = 0;
+            foreach (var group in side.Children.ToList())
+            {
+                if (group is LayoutAnchorGroup anchorGroup && anchorGroup.Children.Count == 0)
+                {
+                    side.Children.Remove(group);
+                    removed++;
+                }
+            }
+            return removed;
+        }
+
+        private static int RemoveDuplicatesInSide(LayoutAnchorSide side, HashSet<string> seen)
+        {
+            if (side == null) return 0;
+            
+            int removed = 0;
+            
+            foreach (var group in side.Children.ToList())
+            {
+                if (group is LayoutAnchorGroup anchorGroup)
+                {
+                    foreach (var anchorable in anchorGroup.Children.ToList())
+                    {
+                        if (!string.IsNullOrEmpty(anchorable.Title))
+                        {
+                            if (!seen.Add(anchorable.Title))
+                            {
+                                anchorGroup.Children.Remove(anchorable);
+                                removed++;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return removed;
+        }
+
+        private static int RemoveDuplicatesInPanel(LayoutPanel panel, HashSet<string> seen)
+        {
+            int removed = 0;
+            
+            foreach (var child in panel.Children.ToList())
+            {
+                switch (child)
+                {
+                    case LayoutAnchorablePane pane:
+                        removed += RemoveDuplicatesInPane(pane, seen);
+                        break;
+                    case LayoutPanel childPanel:
+                        removed += RemoveDuplicatesInPanel(childPanel, seen);
+                        break;
+                }
+            }
+            
+            return removed;
+        }
+
+        private static int RemoveDuplicatesInPane(LayoutAnchorablePane pane, HashSet<string> seen)
+        {
+            int removed = 0;
+            
+            foreach (var anchorable in pane.Children.ToList())
+            {
+                if (!string.IsNullOrEmpty(anchorable.Title))
+                {
+                    if (!seen.Add(anchorable.Title))
+                    {
+                        pane.Children.Remove(anchorable);
+                        removed++;
+                    }
+                }
+            }
+            
+            return removed;
+        }
+
+        // ------------------------------------------------------------
         // JsonLayoutSerializer v5 BUG WORKAROUND:
         // The serializer does NOT deserialize LeftSide/RightSide/TopSide/BottomSide
-        // (auto-hide panes). Parse the saved JSON and manually rebuild them.
+        // (auto-hide panes). Worse: it can leave ghost copies of auto-hidden
+        // panes inside RootPanel, so if we just add the real copies to the
+        // sides we get duplicates. Strategy:
+        //   1. Collect every pane title that the saved JSON placed on a side.
+        //   2. Strip those anchorables out of the live layout tree so the
+        //      serializer's ghost copies are gone.
+        //   3. Rebuild the side groups from JSON and inject real UserControl
+        //      content so the panes are visible and functional.
         // ------------------------------------------------------------
         private void RestoreAutoHidePanesFromJson(string json)
         {
@@ -549,29 +695,21 @@ namespace WpfTestIde
                 using var doc = System.Text.Json.JsonDocument.Parse(json);
                 var root = doc.RootElement;
                 
-                // Restore LeftSide (auto-hide on left edge)
-                if (root.TryGetProperty("LeftSide", out var leftSide) && leftSide.TryGetProperty("Children", out var leftChildren))
+                var autoHideTitles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                CollectAutoHideTitles(root, "LeftSide", autoHideTitles);
+                CollectAutoHideTitles(root, "RightSide", autoHideTitles);
+                CollectAutoHideTitles(root, "TopSide", autoHideTitles);
+                CollectAutoHideTitles(root, "BottomSide", autoHideTitles);
+
+                if (dockManager.Layout?.RootPanel is LayoutPanel rootPanel && autoHideTitles.Count > 0)
                 {
-                    RestoreAnchorSide(leftChildren, dockManager.Layout.LeftSide, "Left");
+                    RemoveAnchorablesFromPanel(rootPanel, autoHideTitles);
                 }
-                
-                // Restore RightSide
-                if (root.TryGetProperty("RightSide", out var rightSide) && rightSide.TryGetProperty("Children", out var rightChildren))
-                {
-                    RestoreAnchorSide(rightChildren, dockManager.Layout.RightSide, "Right");
-                }
-                
-                // Restore TopSide
-                if (root.TryGetProperty("TopSide", out var topSide) && topSide.TryGetProperty("Children", out var topChildren))
-                {
-                    RestoreAnchorSide(topChildren, dockManager.Layout.TopSide, "Top");
-                }
-                
-                // Restore BottomSide
-                if (root.TryGetProperty("BottomSide", out var bottomSide) && bottomSide.TryGetProperty("Children", out var bottomChildren))
-                {
-                    RestoreAnchorSide(bottomChildren, dockManager.Layout.BottomSide, "Bottom");
-                }
+
+                RestoreSide(root, "LeftSide", dockManager.Layout.LeftSide);
+                RestoreSide(root, "RightSide", dockManager.Layout.RightSide);
+                RestoreSide(root, "TopSide", dockManager.Layout.TopSide);
+                RestoreSide(root, "BottomSide", dockManager.Layout.BottomSide);
             }
             catch (Exception ex)
             {
@@ -579,15 +717,60 @@ namespace WpfTestIde
             }
         }
 
-        private void RestoreAnchorSide(System.Text.Json.JsonElement childrenArray, LayoutAnchorSide anchorSide, string sideName)
+        private void CollectAutoHideTitles(System.Text.Json.JsonElement root, string sideName, HashSet<string> titles)
+        {
+            if (!root.TryGetProperty(sideName, out var side) || !side.TryGetProperty("Children", out var children)) return;
+            foreach (var group in children.EnumerateArray())
+            {
+                if (group.TryGetProperty("Children", out var anchorables))
+                {
+                    foreach (var a in anchorables.EnumerateArray())
+                    {
+                        if (a.TryGetProperty("Title", out var t))
+                            titles.Add(t.GetString() ?? "");
+                    }
+                }
+            }
+        }
+
+        private static void RemoveAnchorablesFromPanel(LayoutPanel rootPanel, HashSet<string> titlesToRemove)
+        {
+            foreach (var child in rootPanel.Children.ToList())
+            {
+                switch (child)
+                {
+                    case LayoutAnchorablePane pane:
+                        RemoveFromPane(pane, titlesToRemove);
+                        break;
+                    case LayoutPanel panel:
+                        RemoveAnchorablesFromPanel(panel, titlesToRemove);
+                        break;
+                }
+            }
+        }
+
+        private static void RemoveFromPane(LayoutAnchorablePane pane, HashSet<string> titlesToRemove)
+        {
+            foreach (var anchorable in pane.Children.ToList())
+            {
+                if (titlesToRemove.Contains(anchorable.Title))
+                {
+                    pane.Children.Remove(anchorable);
+                }
+            }
+        }
+
+        private void RestoreSide(System.Text.Json.JsonElement root, string sideName, LayoutAnchorSide anchorSide)
         {
             try
             {
                 if (anchorSide == null) return;
+                if (!root.TryGetProperty(sideName, out var side)) return;
+                if (!side.TryGetProperty("Children", out var children)) return;
                 
                 anchorSide.Children.Clear();
                 
-                foreach (var paneElement in childrenArray.EnumerateArray())
+                foreach (var paneElement in children.EnumerateArray())
                 {
                     if (!paneElement.TryGetProperty("Children", out var anchorableArray)) continue;
                     
@@ -597,7 +780,6 @@ namespace WpfTestIde
                     {
                         var anchorable = new LayoutAnchorable();
                         
-                        // Copy all anchorable properties
                         anchorable.Title = anchorableElement.TryGetProperty("Title", out var t) ? t.GetString() ?? "" : "";
                         anchorable.CanHide = anchorableElement.TryGetProperty("CanHide", out var ch) && ch.GetBoolean();
                         anchorable.CanAutoHide = anchorableElement.TryGetProperty("CanAutoHide", out var cah) && cah.GetBoolean();
@@ -612,7 +794,6 @@ namespace WpfTestIde
                         anchorable.CanFloat = anchorableElement.TryGetProperty("CanFloat", out var cf) && cf.GetBoolean();
                         anchorable.CanShowOnHover = anchorableElement.TryGetProperty("CanShowOnHover", out var csh) && csh.GetBoolean();
                         
-                        // Inject content for our known panes
                         if (!string.IsNullOrEmpty(anchorable.Title))
                         {
                             anchorable.Content = anchorable.Title switch
@@ -624,7 +805,6 @@ namespace WpfTestIde
                             };
                         }
                         
-                        // Add anchorable directly to group (LayoutAnchorGroup.Children expects LayoutAnchorable)
                         group.Children.Add(anchorable);
                     }
                     
@@ -634,11 +814,11 @@ namespace WpfTestIde
                     }
                 }
                 
-                System.Diagnostics.Debug.WriteLine($"Restored {anchorSide.Children.Count} auto-hide group(s) to {sideName}Side");
+                System.Diagnostics.Debug.WriteLine($"Restored {anchorSide.Children.Count} auto-hide group(s) to {sideName}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"RestoreAnchorSide({sideName}) failed: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"RestoreSide({sideName}) failed: {ex.Message}");
             }
         }
 
