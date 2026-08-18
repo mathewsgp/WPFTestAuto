@@ -51,9 +51,15 @@ namespace WpfTestIde
             {
                 try
                 {
+                    System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: BEFORE DESERIALIZE ===");
+                    LogLayoutStructure("XAML Default", dockManager.Layout);
+                    
                     var serializer = new JsonLayoutSerializer(dockManager);
                     using var stream = new MemoryStream(Encoding.UTF8.GetBytes(state.DockLayoutJson));
                     serializer.Deserialize(stream);
+                    
+                    System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER DESERIALIZE ===");
+                    LogLayoutStructure("After Deserialize", dockManager.Layout);
                 }
                 catch (Exception ex)
                 {
@@ -67,6 +73,9 @@ namespace WpfTestIde
             // the pane UserControls here so the three tabs are visible after restart.
             RestoreDockPaneContent();
             
+            System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER CONTENT RESTORE ===");
+            LogLayoutStructure("After RestoreDockPaneContent", dockManager.Layout);
+            
             if (!string.IsNullOrWhiteSpace(state.ActivePaneId))
             {
                 ShowPane(state.ActivePaneId);
@@ -79,7 +88,13 @@ namespace WpfTestIde
             // Force a layout pass so the DockingManager processes auto-hide state
             // (LeftSide/RightSide panes) that JsonLayoutSerializer restored but
             // the visual tree hasn't realized yet.
-            Dispatcher.BeginInvoke(new Action(() => dockManager.UpdateLayout()),
+            Dispatcher.BeginInvoke(new Action(() => 
+            {
+                dockManager.UpdateLayout();
+                
+                System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER UPDATELAYOUT ===");
+                LogLayoutStructure("After UpdateLayout", dockManager.Layout);
+            }),
                 DispatcherPriority.Loaded);
 
             // Window geometry. Only apply if the persisted size is reasonable;
@@ -524,6 +539,56 @@ namespace WpfTestIde
             AutomationProperties.SetAutomationId(grid, automationId);
             grid.Children.Add(pane);
             return grid;
+        }
+
+        // ------------------------------------------------------------
+        // Debug: log layout tree structure for comparison at different stages.
+        // ------------------------------------------------------------
+        private static void LogLayoutStructure(string stage, LayoutRoot layout)
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"=== LAYOUT STRUCTURE: {stage} ===");
+                if (layout == null)
+                {
+                    sb.AppendLine("  LayoutRoot is NULL");
+                }
+                else
+                {
+                    LogElementRecursive(sb, layout, 0);
+                }
+                System.Diagnostics.Debug.WriteLine(sb.ToString());
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"LogLayoutStructure error: {ex.Message}");
+            }
+        }
+
+        private static void LogElementRecursive(System.Text.StringBuilder sb, ILayoutElement element, int indent)
+        {
+            if (element == null) return;
+            
+            var prefix = new string(' ', indent * 2);
+            var typeName = element.GetType().Name;
+            var title = "";
+            
+            if (element is LayoutAnchorable a) title = $" Title='{a.Title}'";
+            else if (element is LayoutDocument d) title = $" Title='{d.Title}'";
+            
+            var content = element is LayoutAnchorable la && la.Content != null ? " [HAS CONTENT]" : 
+                         element is LayoutDocument ld && ld.Content != null ? " [HAS CONTENT]" : "";
+            
+            sb.AppendLine($"{prefix}{typeName}{title}{content}");
+            
+            if (element is ILayoutContainer container)
+            {
+                foreach (var child in container.Children)
+                {
+                    LogElementRecursive(sb, child, indent + 1);
+                }
+            }
         }
     }
 }
