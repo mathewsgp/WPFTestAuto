@@ -24,8 +24,25 @@ Rules:
 - AvalonDock v5 DTO mapper serializes `DockWidth`/`DockHeight` as strings ("1*", "200") and
   restores them via `GridLengthConverter.ConvertFromInvariantString`. Star widths serialize
   as star; absolute pixel widths serialize as pixels. v5 DOES round-trip DockWidth. Auto-hide
-  sides (Left/Right/Top/Bottom) are NOT deserialized by v5 — handled by the manual
+  sides (Left/Right/Top/Bottom) are NOT deserialized by v5 - handled by the manual
   `RestoreAutoHidePanesFromJson` workaround; `DeduplicateLayout()` removes ghost duplicates.
+
+  IMPORTANT (verified from Dirkster99/AvalonDock v5 source, 2026-08): the round-trip is NOT
+  the failure point. `LayoutPositionableGroup.DockWidth` getter returns a COMPUTED GridLength:
+  if `_dockWidth.IsAbsolute && _resizableAbsoluteDockWidth < _dockWidth.Value && HasValue`
+  it returns `new GridLength(_resizableAbsoluteDockWidth.Value)`, else the raw `_dockWidth`.
+  `CopyPositionableToDto` serializes `FixedDockWidth` (clamped to `_dockMinWidth=25`) for
+  absolute widths - so the *initial* absolute width, not the user-resized one, is what's saved
+  unless `_resizableAbsoluteDockWidth` already shrunk `_dockWidth`. The real width-loss mechanism
+  is `LayoutPanelControl.OnFixChildrenDockLengths` (runs from `UpdateRowColDefinitions` on
+  SizeChanged/children-changed): for a Horizontal LayoutPanel that contains NO
+  LayoutDocumentPane/Group, the else-branch FORCES every non-star child DockWidth back to
+  `new GridLength(1.0, GridUnitType.Star)`. This WPFTestIde root LayoutPanel has only
+  LayoutAnchorablePanes (no document pane), so any absolute DockWidth set at restore time is
+  overwritten to star by the next layout pass. That is why PaneWidths must be re-applied AFTER
+  `dockManager.UpdateLayout()` in the deferred block (and may need a 2nd-tick re-apply).
+  `JsonLayoutSerializer.Deserialize` does `Manager.Layout = layout;` (full replace) inside
+  `StartDeserialization/EndDeserialization`, then `FixupLayout`.
 - Internal ElementsPane splitter (Element Tree <-> Properties) is persisted separately as
   `TreeColumnWidth`/`PropertiesColumnWidth` and applied via the `ApplySplitterState(LayoutState)`
   helper, called from the deferred `DispatcherPriority.Loaded` block.
@@ -43,4 +60,4 @@ Rules:
   `fe.FindName` in `MainWindow.xaml.cs` but is NOT defined in `ElementsPane.xaml` (only
   `colTree`/`colProperties` are named), so splitter restore relies on
   `FindVisualChild<ElementsPane>` working only if the dock content is already materialized
-  at Loaded time — otherwise it silently no-ops (now logged).
+  at Loaded time - otherwise it silently no-ops (now logged).
