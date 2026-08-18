@@ -1,13 +1,11 @@
 using System;
 using System.IO;
-using System.Text;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using AvalonDock;
 using AvalonDock.Layout;
-using AvalonDock.Serializer.Json;
 using WpfTestIde.Helpers;
 using WpfTestIde.Models;
 using WpfTestIde.ViewModels;
@@ -46,26 +44,9 @@ namespace WpfTestIde
             }
 
             // A6+E4 step 3: dock layout restore + pane activation.
-            if (!string.IsNullOrWhiteSpace(state.DockLayoutJson))
-            {
-                try
-                {
-                    var serializer = new JsonLayoutSerializer(dockManager);
-                    using var stream = new MemoryStream(Encoding.UTF8.GetBytes(state.DockLayoutJson));
-                    serializer.Deserialize(stream);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Dock layout deserialize failed: {ex.Message}");
-                    // Fall back to the XAML-defined default layout (already set).
-                }
-            }
-            
-            // JsonLayoutSerializer cannot persist UIElement Content (UserControls),
-            // so deserialized LayoutAnchorables arrive with null Content. Re-inject
-            // the pane UserControls here so the three tabs are visible after restart.
-            RestoreDockPaneContent();
-            
+            // Note: JsonLayoutSerializer cannot persist UIElement Content, and
+            // v5 has issues with LayoutAnchorablePane deserialization. We always
+            // use the XAML-defined default layout and only restore the active pane.
             if (!string.IsNullOrWhiteSpace(state.ActivePaneId))
             {
                 ShowPane(state.ActivePaneId);
@@ -173,7 +154,9 @@ namespace WpfTestIde
                 RepositoryPanelExpanded = vm.RepositoryPanelExpanded,
                 RunOutputPanelExpanded = vm.RunOutputPanelExpanded,
                 ActivePaneId = vm.ActivePaneId ?? (vm.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" }),
-                DockLayoutJson = SerializeLayout(dockManager),
+                // DockLayoutJson intentionally not persisted: JsonLayoutSerializer
+                // cannot round-trip UIElement Content, and v5 deserialization
+                // corrupts the layout. We always use the XAML-defined default.
             };
             LayoutPersistence.Save(state);
         }
@@ -417,101 +400,6 @@ namespace WpfTestIde
                 }
             }
             return null;
-        }
-
-        private string SerializeLayout(DockingManager dm)
-        {
-            try
-            {
-                var serializer = new JsonLayoutSerializer(dm);
-                using var stream = new MemoryStream();
-                serializer.Serialize(stream);
-                return Encoding.UTF8.GetString(stream.ToArray());
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        // ------------------------------------------------------------
-        // A6+E4 layout content restoration.
-        // JsonLayoutSerializer cannot persist UIElement Content (UserControls),
-        // so deserialized LayoutAnchorables arrive with null Content. Without
-        // re-injection the three dock tabs are invisible after restart.
-        // ------------------------------------------------------------
-        private void RestoreDockPaneContent()
-        {
-            if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return;
-            
-            // If the deserialized layout lost our anchorable panes entirely
-            // (e.g., serializer produced an empty LayoutDocumentPane instead),
-            // recreate the three expected panes from scratch.
-            bool hasAnchorablePanes = false;
-            foreach (var child in rootPanel.Children)
-            {
-                if (child is LayoutAnchorablePane) hasAnchorablePanes = true;
-            }
-            
-            if (!hasAnchorablePanes)
-            {
-                rootPanel.Children.Clear();
-                
-                var elementsPane = new LayoutAnchorable { Title = "ELEMENTS", IsActive = true };
-                elementsPane.Content = CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements");
-                var elementsPaneHost = new LayoutAnchorablePane();
-                elementsPaneHost.Children.Add(elementsPane);
-                rootPanel.Children.Add(elementsPaneHost);
-                
-                var scriptsPane = new LayoutAnchorable { Title = "SCRIPTS" };
-                scriptsPane.Content = CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts");
-                var scriptsPaneHost = new LayoutAnchorablePane();
-                scriptsPaneHost.Children.Add(scriptsPane);
-                rootPanel.Children.Add(scriptsPaneHost);
-                
-                var resultsPane = new LayoutAnchorable { Title = "RESULTS" };
-                resultsPane.Content = CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults");
-                var resultsPaneHost = new LayoutAnchorablePane();
-                resultsPaneHost.Children.Add(resultsPane);
-                rootPanel.Children.Add(resultsPaneHost);
-            }
-            else
-            {
-                // Panes exist but Content may be null after deserialization.
-                foreach (var child in rootPanel.Children)
-                {
-                    RestoreDockPaneContentRecursive(child);
-                }
-            }
-        }
-
-        private static void RestoreDockPaneContentRecursive(ILayoutElement element)
-        {
-            if (element is LayoutAnchorable anchorable && anchorable.Content == null)
-            {
-                anchorable.Content = anchorable.Title switch
-                {
-                    "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
-                    "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
-                    "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
-                    _ => null
-                };
-            }
-            if (element is ILayoutContainer container)
-            {
-                foreach (var child in container.Children)
-                {
-                    RestoreDockPaneContentRecursive(child);
-                }
-            }
-        }
-
-        private static object CreatePaneContent(UserControl pane, string automationId)
-        {
-            var grid = new Grid();
-            AutomationProperties.SetAutomationId(grid, automationId);
-            grid.Children.Add(pane);
-            return grid;
         }
     }
 }
