@@ -35,12 +35,52 @@ namespace WpfSpyAgent
         private static readonly System.Reflection.MethodInfo? _spySetValueMethod;
         private static readonly System.Reflection.MethodInfo? _spyGetTextMethod;
         private static readonly string _logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent_probe_log.txt");
+        private static readonly object _logLock = new();
+        private const int MaxLogFileSizeBytes = 5 * 1024 * 1024;
+        private const int MaxBackupLogFiles = 3;
+        public static bool VerboseLogging { get; set; }
 
         private static void Log(string message)
         {
             try
             {
-                System.IO.File.AppendAllText(_logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {message}{Environment.NewLine}");
+                lock (_logLock)
+                {
+                    RotateLogIfNeeded();
+                    System.IO.File.AppendAllText(_logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {message}{Environment.NewLine}");
+                }
+            }
+            catch { }
+        }
+
+        private static void LogVerbose(string message)
+        {
+            if (VerboseLogging)
+            {
+                Log(message);
+            }
+        }
+
+        private static void RotateLogIfNeeded()
+        {
+            try
+            {
+                if (!System.IO.File.Exists(_logPath)) return;
+                var length = new System.IO.FileInfo(_logPath).Length;
+                if (length < MaxLogFileSizeBytes) return;
+
+                for (int i = MaxBackupLogFiles - 1; i >= 1; i--)
+                {
+                    string src = _logPath + "." + i;
+                    string dst = _logPath + "." + (i + 1);
+                    if (System.IO.File.Exists(src))
+                    {
+                        if (i == MaxBackupLogFiles - 1)
+                            System.IO.File.Delete(dst);
+                        System.IO.File.Move(src, dst);
+                    }
+                }
+                System.IO.File.Move(_logPath, _logPath + ".1");
             }
             catch { }
         }
@@ -392,19 +432,19 @@ namespace WpfSpyAgent
             // 1️⃣ Layout bounds (without transforms)
             double width = (element as FrameworkElement)?.ActualWidth ?? 0;
             double height = (element as FrameworkElement)?.ActualHeight ?? 0;
-            Log($"Layout bounds: Width={width}, Height={height}");
+            LogVerbose($"Layout bounds: Width={width}, Height={height}");
 
             // 2️⃣ Transformed bounds relative to the Window
             GeneralTransform transform = element.TransformToAncestor(rootVisual);
             Rect transformedBounds = transform.TransformBounds(
                 new Rect(new Point(0, 0), element.RenderSize)
             );
-            Log($"Transformed bounds (relative to Window): {transformedBounds}");
+            LogVerbose($"Transformed bounds (relative to Window): {transformedBounds}");
 
             // 3️⃣ Screen coordinates
             Point topLeft = element.PointToScreen(new Point(0, 0));
             Point bottomRight = element.PointToScreen(new Point(width, height));
-            Log($"Screen bounds: TopLeft={topLeft}, BottomRight={bottomRight}");
+            LogVerbose($"Screen bounds: TopLeft={topLeft}, BottomRight={bottomRight}");
         }
 
         private static DependencyObject? HitTestRespectingInputVisibility(Visual rootVisual, Point point)
@@ -416,7 +456,7 @@ namespace WpfSpyAgent
                 rootVisual,
                 potentialHitTestTarget =>
                 {
-                    Log($"HitTestRespectingInputVisibility {potentialHitTestTarget?.GetType().Name} ");
+                    LogVerbose($"HitTestRespectingInputVisibility {potentialHitTestTarget?.GetType().Name} ");
                     if (potentialHitTestTarget is UIElement uiElement && !uiElement.IsHitTestVisible)
                     {
                         return HitTestFilterBehavior.ContinueSkipSelfAndChildren;
@@ -425,7 +465,7 @@ namespace WpfSpyAgent
                     {
                         return HitTestFilterBehavior.ContinueSkipSelfAndChildren;
                     }
-                    Log($"HitTestRespectingInputVisibility Not skipped {potentialHitTestTarget?.GetType().Name} ");
+                    LogVerbose($"HitTestRespectingInputVisibility Not skipped {potentialHitTestTarget?.GetType().Name} ");
                     PrintElementBounds(rootVisual, potentialHitTestTarget);
                     lastFilterHit = potentialHitTestTarget;
                     return HitTestFilterBehavior.Continue;
@@ -433,7 +473,7 @@ namespace WpfSpyAgent
                 hitTestResult =>
                 {
                     PrintElementBounds(rootVisual, hitTestResult?.VisualHit);
-                    Log($"HitTestRespectingInputVisibility - hitTestResult - {hitTestResult?.VisualHit.GetType().Name} ");
+                    LogVerbose($"HitTestRespectingInputVisibility - hitTestResult - {hitTestResult?.VisualHit.GetType().Name} ");
                     firstInteractiveHit = hitTestResult.VisualHit;
                     return HitTestResultBehavior.Stop; // first surviving hit wins, same Z-order real input uses
                 },
