@@ -115,6 +115,30 @@ class SikuliDriver:
         """
         return APP_INSTANCE.capture_screenshot(element)
 
+    def double_click(self, element):
+        """Double-click an element."""
+        APP_INSTANCE.double_click(element)
+
+    def right_click(self, element):
+        """Right-click an element."""
+        APP_INSTANCE.right_click(element)
+
+    def press_keys(self, element, keys: str):
+        """Press keys into an element."""
+        APP_INSTANCE.press_keys(element, keys)
+
+    def drag_drop(self, element, target_element):
+        """Drag an element and drop it on a target."""
+        APP_INSTANCE.drag_drop(element, target_element)
+
+    def hover(self, element):
+        """Hover over an element."""
+        APP_INSTANCE.hover(element)
+
+    def scroll(self, element, direction: str):
+        """Scroll an element in a direction."""
+        APP_INSTANCE.scroll(element, direction)
+
     def toggle(self, element, state: bool = None):
         """Toggle a checkbox or toggle button."""
         APP_INSTANCE.invoke(element)

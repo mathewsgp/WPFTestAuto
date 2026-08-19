@@ -29,7 +29,12 @@
             <ComboBoxItem Content="Toggle Element"/>
             <ComboBoxItem Content="Double Click Element"/>
             <ComboBoxItem Content="Right Click Element"/>
+            <ComboBoxItem Content="Drag And Drop"/>
+            <ComboBoxItem Content="Hover Over Element"/>
             <ComboBoxItem Content="Press Keys"/>
+            <ComboBoxItem Content="Scroll"/>
+            <ComboBoxItem Content="Sikuli Click (Image)"/>
+            <ComboBoxItem Content="Sikuli Type (Image)"/>
             <Separator/>
             <ComboBoxItem Content="Verify Element Text"/>
             <ComboBoxItem Content="Verify Element Enabled"/>
@@ -37,6 +42,7 @@
             <ComboBoxItem Content="Verify Element Contains Text"/>
             <ComboBoxItem Content="Verify Element Text Matches Regex"/>
             <ComboBoxItem Content="Verify Element Attribute"/>
+            <ComboBoxItem Content="Get Data Grid Content Ocr"/>
             <Separator/>
             <ComboBoxItem Content="Wait Until Element Exists"/>
             <ComboBoxItem Content="Wait Until Element Visible"/>

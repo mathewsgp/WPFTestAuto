@@ -815,6 +815,171 @@ namespace WpfSpyAgent
 
         public static bool IsVisible(FrameworkElement element) => element.IsVisible;
 
+        public static bool IsEnabled(FrameworkElement element) => element.IsEnabled;
+
+        public static string GetAttribute(FrameworkElement element, string attributeName)
+        {
+            return attributeName.ToLower() switch
+            {
+                "text" => GetText(element),
+                "isenabled" or "is_enabled" => IsEnabled(element).ToString().ToLower(),
+                "isvisible" or "is_visible" => IsVisible(element).ToString().ToLower(),
+                "automationid" or "automation_id" => AutomationProperties.GetAutomationId(element) ?? "",
+                "name" => element.Name ?? "",
+                "controltype" or "control_type" => element.GetType().Name,
+                _ => ""
+            };
+        }
+
+        public static void DoubleClick(FrameworkElement element)
+        {
+            if (element is ISpyInteractable spy)
+            {
+                spy.SpyInvoke();
+                return;
+            }
+
+            if (element is System.Windows.Controls.Primitives.ButtonBase button)
+            {
+                button.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                button.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                return;
+            }
+
+            if (TryInvokeSpy(element, "SpyInvoke")) return;
+            throw new InvalidOperationException(
+                $"WpfSpyAgent: don't know how to double-click element of type '{element.GetType().Name}'.");
+        }
+
+        public static void RightClick(FrameworkElement element)
+        {
+            if (element is ISpyInteractable spy)
+            {
+                spy.SpyInvoke();
+                return;
+            }
+
+            if (element is System.Windows.Controls.Primitives.ButtonBase button)
+            {
+                button.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                return;
+            }
+
+            if (TryInvokeSpy(element, "SpyInvoke")) return;
+            throw new InvalidOperationException(
+                $"WpfSpyAgent: don't know how to right-click element of type '{element.GetType().Name}'.");
+        }
+
+        public static void PressKeys(FrameworkElement element, string keys)
+        {
+            if (element is System.Windows.Controls.TextBox textBox)
+            {
+                textBox.Focus();
+                textBox.Text += keys;
+                return;
+            }
+
+            if (element is ISpyInteractable spy)
+            {
+                spy.SpySetValue(keys);
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"WpfSpyAgent: don't know how to press keys on element of type '{element.GetType().Name}'.");
+        }
+
+        public static void DragDrop(FrameworkElement element, FrameworkElement target)
+        {
+            if (element is ISpyInteractable spy)
+            {
+                spy.SpyInvoke();
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"WpfSpyAgent: don't know how to drag-drop element of type '{element.GetType().Name}'.");
+        }
+
+        public static void Hover(FrameworkElement element)
+        {
+            if (element is ISpyInteractable spy)
+            {
+                spy.SpyInvoke();
+                return;
+            }
+
+            element.RaiseEvent(new System.Windows.Input.MouseEventArgs(
+                System.Windows.Input.Mouse.PrimaryDevice,
+                0)
+            {
+                RoutedEvent = System.Windows.UIElement.MouseEnterEvent
+            });
+        }
+
+        public static void Scroll(FrameworkElement element, string direction)
+        {
+            if (element is System.Windows.Controls.ScrollViewer scrollViewer)
+            {
+                switch (direction.ToLower())
+                {
+                    case "down":
+                        scrollViewer.LineDown();
+                        break;
+                    case "up":
+                        scrollViewer.LineUp();
+                        break;
+                    case "pagedown":
+                        scrollViewer.PageDown();
+                        break;
+                    case "pageup":
+                        scrollViewer.PageUp();
+                        break;
+                    case "left":
+                        scrollViewer.LineLeft();
+                        break;
+                    case "right":
+                        scrollViewer.LineRight();
+                        break;
+                    default:
+                        scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset + 50);
+                        break;
+                }
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"WpfSpyAgent: don't know how to scroll element of type '{element.GetType().Name}'. Expected ScrollViewer.");
+        }
+
+        public static byte[] CaptureScreenshot(FrameworkElement element)
+        {
+            try
+            {
+                var rect = new Rect(0, 0, element.ActualWidth, element.ActualHeight);
+                if (rect.Width <= 0 || rect.Height <= 0)
+                {
+                    return Array.Empty<byte>();
+                }
+
+                var bitmap = new RenderTargetBitmap(
+                    (int)rect.Width, (int)rect.Height,
+                    96, 96, PixelFormats.Pbgra32);
+                bitmap.Render(element);
+
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bitmap));
+
+                using var stream = new MemoryStream();
+                encoder.Save(stream);
+                return stream.ToArray();
+            }
+            catch
+            {
+                return Array.Empty<byte>();
+            }
+        }
+
         public static void Toggle(FrameworkElement element)
         {
             if (element is ISpyInteractable spy)

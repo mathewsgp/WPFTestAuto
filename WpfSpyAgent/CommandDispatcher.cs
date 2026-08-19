@@ -163,6 +163,89 @@ namespace WpfSpyAgent
                     bool isVisible = VisualTreeInspector.IsVisible(element);
                     return SpyResponse.Ok(isVisible ? "true" : "false");
                 }
+                case "IsEnabled":
+                {
+                    FrameworkElement? element = null;
+                    string? error = null;
+                    try
+                    {
+                        element = RequireElement(request.Name, request.XPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        error = ex.Message;
+                    }
+                    if (element is null)
+                    {
+                        return SpyResponse.Fail(error ?? "Element not found");
+                    }
+                    bool isEnabled = VisualTreeInspector.IsEnabled(element);
+                    return SpyResponse.Ok(isEnabled ? "true" : "false");
+                }
+                case "GetAttribute":
+                {
+                    var element = RequireElement(request.Name, request.XPath);
+                    var value = VisualTreeInspector.GetAttribute(element, request.AttributeName ?? "");
+                    return SpyResponse.Ok(value);
+                }
+                case "DoubleClick":
+                {
+                    var element = RequireElement(request.Name, request.XPath);
+                    VisualTreeInspector.DoubleClick(element);
+                    return SpyResponse.Ok();
+                }
+                case "RightClick":
+                {
+                    var element = RequireElement(request.Name, request.XPath);
+                    VisualTreeInspector.RightClick(element);
+                    return SpyResponse.Ok();
+                }
+                case "PressKeys":
+                {
+                    var element = RequireElement(request.Name, request.XPath);
+                    VisualTreeInspector.PressKeys(element, request.Value ?? "");
+                    return SpyResponse.Ok();
+                }
+                case "DragDrop":
+                {
+                    var element = RequireElement(request.Name, request.XPath);
+                    string? targetName = request.TargetName;
+                    string? targetXPath = request.TargetXPath;
+                    FrameworkElement? targetElement = null;
+                    if (!string.IsNullOrEmpty(targetXPath))
+                    {
+                        targetElement = VisualTreeInspector.FindByXPath(targetXPath);
+                    }
+                    if (targetElement == null && !string.IsNullOrEmpty(targetName))
+                    {
+                        targetElement = VisualTreeInspector.FindByName(targetName);
+                    }
+                    if (targetElement == null)
+                    {
+                        return SpyResponse.Fail("DragDrop target not found");
+                    }
+                    VisualTreeInspector.DragDrop(element, targetElement);
+                    return SpyResponse.Ok();
+                }
+                case "Hover":
+                {
+                    var element = RequireElement(request.Name, request.XPath);
+                    VisualTreeInspector.Hover(element);
+                    return SpyResponse.Ok();
+                }
+                case "Scroll":
+                {
+                    var element = RequireElement(request.Name, request.XPath);
+                    VisualTreeInspector.Scroll(element, request.Value ?? "");
+                    return SpyResponse.Ok();
+                }
+                case "CaptureScreenshot":
+                {
+                    var element = RequireElement(request.Name, request.XPath);
+                    var bytes = VisualTreeInspector.CaptureScreenshot(element);
+                    var base64 = Convert.ToBase64String(bytes);
+                    return SpyResponse.Ok(base64);
+                }
                 case "Toggle":
                 {
                     var element = RequireElement(request.Name, request.XPath);

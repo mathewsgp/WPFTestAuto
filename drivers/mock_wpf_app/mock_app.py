@@ -823,6 +823,34 @@ class MockWpfApp:
             b'\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82'
         )
 
+    def double_click(self, ctrl: Control):
+        """Double-click a control (mock: same as invoke)."""
+        self.invoke(ctrl)
+
+    def right_click(self, ctrl: Control):
+        """Right-click a control (mock: same as invoke)."""
+        self.invoke(ctrl)
+
+    def press_keys(self, ctrl: Control, keys: str):
+        """Press keys into a control (mock: append to text for text controls)."""
+        if not ctrl.enabled or not ctrl.visible:
+            raise ElementNotInteractableError(ctrl.key)
+        if ctrl.control_type in ("TextBox", "PasswordBox"):
+            ctrl.text += keys
+
+    def drag_drop(self, ctrl: Control, target):
+        """Drag and drop a control to a target (mock: same as invoke)."""
+        self.invoke(ctrl)
+
+    def hover(self, ctrl: Control):
+        """Hover over a control (mock: same as invoke)."""
+        self.invoke(ctrl)
+
+    def scroll(self, ctrl: Control, direction: str):
+        """Scroll a control (mock: no-op)."""
+        if not ctrl.enabled or not ctrl.visible:
+            raise ElementNotInteractableError(ctrl.key)
+
 
     def reset(self):
         """Reinitializes state in place (does NOT rebind this object) so

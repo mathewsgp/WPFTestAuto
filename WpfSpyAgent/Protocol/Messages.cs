@@ -52,6 +52,18 @@ namespace WpfSpyAgent.Protocol
         /// the element from the root window.</summary>
         [JsonPropertyName("xpath")]
         public string? XPath { get; set; }
+
+        /// <summary>Used by GetAttribute — the attribute name to retrieve.</summary>
+        [JsonPropertyName("attributeName")]
+        public string? AttributeName { get; set; }
+
+        /// <summary>Used by DragDrop — the target element name.</summary>
+        [JsonPropertyName("targetName")]
+        public string? TargetName { get; set; }
+
+        /// <summary>Used by DragDrop — the target element XPath.</summary>
+        [JsonPropertyName("targetXPath")]
+        public string? TargetXPath { get; set; }
     }
 
     /// <summary>

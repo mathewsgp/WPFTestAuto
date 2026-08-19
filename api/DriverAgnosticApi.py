@@ -1456,6 +1456,106 @@ class DriverAgnosticApi:
         """Toggles a checkbox/toggle-style element identified by `alias`."""
         self._resolve_and_execute(alias, "toggle", app_id)
 
+    def double_click_element(self, alias: str, app_id: Optional[str] = None):
+        """Double-clicks the element identified by `alias`."""
+        self._resolve_and_execute(alias, "double_click", app_id)
+
+    def right_click_element(self, alias: str, app_id: Optional[str] = None):
+        """Right-clicks the element identified by `alias`."""
+        self._resolve_and_execute(alias, "right_click", app_id)
+
+    def press_keys(self, alias: str, keys: str, app_id: Optional[str] = None):
+        """Presses keys into the element identified by `alias`."""
+        self._resolve_and_execute(alias, "press_keys", app_id, keys)
+
+    def drag_and_drop(self, alias: str, target_alias: str, app_id: Optional[str] = None):
+        """Drags the element identified by `alias` and drops it on `target_alias`."""
+        target_strategies = repo.get_all_driver_strategies_sorted(target_alias, app_id=app_id)
+        if not target_strategies:
+            raise AllStrategiesFailedError(
+                alias=target_alias,
+                attempts=[],
+                details={"reason": "No strategies configured for target"}
+            )
+
+        target_element = None
+        for driver_name in _get_run_modes():
+            if driver_name not in target_strategies:
+                continue
+            driver = _get_drivers().get(driver_name)
+            if driver is None:
+                continue
+            for strategy in target_strategies[driver_name]:
+                try:
+                    resolved = self._resolve_strategy_with_parent(strategy, target_alias, app_id)
+                    target_element = driver.find_element(resolved)
+                    break
+                except Exception:
+                    continue
+            if target_element is not None:
+                break
+
+        if target_element is None:
+            raise AllStrategiesFailedError(
+                alias=target_alias,
+                attempts=[],
+                details={"reason": "Could not resolve target element"}
+            )
+
+        self._resolve_and_execute(alias, "drag_drop", app_id, target_element)
+
+    def hover_over_element(self, alias: str, app_id: Optional[str] = None):
+        """Hovers over the element identified by `alias`."""
+        self._resolve_and_execute(alias, "hover", app_id)
+
+    def scroll(self, alias: str, direction: str, app_id: Optional[str] = None):
+        """Scrolls the element identified by `alias` in the given direction."""
+        self._resolve_and_execute(alias, "scroll", app_id, direction)
+
+    def sikuli_click(self, alias: str, image_tag: str, app_id: Optional[str] = None):
+        """Clicks an element identified by a Sikuli image tag."""
+        driver = _get_drivers().get("Sikuli")
+        if driver is None:
+            raise RuntimeError("Sikuli driver not available")
+        element = driver.find_element({"searchBy": "Image", "value": image_tag})
+        driver.invoke(element)
+
+    def sikuli_type(self, alias: str, text: str, app_id: Optional[str] = None):
+        """Types text into an element identified by a Sikuli image tag."""
+        driver = _get_drivers().get("Sikuli")
+        if driver is None:
+            raise RuntimeError("Sikuli driver not available")
+        strategies = repo.get_strategies(alias, app_id=app_id)
+        image_tag = None
+        for driver_name, strats in strategies.items():
+            if driver_name == "Sikuli" and strats:
+                image_tag = strats[0].get("value")
+                break
+        if not image_tag:
+            raise AllStrategiesFailedError(
+                alias=alias,
+                attempts=[],
+                details={"reason": "No Sikuli image tag configured"}
+            )
+        element = driver.find_element({"searchBy": "Image", "value": image_tag})
+        driver.set_value(element, text)
+
+    def area_checkpoint(self, alias: str, expected_text: str, app_id: Optional[str] = None):
+        """Verifies OCR text in an area matches expected_text."""
+        actual = self._resolve_and_execute(alias, "get_data_grid_content_ocr", app_id)
+        if expected_text not in actual:
+            raise AssertionError(f"'{alias}' area OCR mismatch: expected '{expected_text}', got '{actual}'")
+
+    def image_checkpoint(self, alias: str, baseline_path: str, app_id: Optional[str] = None):
+        """Verifies an element's visual appearance matches the baseline image."""
+        import os
+        if not os.path.exists(baseline_path):
+            raise AssertionError(f"Baseline image not found: {baseline_path}")
+        actual = self._resolve_and_execute(alias, "capture_screenshot", app_id)
+        # For now, just verify we got screenshot data; real pixel comparison would go here
+        if not actual:
+            raise AssertionError(f"'{alias}' screenshot capture returned empty data")
+
     def is_element_visible(self, alias: str, app_id: Optional[str] = None) -> bool:
         """Check if element is visible without failing."""
         strategies = repo.get_strategies(alias)

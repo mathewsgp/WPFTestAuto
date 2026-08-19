@@ -45,7 +45,8 @@ namespace WpfTestIde.Dialogs
             var text = selectedItem.Content?.ToString() ?? "";
             
             bool showValue = text is "Set Element Value" or "Verify Element Text" or "Verify Element Contains Text" 
-                             or "Verify Element Text Matches Regex" or "Verify Element Attribute" or "Press Keys";
+                             or "Verify Element Text Matches Regex" or "Verify Element Attribute" or "Press Keys"
+                             or "Drag And Drop" or "Scroll" or "Sikuli Click (Image)" or "Sikuli Type (Image)";
             bool showTimeout = text is "Wait Until Element Exists" or "Wait Until Element Visible" 
                                or "Wait Until Element Enabled" or "Wait Until Text Contains";
 
@@ -128,9 +129,33 @@ namespace WpfTestIde.Dialogs
                         step.Kind = StepKind.Action;
                         step.Action = ActionKind.RightClick;
                         break;
+                    case "Drag And Drop":
+                        step.Kind = StepKind.Action;
+                        step.Action = ActionKind.DragDrop;
+                        step.Value = ValueBox.Text;
+                        break;
+                    case "Hover Over Element":
+                        step.Kind = StepKind.Action;
+                        step.Action = ActionKind.Hover;
+                        break;
                     case "Press Keys":
                         step.Kind = StepKind.Action;
                         step.Action = ActionKind.PressKeys;
+                        step.Value = ValueBox.Text;
+                        break;
+                    case "Scroll":
+                        step.Kind = StepKind.Action;
+                        step.Action = ActionKind.Scroll;
+                        step.Value = ValueBox.Text;
+                        break;
+                    case "Sikuli Click (Image)":
+                        step.Kind = StepKind.Action;
+                        step.Action = ActionKind.SikuliClick;
+                        step.Value = ValueBox.Text;
+                        break;
+                    case "Sikuli Type (Image)":
+                        step.Kind = StepKind.Action;
+                        step.Action = ActionKind.SikuliType;
                         step.Value = ValueBox.Text;
                         break;
                     case "Verify Element Text":
@@ -156,6 +181,9 @@ namespace WpfTestIde.Dialogs
                     case "Verify Element Attribute":
                         step.Kind = StepKind.VerifyAttribute;
                         step.Value = ValueBox.Text;
+                        break;
+                    case "Get Data Grid Content Ocr":
+                        step.Kind = StepKind.VerifyOcr;
                         break;
                     case "Wait Until Element Exists":
                         step.Kind = StepKind.WaitExists;

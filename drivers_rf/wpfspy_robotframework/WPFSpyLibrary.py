@@ -234,19 +234,94 @@ class WPFSpyRealDriver:
         """Get a specific attribute value from an element.
         
         Note: This requires the C# agent to implement GetAttribute command.
-        For now, returns None as this is not yet implemented in the agent.
         """
-        # In production, this would call a GetAttribute command
+        if "xpath" in element:
+            response = self._send("GetAttribute", xpath=element["xpath"], attributeName=attribute_name)
+        else:
+            response = self._send("GetAttribute", name=element["name"], attributeName=attribute_name)
+        if response.get("success"):
+            return response.get("data")
         return None
 
     def capture_screenshot(self, element=None) -> bytes:
-        """Capture a screenshot.
+        """Capture a screenshot of an element.
         
         Note: This requires the C# agent to implement CaptureScreenshot command.
-        For now, returns empty bytes.
         """
-        # In production, this would call a CaptureScreenshot command
+        if element is None:
+            return b""
+        if "xpath" in element:
+            response = self._send("CaptureScreenshot", xpath=element["xpath"])
+        else:
+            response = self._send("CaptureScreenshot", name=element["name"])
+        if response.get("success") and response.get("data"):
+            import base64
+            return base64.b64decode(response["data"])
         return b""
+
+    def double_click(self, element):
+        """Double-click an element."""
+        if "xpath" in element:
+            response = self._send("DoubleClick", xpath=element["xpath"])
+        else:
+            response = self._send("DoubleClick", name=element["name"])
+        if not response.get("success"):
+            raise ElementNotInteractableError(response.get("error"))
+
+    def right_click(self, element):
+        """Right-click an element."""
+        if "xpath" in element:
+            response = self._send("RightClick", xpath=element["xpath"])
+        else:
+            response = self._send("RightClick", name=element["name"])
+        if not response.get("success"):
+            raise ElementNotInteractableError(response.get("error"))
+
+    def press_keys(self, element, keys: str):
+        """Press keys into an element."""
+        if "xpath" in element:
+            response = self._send("PressKeys", xpath=element["xpath"], value=keys)
+        else:
+            response = self._send("PressKeys", name=element["name"], value=keys)
+        if not response.get("success"):
+            raise ElementNotInteractableError(response.get("error"))
+
+    def drag_drop(self, element, target_element):
+        """Drag an element and drop it on a target."""
+        target_xpath = target_element.get("xpath") if isinstance(target_element, dict) else None
+        target_name = target_element.get("name") if isinstance(target_element, dict) else getattr(target_element, "name", None)
+        
+        params = {}
+        if "xpath" in element:
+            params["xpath"] = element["xpath"]
+        else:
+            params["name"] = element["name"]
+        if target_xpath:
+            params["targetXPath"] = target_xpath
+        if target_name:
+            params["targetName"] = target_name
+        
+        response = self._send("DragDrop", **params)
+        if not response.get("success"):
+            raise ElementNotInteractableError(response.get("error"))
+
+    def hover(self, element):
+        """Hover over an element."""
+        if "xpath" in element:
+            response = self._send("Hover", xpath=element["xpath"])
+        else:
+            response = self._send("Hover", name=element["name"])
+        if not response.get("success"):
+            raise ElementNotInteractableError(response.get("error"))
+
+    def scroll(self, element, direction: str):
+        """Scroll an element in a direction."""
+        if "xpath" in element:
+            response = self._send("Scroll", xpath=element["xpath"], value=direction)
+        else:
+            response = self._send("Scroll", name=element["name"], value=direction)
+        if not response.get("success"):
+            raise ElementNotInteractableError(response.get("error"))
 
     def toggle(self, element, state: bool = None):
         """Toggle a checkbox or toggle button."""
@@ -515,6 +590,36 @@ class WPFSpyMockDriver:
         """Capture a screenshot."""
         self._log_ipc("CaptureScreenshot", element=getattr(element, "name", None))
         return APP_INSTANCE.capture_screenshot(element)
+
+    def double_click(self, element):
+        """Double-click an element."""
+        self._log_ipc("DoubleClick", name=getattr(element, "name", None))
+        APP_INSTANCE.double_click(element)
+
+    def right_click(self, element):
+        """Right-click an element."""
+        self._log_ipc("RightClick", name=getattr(element, "name", None))
+        APP_INSTANCE.right_click(element)
+
+    def press_keys(self, element, keys: str):
+        """Press keys into an element."""
+        self._log_ipc("PressKeys", name=getattr(element, "name", None), value=keys)
+        APP_INSTANCE.press_keys(element, keys)
+
+    def drag_drop(self, element, target_element):
+        """Drag an element and drop it on a target."""
+        self._log_ipc("DragDrop", name=getattr(element, "name", None), targetName=getattr(target_element, "name", None))
+        APP_INSTANCE.drag_drop(element, target_element)
+
+    def hover(self, element):
+        """Hover over an element."""
+        self._log_ipc("Hover", name=getattr(element, "name", None))
+        APP_INSTANCE.hover(element)
+
+    def scroll(self, element, direction: str):
+        """Scroll an element in a direction."""
+        self._log_ipc("Scroll", name=getattr(element, "name", None), value=direction)
+        APP_INSTANCE.scroll(element, direction)
 
     def toggle(self, element, state: bool = None):
         """Toggle a checkbox or toggle button."""

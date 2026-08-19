@@ -339,6 +339,48 @@ class FlaUIDriver:
         else:
             self._lib.set_checkbox_state(xpath, state)
 
+    def double_click(self, element):
+        """Double-click an element."""
+        xpath = self._to_xpath(element)
+        self._ensure_attached()
+        self._lib.double_click(xpath)
+
+    def right_click(self, element):
+        """Right-click an element."""
+        xpath = self._to_xpath(element)
+        self._ensure_attached()
+        self._lib.right_click(xpath)
+
+    def press_keys(self, element, keys: str):
+        """Press keys into an element."""
+        xpath = self._to_xpath(element)
+        self._ensure_attached()
+        self._lib.press_keys(keys, xpath)
+
+    def drag_drop(self, element, target_element):
+        """Drag an element and drop it on a target."""
+        source_xpath = self._to_xpath(element)
+        target_xpath = target_element if isinstance(target_element, str) else target_element.get("xpath", "")
+        self._ensure_attached()
+        self._lib.drag_and_drop(source_xpath, target_xpath)
+
+    def hover(self, element):
+        """Hover over an element."""
+        xpath = self._to_xpath(element)
+        self._ensure_attached()
+        self._lib.move_to(xpath)
+
+    def scroll(self, element, direction: str):
+        """Scroll an element in a direction."""
+        xpath = self._to_xpath(element)
+        self._ensure_attached()
+        if direction.lower() in ("down", "pagedown"):
+            self._lib.scroll_down(xpath, 50)
+        elif direction.lower() in ("up", "pageup"):
+            self._lib.scroll_up(xpath, 50)
+        else:
+            self._lib.scroll_down(xpath, 50)
+
     def get_data_grid_content_ocr(self, element) -> str:
         """OCR-based DataGrid content extraction.
         

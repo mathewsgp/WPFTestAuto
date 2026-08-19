@@ -106,6 +106,12 @@ namespace WpfTestIde.Recording
                     case StepKind.CheckpointProperty:
                         sb.AppendLine($"    Property Checkpoint    {step.Alias}{appIdArg}");
                         continue;
+                    case StepKind.CheckpointArea:
+                        sb.AppendLine($"    Area Checkpoint    {step.Alias}    {step.Value}{appIdArg}");
+                        continue;
+                    case StepKind.CheckpointImage:
+                        sb.AppendLine($"    Image Checkpoint    {step.Alias}    {step.Value}{appIdArg}");
+                        continue;
                     case StepKind.CheckpointDataGrid:
                         sb.AppendLine($"    DataGrid Checkpoint    {step.Alias}{appIdArg}");
                         continue;
@@ -141,7 +147,7 @@ namespace WpfTestIde.Recording
                         sb.AppendLine($"    Hover Over Element    {step.Alias}{appIdArg}");
                         break;
                     case ActionKind.PressKeys:
-                        sb.AppendLine($"    Press Keys    {step.Value}{appIdArg}");
+                        sb.AppendLine($"    Press Keys    {step.Alias}    {step.Value}{appIdArg}");
                         break;
                     case ActionKind.Scroll:
                         sb.AppendLine($"    Scroll    {step.Alias}    {step.Value}{appIdArg}");

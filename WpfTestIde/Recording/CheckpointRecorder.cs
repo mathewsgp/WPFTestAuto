@@ -347,8 +347,19 @@ namespace WpfTestIde.Recording
 
         private string GetAttributeValue(string elementAlias, string attributeName)
         {
-            // For now, return empty - actual implementation would use GetAttribute command
-            return "";
+            try
+            {
+                var parts = elementAlias.Split('.');
+                var name = parts.Length > 1 ? parts[^1] : elementAlias;
+
+                var response = _client.Send("GetAttribute", name: name, attributeName: attributeName);
+                return response.Success ? (response.Data ?? "") : "";
+            }
+            catch (Exception ex)
+            {
+                Log($"[CheckpointRecorder] Error getting attribute: {ex.Message}");
+                return "";
+            }
         }
 
         private string GetDataGridContent(string elementName)
@@ -380,9 +391,9 @@ namespace WpfTestIde.Recording
 
         private string GetOcrText(double x, double y, double width, double height)
         {
-            // For area checkpoints, we capture and would use OCR
-            // This requires pytesseract integration on the Python side
-            return $"[OCR would extract text from area ({x},{y},{width},{height})]";
+            string baselinePath = CaptureAreaImage(x, y, width, height);
+            Log($"[CheckpointRecorder] Area checkpoint baseline captured: {baselinePath}");
+            return $"[OCR baseline captured at {baselinePath} — actual OCR comparison runs during test execution]";
         }
 
         private void Log(string message)

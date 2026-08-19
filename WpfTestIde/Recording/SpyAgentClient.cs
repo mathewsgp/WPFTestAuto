@@ -32,7 +32,7 @@ namespace WpfTestIde.Recording
             _pipeName = pipeName;
         }
 
-        public SpyAgentResponse Send(string command, string? name = null, string? value = null, int? x = null, int? y = null, string? xpath = null, int? width = null, int? height = null, int timeoutMs = 5000)
+        public SpyAgentResponse Send(string command, string? name = null, string? value = null, int? x = null, int? y = null, string? xpath = null, int? width = null, int? height = null, string? attributeName = null, string? targetName = null, string? targetXPath = null, int timeoutMs = 5000)
         {
             NamedPipeClientStream? pipe = null;
             StreamWriter? writer = null;
@@ -50,6 +50,9 @@ namespace WpfTestIde.Recording
                 if (xpath != null) request["xpath"] = xpath;
                 if (width != null) request["width"] = width;
                 if (height != null) request["height"] = height;
+                if (attributeName != null) request["attributeName"] = attributeName;
+                if (targetName != null) request["targetName"] = targetName;
+                if (targetXPath != null) request["targetXPath"] = targetXPath;
 
                 writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, leaveOpen: true)
                 {
