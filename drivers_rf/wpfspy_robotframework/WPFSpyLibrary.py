@@ -121,14 +121,18 @@ class WPFSpyRealDriver:
         value = locator.get("value")
         
         # Retry logic to handle timing after ResetState or window transitions
-        max_retries = 15
-        retry_delay = 0.5
+        max_retries = 5
+        retry_delay = 0.2
         
         for attempt in range(max_retries):
             if search_by == "XPath":
                 response = self._send("FindByXPath", xpath=value)
                 if response.get("success"):
                     return {"xpath": value}
+            elif search_by == "AutomationId":
+                response = self._send("FindByAutomationId", automationId=value)
+                if response.get("success"):
+                    return {"automationId": value}
             else:
                 response = self._send("Find", name=value)
                 if response.get("success"):
@@ -141,6 +145,10 @@ class WPFSpyRealDriver:
         if search_by == "XPath":
             raise ElementNotFoundError(
                 f"WPFSpy: no element found for XPath '{value}' after {max_retries} attempts"
+            )
+        elif search_by == "AutomationId":
+            raise ElementNotFoundError(
+                f"WPFSpy: no element found for AutomationId '{value}' after {max_retries} attempts"
             )
         raise ElementNotFoundError(
             f"WPFSpy: no element with Name='{value}' after {max_retries} attempts"

@@ -759,15 +759,17 @@ namespace WpfSpyAgent
                     break;
 
                 case ComboBox comboBox:
+                    if (comboBox.IsEditable)
+                    {
+                        comboBox.Text = value;
+                        break;
+                    }
+
                     foreach (var item in comboBox.Items)
                     {
                         if (item is System.Windows.Controls.ComboBoxItem cbi && cbi.Content?.ToString() == value)
                         {
                             comboBox.SelectedItem = item;
-                            try
-                            {
-                            }
-                            catch { }
                             return;
                         }
                     }
@@ -1123,6 +1125,43 @@ namespace WpfSpyAgent
         /// </list>
         /// Example: <c>/Window[@AutomationId='MainWindow']/Grid/TextBox[@AutomationId='txtUsername']</c>
         /// </summary>
+        public static FrameworkElement? FindByAutomationId(string automationId)
+        {
+            foreach (Window window in Application.Current.Windows)
+            {
+                var found = FindByAutomationIdRecursive(window, automationId);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+            return null;
+        }
+
+        private static FrameworkElement? FindByAutomationIdRecursive(DependencyObject root, string automationId)
+        {
+            if (root is FrameworkElement fe)
+            {
+                string? currentAutomationId = AutomationProperties.GetAutomationId(fe);
+                if (currentAutomationId == automationId)
+                {
+                    return fe;
+                }
+            }
+
+            int childCount = VisualTreeHelper.GetChildrenCount(root);
+            for (int i = 0; i < childCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                var result = FindByAutomationIdRecursive(child, automationId);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+            return null;
+        }
+
         public static FrameworkElement? FindByXPath(string xpath)
         {
             if (string.IsNullOrEmpty(xpath) || !xpath.StartsWith("/"))

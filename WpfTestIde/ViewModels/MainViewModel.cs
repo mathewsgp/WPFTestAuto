@@ -1365,7 +1365,7 @@ namespace WpfTestIde.ViewModels
 
             string? usernameAlias = loginAliases.FirstOrDefault(a => a.Contains("Username", StringComparison.OrdinalIgnoreCase));
             string? passwordAlias = loginAliases.FirstOrDefault(a => a.Contains("Password", StringComparison.OrdinalIgnoreCase));
-            string? submitAlias = loginAliases.FirstOrDefault(a => a.Contains("Submit", StringComparison.OrdinalIgnoreCase) || a.Contains("Login", StringComparison.OrdinalIgnoreCase));
+            string? submitAlias = loginAliases.FirstOrDefault(a => a.Contains("Submit", StringComparison.OrdinalIgnoreCase));
             string? errorAlias = loginAliases.FirstOrDefault(a => a.Contains("Error", StringComparison.OrdinalIgnoreCase) || a.Contains("lblError", StringComparison.OrdinalIgnoreCase));
 
             string? skuAlias = ordersAliases.FirstOrDefault(a => a.Contains("Sku", StringComparison.OrdinalIgnoreCase) || a.Contains("cmb", StringComparison.OrdinalIgnoreCase));

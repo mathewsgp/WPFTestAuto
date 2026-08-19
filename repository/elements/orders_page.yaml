@@ -49,9 +49,12 @@ elements:
           value: "cmbSku"
           priority: 1
       WPFSpy:
+        - searchBy: "AutomationId"
+          value: "cmbSku"
+          priority: 1
         - searchBy: "XPath"
           value: "ComboBox[@AutomationId='cmbSku']"
-          priority: 1
+          priority: 2
       Sikuli:
         - searchBy: "Image"
           value: "sku_combo.png"
@@ -72,9 +75,12 @@ elements:
           value: "txtQty"
           priority: 1
       WPFSpy:
+        - searchBy: "AutomationId"
+          value: "txtQty"
+          priority: 1
         - searchBy: "XPath"
           value: "TextBox[@AutomationId='txtQty']"
-          priority: 1
+          priority: 2
       Sikuli:
         - searchBy: "Image"
           value: "qty_box.png"
@@ -115,9 +121,12 @@ elements:
           value: "btnCreateOrder"
           priority: 1
       WPFSpy:
+        - searchBy: "AutomationId"
+          value: "btnCreateOrder"
+          priority: 1
         - searchBy: "XPath"
           value: "Button[@AutomationId='btnCreateOrder']"
-          priority: 1
+          priority: 2
       Sikuli:
         - searchBy: "Image"
           value: "create_order_button.png"
@@ -161,9 +170,12 @@ elements:
           value: "gridOrders"
           priority: 1
       WPFSpy:
+        - searchBy: "AutomationId"
+          value: "gridOrders"
+          priority: 1
         - searchBy: "XPath"
           value: "DataGrid[@AutomationId='gridOrders']"
-          priority: 1
+          priority: 2
       Sikuli:
         - searchBy: "Image"
           value: "orders_grid.png"
@@ -184,9 +196,12 @@ elements:
           value: "btnLogout"
           priority: 1
       WPFSpy:
+        - searchBy: "AutomationId"
+          value: "btnLogout"
+          priority: 1
         - searchBy: "XPath"
           value: "Button[@AutomationId='btnLogout']"
-          priority: 1
+          priority: 2
       Sikuli:
         - searchBy: "Image"
           value: "logout_button.png"

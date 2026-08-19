@@ -46,9 +46,12 @@ elements:
           value: "txtUsername"
           priority: 1
       WPFSpy:
+        - searchBy: "AutomationId"
+          value: "txtUsername"
+          priority: 1
         - searchBy: "XPath"
           value: "TextBox[@AutomationId='txtUsername']"
-          priority: 1
+          priority: 2
       Sikuli:
         - searchBy: "Image"
           value: "username_box.png"
@@ -73,9 +76,12 @@ elements:
           value: "txtPassword"
           priority: 2
       WPFSpy:
+        - searchBy: "AutomationId"
+          value: "txtPassword"
+          priority: 1
         - searchBy: "XPath"
           value: "PasswordBox[@AutomationId='txtPassword']"
-          priority: 1
+          priority: 2
       Sikuli:
         - searchBy: "Image"
           value: "password_box.png"
@@ -96,9 +102,12 @@ elements:
           value: "btnSubmit"
           priority: 1
       WPFSpy:
+        - searchBy: "AutomationId"
+          value: "btnSubmit"
+          priority: 1
         - searchBy: "XPath"
           value: "Button[@AutomationId='btnSubmit']"
-          priority: 1
+          priority: 2
       Sikuli:
         - searchBy: "Image"
           value: "login_button.png"

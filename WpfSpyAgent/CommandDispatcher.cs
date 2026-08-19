@@ -301,6 +301,19 @@ namespace WpfSpyAgent
                     }
                     return SpyResponse.Ok();
                 }
+                case "FindByAutomationId":
+                {
+                    if (string.IsNullOrEmpty(request.AutomationId))
+                    {
+                        return SpyResponse.Fail("FindByAutomationId requires 'automationId'");
+                    }
+                    var element = VisualTreeInspector.FindByAutomationId(request.AutomationId);
+                    if (element is null)
+                    {
+                        return SpyResponse.Fail($"No element found for AutomationId: {request.AutomationId}");
+                    }
+                    return SpyResponse.Ok();
+                }
                 case "GetMainWindowTitle":
                 {
                     string title = "(no main window)";

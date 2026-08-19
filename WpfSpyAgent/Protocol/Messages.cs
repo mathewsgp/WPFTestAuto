@@ -53,6 +53,10 @@ namespace WpfSpyAgent.Protocol
         [JsonPropertyName("xpath")]
         public string? XPath { get; set; }
 
+        /// <summary>Used by FindByAutomationId — the AutomationId to search for.</summary>
+        [JsonPropertyName("automationId")]
+        public string? AutomationId { get; set; }
+
         /// <summary>Used by GetAttribute — the attribute name to retrieve.</summary>
         [JsonPropertyName("attributeName")]
         public string? AttributeName { get; set; }
