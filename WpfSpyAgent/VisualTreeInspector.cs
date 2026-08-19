@@ -662,121 +662,40 @@ namespace WpfSpyAgent
 
         public static void Invoke(FrameworkElement element)
         {
-            switch (element)
-            {
-                case ISpyInteractable spy:
-                    spy.SpyInvoke();
-                    break;
-
-                case TextBox textBox:
-                    textBox.Focus();
-                    break;
-
-                case ButtonBase button:
-                {
-                    if (button.Command != null)
-                    {
-                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
-                        {
-                            try
-                            {
-                                button.Command.Execute(null);
-                            }
-                            catch
-                            {
-                            }
-                        }));
-                    }
-                    else
-                    {
-                        button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-                    }
-                    break;
-                }
-
-                case TabItem tabItem:
-                    tabItem.IsSelected = true;
-                    break;
-
-                default:
-                    if (TryInvokeSpy(element, "SpyInvoke")) break;
-                    throw new InvalidOperationException(
-                        $"WpfSpyAgent: don't know how to invoke element of type '{element.GetType().Name}'. " +
-                        "Standard buttons and controls implementing ISpyInteractable are supported.");
-            }
+            if (ElementHandlerRegistry.TryInvoke(element)) return;
+            if (TryInvokeSpy(element, "SpyInvoke")) return;
+            throw new InvalidOperationException(
+                $"WpfSpyAgent: don't know how to invoke element of type '{element.GetType().Name}'. " +
+                "Standard buttons and controls implementing ISpyInteractable are supported.");
         }
 
         public static void SetValue(FrameworkElement element, string value)
         {
-            switch (element)
+            if (ElementHandlerRegistry.TrySetValue(element, value)) return;
+            bool handled = false;
+            foreach (var iface in element.GetType().GetInterfaces())
             {
-                case ISpyInteractable spy:
-                    spy.SpySetValue(value);
+                if (iface.Name == "ISpyInteractable")
+                {
+                    var method = iface.GetMethod("SpySetValue");
+                    method?.Invoke(element, new object[] { value });
+                    handled = true;
                     break;
-
-                case TextBox textBox:
-                    textBox.Text = value;
-                    break;
-
-                case PasswordBox passwordBox:
-                    passwordBox.Password = value;
-                    break;
-
-                case ComboBox comboBox:
-                    if (comboBox.IsEditable)
-                    {
-                        comboBox.Text = value;
-                        break;
-                    }
-
-                    foreach (var item in comboBox.Items)
-                    {
-                        if (item is System.Windows.Controls.ComboBoxItem cbi && cbi.Content?.ToString() == value)
-                        {
-                            comboBox.SelectedItem = item;
-                            return;
-                        }
-                    }
-                    comboBox.Text = value;
-                    break;
-
-                default:
-                    bool handled = false;
-                    foreach (var iface in element.GetType().GetInterfaces())
-                    {
-                        if (iface.Name == "ISpyInteractable")
-                        {
-                            var method = iface.GetMethod("SpySetValue");
-                            method?.Invoke(element, new object[] { value });
-                            handled = true;
-                            break;
-                        }
-                    }
-                    if (!handled)
-                    {
-                        throw new InvalidOperationException(
-                            $"WpfSpyAgent: don't know how to set a value on element of type '{element.GetType().Name}'.");
-                    }
-                    break;
+                }
+            }
+            if (!handled)
+            {
+                throw new InvalidOperationException(
+                    $"WpfSpyAgent: don't know how to set a value on element of type '{element.GetType().Name}'.");
             }
         }
 
         public static string GetText(FrameworkElement element)
         {
-            string result = element switch
-            {
-                ISpyInteractable spy => spy.SpyGetText(),
-                TextBox textBox => textBox.Text,
-                PasswordBox passwordBox => passwordBox.Password,
-                ComboBox comboBox => comboBox.Text,
-                TextBlock textBlock => textBlock.Text,
-                ContentControl content => content.Content?.ToString() ?? "",
-                ItemsControl items => $"{items.Items.Count} rows",
-                _ when TryGetSpyText(element) != null => TryGetSpyText(element)!,
-                _ => throw new InvalidOperationException(
-                    $"WpfSpyAgent: don't know how to read text from element of type '{element.GetType().Name}'.")
-            };
-            return result;
+            if (ElementHandlerRegistry.TryGetText(element, out string result)) return result;
+            if (TryGetSpyText(element) is string text) return text;
+            throw new InvalidOperationException(
+                $"WpfSpyAgent: don't know how to read text from element of type '{element.GetType().Name}'.");
         }
 
         public static bool IsVisible(FrameworkElement element) => element.IsVisible;
@@ -799,19 +718,7 @@ namespace WpfSpyAgent
 
         public static void DoubleClick(FrameworkElement element)
         {
-            if (element is ISpyInteractable spy)
-            {
-                spy.SpyInvoke();
-                return;
-            }
-
-            if (element is System.Windows.Controls.Primitives.ButtonBase button)
-            {
-                button.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-                button.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-                return;
-            }
-
+            if (ElementHandlerRegistry.TryDoubleClick(element)) return;
             if (TryInvokeSpy(element, "SpyInvoke")) return;
             throw new InvalidOperationException(
                 $"WpfSpyAgent: don't know how to double-click element of type '{element.GetType().Name}'.");
@@ -819,18 +726,7 @@ namespace WpfSpyAgent
 
         public static void RightClick(FrameworkElement element)
         {
-            if (element is ISpyInteractable spy)
-            {
-                spy.SpyInvoke();
-                return;
-            }
-
-            if (element is System.Windows.Controls.Primitives.ButtonBase button)
-            {
-                button.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-                return;
-            }
-
+            if (ElementHandlerRegistry.TryRightClick(element)) return;
             if (TryInvokeSpy(element, "SpyInvoke")) return;
             throw new InvalidOperationException(
                 $"WpfSpyAgent: don't know how to right-click element of type '{element.GetType().Name}'.");
@@ -838,43 +734,21 @@ namespace WpfSpyAgent
 
         public static void PressKeys(FrameworkElement element, string keys)
         {
-            if (element is System.Windows.Controls.TextBox textBox)
-            {
-                textBox.Focus();
-                textBox.Text += keys;
-                return;
-            }
-
-            if (element is ISpyInteractable spy)
-            {
-                spy.SpySetValue(keys);
-                return;
-            }
-
+            if (ElementHandlerRegistry.TryPressKeys(element, keys)) return;
             throw new InvalidOperationException(
                 $"WpfSpyAgent: don't know how to press keys on element of type '{element.GetType().Name}'.");
         }
 
         public static void DragDrop(FrameworkElement element, FrameworkElement target)
         {
-            if (element is ISpyInteractable spy)
-            {
-                spy.SpyInvoke();
-                return;
-            }
-
+            if (ElementHandlerRegistry.TryDragDrop(element, target)) return;
             throw new InvalidOperationException(
                 $"WpfSpyAgent: don't know how to drag-drop element of type '{element.GetType().Name}'.");
         }
 
         public static void Hover(FrameworkElement element)
         {
-            if (element is ISpyInteractable spy)
-            {
-                spy.SpyInvoke();
-                return;
-            }
-
+            if (ElementHandlerRegistry.TryInvoke(element)) return;
             element.RaiseEvent(new System.Windows.Input.MouseEventArgs(
                 System.Windows.Input.Mouse.PrimaryDevice,
                 0)
@@ -885,35 +759,7 @@ namespace WpfSpyAgent
 
         public static void Scroll(FrameworkElement element, string direction)
         {
-            if (element is System.Windows.Controls.ScrollViewer scrollViewer)
-            {
-                switch (direction.ToLower())
-                {
-                    case "down":
-                        scrollViewer.LineDown();
-                        break;
-                    case "up":
-                        scrollViewer.LineUp();
-                        break;
-                    case "pagedown":
-                        scrollViewer.PageDown();
-                        break;
-                    case "pageup":
-                        scrollViewer.PageUp();
-                        break;
-                    case "left":
-                        scrollViewer.LineLeft();
-                        break;
-                    case "right":
-                        scrollViewer.LineRight();
-                        break;
-                    default:
-                        scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset + 50);
-                        break;
-                }
-                return;
-            }
-
+            if (ElementHandlerRegistry.TryScroll(element, direction)) return;
             throw new InvalidOperationException(
                 $"WpfSpyAgent: don't know how to scroll element of type '{element.GetType().Name}'. Expected ScrollViewer.");
         }
@@ -948,16 +794,7 @@ namespace WpfSpyAgent
 
         public static void Toggle(FrameworkElement element)
         {
-            if (element is ISpyInteractable spy)
-            {
-                spy.SpyInvoke();
-                return;
-            }
-            if (element is ToggleButton toggle)
-            {
-                toggle.IsChecked = !(toggle.IsChecked ?? false);
-                return;
-            }
+            if (ElementHandlerRegistry.TryToggle(element)) return;
             if (TryInvokeSpy(element, "SpyInvoke")) return;
             throw new InvalidOperationException(
                 $"WpfSpyAgent: don't know how to toggle element of type '{element.GetType().Name}'.");
@@ -1801,6 +1638,254 @@ return JsonHelper.Serialize(result);
             return false;
         }
     }
+
+    internal static class ElementHandlerRegistry
+    {
+    private static readonly ConcurrentDictionary<Type, Action<FrameworkElement>> _invoke = new();
+    private static readonly ConcurrentDictionary<Type, Action<FrameworkElement, string>> _setValue = new();
+    private static readonly ConcurrentDictionary<Type, Func<FrameworkElement, string>> _getText = new();
+    private static readonly ConcurrentDictionary<Type, Action<FrameworkElement>> _doubleClick = new();
+    private static readonly ConcurrentDictionary<Type, Action<FrameworkElement>> _rightClick = new();
+    private static readonly ConcurrentDictionary<Type, Action<FrameworkElement, string>> _pressKeys = new();
+    private static readonly ConcurrentDictionary<Type, Action<FrameworkElement>> _hover = new();
+    private static readonly ConcurrentDictionary<Type, Action<FrameworkElement, string>> _scroll = new();
+    private static readonly ConcurrentDictionary<Type, Action<FrameworkElement>> _toggle = new();
+
+    static ElementHandlerRegistry()
+    {
+        RegisterInvoke<TextBox>(_ => _.Focus());
+        RegisterInvoke<ButtonBase>(bb =>
+        {
+            if (bb.Command != null)
+            {
+                Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
+                {
+                    try { bb.Command.Execute(null); }
+                    catch { }
+                }));
+            }
+            else
+            {
+                bb.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            }
+        });
+        RegisterInvoke<TabItem>(ti => ti.IsSelected = true);
+
+        RegisterSetValue<TextBox>((tb, v) => tb.Text = v);
+        RegisterSetValue<PasswordBox>((pb, v) => pb.Password = v);
+        RegisterSetValue<ComboBox>(SetComboBoxValue);
+
+        RegisterGetText<TextBox>(tb => tb.Text);
+        RegisterGetText<PasswordBox>(pb => pb.Password);
+        RegisterGetText<ComboBox>(cb => cb.Text);
+        RegisterGetText<TextBlock>(tb => tb.Text);
+        RegisterGetText<ContentControl>(cc => cc.Content?.ToString() ?? "");
+        RegisterGetText<ItemsControl>(ic => $"{ic.Items.Count} rows");
+
+        RegisterDoubleClick<ButtonBase>(bb =>
+        {
+            bb.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            bb.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        });
+
+        RegisterRightClick<ButtonBase>(bb =>
+            bb.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent)));
+
+        RegisterPressKeys<TextBox>((tb, keys) => { tb.Focus(); tb.Text += keys; });
+
+        RegisterScroll<ScrollViewer>((sv, dir) =>
+        {
+            switch (dir.ToLower())
+            {
+                case "down": sv.LineDown(); break;
+                case "up": sv.LineUp(); break;
+                case "pagedown": sv.PageDown(); break;
+                case "pageup": sv.PageUp(); break;
+                case "left": sv.LineLeft(); break;
+                case "right": sv.LineRight(); break;
+                default: sv.ScrollToVerticalOffset(sv.VerticalOffset + 50); break;
+            }
+        });
+
+        RegisterToggle<ToggleButton>(tb => tb.IsChecked = !(tb.IsChecked ?? false));
+    }
+
+    private static void SetComboBoxValue(ComboBox comboBox, string value)
+    {
+        if (comboBox.IsEditable)
+        {
+            comboBox.Text = value;
+            return;
+        }
+
+        foreach (var item in comboBox.Items)
+        {
+            if (item is System.Windows.Controls.ComboBoxItem cbi && cbi.Content?.ToString() == value)
+            {
+                comboBox.SelectedItem = item;
+                return;
+            }
+        }
+        comboBox.Text = value;
+    }
+
+    public static void RegisterInvoke<T>(Action<T> handler) where T : FrameworkElement
+        => _invoke[typeof(T)] = fe => handler((T)fe);
+    public static void RegisterSetValue<T>(Action<T, string> handler) where T : FrameworkElement
+        => _setValue[typeof(T)] = (fe, v) => handler((T)fe, v);
+    public static void RegisterGetText<T>(Func<T, string> handler) where T : FrameworkElement
+        => _getText[typeof(T)] = fe => handler((T)fe);
+    public static void RegisterDoubleClick<T>(Action<T> handler) where T : FrameworkElement
+        => _doubleClick[typeof(T)] = fe => handler((T)fe);
+    public static void RegisterRightClick<T>(Action<T> handler) where T : FrameworkElement
+        => _rightClick[typeof(T)] = fe => handler((T)fe);
+    public static void RegisterPressKeys<T>(Action<T, string> handler) where T : FrameworkElement
+        => _pressKeys[typeof(T)] = (fe, v) => handler((T)fe, v);
+    public static void RegisterHover<T>(Action<T> handler) where T : FrameworkElement
+        => _hover[typeof(T)] = fe => handler((T)fe);
+    public static void RegisterScroll<T>(Action<T, string> handler) where T : FrameworkElement
+        => _scroll[typeof(T)] = (fe, v) => handler((T)fe, v);
+    public static void RegisterToggle<T>(Action<T> handler) where T : FrameworkElement
+        => _toggle[typeof(T)] = fe => handler((T)fe);
+
+    private static bool TryGetHandler(Type type, ConcurrentDictionary<Type, Action<FrameworkElement>> dict, out Action<FrameworkElement> handler)
+    {
+        while (type != null && type != typeof(object))
+        {
+            if (dict.TryGetValue(type, out handler)) return true;
+            type = type.BaseType;
+        }
+        handler = null;
+        return false;
+    }
+
+    private static bool TryGetHandler(Type type, ConcurrentDictionary<Type, Action<FrameworkElement, string>> dict, out Action<FrameworkElement, string> handler)
+    {
+        while (type != null && type != typeof(object))
+        {
+            if (dict.TryGetValue(type, out handler)) return true;
+            type = type.BaseType;
+        }
+        handler = null;
+        return false;
+    }
+
+    private static bool TryGetHandler(Type type, ConcurrentDictionary<Type, Func<FrameworkElement, string>> dict, out Func<FrameworkElement, string> handler)
+    {
+        while (type != null && type != typeof(object))
+        {
+            if (dict.TryGetValue(type, out handler)) return true;
+            type = type.BaseType;
+        }
+        handler = null;
+        return false;
+    }
+
+    public static bool TryInvoke(FrameworkElement element)
+    {
+        if (element is ISpyInteractable spy) { spy.SpyInvoke(); return true; }
+        if (TryGetHandler(element.GetType(), _invoke, out var handler))
+        {
+            handler(element);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool TrySetValue(FrameworkElement element, string value)
+    {
+        if (element is ISpyInteractable spy) { spy.SpySetValue(value); return true; }
+        if (TryGetHandler(element.GetType(), _setValue, out var handler))
+        {
+            handler(element, value);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool TryGetText(FrameworkElement element, out string text)
+    {
+        text = null;
+        if (element is ISpyInteractable spy) { text = spy.SpyGetText(); return true; }
+        if (TryGetHandler(element.GetType(), _getText, out var handler))
+        {
+            text = handler(element);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool TryDoubleClick(FrameworkElement element)
+    {
+        if (element is ISpyInteractable spy) { spy.SpyInvoke(); return true; }
+        if (TryGetHandler(element.GetType(), _doubleClick, out var handler))
+        {
+            handler(element);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool TryRightClick(FrameworkElement element)
+    {
+        if (element is ISpyInteractable spy) { spy.SpyInvoke(); return true; }
+        if (TryGetHandler(element.GetType(), _rightClick, out var handler))
+        {
+            handler(element);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool TryPressKeys(FrameworkElement element, string keys)
+    {
+        if (element is ISpyInteractable spy) { spy.SpySetValue(keys); return true; }
+        if (TryGetHandler(element.GetType(), _pressKeys, out var handler))
+        {
+            handler(element, keys);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool TryHover(FrameworkElement element)
+    {
+        if (element is ISpyInteractable spy) { spy.SpyInvoke(); return true; }
+        if (TryGetHandler(element.GetType(), _hover, out var handler))
+        {
+            handler(element);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool TryScroll(FrameworkElement element, string direction)
+    {
+        if (TryGetHandler(element.GetType(), _scroll, out var handler))
+        {
+            handler(element, direction);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool TryToggle(FrameworkElement element)
+    {
+        if (element is ISpyInteractable spy) { spy.SpyInvoke(); return true; }
+        if (TryGetHandler(element.GetType(), _toggle, out var handler))
+        {
+            handler(element);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool TryDragDrop(FrameworkElement element, FrameworkElement target)
+    {
+        if (element is ISpyInteractable spy) { spy.SpyInvoke(); return true; }
+        return false;
+    }
+}
 
     /// <summary>
     /// Represents a node in the element tree for the Spy Tool.
