@@ -1447,6 +1447,52 @@ class DriverAgnosticApi:
         if actual != expected_value:
             raise AssertionError(f"'{alias}' attribute '{attribute_name}' mismatch: expected '{expected_value}', got '{actual}'")
 
+    def property_checkpoint(self, alias: str, property_name: str, expected_value: str, app_id: Optional[str] = None):
+        """Fails the test unless the element's property equals expected_value."""
+        prop_lower = property_name.lower()
+        if prop_lower in ("text", "content"):
+            actual = self.get_element_text(alias, app_id)
+        elif prop_lower in ("isenabled", "enabled"):
+            actual = self.is_element_enabled(alias, app_id)
+            actual = "true" if actual else "false"
+        elif prop_lower in ("isvisible", "visible"):
+            actual = self.is_element_visible(alias, app_id)
+            actual = "true" if actual else "false"
+        elif prop_lower in ("automationid", "automation_id"):
+            actual = self._resolve_and_execute(alias, "get_attribute", app_id, "AutomationId")
+        elif prop_lower == "name":
+            actual = self._resolve_and_execute(alias, "get_attribute", app_id, "Name")
+        elif prop_lower in ("controltype", "type"):
+            actual = self._resolve_and_execute(alias, "get_attribute", app_id, "ControlType")
+        else:
+            actual = self._resolve_and_execute(alias, "get_attribute", app_id, property_name)
+        if actual != expected_value:
+            raise AssertionError(f"'{alias}' property '{property_name}' mismatch: expected '{expected_value}', got '{actual}'")
+
+    def data_grid_checkpoint(self, alias: str, expected_content: str, app_id: Optional[str] = None):
+        """Fails the test unless the DataGrid's OCR content contains expected_content."""
+        actual = self.get_data_grid_content_ocr(alias, app_id)
+        if expected_content not in actual:
+            raise AssertionError(f"'{alias}' DataGrid content mismatch: expected '{expected_content}' in '{actual}'")
+
+    def count_checkpoint(self, alias: str, expected_count: str, app_id: Optional[str] = None):
+        """Fails the test unless the number of matching elements equals expected_count."""
+        import re
+        try:
+            expected = int(expected_count)
+        except ValueError:
+            raise AssertionError(f"Invalid expected count: '{expected_count}'")
+        elements = self.find_elements(alias, app_id=app_id)
+        actual = len(elements)
+        if actual != expected:
+            raise AssertionError(f"'{alias}' count mismatch: expected {expected}, got {actual}")
+
+    def attribute_checkpoint(self, alias: str, attribute_name: str, expected_value: str, app_id: Optional[str] = None):
+        """Fails the test unless the element's attribute equals expected_value."""
+        actual = self._resolve_and_execute(alias, "get_attribute", app_id, attribute_name)
+        if actual != expected_value:
+            raise AssertionError(f"'{alias}' attribute '{attribute_name}' mismatch: expected '{expected_value}', got '{actual}'")
+
     def get_data_grid_content_ocr(self, alias: str, app_id: Optional[str] = None) -> str:
         """Captures a DataGrid element screenshot and returns
         its content as CSV text using OCR."""
@@ -1603,6 +1649,27 @@ class DriverAgnosticApi:
                     continue
         return False
 
+    def find_elements(self, alias: str, app_id: Optional[str] = None) -> List[Any]:
+        """Find all elements matching the alias across all available strategies."""
+        strategies = repo.get_strategies(alias)
+        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
+        results: List[Any] = []
+        for driver_name in _get_run_modes():
+            if driver_name not in strategies:
+                continue
+            if driver_name not in app_context.drivers:
+                app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
+            driver = app_context.drivers[driver_name]
+            driver_strategies = strategies[driver_name]
+            for strategy in driver_strategies:
+                try:
+                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                    found = driver.find_elements(resolved)
+                    results.extend(found)
+                except Exception:
+                    continue
+        return results
+
     def is_element_actionable(self, alias: str, app_id: Optional[str] = None) -> bool:
         """Check if element is both visible and enabled."""
         strategies = repo.get_strategies(alias)
@@ -1717,6 +1784,52 @@ class DriverAgnosticApi:
         
         raise WaitTimeoutError(
             condition="element visible",
+            timeout=timeout
+        )
+
+    def wait_until_element_enabled(
+        self,
+        alias: str,
+        timeout: float = 10.0,
+        poll_interval: float = 0.5,
+        app_id: Optional[str] = None,
+    ):
+        """Polls until the element is enabled, or raises after `timeout` seconds."""
+        from exceptions import WaitTimeoutError
+
+        start_time = time.time()
+        strategies = repo.get_strategies(alias)
+        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
+
+        if not strategies:
+            raise AllStrategiesFailedError(
+                alias=alias,
+                attempts=[],
+                details={"reason": "No strategies configured"}
+            )
+
+        while time.time() - start_time < timeout:
+            for driver_name in _get_run_modes():
+                if driver_name not in strategies:
+                    continue
+                driver = app_context.drivers.get(driver_name)
+                if driver is None:
+                    continue
+                for strategy in strategies[driver_name]:
+                    try:
+                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                        element = driver.find_element(resolved)
+                        if driver.is_enabled(element):
+                            return True
+                    except Exception:
+                        continue
+
+            remaining = timeout - (time.time() - start_time)
+            if remaining > 0:
+                time.sleep(min(poll_interval, remaining))
+
+        raise WaitTimeoutError(
+            condition="element enabled",
             timeout=timeout
         )
 

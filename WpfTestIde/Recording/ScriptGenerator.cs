@@ -113,7 +113,7 @@ namespace WpfTestIde.Recording
                         sb.AppendLine($"    Image Checkpoint    {step.Alias}    {step.Value}{appIdArg}");
                         continue;
                     case StepKind.CheckpointDataGrid:
-                        sb.AppendLine($"    DataGrid Checkpoint    {step.Alias}    {step.Value}{appIdArg}");
+                        sb.AppendLine($"    Data Grid Checkpoint    {step.Alias}    {step.Value}{appIdArg}");
                         continue;
                     case StepKind.CheckpointCount:
                         sb.AppendLine($"    Count Checkpoint    {step.Alias}    {step.ExpectedCount}{appIdArg}");
