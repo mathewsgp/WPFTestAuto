@@ -1081,8 +1081,35 @@ namespace WpfSpyAgent
 
                 if (profile.SkipLayout)
                 {
-                    current = VisualTreeHelper.GetParent(current);
-                    continue;
+                    bool includeLayoutPanel = false;
+                    if (typeName == "LayoutPanel")
+                    {
+                        DependencyObject? parent = VisualTreeHelper.GetParent(current);
+                        if (parent != null)
+                        {
+                            string parentType = parent.GetType().Name;
+                            if (parentType == "LayoutGroup" || parentType == "LayoutItem")
+                            {
+                                int panelSiblings = 0;
+                                int childCount = VisualTreeHelper.GetChildrenCount(parent);
+                                for (int i = 0; i < childCount; i++)
+                                {
+                                    if (VisualTreeHelper.GetChild(parent, i).GetType().Name == "LayoutPanel")
+                                        panelSiblings++;
+                                }
+                                if (panelSiblings > 1)
+                                {
+                                    includeLayoutPanel = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!includeLayoutPanel)
+                    {
+                        current = VisualTreeHelper.GetParent(current);
+                        continue;
+                    }
                 }
 
                 DependencyObject? parent = VisualTreeHelper.GetParent(current);
