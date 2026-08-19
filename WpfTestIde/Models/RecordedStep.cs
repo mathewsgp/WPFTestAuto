@@ -21,6 +21,18 @@ namespace WpfTestIde.Models
         /// <summary>SetValue's value, or a Verify step's expected text. Null for Invoke/Toggle.</summary>
         public string? Value { get; set; }
 
+        /// <summary>Attribute name for VerifyAttribute/CheckpointAttribute steps.</summary>
+        public string? AttributeName { get; set; }
+
+        /// <summary>Target alias for DragDrop steps.</summary>
+        public string? TargetAlias { get; set; }
+
+        /// <summary>Property name for Property Checkpoint steps.</summary>
+        public string? PropertyName { get; set; }
+
+        /// <summary>Expected count for Count Checkpoint steps.</summary>
+        public string? ExpectedCount { get; set; }
+
         public DateTime Timestamp { get; set; } = DateTime.Now;
 
         /// <summary>True if this step targets a control with no reliable

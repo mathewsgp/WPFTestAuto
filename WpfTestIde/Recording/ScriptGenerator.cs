@@ -89,7 +89,7 @@ namespace WpfTestIde.Recording
                         sb.AppendLine($"    Verify Element Text Matches Regex    {step.Alias}    {step.Value}{appIdArg}");
                         continue;
                     case StepKind.VerifyAttribute:
-                        sb.AppendLine($"    Verify Element Attribute    {step.Alias}    {step.Value}{appIdArg}");
+                        sb.AppendLine($"    Verify Element Attribute    {step.Alias}    {step.AttributeName}    {step.Value}{appIdArg}");
                         continue;
                     case StepKind.WaitExists:
                         sb.AppendLine($"    Wait Until Element Exists    {step.Alias}    timeout={step.Value}{appIdArg}");
@@ -104,7 +104,7 @@ namespace WpfTestIde.Recording
                         sb.AppendLine($"    Wait Until Text Contains    {step.Alias}    {step.Value}{appIdArg}");
                         continue;
                     case StepKind.CheckpointProperty:
-                        sb.AppendLine($"    Property Checkpoint    {step.Alias}{appIdArg}");
+                        sb.AppendLine($"    Property Checkpoint    {step.Alias}    {step.PropertyName}    {step.Value}{appIdArg}");
                         continue;
                     case StepKind.CheckpointArea:
                         sb.AppendLine($"    Area Checkpoint    {step.Alias}    {step.Value}{appIdArg}");
@@ -113,13 +113,13 @@ namespace WpfTestIde.Recording
                         sb.AppendLine($"    Image Checkpoint    {step.Alias}    {step.Value}{appIdArg}");
                         continue;
                     case StepKind.CheckpointDataGrid:
-                        sb.AppendLine($"    DataGrid Checkpoint    {step.Alias}{appIdArg}");
+                        sb.AppendLine($"    DataGrid Checkpoint    {step.Alias}    {step.Value}{appIdArg}");
                         continue;
                     case StepKind.CheckpointCount:
-                        sb.AppendLine($"    Count Checkpoint    {step.Alias}{appIdArg}");
+                        sb.AppendLine($"    Count Checkpoint    {step.Alias}    {step.ExpectedCount}{appIdArg}");
                         continue;
                     case StepKind.CheckpointAttribute:
-                        sb.AppendLine($"    Attribute Checkpoint    {step.Alias}{appIdArg}");
+                        sb.AppendLine($"    Attribute Checkpoint    {step.Alias}    {step.AttributeName}    {step.Value}{appIdArg}");
                         continue;
                 }
 
@@ -141,7 +141,7 @@ namespace WpfTestIde.Recording
                         sb.AppendLine($"    Right Click Element    {step.Alias}{appIdArg}");
                         break;
                     case ActionKind.DragDrop:
-                        sb.AppendLine($"    Drag And Drop    {step.Alias}    {step.Value}{appIdArg}");
+                        sb.AppendLine($"    Drag And Drop    {step.Alias}    {step.TargetAlias}{appIdArg}");
                         break;
                     case ActionKind.Hover:
                         sb.AppendLine($"    Hover Over Element    {step.Alias}{appIdArg}");

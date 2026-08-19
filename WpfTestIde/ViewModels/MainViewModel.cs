@@ -871,6 +871,10 @@ namespace WpfTestIde.ViewModels
                     Alias = resolvedAlias,
                     Action = step.Action,
                     Value = step.Value,
+                    AttributeName = step.AttributeName,
+                    TargetAlias = step.TargetAlias,
+                    PropertyName = step.PropertyName,
+                    ExpectedCount = step.ExpectedCount,
                     NonStandard = step.NonStandard,
                     AppId = step.AppId,
                 };

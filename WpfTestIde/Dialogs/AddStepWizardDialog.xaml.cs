@@ -45,15 +45,35 @@ namespace WpfTestIde.Dialogs
             var text = selectedItem.Content?.ToString() ?? "";
             
             bool showValue = text is "Set Element Value" or "Verify Element Text" or "Verify Element Contains Text" 
-                             or "Verify Element Text Matches Regex" or "Verify Element Attribute" or "Press Keys"
-                             or "Drag And Drop" or "Scroll" or "Sikuli Click (Image)" or "Sikuli Type (Image)";
+                             or "Verify Element Text Matches Regex" or "Press Keys"
+                             or "Scroll" or "Sikuli Click (Image)" or "Sikuli Type (Image)";
             bool showTimeout = text is "Wait Until Element Exists" or "Wait Until Element Visible" 
                                or "Wait Until Element Enabled" or "Wait Until Text Contains";
+            bool showAttributeName = text is "Verify Element Attribute";
+            bool showTarget = text is "Drag And Drop";
+            bool showPropertyPanel = text is "Property Checkpoint";
+            bool showCountPanel = text is "Count Checkpoint";
 
             ValueLabel.Visibility = showValue ? Visibility.Visible : Visibility.Collapsed;
             ValueBox.Visibility = showValue ? Visibility.Visible : Visibility.Collapsed;
             TimeoutLabel.Visibility = showTimeout ? Visibility.Visible : Visibility.Collapsed;
             TimeoutBox.Visibility = showTimeout ? Visibility.Visible : Visibility.Collapsed;
+            AttributeNameLabel.Visibility = showAttributeName ? Visibility.Visible : Visibility.Collapsed;
+            AttributeNameBox.Visibility = showAttributeName ? Visibility.Visible : Visibility.Collapsed;
+            TargetLabel.Visibility = showTarget ? Visibility.Visible : Visibility.Collapsed;
+            TargetCombo.Visibility = showTarget ? Visibility.Visible : Visibility.Collapsed;
+            PropertyPanel.Visibility = showPropertyPanel ? Visibility.Visible : Visibility.Collapsed;
+            CountPanel.Visibility = showCountPanel ? Visibility.Visible : Visibility.Collapsed;
+
+            if (showTarget)
+            {
+                TargetCombo.ItemsSource = _elements;
+                TargetCombo.DisplayMemberPath = nameof(ElementEntry.Alias);
+                if (_elements.Count > 0)
+                {
+                    TargetCombo.SelectedIndex = 0;
+                }
+            }
 
             if (text == "Verify Element Text" && AliasCombo.SelectedItem is ElementEntry entry)
             {
@@ -132,7 +152,7 @@ namespace WpfTestIde.Dialogs
                     case "Drag And Drop":
                         step.Kind = StepKind.Action;
                         step.Action = ActionKind.DragDrop;
-                        step.Value = ValueBox.Text;
+                        step.TargetAlias = (TargetCombo.SelectedItem as ElementEntry)?.Alias ?? "";
                         break;
                     case "Hover Over Element":
                         step.Kind = StepKind.Action;
@@ -180,6 +200,7 @@ namespace WpfTestIde.Dialogs
                         break;
                     case "Verify Element Attribute":
                         step.Kind = StepKind.VerifyAttribute;
+                        step.AttributeName = AttributeNameBox.Text;
                         step.Value = ValueBox.Text;
                         break;
                     case "Get Data Grid Content Ocr":
@@ -203,15 +224,21 @@ namespace WpfTestIde.Dialogs
                         break;
                     case "Property Checkpoint":
                         step.Kind = StepKind.CheckpointProperty;
+                        step.PropertyName = (PropertyNameCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Text";
+                        step.Value = PropertyExpectedBox.Text;
                         break;
                     case "DataGrid Checkpoint":
                         step.Kind = StepKind.CheckpointDataGrid;
+                        step.Value = ValueBox.Text;
                         break;
                     case "Count Checkpoint":
                         step.Kind = StepKind.CheckpointCount;
+                        step.ExpectedCount = CountBox.Text;
                         break;
                     case "Attribute Checkpoint":
                         step.Kind = StepKind.CheckpointAttribute;
+                        step.AttributeName = AttributeNameBox.Text;
+                        step.Value = ValueBox.Text;
                         break;
                 }
 

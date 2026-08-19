@@ -1,7 +1,7 @@
 <Window x:Class="WpfTestIde.Dialogs.AddStepWizardDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Add Step" Height="520" Width="520"
+         Title="Add Step" Height="620" Width="520"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
@@ -13,8 +13,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -64,18 +64,50 @@
         <TextBox Grid.Row="2" Grid.Column="1" x:Name="ValueBox" Height="40" Margin="0,0,0,8" TextWrapping="Wrap" AcceptsReturn="False"
                  VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="ValueBox"/>
 
+        <!-- Attribute Name (for Verify Element Attribute) -->
+        <TextBlock Grid.Row="2" Grid.Column="0" x:Name="AttributeNameLabel" Text="Attribute Name:" VerticalAlignment="Top" Margin="0,0,8,4" Visibility="Collapsed"/>
+        <TextBox Grid.Row="2" Grid.Column="1" x:Name="AttributeNameBox" Height="40" Margin="0,0,0,8" TextWrapping="Wrap" AcceptsReturn="False"
+                 VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="AttributeNameBox" Visibility="Collapsed"/>
+
+        <!-- Target Element (for Drag And Drop) -->
+        <TextBlock Grid.Row="2" Grid.Column="0" x:Name="TargetLabel" Text="Target Element:" VerticalAlignment="Top" Margin="0,0,8,4" Visibility="Collapsed"/>
+        <ComboBox Grid.Row="2" Grid.Column="1" x:Name="TargetCombo" Margin="0,0,0,8" Visibility="Collapsed" AutomationProperties.AutomationId="TargetCombo"/>
+
         <!-- Timeout (for wait steps) -->
         <TextBlock Grid.Row="2" Grid.Column="0" x:Name="TimeoutLabel" Text="Timeout (s):" VerticalAlignment="Top" Margin="0,0,8,4" Visibility="Collapsed"/>
         <TextBox Grid.Row="2" Grid.Column="1" x:Name="TimeoutBox" Height="40" Margin="0,0,0,8" TextWrapping="Wrap" AcceptsReturn="False"
                  VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="TimeoutBox" Visibility="Collapsed"/>
 
         <!-- Description -->
-        <TextBlock Grid.Row="3" Grid.Column="0" Text="Description:" VerticalAlignment="Top" Margin="0,0,8,4"/>
-        <TextBox Grid.Row="3" Grid.Column="1" x:Name="DescriptionBox" Height="40" Margin="0,0,0,12" TextWrapping="Wrap" AcceptsReturn="False"
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Description:" VerticalAlignment="Top" Margin="0,8,8,0"/>
+        <TextBox Grid.Row="4" Grid.Column="1" x:Name="DescriptionBox" Margin="0,8,0,0" 
+                 Height="40" TextWrapping="Wrap" AcceptsReturn="False"
                  AutomationProperties.AutomationId="DescriptionBox"/>
 
+        <!-- Property Options (for Property Checkpoint) -->
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" x:Name="PropertyPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Property Name:" Margin="0,0,0,4"/>
+            <ComboBox x:Name="PropertyNameCombo" Margin="0,0,0,8" AutomationProperties.AutomationId="PropertyNameCombo">
+                <ComboBoxItem Content="Text" IsSelected="True"/>
+                <ComboBoxItem Content="IsEnabled"/>
+                <ComboBoxItem Content="IsVisible"/>
+                <ComboBoxItem Content="AutomationId"/>
+                <ComboBoxItem Content="Name"/>
+                <ComboBoxItem Content="ControlType"/>
+            </ComboBox>
+            <TextBlock Text="Expected Value:" Margin="0,0,0,4"/>
+            <TextBox x:Name="PropertyExpectedBox" Height="40" TextWrapping="Wrap" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="PropertyExpectedBox"/>
+        </StackPanel>
+
+        <!-- Count Options (for Count Checkpoint) -->
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" x:Name="CountPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Expected Count:" Margin="0,0,0,4"/>
+            <TextBox x:Name="CountBox" Width="100" HorizontalAlignment="Left" AutomationProperties.AutomationId="CountBox"/>
+        </StackPanel>
+
         <!-- Buttons -->
-        <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal"
+        <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" 
                     HorizontalAlignment="Right" Margin="0,16,0,0">
             <Button x:Name="btnStepCancel" Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click" AutomationProperties.AutomationId="btnStepCancel"/>
             <Button x:Name="btnStepAdd" Content="Add" Width="80" Click="Add_Click" IsDefault="True" AutomationProperties.AutomationId="btnStepAdd"/>
