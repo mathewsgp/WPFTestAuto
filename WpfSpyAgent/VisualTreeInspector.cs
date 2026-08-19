@@ -382,30 +382,6 @@ namespace WpfSpyAgent
             return null;
         }
 
-        public static bool IsVisualBackgroundNull(DependencyObject? visual)
-        {
-            // 1. Check for Panels (Grid, StackPanel, Canvas, etc.)
-            if (visual is Panel panel)
-            {
-                return panel.Background == null;
-            }
-
-            // 2. Check for Controls (Button, Label, Control-derived)
-            if (visual is Control control)
-            {
-                return control.Background == null;
-            }
-
-            // 3. Check for Borders
-            if (visual is Border border)
-            {
-                return border.Background == null;
-            }
-
-            // 4. Elements like TextBlock or Shapes don't use Background or default to null/transparent behavior
-            return true;
-        }
-
         private static void PrintElementBounds(Visual rootVisual, DependencyObject? dp)
         {
             
@@ -448,10 +424,6 @@ namespace WpfSpyAgent
                     else if(potentialHitTestTarget is UIElement uiElement2 && !uiElement2.IsVisible)
                     {
                         return HitTestFilterBehavior.ContinueSkipSelfAndChildren;
-                    }
-                    else if(IsVisualBackgroundNull(potentialHitTestTarget))
-                    {
-                        return HitTestFilterBehavior.ContinueSkipSelf;
                     }
                     Log($"HitTestRespectingInputVisibility Not skipped {potentialHitTestTarget?.GetType().Name} ");
                     PrintElementBounds(rootVisual, potentialHitTestTarget);
