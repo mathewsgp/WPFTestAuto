@@ -533,8 +533,17 @@ namespace WpfSpyAgent
 
             // Fallback: if the named walk-up failed (e.g. cyclic Border
             // template visuals), explicitly look for the nearest ButtonBase
-            // ancestor. This handles clicks on buttons whose template
-            // hit-test lands on an internal Border/PART_*.
+            // or Toggle-like ancestor. This handles clicks on custom toggle
+            // controls whose template hit-test lands on internal visuals
+            // without names.
+            var toggle = WalkUpToNearestToggleAncestor(visual);
+            if (toggle != null)
+            {
+                sw.Stop();
+                Log($"({screenX},{screenY}) -> Toggle fallback {toggle.GetType().Name} name={toggle.Name} in {sw.ElapsedMilliseconds}ms");
+                return toggle;
+            }
+
             var button = WalkUpToNearestButtonBase(visual);
             if (button != null)
             {
@@ -690,6 +699,28 @@ namespace WpfSpyAgent
                 {
                     Log($"WalkUpToNearestButtonBase returned {buttonBase.GetType().Name} name={buttonBase.Name} after {step} steps");
                     return (FrameworkElement)buttonBase;
+                }
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return null;
+        }
+
+        private static FrameworkElement? WalkUpToNearestToggleAncestor(DependencyObject visual)
+        {
+            const int maxSteps = 100;
+            int step = 0;
+            DependencyObject? current = visual;
+            while (current != null)
+            {
+                step++;
+                if (step > maxSteps)
+                {
+                    break;
+                }
+                if (current is System.Windows.Controls.Primitives.ToggleButton toggleButton)
+                {
+                    Log($"WalkUpToNearestToggleAncestor returned {toggleButton.GetType().Name} name={toggleButton.Name} after {step} steps");
+                    return (FrameworkElement)toggleButton;
                 }
                 current = VisualTreeHelper.GetParent(current);
             }

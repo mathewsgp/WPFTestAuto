@@ -98,9 +98,12 @@ elements:
     tags: ["orders", "non-standard", "wpfspy-only"]
     strategies:
       WPFSpy:
+        - searchBy: "Name"
+          value: "chkPriority"
+          priority: 1
         - searchBy: "XPath"
           value: "CheckBox[@Name='chkPriority']"
-          priority: 1
+          priority: 2
       Sikuli:
         - searchBy: "Image"
           value: "priority_checkbox.png"
