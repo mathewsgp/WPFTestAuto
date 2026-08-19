@@ -1084,17 +1084,17 @@ namespace WpfSpyAgent
                     bool includeLayoutPanel = false;
                     if (typeName == "LayoutPanel")
                     {
-                        DependencyObject? parent = VisualTreeHelper.GetParent(current);
-                        if (parent != null)
+                        DependencyObject? layoutParent = VisualTreeHelper.GetParent(current);
+                        if (layoutParent != null)
                         {
-                            string parentType = parent.GetType().Name;
+                            string parentType = layoutParent.GetType().Name;
                             if (parentType == "LayoutGroup" || parentType == "LayoutItem")
                             {
                                 int panelSiblings = 0;
-                                int childCount = VisualTreeHelper.GetChildrenCount(parent);
+                                int childCount = VisualTreeHelper.GetChildrenCount(layoutParent);
                                 for (int i = 0; i < childCount; i++)
                                 {
-                                    if (VisualTreeHelper.GetChild(parent, i).GetType().Name == "LayoutPanel")
+                                    if (VisualTreeHelper.GetChild(layoutParent, i).GetType().Name == "LayoutPanel")
                                         panelSiblings++;
                                 }
                                 if (panelSiblings > 1)
