@@ -27,6 +27,19 @@ namespace WpfTestIde
                 vm.PropertyChanged += Vm_PropertyChanged;
             Loaded += MainWindow_Loaded;
             Closing += MainWindow_Closing;
+            StateChanged += MainWindow_StateChanged;
+        }
+
+        private void MainWindow_StateChanged(object sender, EventArgs e)
+        {
+            if (WindowState == WindowState.Maximized)
+            {
+                BorderThickness = new System.Windows.Thickness(7);
+            }
+            else
+            {
+                BorderThickness = new System.Windows.Thickness(0);
+            }
         }
 
         // ------------------------------------------------------------
@@ -275,6 +288,39 @@ namespace WpfTestIde
             {
                 vm.OpenSettingsCommand.Execute(null);
             }
+        }
+
+        private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource is System.Windows.Media.Visual visual && FindAncestor<Button>(visual) != null) return;
+            if (e.ClickCount == 2 && WindowState != WindowState.Maximized)
+            {
+                Maximize_Click(null, null);
+                return;
+            }
+            DragMove();
+        }
+
+        private void Minimize_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState.Minimized;
+        }
+
+        private void Maximize_Click(object sender, RoutedEventArgs e)
+        {
+            if (WindowState == WindowState.Maximized)
+            {
+                WindowState = WindowState.Normal;
+            }
+            else
+            {
+                WindowState = WindowState.Maximized;
+            }
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
         }
 
         // ------------------------------------------------------------

@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": true,
     "is_enabled": true,
-    "captured_at": "2026-08-17T09:03:50.700861",
-    "last_verified": "2026-08-17T09:03:50.700871",
-    "verification_count": 1,
+    "captured_at": "2026-08-18T09:35:55.581496",
+    "last_verified": "2026-08-18T09:35:55.581505",
+    "verification_count": 2,
     "driver_used": "FlaUI",
     "search_method": "AutomationId",
     "search_value": "cmbSku"
@@ -21,17 +21,17 @@
   "healing_history": [],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 1,
-      "failure_count": 1,
-      "total_duration_ms": 2738.9328479766846,
-      "last_success": "2026-08-17T09:03:50.438505",
-      "last_failure": "2026-08-16T11:27:37.670134",
-      "avg_duration_ms": 2738.9328479766846
+      "success_count": 2,
+      "failure_count": 2,
+      "total_duration_ms": 5442.818164825439,
+      "last_success": "2026-08-18T09:35:55.286228",
+      "last_failure": "2026-08-18T19:47:55.588193",
+      "avg_duration_ms": 1360.7045412063599
     }
   },
-  "total_interactions": 3,
+  "total_interactions": 6,
   "first_seen": "2026-08-16T11:27:37.670119",
-  "last_interaction": "2026-08-17T09:03:50.700875",
-  "consecutive_failures": 0,
-  "consecutive_successes": 2
+  "last_interaction": "2026-08-18T19:47:55.588199",
+  "consecutive_failures": 1,
+  "consecutive_successes": 0
 }

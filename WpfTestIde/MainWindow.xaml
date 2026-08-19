@@ -8,7 +8,9 @@
         Title="WPF Test IDE" Height="760" Width="1400"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BackgroundBrush}"
-        AutomationProperties.AutomationId="MainWindow">
+        AutomationProperties.AutomationId="MainWindow"
+        WindowStyle="None"
+        ResizeMode="CanResize">
 
     <Window.Resources>
         <Style x:Key="ToolbarButton" TargetType="Button" BasedOn="{StaticResource VsButton}">
@@ -119,6 +121,18 @@
     </Window.InputBindings>
 
     <DockPanel>
+        <!-- ================= Frameless Title Bar ================= -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ToolbarBrush}" Height="32" MouseDown="TitleBar_MouseDown">
+            <DockPanel LastChildFill="False">
+                <TextBlock Text="WPF Test IDE" VerticalAlignment="Center" Margin="12,0" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold"/>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                    <Button Content="─" Width="46" Height="32" Background="Transparent" BorderThickness="0" Click="Minimize_Click" ToolTip="Minimize"/>
+                    <Button Content="☐" Width="46" Height="32" Background="Transparent" BorderThickness="0" Click="Maximize_Click" ToolTip="Maximize"/>
+                    <Button Content="✕" Width="46" Height="32" Background="Transparent" BorderThickness="0" Click="Close_Click" ToolTip="Close"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
         <!-- ================= Menu Bar ================= -->
         <Menu DockPanel.Dock="Top" Background="{DynamicResource ToolbarBrush}" Height="26">
             <MenuItem Header="_File">
