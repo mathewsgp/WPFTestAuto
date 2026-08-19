@@ -1631,7 +1631,17 @@ namespace WpfSpyAgent
                 var cells = new List<string>();
                 for (int j = 0; j < dataGrid.Columns.Count; j++)
                 {
-                    var cell = FindVisualChild<System.Windows.Controls.DataGridCell>(row);
+                    System.Windows.Controls.DataGridCell? cell = null;
+                    var cellContent = dataGrid.Columns[j].GetCellContent(row);
+                    if (cellContent != null)
+                    {
+                        DependencyObject? parent = VisualTreeHelper.GetParent(cellContent);
+                        while (parent != null && parent is not System.Windows.Controls.DataGridCell)
+                        {
+                            parent = VisualTreeHelper.GetParent(parent);
+                        }
+                        cell = parent as System.Windows.Controls.DataGridCell;
+                    }
                     if (cell is null)
                     {
                         cells.Add("");
