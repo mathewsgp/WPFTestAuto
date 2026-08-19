@@ -9,6 +9,9 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using YamlDotNet.Core;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 using WpfTestIde.Execution;
 using WpfTestIde.Models;
 using WpfTestIde.Recording;
@@ -440,6 +443,7 @@ namespace WpfTestIde.ViewModels
         public ICommand ToggleRecordingCommand { get; }
         public ICommand AttachCommand { get; }
         public ICommand AddVerificationCommand { get; }
+        public ICommand AddStepCommand { get; }
         public ICommand DeleteStepCommand { get; }
         // D3: re-order recorded steps. Two explicit commands (up/down buttons) plus
         // a drag-drop path that calls MoveStep directly from MainWindow code-behind.
@@ -470,6 +474,7 @@ namespace WpfTestIde.ViewModels
             ToggleRecordingCommand = new RelayCommand(_ => ToggleRecording(), _ => IsAttached);
             AttachCommand = new RelayCommand(_ => Attach());
             AddVerificationCommand = new RelayCommand(param => AddVerification(param as RecordedStep));
+            AddStepCommand = new RelayCommand(param => AddStep(param as RecordedStep));
             DeleteStepCommand = new RelayCommand(param => DeleteStep(param as RecordedStep));
             MoveStepUpCommand = new RelayCommand(param => MoveStep(param as RecordedStep, -1));
             MoveStepDownCommand = new RelayCommand(param => MoveStep(param as RecordedStep, +1));
@@ -893,22 +898,41 @@ namespace WpfTestIde.ViewModels
         // ------------------------------------------------------------
         private void AddVerification(RecordedStep? afterStep)
         {
-            var dialog = new Dialogs.AddVerificationDialog(Elements.ToList(), PipeName);
-            if (dialog.ShowDialog() != true)
+            try
             {
-                return;
+                var dialog = new Dialogs.AddStepWizardDialog(Elements.ToList(), PipeName);
+                dialog.StepTypeCombo.SelectedIndex = 3; // Verify Element Text
+                if (dialog.ShowDialog() != true || dialog.CreatedStep == null)
+                {
+                    return;
+                }
+
+                int index = afterStep is null ? Steps.Count : Steps.IndexOf(afterStep) + 1;
+                Steps.Insert(index, dialog.CreatedStep);
             }
-
-            var verifyStep = new RecordedStep
+            catch (Exception ex)
             {
-                Kind = StepKind.Verify,
-                Alias = dialog.SelectedAlias,
-                Value = dialog.ExpectedValue,
-                AppId = SelectedApp?.AppId,
-            };
+                StatusText = $"Add verification error: {ex.Message}";
+            }
+        }
 
-            int index = afterStep is null ? Steps.Count : Steps.IndexOf(afterStep) + 1;
-            Steps.Insert(index, verifyStep);
+        private void AddStep(RecordedStep? afterStep)
+        {
+            try
+            {
+                var dialog = new Dialogs.AddStepWizardDialog(Elements.ToList(), PipeName);
+                if (dialog.ShowDialog() != true || dialog.CreatedStep == null)
+                {
+                    return;
+                }
+
+                int index = afterStep is null ? Steps.Count : Steps.IndexOf(afterStep) + 1;
+                Steps.Insert(index, dialog.CreatedStep);
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Add step error: {ex.Message}";
+            }
         }
 
         private void OpenCheckpointWizard()
@@ -1274,35 +1298,160 @@ namespace WpfTestIde.ViewModels
         private void LoadSample()
         {
             Reset();
-            var sampleElements = new[]
-            {
-                new ElementEntry { Alias = "LoginPage.txtUsername", DisplayName = "UsernameInput", ControlType = "TextBox", AutomationId = "txtUsername", Name = "UsernameInput", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
-                new ElementEntry { Alias = "LoginPage.txtPassword", DisplayName = "PasswordInput", ControlType = "PasswordBox", AutomationId = "txtPassword", Name = "PasswordInput", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
-                new ElementEntry { Alias = "LoginPage.btnSubmit", DisplayName = "SubmitBtn", ControlType = "Button", AutomationId = "btnSubmit", Name = "SubmitBtn", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
-                new ElementEntry { Alias = "OrdersPage.cmbSku", DisplayName = "SkuCombo", ControlType = "ComboBox", AutomationId = "cmbSku", Name = "SkuCombo", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
-                new ElementEntry { Alias = "OrdersPage.txtQty", DisplayName = "QtyInput", ControlType = "TextBox", AutomationId = "txtQty", Name = "QtyInput", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
-                new ElementEntry { Alias = "OrdersPage.chkPriority", DisplayName = "PriorityToggle", ControlType = "PriorityToggleControl", AutomationId = null, Name = "PriorityToggle", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
-                new ElementEntry { Alias = "OrdersPage.btnCreateOrder", DisplayName = "CreateOrderBtn", ControlType = "Button", AutomationId = "btnCreateOrder", Name = "CreateOrderBtn", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
-                new ElementEntry { Alias = "OrdersPage.lblConfirmation", DisplayName = "ConfirmationLabel", ControlType = "Label", AutomationId = "lblConfirmation", Name = "ConfirmationLabel", DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" } },
-            };
-            foreach (var e in sampleElements) Elements.Add(e);
 
-            var sampleSteps = new[]
-            {
-                new RecordedStep { Kind = StepKind.Action, Alias = "LoginPage.txtUsername", Action = ActionKind.SetValue, Value = "user1" },
-                new RecordedStep { Kind = StepKind.Action, Alias = "LoginPage.txtPassword", Action = ActionKind.SetValue, Value = "Pass@123" },
-                new RecordedStep { Kind = StepKind.Action, Alias = "LoginPage.btnSubmit", Action = ActionKind.Invoke },
-                new RecordedStep { Kind = StepKind.Action, Alias = "OrdersPage.cmbSku", Action = ActionKind.SetValue, Value = "SKU-1001" },
-                new RecordedStep { Kind = StepKind.Action, Alias = "OrdersPage.txtQty", Action = ActionKind.SetValue, Value = "2" },
-                new RecordedStep { Kind = StepKind.Action, Alias = "OrdersPage.chkPriority", Action = ActionKind.Toggle, NonStandard = true },
-                new RecordedStep { Kind = StepKind.Verify, Alias = "OrdersPage.chkPriority", Value = "On" },
-                new RecordedStep { Kind = StepKind.Action, Alias = "OrdersPage.btnCreateOrder", Action = ActionKind.Invoke },
-                new RecordedStep { Kind = StepKind.Verify, Alias = "OrdersPage.lblConfirmation", Value = "Order confirmed: SKU-1001 x2" },
-                 new RecordedStep { Kind = StepKind.VerifyOcr, Alias = "OrdersPage.gridOrders" },
-            };
-            foreach (var s in sampleSteps) Steps.Add(s);
+            string loginPath = Path.Combine(FrameworkRoot, "repository", "elements", "login_page.yaml");
+            string ordersPath = Path.Combine(FrameworkRoot, "repository", "elements", "orders_page.yaml");
 
-            StatusText = "Loaded sample recording (no live attach required).";
+            var deserializer = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build();
+
+            var loadedAliases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                foreach (string yamlPath in new[] { loginPath, ordersPath })
+                {
+                    if (!File.Exists(yamlPath)) continue;
+
+                    string yaml = File.ReadAllText(yamlPath);
+                    var root = deserializer.Deserialize<Dictionary<object, object>>(yaml);
+                    if (root == null || !root.TryGetValue("elements", out var elementsObj)) continue;
+
+                    var elementsDict = ConvertToDictionary(elementsObj);
+                    if (elementsDict == null) continue;
+
+                    foreach (var kv in elementsDict)
+                    {
+                        string alias = kv.Key?.ToString() ?? "";
+                        if (string.IsNullOrEmpty(alias)) continue;
+
+                        var entry = ConvertToDictionary(kv.Value);
+                        if (entry == null) continue;
+
+                        loadedAliases.Add(alias);
+
+                        var element = new ElementEntry
+                        {
+                            Alias = alias,
+                            DisplayName = entry.ContainsKey("displayName") ? (entry["displayName"] as string ?? "") : "",
+                            ControlType = entry.ContainsKey("controlType") ? (entry["controlType"] as string ?? "") : "",
+                            AutomationId = entry.ContainsKey("automationId") ? (entry["automationId"] as string ?? null) : null,
+                            Name = entry.ContainsKey("name") ? (entry["name"] as string ?? "") : "",
+                            DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" }
+                        };
+
+                        Elements.Add(element);
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            BuildSampleSteps(loadedAliases);
+
+            StatusText = "Loaded sample recording from repository YAML.";
+        }
+
+        private void BuildSampleSteps(HashSet<string> loadedAliases)
+        {
+            var loginAliases = loadedAliases.Where(a => a.StartsWith("LoginPage.", StringComparison.OrdinalIgnoreCase)).ToList();
+            var ordersAliases = loadedAliases.Where(a => a.StartsWith("OrdersPage.", StringComparison.OrdinalIgnoreCase)).ToList();
+
+            string? usernameAlias = loginAliases.FirstOrDefault(a => a.Contains("Username", StringComparison.OrdinalIgnoreCase));
+            string? passwordAlias = loginAliases.FirstOrDefault(a => a.Contains("Password", StringComparison.OrdinalIgnoreCase));
+            string? submitAlias = loginAliases.FirstOrDefault(a => a.Contains("Submit", StringComparison.OrdinalIgnoreCase) || a.Contains("Login", StringComparison.OrdinalIgnoreCase));
+            string? errorAlias = loginAliases.FirstOrDefault(a => a.Contains("Error", StringComparison.OrdinalIgnoreCase) || a.Contains("lblError", StringComparison.OrdinalIgnoreCase));
+
+            string? skuAlias = ordersAliases.FirstOrDefault(a => a.Contains("Sku", StringComparison.OrdinalIgnoreCase) || a.Contains("cmb", StringComparison.OrdinalIgnoreCase));
+            string? qtyAlias = ordersAliases.FirstOrDefault(a => a.Contains("Qty", StringComparison.OrdinalIgnoreCase) || a.Contains("Quantity", StringComparison.OrdinalIgnoreCase));
+            string? priorityAlias = ordersAliases.FirstOrDefault(a => a.Contains("Priority", StringComparison.OrdinalIgnoreCase) || a.Contains("chk", StringComparison.OrdinalIgnoreCase));
+            string? createAlias = ordersAliases.FirstOrDefault(a => a.Contains("Create", StringComparison.OrdinalIgnoreCase) || a.Contains("Submit", StringComparison.OrdinalIgnoreCase));
+            string? confirmationAlias = ordersAliases.FirstOrDefault(a => a.Contains("Confirmation", StringComparison.OrdinalIgnoreCase) || a.Contains("lbl", StringComparison.OrdinalIgnoreCase));
+            string? gridAlias = ordersAliases.FirstOrDefault(a => a.Contains("Grid", StringComparison.OrdinalIgnoreCase) || a.Contains("Orders", StringComparison.OrdinalIgnoreCase));
+            string? logoutAlias = ordersAliases.FirstOrDefault(a => a.Contains("Logout", StringComparison.OrdinalIgnoreCase));
+
+            if (usernameAlias != null)
+                Steps.Add(new RecordedStep { Kind = StepKind.Action, Alias = usernameAlias, Action = ActionKind.SetValue, Value = "user1" });
+
+            if (passwordAlias != null)
+                Steps.Add(new RecordedStep { Kind = StepKind.Action, Alias = passwordAlias, Action = ActionKind.SetValue, Value = "Pass@123" });
+
+            if (submitAlias != null)
+                Steps.Add(new RecordedStep { Kind = StepKind.Action, Alias = submitAlias, Action = ActionKind.Invoke });
+
+            if (skuAlias != null)
+                Steps.Add(new RecordedStep { Kind = StepKind.Action, Alias = skuAlias, Action = ActionKind.SetValue, Value = "SKU-1001" });
+
+            if (qtyAlias != null)
+                Steps.Add(new RecordedStep { Kind = StepKind.Action, Alias = qtyAlias, Action = ActionKind.SetValue, Value = "2" });
+
+            if (priorityAlias != null)
+                Steps.Add(new RecordedStep { Kind = StepKind.Action, Alias = priorityAlias, Action = ActionKind.Toggle, NonStandard = true });
+
+            if (createAlias != null)
+                Steps.Add(new RecordedStep { Kind = StepKind.Action, Alias = createAlias, Action = ActionKind.Invoke });
+
+            if (confirmationAlias != null)
+                Steps.Add(new RecordedStep { Kind = StepKind.Verify, Alias = confirmationAlias, Value = "Order confirmed: SKU-1001 x2" });
+
+            if (gridAlias != null)
+                Steps.Add(new RecordedStep { Kind = StepKind.VerifyOcr, Alias = gridAlias });
+
+            if (logoutAlias != null)
+                Steps.Add(new RecordedStep { Kind = StepKind.Action, Alias = logoutAlias, Action = ActionKind.Invoke });
+        }
+
+        private static System.Collections.Generic.IDictionary<string, object>? ConvertToDictionary(object obj)
+        {
+            if (obj is System.Collections.Generic.IDictionary<string, object> dict)
+                return dict;
+
+            if (obj is System.Collections.Generic.IDictionary<object, object> objDict)
+            {
+                var result = new System.Collections.Generic.Dictionary<string, object>(System.StringComparer.OrdinalIgnoreCase);
+                foreach (var kv in objDict)
+                {
+                    string key = kv.Key?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        result[key] = ConvertValue(kv.Value);
+                    }
+                }
+                return result;
+            }
+
+            return null;
+        }
+
+        private static object ConvertValue(object value)
+        {
+            if (value is System.Collections.Generic.IDictionary<object, object> dict)
+            {
+                var result = new System.Collections.Generic.Dictionary<string, object>(System.StringComparer.OrdinalIgnoreCase);
+                foreach (var kv in dict)
+                {
+                    string key = kv.Key?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        result[key] = ConvertValue(kv.Value);
+                    }
+                }
+                return result;
+            }
+
+            if (value is System.Collections.Generic.IList<object> list)
+            {
+                var result = new System.Collections.Generic.List<object>();
+                foreach (var item in list)
+                {
+                    result.Add(ConvertValue(item));
+                }
+                return result;
+            }
+
+            return value;
         }
 
         private void Reset()

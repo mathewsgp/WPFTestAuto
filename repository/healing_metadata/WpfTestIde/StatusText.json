@@ -9,14 +9,14 @@
     "parent_xpath": null,
     "text": "Loaded sample recording (no live attach required).",
     "position": null,
-    "is_visible": true,
+    "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-08-16T00:34:43.541843",
-    "last_verified": "2026-08-16T00:34:43.541852",
-    "verification_count": 137,
-    "driver_used": "WPFSpy",
-    "search_method": "XPath",
-    "search_value": "TextBlock[@AutomationId='StatusText']"
+    "captured_at": "2026-08-19T10:08:48.300387",
+    "last_verified": "2026-08-19T10:08:48.300397",
+    "verification_count": 162,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "StatusText"
   },
   "healing_history": [
     {
@@ -82,12 +82,12 @@
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 20,
+      "success_count": 45,
       "failure_count": 0,
-      "total_duration_ms": 9444.126605987549,
-      "last_success": "2026-08-09T13:03:13.297270",
+      "total_duration_ms": 22114.453077316284,
+      "last_success": "2026-08-19T10:08:47.755182",
       "last_failure": null,
-      "avg_duration_ms": 472.20633029937744
+      "avg_duration_ms": 491.43229060702856
     },
     "WPFSpy:XPath": {
       "success_count": 117,
@@ -106,9 +106,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 284,
+  "total_interactions": 334,
   "first_seen": "2026-08-09T01:53:52.803162",
-  "last_interaction": "2026-08-16T08:05:25.309073",
-  "consecutive_failures": 6,
-  "consecutive_successes": 0
+  "last_interaction": "2026-08-19T10:08:48.300403",
+  "consecutive_failures": 0,
+  "consecutive_successes": 50
 }

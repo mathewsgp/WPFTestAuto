@@ -252,19 +252,45 @@ class FlaUIDriver:
         """Set text value on an input element."""
         xpath = self._to_xpath(element)
         self._ensure_attached()
-        self._lib.set_text_to_textbox(xpath, value)
+        try:
+            self._lib.set_text_to_textbox(xpath, value)
+        except Exception:
+            pass
+        try:
+            self._lib.select_combobox_item_by_name(xpath, value)
+        except Exception:
+            raise ElementNotInteractableError(f"FlaUI: cannot set value on element: {xpath}")
 
     def get_text(self, element) -> str:
         """Get the text content of an element."""
         xpath = self._to_xpath(element)
         self._ensure_attached()
         try:
-            return self._lib.get_text_from_textbox(xpath)
+            text = self._lib.get_text_from_textbox(xpath)
+            if text:
+                return text
         except Exception:
-            try:
-                return self._lib.get_name_from_element(xpath)
-            except Exception:
-                return ""
+            pass
+        try:
+            texts = self._lib.get_all_selected_texts_from_combobox(xpath)
+            if texts:
+                return texts[0]
+        except Exception:
+            pass
+        try:
+            data = self._lib.get_all_data_from_grid(xpath)
+            if isinstance(data, list):
+                lines = []
+                for row in data:
+                    lines.append(",".join(row if isinstance(row, list) else [str(row)]))
+                return "\n".join(lines)
+            return str(data)
+        except Exception:
+            pass
+        try:
+            return self._lib.get_name_from_element(xpath)
+        except Exception:
+            return ""
 
     def is_visible(self, element) -> bool:
         """Check if an element is visible."""
@@ -273,7 +299,7 @@ class FlaUIDriver:
         try:
             return self._lib.is_visible(xpath)
         except Exception:
-            return True
+            return False
 
     def is_enabled(self, element) -> bool:
         """Check if an element is enabled."""
@@ -282,7 +308,7 @@ class FlaUIDriver:
         try:
             return self._lib.is_element_enabled(xpath)
         except Exception:
-            return True
+            return False
 
     def is_actionable(self, element) -> bool:
         """Check if an element is both visible and enabled."""
@@ -321,7 +347,15 @@ class FlaUIDriver:
         xpath = self._to_xpath(element)
         self._ensure_attached()
         try:
-            return self._lib.get_all_data_from_grid(xpath)
+            data = self._lib.get_all_data_from_grid(xpath)
+            if isinstance(data, list):
+                import io, csv
+                output = io.StringIO()
+                writer = csv.writer(output)
+                for row in data:
+                    writer.writerow(row if isinstance(row, list) else [row])
+                return output.getvalue()
+            return str(data)
         except Exception:
             return ""
 

@@ -1,0 +1,78 @@
+<Window x:Class="WpfTestIde.Dialogs.AddStepWizardDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Add Step" Height="520" Width="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        AutomationProperties.AutomationId="AddStepWizardDialog">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Step Type -->
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Step Type:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+        <ComboBox Grid.Row="0" Grid.Column="1" x:Name="StepTypeCombo" Margin="0,0,0,8" SelectionChanged="StepTypeCombo_SelectionChanged" AutomationProperties.AutomationId="StepTypeCombo">
+            <ComboBoxItem Content="Click Element" IsSelected="True"/>
+            <ComboBoxItem Content="Set Element Value"/>
+            <ComboBoxItem Content="Toggle Element"/>
+            <ComboBoxItem Content="Double Click Element"/>
+            <ComboBoxItem Content="Right Click Element"/>
+            <ComboBoxItem Content="Press Keys"/>
+            <Separator/>
+            <ComboBoxItem Content="Verify Element Text"/>
+            <ComboBoxItem Content="Verify Element Enabled"/>
+            <ComboBoxItem Content="Verify Element Visible"/>
+            <ComboBoxItem Content="Verify Element Contains Text"/>
+            <ComboBoxItem Content="Verify Element Text Matches Regex"/>
+            <ComboBoxItem Content="Verify Element Attribute"/>
+            <Separator/>
+            <ComboBoxItem Content="Wait Until Element Exists"/>
+            <ComboBoxItem Content="Wait Until Element Visible"/>
+            <ComboBoxItem Content="Wait Until Element Enabled"/>
+            <ComboBoxItem Content="Wait Until Text Contains"/>
+            <Separator/>
+            <ComboBoxItem Content="Property Checkpoint"/>
+            <ComboBoxItem Content="DataGrid Checkpoint"/>
+            <ComboBoxItem Content="Count Checkpoint"/>
+            <ComboBoxItem Content="Attribute Checkpoint"/>
+        </ComboBox>
+
+        <!-- Element -->
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Element:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+        <ComboBox Grid.Row="1" Grid.Column="1" x:Name="AliasCombo" Margin="0,0,0,8" SelectionChanged="AliasCombo_SelectionChanged" AutomationProperties.AutomationId="AliasCombo"/>
+
+        <!-- Value / Expected Text / Attribute Name -->
+        <TextBlock Grid.Row="2" Grid.Column="0" x:Name="ValueLabel" Text="Value:" VerticalAlignment="Top" Margin="0,0,8,4"/>
+        <TextBox Grid.Row="2" Grid.Column="1" x:Name="ValueBox" Height="40" Margin="0,0,0,8" TextWrapping="Wrap" AcceptsReturn="False"
+                 VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="ValueBox"/>
+
+        <!-- Timeout (for wait steps) -->
+        <TextBlock Grid.Row="2" Grid.Column="0" x:Name="TimeoutLabel" Text="Timeout (s):" VerticalAlignment="Top" Margin="0,0,8,4" Visibility="Collapsed"/>
+        <TextBox Grid.Row="2" Grid.Column="1" x:Name="TimeoutBox" Height="40" Margin="0,0,0,8" TextWrapping="Wrap" AcceptsReturn="False"
+                 VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="TimeoutBox" Visibility="Collapsed"/>
+
+        <!-- Description -->
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Description:" VerticalAlignment="Top" Margin="0,0,8,4"/>
+        <TextBox Grid.Row="3" Grid.Column="1" x:Name="DescriptionBox" Height="40" Margin="0,0,0,12" TextWrapping="Wrap" AcceptsReturn="False"
+                 AutomationProperties.AutomationId="DescriptionBox"/>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="btnStepCancel" Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click" AutomationProperties.AutomationId="btnStepCancel"/>
+            <Button x:Name="btnStepAdd" Content="Add" Width="80" Click="Add_Click" IsDefault="True" AutomationProperties.AutomationId="btnStepAdd"/>
+        </StackPanel>
+    </Grid>
+</Window>

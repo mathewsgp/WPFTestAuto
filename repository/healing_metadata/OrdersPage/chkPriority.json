@@ -25,16 +25,40 @@
       "healing_search_value": "N/A",
       "healing_successful": false,
       "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T08:40:37.345731",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "CheckBox[@Name='chkPriority']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='OrdersWindow']/CheckBox[@Name='chkPriorit",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T08:41:26.443797",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "CheckBox[@Name='chkPriority']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='OrdersWindow']/CheckBox[@Name='chkPriorit",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
     }
   ],
   "strategy_stats": {
     "WPFSpy:XPath": {
       "success_count": 0,
-      "failure_count": 4,
-      "total_duration_ms": 14100.675582885742,
+      "failure_count": 8,
+      "total_duration_ms": 28275.06399154663,
       "last_success": null,
-      "last_failure": "2026-08-16T01:08:31.624801",
-      "avg_duration_ms": 3525.1688957214355
+      "last_failure": "2026-08-19T08:41:26.443806",
+      "avg_duration_ms": 3534.382998943329
     },
     "None:N/A": {
       "success_count": 0,
@@ -43,11 +67,19 @@
       "last_success": null,
       "last_failure": null,
       "avg_duration_ms": 0.0
+    },
+    "Sikuli:Image": {
+      "success_count": 0,
+      "failure_count": 2,
+      "total_duration_ms": 0.16236305236816406,
+      "last_success": null,
+      "last_failure": "2026-08-19T08:41:26.442647",
+      "avg_duration_ms": 0.08118152618408203
     }
   },
-  "total_interactions": 4,
+  "total_interactions": 10,
   "first_seen": "2026-08-16T01:08:02.751952",
-  "last_interaction": "2026-08-16T01:08:31.624804",
-  "consecutive_failures": 4,
+  "last_interaction": "2026-08-19T08:41:26.443809",
+  "consecutive_failures": 10,
   "consecutive_successes": 0
 }

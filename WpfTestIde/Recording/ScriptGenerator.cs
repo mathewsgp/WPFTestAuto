@@ -68,16 +68,53 @@ namespace WpfTestIde.Recording
                 string stepAppId = step.AppId ?? appId ?? "";
                 string appIdArg = string.IsNullOrEmpty(stepAppId) ? "" : $"    app_id={stepAppId}";
 
-                if (step.Kind == StepKind.Verify)
+                switch (step.Kind)
                 {
-                    sb.AppendLine($"    Verify Element Text    {step.Alias}    {step.Value}{appIdArg}");
-                    continue;
-                }
-
-                if (step.Kind == StepKind.VerifyOcr)
-                {
-                    sb.AppendLine($"    Get Data Grid Content Ocr    {step.Alias}{appIdArg}");
-                    continue;
+                    case StepKind.Verify:
+                        sb.AppendLine($"    Verify Element Text    {step.Alias}    {step.Value}{appIdArg}");
+                        continue;
+                    case StepKind.VerifyOcr:
+                        sb.AppendLine($"    Get Data Grid Content Ocr    {step.Alias}{appIdArg}");
+                        continue;
+                    case StepKind.VerifyEnabled:
+                        sb.AppendLine($"    Verify Element Enabled    {step.Alias}{appIdArg}");
+                        continue;
+                    case StepKind.VerifyVisible:
+                        sb.AppendLine($"    Verify Element Visible    {step.Alias}{appIdArg}");
+                        continue;
+                    case StepKind.VerifyContains:
+                        sb.AppendLine($"    Verify Element Contains Text    {step.Alias}    {step.Value}{appIdArg}");
+                        continue;
+                    case StepKind.VerifyRegex:
+                        sb.AppendLine($"    Verify Element Text Matches Regex    {step.Alias}    {step.Value}{appIdArg}");
+                        continue;
+                    case StepKind.VerifyAttribute:
+                        sb.AppendLine($"    Verify Element Attribute    {step.Alias}    {step.Value}{appIdArg}");
+                        continue;
+                    case StepKind.WaitExists:
+                        sb.AppendLine($"    Wait Until Element Exists    {step.Alias}    timeout={step.Value}{appIdArg}");
+                        continue;
+                    case StepKind.WaitVisible:
+                        sb.AppendLine($"    Wait Until Element Visible    {step.Alias}    timeout={step.Value}{appIdArg}");
+                        continue;
+                    case StepKind.WaitEnabled:
+                        sb.AppendLine($"    Wait Until Element Enabled    {step.Alias}    timeout={step.Value}{appIdArg}");
+                        continue;
+                    case StepKind.WaitTextContains:
+                        sb.AppendLine($"    Wait Until Text Contains    {step.Alias}    {step.Value}{appIdArg}");
+                        continue;
+                    case StepKind.CheckpointProperty:
+                        sb.AppendLine($"    Property Checkpoint    {step.Alias}{appIdArg}");
+                        continue;
+                    case StepKind.CheckpointDataGrid:
+                        sb.AppendLine($"    DataGrid Checkpoint    {step.Alias}{appIdArg}");
+                        continue;
+                    case StepKind.CheckpointCount:
+                        sb.AppendLine($"    Count Checkpoint    {step.Alias}{appIdArg}");
+                        continue;
+                    case StepKind.CheckpointAttribute:
+                        sb.AppendLine($"    Attribute Checkpoint    {step.Alias}{appIdArg}");
+                        continue;
                 }
 
                 switch (step.Action)
@@ -90,6 +127,30 @@ namespace WpfTestIde.Recording
                         break;
                     case ActionKind.Toggle:
                         sb.AppendLine($"    Toggle Element    {step.Alias}{appIdArg}");
+                        break;
+                    case ActionKind.DoubleClick:
+                        sb.AppendLine($"    Double Click Element    {step.Alias}{appIdArg}");
+                        break;
+                    case ActionKind.RightClick:
+                        sb.AppendLine($"    Right Click Element    {step.Alias}{appIdArg}");
+                        break;
+                    case ActionKind.DragDrop:
+                        sb.AppendLine($"    Drag And Drop    {step.Alias}    {step.Value}{appIdArg}");
+                        break;
+                    case ActionKind.Hover:
+                        sb.AppendLine($"    Hover Over Element    {step.Alias}{appIdArg}");
+                        break;
+                    case ActionKind.PressKeys:
+                        sb.AppendLine($"    Press Keys    {step.Value}{appIdArg}");
+                        break;
+                    case ActionKind.Scroll:
+                        sb.AppendLine($"    Scroll    {step.Alias}    {step.Value}{appIdArg}");
+                        break;
+                    case ActionKind.SikuliClick:
+                        sb.AppendLine($"    Sikuli Click    {step.Alias}    {step.Value}{appIdArg}");
+                        break;
+                    case ActionKind.SikuliType:
+                        sb.AppendLine($"    Sikuli Type    {step.Alias}    {step.Value}{appIdArg}");
                         break;
                 }
             }

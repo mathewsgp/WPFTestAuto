@@ -585,7 +585,7 @@ class WPFSpyMockDriver:
             "elements": {
                 "LoginPage.txtUsername": {
                     "automationId": "txtUsername",
-                    "name": "UsernameInput",
+                    "name": "txtUsername",
                     "controlType": "TextBox",
                     "xpath": "/Window[@AutomationId='MainWindow']/TextBox[@AutomationId='txtUsername']"
                 },

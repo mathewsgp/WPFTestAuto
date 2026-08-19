@@ -1,0 +1,61 @@
+{
+  "alias": "PickedPage.MainWindow.btnSubmit",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-08-19T10:39:45.024140",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSubmit': Element from XPath '//*[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T10:40:06.453021",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "/Window[@AutomationId='MainWindow']/Button[@AutomationId='btnSubmit']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 0,
+      "failure_count": 2,
+      "total_duration_ms": 807.5690269470215,
+      "last_success": null,
+      "last_failure": "2026-08-19T10:39:45.024154",
+      "avg_duration_ms": 403.78451347351074
+    },
+    "WPFSpy:XPath": {
+      "success_count": 0,
+      "failure_count": 3,
+      "total_duration_ms": 20031.6743850708,
+      "last_success": null,
+      "last_failure": "2026-08-19T10:40:06.453036",
+      "avg_duration_ms": 6677.224795023601
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    }
+  },
+  "total_interactions": 5,
+  "first_seen": "2026-08-19T10:39:35.007404",
+  "last_interaction": "2026-08-19T10:40:06.453041",
+  "consecutive_failures": 5,
+  "consecutive_successes": 0
+}

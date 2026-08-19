@@ -1,0 +1,53 @@
+steps:
+  - kind: Action
+    alias: LoginPage.txtUsername
+    action: SetValue
+    value: user1
+    nonStandard: false
+
+  - kind: Action
+    alias: LoginPage.txtPassword
+    action: SetValue
+    value: Pass@123
+    nonStandard: false
+
+  - kind: Action
+    alias: LoginPage.btnSubmit
+    action: Invoke
+    nonStandard: false
+
+  - kind: Action
+    alias: OrdersPage.cmbSku
+    action: SetValue
+    value: SKU-1001
+    nonStandard: false
+
+  - kind: Action
+    alias: OrdersPage.txtQty
+    action: SetValue
+    value: "2"
+    nonStandard: false
+
+  - kind: Action
+    alias: OrdersPage.chkPriority
+    action: Toggle
+    nonStandard: true
+
+  - kind: Verify
+    alias: OrdersPage.chkPriority
+    value: On
+    nonStandard: true
+
+  - kind: Action
+    alias: OrdersPage.btnCreateOrder
+    action: Invoke
+    nonStandard: false
+
+  - kind: Verify
+    alias: OrdersPage.lblConfirmation
+    value: Order confirmed: SKU-1001 x2
+    nonStandard: false
+
+  - kind: VerifyOcr
+    alias: OrdersPage.gridOrders
+    nonStandard: false

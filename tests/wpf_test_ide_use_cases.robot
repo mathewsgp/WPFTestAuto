@@ -30,6 +30,8 @@ UC-002 Open Attach To Process Dialog
     ${status}=    Get Element Text    AttachToProcessDialog.StatusText
     Should Not Be Empty    ${status}
     Capture Screenshot    app_id=ide    filename=ide_attach_dialog.png
+    Wait Until Element Exists    AttachToProcessDialog.btnAttachCancel    timeout=15
+    Wait Until Element Visible    AttachToProcessDialog.btnAttachCancel    timeout=15
     Click Element    AttachToProcessDialog.btnAttachCancel
     Close Application    ide
 
@@ -39,8 +41,10 @@ UC-003 Open Manage Apps Dialog
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnManageApps
-    Sleep    1s
+    Sleep    2s
     Capture Screenshot    app_id=ide    filename=ide_manage_apps.png
+    Wait Until Element Exists    MultiAppDialog.btnMultiAppClose    timeout=15
+    Wait Until Element Visible    MultiAppDialog.btnMultiAppClose    timeout=15
     Click Element    MultiAppDialog.btnMultiAppClose
     Close Application    ide
 
@@ -49,6 +53,7 @@ UC-004 Open Checkpoint Wizard
     Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
     Wait For Application    ide    timeout=30
     Switch Application    ide
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnCheckpointWizard    timeout=15
     ${visible}=    Is Element Visible    WpfTestIde.MainWindow.btnCheckpointWizard
     Should Be True    ${visible}
     Capture Screenshot    app_id=ide    filename=ide_checkpoint_wizard.png
@@ -59,6 +64,7 @@ UC-005 Open Spy Tool
     Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
     Wait For Application    ide    timeout=30
     Switch Application    ide
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnSpyTool    timeout=15
     ${visible}=    Is Element Visible    WpfTestIde.MainWindow.btnSpyTool
     Should Be True    ${visible}
     Capture Screenshot    app_id=ide    filename=ide_spy_tool.png
@@ -69,6 +75,7 @@ UC-006 Open Visual Test Builder
     Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
     Wait For Application    ide    timeout=30
     Switch Application    ide
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnVisualTestBuilder    timeout=15
     ${visible}=    Is Element Visible    WpfTestIde.MainWindow.btnVisualTestBuilder
     Should Be True    ${visible}
     Capture Screenshot    app_id=ide    filename=ide_visual_builder.png
@@ -85,6 +92,7 @@ UC-007 Switch Tabs And Interact
     Sleep    0.5s
     Click Element    WpfTestIde.MainWindow.tabElements
     Sleep    0.5s
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnAddFolder    timeout=15
     ${visible}=    Is Element Visible    WpfTestIde.MainWindow.btnAddFolder
     Should Be True    ${visible}
     Capture Screenshot    app_id=ide    filename=ide_tabs.png
@@ -107,12 +115,16 @@ UC-009 Check Driver Settings Checkboxes
     Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
     Wait For Application    ide    timeout=30
     Switch Application    ide
+    Wait Until Element Visible    WpfTestIde.MainWindow.chkRecordFlaUI    timeout=15
     ${visible1}=    Is Element Visible    WpfTestIde.MainWindow.chkRecordFlaUI
     Should Be True    ${visible1}
+    Wait Until Element Visible    WpfTestIde.MainWindow.chkRecordWPFSpy    timeout=15
     ${visible2}=    Is Element Visible    WpfTestIde.MainWindow.chkRecordWPFSpy
     Should Be True    ${visible2}
+    Wait Until Element Visible    WpfTestIde.MainWindow.chkRunFlaUI    timeout=15
     ${visible3}=    Is Element Visible    WpfTestIde.MainWindow.chkRunFlaUI
     Should Be True    ${visible3}
+    Wait Until Element Visible    WpfTestIde.MainWindow.chkRunWPFSpy    timeout=15
     ${visible4}=    Is Element Visible    WpfTestIde.MainWindow.chkRunWPFSpy
     Should Be True    ${visible4}
     Capture Screenshot    app_id=ide    filename=ide_driver_settings.png
@@ -125,10 +137,13 @@ UC-010 Export Repository Button Accessible
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.tabScripts
     Sleep    1s
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnExportRepo    timeout=15
     ${visible1}=    Is Element Visible    WpfTestIde.MainWindow.btnExportRepo
     Should Be True    ${visible1}
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnExportScript    timeout=15
     ${visible2}=    Is Element Visible    WpfTestIde.MainWindow.btnExportScript
     Should Be True    ${visible2}
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnSaveScript    timeout=15
     ${visible3}=    Is Element Visible    WpfTestIde.MainWindow.btnSaveScript
     Should Be True    ${visible3}
     Capture Screenshot    app_id=ide    filename=ide_export_buttons.png
@@ -169,10 +184,11 @@ UC-013 Script Generation And Content Verification
     Sleep    2s
     Click Element    WpfTestIde.MainWindow.tabScripts
     Sleep    1s
-    Click Element    WpfTestIde.MainWindow.tabVisualSteps
+    Click Element    WpfTestIde.MainWindow.tabRawScript
     Sleep    1s
-    ${steps_text}=    Get Element Text    WpfTestIde.MainWindow.StepsListBox
-    Should Contain    ${steps_text}    rows
+    ${script}=    Get Element Text    WpfTestIde.MainWindow.txtGeneratedScript
+    Should Contain    ${script}    Get Data Grid Content Ocr
+    Should Contain    ${script}    OrdersPage.gridOrders
     Capture Screenshot    app_id=ide    filename=ide_generated_script.png
     Close Application    ide
 
@@ -209,12 +225,16 @@ UC-016 Element Tree Operations
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.tabElements
     Sleep    0.5s
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnAddFolder    timeout=15
     ${visible1}=    Is Element Visible    WpfTestIde.MainWindow.btnAddFolder
     Should Be True    ${visible1}
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnAddElement    timeout=15
     ${visible2}=    Is Element Visible    WpfTestIde.MainWindow.btnAddElement
     Should Be True    ${visible2}
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnPickElement    timeout=15
     ${visible3}=    Is Element Visible    WpfTestIde.MainWindow.btnPickElement
     Should Be True    ${visible3}
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnPreviewElement    timeout=15
     ${visible4}=    Is Element Visible    WpfTestIde.MainWindow.btnPreviewElement
     Should Be True    ${visible4}
     Capture Screenshot    app_id=ide    filename=ide_element_tree.png
@@ -267,10 +287,11 @@ REG-001 Load Sample Add Verification And Run Script
     Should Contain    ${status}    Loaded sample recording
     Click Element    WpfTestIde.MainWindow.tabScripts
     Sleep    1s
-    Click Element    WpfTestIde.MainWindow.tabVisualSteps
+    Click Element    WpfTestIde.MainWindow.tabRawScript
     Sleep    1s
-    ${steps_text}=    Get Element Text    WpfTestIde.MainWindow.StepsListBox
-    Should Contain    ${steps_text}    rows
+    ${script}=    Get Element Text    WpfTestIde.MainWindow.txtGeneratedScript
+    Should Contain    ${script}    Click Element
+    Should Contain    ${script}    LoginPage.txtUsername
     Click Element    WpfTestIde.MainWindow.btnRunScript
     Sleep    60s
     ${output_dir_exists}=    Run Keyword And Return Status    Directory Should Exist    results/ide_run
@@ -285,10 +306,16 @@ REG-002 Multi-App Dialog UI Verification
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnManageApps
     Sleep    2s
+    Wait Until Element Exists    MultiAppDialog.btnSetDefault    timeout=15
+    Wait Until Element Visible    MultiAppDialog.btnSetDefault    timeout=15
     ${visible}=    Is Element Visible    MultiAppDialog.btnSetDefault
     Should Be True    ${visible}
+    Wait Until Element Exists    MultiAppDialog.btnDetach    timeout=15
+    Wait Until Element Visible    MultiAppDialog.btnDetach    timeout=15
     ${visible2}=    Is Element Visible    MultiAppDialog.btnDetach
     Should Be True    ${visible2}
+    Wait Until Element Exists    MultiAppDialog.btnMultiAppClose    timeout=15
+    Wait Until Element Visible    MultiAppDialog.btnMultiAppClose    timeout=15
     ${visible3}=    Is Element Visible    MultiAppDialog.btnMultiAppClose
     Should Be True    ${visible3}
     Capture Screenshot    app_id=ide    filename=ide_regression_multi_app.png
@@ -311,12 +338,16 @@ REG-004 Element Tree Buttons Accessible
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.tabElements
     Sleep    2s
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnAddFolder    timeout=15
     ${visible1}=    Is Element Visible    WpfTestIde.MainWindow.btnAddFolder
     Should Be True    ${visible1}
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnAddElement    timeout=15
     ${visible2}=    Is Element Visible    WpfTestIde.MainWindow.btnAddElement
     Should Be True    ${visible2}
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnPickElement    timeout=15
     ${visible3}=    Is Element Visible    WpfTestIde.MainWindow.btnPickElement
     Should Be True    ${visible3}
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnPreviewElement    timeout=15
     ${visible4}=    Is Element Visible    WpfTestIde.MainWindow.btnPreviewElement
     Should Be True    ${visible4}
     Capture Screenshot    app_id=ide    filename=ide_regression_element_tree.png
@@ -377,6 +408,7 @@ REG-008 OCR DataGrid Button Accessible
     Launch Application    ide    ${IDE_APP_PATH}    WPFSpy
     Wait For Application    ide    timeout=30
     Switch Application    ide
+    Wait Until Element Visible    WpfTestIde.MainWindow.btnOcrDataGrid    timeout=15
     ${visible}=    Is Element Visible    WpfTestIde.MainWindow.btnOcrDataGrid
     Should Be True    ${visible}
     Capture Screenshot    app_id=ide    filename=ide_regression_ocr_button.png

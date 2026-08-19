@@ -9,14 +9,14 @@
     "parent_xpath": null,
     "text": "WPFSpy",
     "position": null,
-    "is_visible": true,
+    "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-08-16T00:34:34.518772",
-    "last_verified": "2026-08-16T00:34:34.518785",
-    "verification_count": 53,
-    "driver_used": "WPFSpy",
-    "search_method": "XPath",
-    "search_value": "CheckBox[@AutomationId='chkRunWPFSpy']"
+    "captured_at": "2026-08-19T10:04:20.155977",
+    "last_verified": "2026-08-19T10:04:20.155990",
+    "verification_count": 66,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "chkRunWPFSpy"
   },
   "healing_history": [],
   "strategy_stats": {
@@ -29,17 +29,17 @@
       "avg_duration_ms": 5.371996989616981
     },
     "FlaUI:AutomationId": {
-      "success_count": 1,
+      "success_count": 14,
       "failure_count": 0,
-      "total_duration_ms": 322.7651119232178,
-      "last_success": "2026-08-09T13:04:39.038815",
+      "total_duration_ms": 5073.038339614868,
+      "last_success": "2026-08-19T10:04:19.509254",
       "last_failure": null,
-      "avg_duration_ms": 322.7651119232178
+      "avg_duration_ms": 362.359881401062
     }
   },
-  "total_interactions": 106,
+  "total_interactions": 132,
   "first_seen": "2026-08-09T12:26:32.291848",
-  "last_interaction": "2026-08-16T00:34:34.518793",
+  "last_interaction": "2026-08-19T10:04:20.155995",
   "consecutive_failures": 0,
-  "consecutive_successes": 106
+  "consecutive_successes": 132
 }

@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-08-16T01:07:32.752494",
-    "last_verified": "2026-08-16T01:07:32.752509",
-    "verification_count": 4,
+    "captured_at": "2026-08-19T13:59:46.335838",
+    "last_verified": "2026-08-19T13:59:46.335848",
+    "verification_count": 34,
     "driver_used": "WPFSpy",
     "search_method": "XPath",
     "search_value": "Button[@AutomationId='btnLogout']"
@@ -78,24 +78,36 @@
       "healing_search_value": "N/A",
       "healing_successful": false,
       "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T13:26:07.504679",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnLogout",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnLogout': Element from XPath '//*[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
     }
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 2,
-      "failure_count": 6,
-      "total_duration_ms": 8743.533372879028,
-      "last_success": "2026-08-12T18:12:55.034746",
-      "last_failure": "2026-08-12T18:12:11.183018",
-      "avg_duration_ms": 4371.766686439514
+      "success_count": 31,
+      "failure_count": 8,
+      "total_duration_ms": 18261.0182762146,
+      "last_success": "2026-08-19T13:54:19.381764",
+      "last_failure": "2026-08-19T13:26:07.504688",
+      "avg_duration_ms": 589.0651056843419
     },
     "WPFSpy:XPath": {
-      "success_count": 2,
-      "failure_count": 7,
-      "total_duration_ms": 35294.11292076111,
-      "last_success": "2026-08-16T01:07:32.336506",
-      "last_failure": "2026-08-12T18:13:32.813954",
-      "avg_duration_ms": 17647.056460380554
+      "success_count": 4,
+      "failure_count": 8,
+      "total_duration_ms": 42392.19403266907,
+      "last_success": "2026-08-19T13:59:45.881976",
+      "last_failure": "2026-08-19T13:26:07.503476",
+      "avg_duration_ms": 10598.048508167267
     },
     "None:N/A": {
       "success_count": 0,
@@ -106,9 +118,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 21,
+  "total_interactions": 85,
   "first_seen": "2026-08-08T23:00:27.309635",
-  "last_interaction": "2026-08-16T01:07:32.752520",
+  "last_interaction": "2026-08-19T13:59:46.335855",
   "consecutive_failures": 0,
-  "consecutive_successes": 4
+  "consecutive_successes": 10
 }

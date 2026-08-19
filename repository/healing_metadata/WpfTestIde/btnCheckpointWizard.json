@@ -9,24 +9,24 @@
     "parent_xpath": null,
     "text": "Checkpoint Wizard",
     "position": null,
-    "is_visible": true,
+    "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-08-16T00:34:15.643027",
-    "last_verified": "2026-08-16T00:34:15.643036",
-    "verification_count": 78,
-    "driver_used": "WPFSpy",
-    "search_method": "XPath",
-    "search_value": "Button[@AutomationId='btnCheckpointWizard']"
+    "captured_at": "2026-08-19T10:09:01.631724",
+    "last_verified": "2026-08-19T10:09:01.631742",
+    "verification_count": 89,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnCheckpointWizard"
   },
   "healing_history": [],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 21,
+      "success_count": 32,
       "failure_count": 0,
-      "total_duration_ms": 10938.408136367798,
-      "last_success": "2026-08-09T13:03:22.974884",
+      "total_duration_ms": 15350.812196731567,
+      "last_success": "2026-08-19T10:09:00.958466",
       "last_failure": null,
-      "avg_duration_ms": 520.876577922276
+      "avg_duration_ms": 479.7128811478615
     },
     "WPFSpy:XPath": {
       "success_count": 57,
@@ -37,9 +37,9 @@
       "avg_duration_ms": 45.81159876103987
     }
   },
-  "total_interactions": 156,
+  "total_interactions": 178,
   "first_seen": "2026-08-09T01:54:35.362318",
-  "last_interaction": "2026-08-16T00:34:15.643043",
+  "last_interaction": "2026-08-19T10:09:01.631747",
   "consecutive_failures": 0,
-  "consecutive_successes": 156
+  "consecutive_successes": 178
 }

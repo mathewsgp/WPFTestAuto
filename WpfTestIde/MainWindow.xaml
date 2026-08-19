@@ -96,11 +96,11 @@
                         <TextBlock FontSize="10" Foreground="{DynamicResource WarningBrush}" Text="Warning: custom control - resolved via WPFSpy"
                                    Visibility="{Binding NonStandard, Converter={StaticResource BoolToVisibilityConverter}}"/>
                     </StackPanel>
-                    <Button Grid.Column="2" Content="+ verify after"
-                            Command="{Binding DataContext.AddVerificationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    <Button Grid.Column="2" Content="+ add step"
+                            Command="{Binding DataContext.AddStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"
                             FontSize="10" Padding="4,2" Margin="4,0" VerticalAlignment="Center"
-                            AutomationProperties.AutomationId="btnAddVerification"/>
+                            AutomationProperties.AutomationId="btnAddStep"/>
                     <Button Grid.Column="3" Content="X"
                             Command="{Binding DataContext.DeleteStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"
@@ -215,6 +215,7 @@
                             <Button x:Name="btnLoadSample" Style="{StaticResource ToolbarButton}" Content="Load Sample" Command="{Binding LoadSampleCommand}" AutomationProperties.AutomationId="btnLoadSample"/>
                             <Button x:Name="btnReset" Style="{StaticResource ToolbarButton}" Content="Reset" Command="{Binding ResetCommand}" AutomationProperties.AutomationId="btnReset"/>
                             <Separator Margin="8,0"/>
+                            <Button x:Name="btnAddStep" Style="{StaticResource ToolbarButton}" Content="Add Step" Command="{Binding AddStepCommand}" AutomationProperties.AutomationId="btnAddStep"/>
                         </StackPanel>
                     </StackPanel>
 

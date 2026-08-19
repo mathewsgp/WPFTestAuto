@@ -7,16 +7,16 @@
     "control_type": null,
     "xpath": null,
     "parent_xpath": null,
-    "text": "Attach to Process...",
+    "text": "Attach",
     "position": null,
-    "is_visible": true,
+    "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-08-16T00:29:59.136364",
-    "last_verified": "2026-08-16T00:29:59.136374",
-    "verification_count": 81,
-    "driver_used": "WPFSpy",
-    "search_method": "XPath",
-    "search_value": "Button[@AutomationId='btnAttach']"
+    "captured_at": "2026-08-19T11:01:35.987821",
+    "last_verified": "2026-08-19T11:01:35.987831",
+    "verification_count": 91,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnAttach"
   },
   "healing_history": [
     {
@@ -54,24 +54,36 @@
       "healing_search_value": "N/A",
       "healing_successful": false,
       "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T10:14:27.745477",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnAttach",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnAttach': FlaUI: Could not attach to appl",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
     }
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 17,
-      "failure_count": 0,
-      "total_duration_ms": 4945.761919021606,
-      "last_success": "2026-08-09T13:01:51.765861",
-      "last_failure": null,
-      "avg_duration_ms": 290.9271717071533
+      "success_count": 27,
+      "failure_count": 2,
+      "total_duration_ms": 8950.761556625366,
+      "last_success": "2026-08-19T11:01:35.117085",
+      "last_failure": "2026-08-19T10:14:27.745488",
+      "avg_duration_ms": 331.509687282421
     },
     "WPFSpy:XPath": {
       "success_count": 64,
-      "failure_count": 6,
-      "total_duration_ms": 33058.523654937744,
+      "failure_count": 7,
+      "total_duration_ms": 43074.80216026306,
       "last_success": "2026-08-16T00:29:58.964596",
-      "last_failure": "2026-08-16T08:05:40.343010",
-      "avg_duration_ms": 472.2646236419678
+      "last_failure": "2026-08-19T10:14:27.744166",
+      "avg_duration_ms": 606.6873543699023
     },
     "None:N/A": {
       "success_count": 0,
@@ -82,9 +94,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 168,
+  "total_interactions": 191,
   "first_seen": "2026-08-09T01:54:20.915068",
-  "last_interaction": "2026-08-16T08:05:40.343014",
-  "consecutive_failures": 6,
-  "consecutive_successes": 0
+  "last_interaction": "2026-08-19T11:01:35.987838",
+  "consecutive_failures": 0,
+  "consecutive_successes": 8
 }

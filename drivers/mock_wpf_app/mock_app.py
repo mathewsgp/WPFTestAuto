@@ -230,7 +230,7 @@ class MockWpfApp:
         self.controls = {
             "txtUsername": self._build_control_paths(
                 self._set_container_chain(
-                    Control("txtUsername", "txtUsername", "UsernameInput", "TextBox",
+                    Control("txtUsername", "txtUsername", "txtUsername", "TextBox",
                             image_tag="username_box"),
                     base_chain
                 )

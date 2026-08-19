@@ -54,24 +54,48 @@
       "healing_search_value": "N/A",
       "healing_successful": false,
       "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T08:28:19.594254",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnMultiAppClose",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnMultiAppClose': Element from XPath '//*[",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T09:00:59.941091",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnMultiAppClose",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnMultiAppClose': Element from XPath '//*[",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
     }
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
       "success_count": 0,
-      "failure_count": 4,
-      "total_duration_ms": 1441.948652267456,
+      "failure_count": 8,
+      "total_duration_ms": 3221.318244934082,
       "last_success": null,
-      "last_failure": "2026-08-09T13:02:20.052824",
-      "avg_duration_ms": 360.487163066864
+      "last_failure": "2026-08-19T09:00:59.941104",
+      "avg_duration_ms": 402.66478061676025
     },
     "WPFSpy:XPath": {
       "success_count": 34,
-      "failure_count": 4,
-      "total_duration_ms": 14774.32131767273,
+      "failure_count": 6,
+      "total_duration_ms": 34805.93967437744,
       "last_success": "2026-08-16T00:30:06.813158",
-      "last_failure": "2026-08-09T13:09:00.265551",
-      "avg_duration_ms": 434.53886228449204
+      "last_failure": "2026-08-19T09:00:59.939783",
+      "avg_duration_ms": 870.148491859436
     },
     "None:N/A": {
       "success_count": 0,
@@ -82,9 +106,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 76,
+  "total_interactions": 82,
   "first_seen": "2026-08-09T08:55:55.103164",
-  "last_interaction": "2026-08-16T00:30:07.235681",
-  "consecutive_failures": 0,
-  "consecutive_successes": 60
+  "last_interaction": "2026-08-19T09:00:59.941108",
+  "consecutive_failures": 6,
+  "consecutive_successes": 0
 }

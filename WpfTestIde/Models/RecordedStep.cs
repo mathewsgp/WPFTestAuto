@@ -2,8 +2,8 @@ using System;
 
 namespace WpfTestIde.Models
 {
-    public enum StepKind { Action, Verify, VerifyOcr }
-    public enum ActionKind { Invoke, SetValue, Toggle }
+    public enum StepKind { Action, Verify, VerifyOcr, VerifyEnabled, VerifyVisible, VerifyContains, VerifyRegex, VerifyAttribute, WaitExists, WaitVisible, WaitEnabled, WaitTextContains, CheckpointProperty, CheckpointArea, CheckpointImage, CheckpointDataGrid, CheckpointCount, CheckpointAttribute }
+    public enum ActionKind { Invoke, SetValue, Toggle, DoubleClick, RightClick, DragDrop, Hover, PressKeys, Scroll, SikuliClick, SikuliType }
 
     /// <summary>
     /// One entry in the authored sequence — either a recorded action or a
@@ -36,11 +36,34 @@ namespace WpfTestIde.Models
         {
             StepKind.Verify => "Verify Element Text",
             StepKind.VerifyOcr => "Get Data Grid Content Ocr",
+            StepKind.VerifyEnabled => "Verify Element Enabled",
+            StepKind.VerifyVisible => "Verify Element Visible",
+            StepKind.VerifyContains => "Verify Element Contains Text",
+            StepKind.VerifyRegex => "Verify Element Text Matches Regex",
+            StepKind.VerifyAttribute => "Verify Element Attribute",
+            StepKind.WaitExists => "Wait Until Element Exists",
+            StepKind.WaitVisible => "Wait Until Element Visible",
+            StepKind.WaitEnabled => "Wait Until Element Enabled",
+            StepKind.WaitTextContains => "Wait Until Text Contains",
+            StepKind.CheckpointProperty => "Property Checkpoint",
+            StepKind.CheckpointArea => "Area Checkpoint (OCR)",
+            StepKind.CheckpointImage => "Image Checkpoint",
+            StepKind.CheckpointDataGrid => "DataGrid Checkpoint",
+            StepKind.CheckpointCount => "Count Checkpoint",
+            StepKind.CheckpointAttribute => "Attribute Checkpoint",
             _ => Action switch
             {
                 ActionKind.Invoke => "Click Element",
                 ActionKind.SetValue => "Set Element Value",
                 ActionKind.Toggle => "Toggle Element",
+                ActionKind.DoubleClick => "Double Click Element",
+                ActionKind.RightClick => "Right Click Element",
+                ActionKind.DragDrop => "Drag And Drop",
+                ActionKind.Hover => "Hover Over Element",
+                ActionKind.PressKeys => "Press Keys",
+                ActionKind.Scroll => "Scroll",
+                ActionKind.SikuliClick => "Sikuli Click (Image)",
+                ActionKind.SikuliType => "Sikuli Type (Image)",
                 _ => "Unknown",
             },
         };

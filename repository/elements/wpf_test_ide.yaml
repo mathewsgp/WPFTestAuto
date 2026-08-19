@@ -429,16 +429,22 @@ elements:
     automationId: "tabElements"
     name: "ELEMENTS"
     parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "TabItem[@AutomationId='tabElements']"
+    relativeXPath: "TabItem[@Name='ELEMENTS']"
     strategies:
       FlaUI:
+        - searchBy: "Name"
+          value: "ELEMENTS"
+          priority: 1
         - searchBy: "AutomationId"
           value: "tabElements"
-          priority: 1
+          priority: 2
       WPFSpy:
         - searchBy: "XPath"
-          value: "TabItem[@AutomationId='tabElements']"
+          value: "//TabItem[@Name='ELEMENTS']"
           priority: 1
+        - searchBy: "XPath"
+          value: "TabItem[@AutomationId='tabElements']"
+          priority: 2
 
   WpfTestIde.MainWindow.tabScripts:
     displayName: "Scripts Tab"
@@ -446,16 +452,22 @@ elements:
     automationId: "tabScripts"
     name: "SCRIPTS"
     parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "TabItem[@AutomationId='tabScripts']"
+    relativeXPath: "TabItem[@Name='SCRIPTS']"
     strategies:
       FlaUI:
+        - searchBy: "Name"
+          value: "SCRIPTS"
+          priority: 1
         - searchBy: "AutomationId"
           value: "tabScripts"
-          priority: 1
+          priority: 2
       WPFSpy:
         - searchBy: "XPath"
-          value: "TabItem[@AutomationId='tabScripts']"
+          value: "//TabItem[@Name='SCRIPTS']"
           priority: 1
+        - searchBy: "XPath"
+          value: "TabItem[@AutomationId='tabScripts']"
+          priority: 2
 
   WpfTestIde.MainWindow.tabResults:
     displayName: "Results Tab"
@@ -463,16 +475,22 @@ elements:
     automationId: "tabResults"
     name: "RESULTS"
     parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "TabItem[@AutomationId='tabResults']"
+    relativeXPath: "TabItem[@Name='RESULTS']"
     strategies:
       FlaUI:
+        - searchBy: "Name"
+          value: "RESULTS"
+          priority: 1
         - searchBy: "AutomationId"
           value: "tabResults"
-          priority: 1
+          priority: 2
       WPFSpy:
         - searchBy: "XPath"
-          value: "TabItem[@AutomationId='tabResults']"
+          value: "//TabItem[@Name='RESULTS']"
           priority: 1
+        - searchBy: "XPath"
+          value: "TabItem[@AutomationId='tabResults']"
+          priority: 2
 
   # ================= Elements Tab Buttons =================
   WpfTestIde.MainWindow.btnAddFolder:
@@ -685,8 +703,8 @@ elements:
     relativeXPath: "TextBlock[@AutomationId='StatusText']"
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
-          value: "StatusText"
+        - searchBy: "XPath"
+          value: "TextBlock[@AutomationId='StatusText']"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
@@ -694,7 +712,7 @@ elements:
           priority: 1
 
   AttachToProcessDialog.btnAttachCancel:
-    displayName: "Cancel Button"
+    displayName: "Attach Cancel Button"
     controlType: "Button"
     automationId: "btnAttachCancel"
     name: "Cancel"
@@ -704,6 +722,13 @@ elements:
       FlaUI:
         - searchBy: "AutomationId"
           value: "btnAttachCancel"
+          priority: 1
+        - searchBy: "Name"
+          value: "Cancel"
+          priority: 2
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnAttachCancel']"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"
@@ -876,7 +901,7 @@ elements:
           priority: 1
 
   MultiAppDialog.btnMultiAppClose:
-    displayName: "Close Button"
+    displayName: "Multi-App Close Button"
     controlType: "Button"
     automationId: "btnMultiAppClose"
     name: "Close"
@@ -886,6 +911,13 @@ elements:
       FlaUI:
         - searchBy: "AutomationId"
           value: "btnMultiAppClose"
+          priority: 1
+        - searchBy: "Name"
+          value: "Close"
+          priority: 2
+      WPFSpy:
+        - searchBy: "XPath"
+          value: "Button[@AutomationId='btnMultiAppClose']"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"

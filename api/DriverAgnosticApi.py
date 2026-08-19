@@ -1424,6 +1424,29 @@ class DriverAgnosticApi:
         if expected not in actual:
             raise AssertionError(f"'{alias}' text does not contain '{expected}': got '{actual}'")
 
+    def verify_element_enabled(self, alias: str, app_id: Optional[str] = None):
+        """Fails the test unless the element is enabled."""
+        if not self.is_element_enabled(alias, app_id):
+            raise AssertionError(f"'{alias}' is not enabled")
+
+    def verify_element_visible(self, alias: str, app_id: Optional[str] = None):
+        """Fails the test unless the element is visible."""
+        if not self.is_element_visible(alias, app_id):
+            raise AssertionError(f"'{alias}' is not visible")
+
+    def verify_element_text_matches_regex(self, alias: str, pattern: str, app_id: Optional[str] = None):
+        """Fails the test unless the element's text matches the regex pattern."""
+        import re
+        actual = self.get_element_text(alias, app_id)
+        if not re.search(pattern, actual):
+            raise AssertionError(f"'{alias}' text '{actual}' does not match regex '{pattern}'")
+
+    def verify_element_attribute(self, alias: str, attribute_name: str, expected_value: str, app_id: Optional[str] = None):
+        """Fails the test unless the element's attribute equals expected_value."""
+        actual = self._resolve_and_execute(alias, "get_attribute", app_id, attribute_name)
+        if actual != expected_value:
+            raise AssertionError(f"'{alias}' attribute '{attribute_name}' mismatch: expected '{expected_value}', got '{actual}'")
+
     def get_data_grid_content_ocr(self, alias: str, app_id: Optional[str] = None) -> str:
         """Captures a DataGrid element screenshot and returns
         its content as CSV text using OCR."""
@@ -1437,21 +1460,26 @@ class DriverAgnosticApi:
         """Check if element is visible without failing."""
         strategies = repo.get_strategies(alias)
         app_context = _MULTI_APP_CONTEXT.get_app(app_id)
-        for driver_name in _get_run_modes():
-            if driver_name not in strategies:
-                continue
-            if driver_name not in app_context.drivers:
-                app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
-            driver = app_context.drivers[driver_name]
-            driver_strategies = strategies[driver_name]
-            for strategy in driver_strategies:
-                try:
-                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
-                    element = driver.find_element(resolved)
-                    if driver.is_visible(element):
-                        return True
-                except Exception:
+        max_retries = 3
+        retry_delay = 0.3
+        for attempt in range(max_retries):
+            for driver_name in _get_run_modes():
+                if driver_name not in strategies:
                     continue
+                if driver_name not in app_context.drivers:
+                    app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
+                driver = app_context.drivers[driver_name]
+                driver_strategies = strategies[driver_name]
+                for strategy in driver_strategies:
+                    try:
+                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                        element = driver.find_element(resolved)
+                        if driver.is_visible(element):
+                            return True
+                    except Exception:
+                        continue
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
         return False
 
     def is_element_enabled(self, alias: str, app_id: Optional[str] = None) -> bool:
@@ -1495,6 +1523,51 @@ class DriverAgnosticApi:
                 except Exception:
                     continue
         return False
+
+    def wait_until_element_exists(
+        self,
+        alias: str,
+        timeout: float = 10.0,
+        poll_interval: float = 0.5,
+        app_id: Optional[str] = None,
+    ):
+        """Polls until the element can be found, or raises after `timeout` seconds."""
+        from exceptions import WaitTimeoutError, AllStrategiesFailedError
+
+        start_time = time.time()
+        strategies = repo.get_strategies(alias)
+        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
+
+        if not strategies:
+            raise AllStrategiesFailedError(
+                alias=alias,
+                attempts=[],
+                details={"reason": "No strategies configured"}
+            )
+
+        while time.time() - start_time < timeout:
+            for driver_name in _get_run_modes():
+                if driver_name not in strategies:
+                    continue
+                driver = app_context.drivers.get(driver_name)
+                if driver is None:
+                    continue
+                for strategy in strategies[driver_name]:
+                    try:
+                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                        driver.find_element(resolved)
+                        return True
+                    except Exception:
+                        continue
+
+            remaining = timeout - (time.time() - start_time)
+            if remaining > 0:
+                time.sleep(min(poll_interval, remaining))
+
+        raise WaitTimeoutError(
+            condition="element exists",
+            timeout=timeout
+        )
 
     def wait_until_element_visible(
         self, 
