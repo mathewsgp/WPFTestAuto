@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -181,8 +182,61 @@ namespace WpfSpyAgent
                 if (profile.IsRepeatingContainerType) return true;
                 if (profile.IsItemsControlType && ((ItemsControl)node).ItemContainerGenerator != null) return true;
                 node = VisualTreeHelper.GetParent(node);
-                break;
             }
+            return false;
+        }
+
+        private static bool IsKnownInteractiveType(Type type)
+        {
+            if (typeof(ButtonBase).IsAssignableFrom(type)) return true;
+            if (typeof(ToggleButton).IsAssignableFrom(type)) return true;
+            if (typeof(System.Windows.Controls.ListBoxItem).IsAssignableFrom(type)) return true;
+            if (typeof(System.Windows.Controls.ComboBoxItem).IsAssignableFrom(type)) return true;
+            if (typeof(MenuItem).IsAssignableFrom(type)) return true;
+            if (typeof(Hyperlink).IsAssignableFrom(type)) return true;
+            if (typeof(TabItem).IsAssignableFrom(type)) return true;
+            if (typeof(Thumb).IsAssignableFrom(type)) return true;
+            if (typeof(System.Windows.Controls.DataGridRow).IsAssignableFrom(type)) return true;
+            if (typeof(System.Windows.Controls.DataGridCell).IsAssignableFrom(type)) return true;
+            if (typeof(TextBox).IsAssignableFrom(type)) return true;
+            if (typeof(PasswordBox).IsAssignableFrom(type)) return true;
+            if (typeof(ComboBox).IsAssignableFrom(type)) return true;
+            if (typeof(ScrollBar).IsAssignableFrom(type)) return true;
+            return false;
+        }
+
+        private static bool IsEligibleStopPoint(DependencyObject node, out bool isInteractiveType)
+        {
+            isInteractiveType = false;
+
+            if (node is FrameworkElement fe && !string.IsNullOrEmpty(AutomationProperties.GetAutomationId(fe)))
+            {
+                return true;
+            }
+
+            foreach (var iface in node.GetType().GetInterfaces())
+            {
+                if (iface.Name == "ISpyInteractable")
+                {
+                    isInteractiveType = true;
+                    return true;
+                }
+            }
+
+            if (IsKnownInteractiveType(node.GetType()))
+            {
+                isInteractiveType = true;
+                return true;
+            }
+
+            if (node is FrameworkElement fe2
+                && !string.IsNullOrEmpty(fe2.Name)
+                && !IsLikelyTemplatePartName(fe2.Name)
+                && !IsInsideRepeatingContainer(node))
+            {
+                return true;
+            }
+
             return false;
         }
 
@@ -497,15 +551,13 @@ namespace WpfSpyAgent
 
         // Shared by both the primary (WindowFromPoint-based) and fallback
         // paths: given a hit-test visual, walk up to the nearest meaningful
-        // named element, with the TextBoxView and ButtonBase special-cases.
+        // element using a single unified eligibility check (AutomationId,
+        // ISpyInteractable, known interactive type, or non-template Name),
+        // with the TextBoxView special-case handled up-front.
         private static FrameworkElement? ResolveHitToNamedElement(DependencyObject? visual, double screenX, double screenY, System.Diagnostics.Stopwatch sw)
         {
             if (visual == null) return null;
 
-            // Special-case: hit-testing a TextBox often lands on the inner
-            // TextBoxView (internal class) or its children (CaretElement, etc.);
-            // map that back to the parent TextBox by type name to avoid a
-            // compile-time dependency on the internal type.
             DependencyObject? tvAncestor = visual;
             for (int depth = 0; depth < 10 && tvAncestor != null; depth++)
             {
@@ -523,33 +575,44 @@ namespace WpfSpyAgent
                 tvAncestor = VisualTreeHelper.GetParent(tvAncestor);
             }
 
-            var named = WalkUpToNearestNamedElement(visual);
-            if (named != null)
+            DependencyObject? current = visual;
+            const int maxSteps = 1000;
+            int step = 0;
+            var visited = new System.Collections.Generic.HashSet<DependencyObject>();
+            while (current != null)
             {
-                sw.Stop();
-                Log($"({screenX},{screenY}) -> {named.GetType().Name} name={named.Name} in {sw.ElapsedMilliseconds}ms");
-                return named;
-            }
+                step++;
+                if (step > maxSteps)
+                {
+                    Log($"ResolveHitToNamedElement safety limit hit after {maxSteps} steps starting from {visual.GetType().Name}");
+                    return null;
+                }
+                if (!visited.Add(current))
+                {
+                    Log($"ResolveHitToNamedElement cycle detected after {step} steps starting from {visual.GetType().Name}");
+                    return null;
+                }
 
-            // Fallback: if the named walk-up failed (e.g. cyclic Border
-            // template visuals), explicitly look for the nearest ButtonBase
-            // or Toggle-like ancestor. This handles clicks on custom toggle
-            // controls whose template hit-test lands on internal visuals
-            // without names.
-            var toggle = WalkUpToNearestToggleAncestor(visual);
-            if (toggle != null)
-            {
-                sw.Stop();
-                Log($"({screenX},{screenY}) -> Toggle fallback {toggle.GetType().Name} name={toggle.Name} in {sw.ElapsedMilliseconds}ms");
-                return toggle;
-            }
+                if (IsEligibleStopPoint(current, out bool isInteractiveType))
+                {
+                    if (current is not FrameworkElement)
+                    {
+                        DependencyObject? feAncestor = current;
+                        while (feAncestor != null && feAncestor is not FrameworkElement)
+                        {
+                            feAncestor = VisualTreeHelper.GetParent(feAncestor);
+                        }
+                        current = feAncestor;
+                    }
 
-            var button = WalkUpToNearestButtonBase(visual);
-            if (button != null)
-            {
-                sw.Stop();
-                Log($"({screenX},{screenY}) -> ButtonBase fallback {button.GetType().Name} name={button.Name} in {sw.ElapsedMilliseconds}ms");
-                return button;
+                    if (current is FrameworkElement result)
+                    {
+                        sw.Stop();
+                        Log($"({screenX},{screenY}) -> {result.GetType().Name} name={result.Name} (interactive={isInteractiveType}) in {sw.ElapsedMilliseconds}ms");
+                        return result;
+                    }
+                }
+                current = VisualTreeHelper.GetParent(current);
             }
 
             return null;
@@ -595,59 +658,6 @@ namespace WpfSpyAgent
         }
 
         /// <summary>
-        /// Hit-testing usually lands on an unnamed leaf visual (e.g. a
-        /// TextBlock inside a Button's template) — walk up the visual
-        /// tree to the nearest ancestor that has a Name, since that's
-        /// what the rest of the protocol (Find/Invoke/SetValue/...)
-        /// addresses elements by.
-        /// </summary>
-        private static FrameworkElement? WalkUpToNearestNamedElement(DependencyObject visual)
-        {
-            const int maxSteps = 1000;
-            int step = 0;
-            var visited = new System.Collections.Generic.HashSet<DependencyObject>();
-            DependencyObject? current = visual;
-            while (current != null)
-            {
-                step++;
-                if (step > maxSteps)
-                {
-                    Log($"WalkUpToNearestNamedElement safety limit hit after {maxSteps} steps starting from {visual.GetType().Name}");
-                    return null;
-                }
-                if (!visited.Add(current))
-                {
-                    Log($"WalkUpToNearestNamedElement cycle detected after {step} steps starting from {visual.GetType().Name}");
-                    return null;
-                }
-                if (current is FrameworkElement fe)
-                {
-                    // Always return text-input controls (TextBox, PasswordBox,
-                    // ComboBox) even when they have no Name — hit-testing their
-                    // template children (inner Grids, TextBoxView, etc.) must
-                    // resolve back to the user-facing control, not a nameless
-                    // template part.
-                    string typeName = fe.GetType().Name;
-                    if (typeName == "TextBox" || typeName == "PasswordBox" || typeName == "ComboBox")
-                    {
-                        Log($"WalkUpToNearestNamedElement returned {typeName} name={fe.Name} after {step} steps");
-                        return fe;
-                    }
-                }
-                if (current is FrameworkElement fe2 
-                    && !string.IsNullOrEmpty(fe2.Name) 
-                    && !IsLikelyTemplatePartName(fe2.Name))
-                {
-                    Log($"WalkUpToNearestNamedElement returned {fe2.GetType().Name} name={fe2.Name} after {step} steps");
-                    return fe2;
-                }
-                current = VisualTreeHelper.GetParent(current);
-            }
-            Log($"WalkUpToNearestNamedElement reached null after {step} steps from {visual.GetType().Name}");
-            return null;
-        }
-
-        /// <summary>
         /// Special-case for TextBox/PasswordBox: hit-testing often lands on the inner
         /// TextBoxView, whose visual tree is deep and template-internal.
         /// Walk up to the containing text-input control so the recorder sees the
@@ -675,55 +685,6 @@ namespace WpfSpyAgent
                 current = VisualTreeHelper.GetParent(current);
             }
             Log($"WalkUpFromTextBoxView reached null after {step} steps from {visual.GetType().Name}");
-            return null;
-        }
-
-        /// <summary>
-        /// Fallback for clicks that land on template visuals with broken
-        /// parent chains (e.g. cyclic Border inside a Button template).
-        /// Walks up looking specifically for a ButtonBase ancestor.
-        /// </summary>
-        private static FrameworkElement? WalkUpToNearestButtonBase(DependencyObject visual)
-        {
-            const int maxSteps = 100;
-            int step = 0;
-            DependencyObject? current = visual;
-            while (current != null)
-            {
-                step++;
-                if (step > maxSteps)
-                {
-                    break;
-                }
-                if (current is System.Windows.Controls.Primitives.ButtonBase buttonBase)
-                {
-                    Log($"WalkUpToNearestButtonBase returned {buttonBase.GetType().Name} name={buttonBase.Name} after {step} steps");
-                    return (FrameworkElement)buttonBase;
-                }
-                current = VisualTreeHelper.GetParent(current);
-            }
-            return null;
-        }
-
-        private static FrameworkElement? WalkUpToNearestToggleAncestor(DependencyObject visual)
-        {
-            const int maxSteps = 100;
-            int step = 0;
-            DependencyObject? current = visual;
-            while (current != null)
-            {
-                step++;
-                if (step > maxSteps)
-                {
-                    break;
-                }
-                if (current is System.Windows.Controls.Primitives.ToggleButton toggleButton)
-                {
-                    Log($"WalkUpToNearestToggleAncestor returned {toggleButton.GetType().Name} name={toggleButton.Name} after {step} steps");
-                    return (FrameworkElement)toggleButton;
-                }
-                current = VisualTreeHelper.GetParent(current);
-            }
             return null;
         }
 
