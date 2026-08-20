@@ -33,9 +33,11 @@ namespace WpfTestIde.Execution
         {
             Directory.CreateDirectory(outputDir);
 
+            string pythonExe = ResolvePythonExecutable(workingDirectory);
+
             var psi = new ProcessStartInfo
             {
-                FileName = "python",
+                FileName = pythonExe,
                 Arguments = $"-m robot --outputdir \"{outputDir}\" \"{scriptPath}\"",
                 WorkingDirectory = workingDirectory,
                 RedirectStandardOutput = true,
@@ -82,6 +84,20 @@ namespace WpfTestIde.Execution
             await process.WaitForExitAsync();
 
             return summary;
+        }
+
+        private static string ResolvePythonExecutable(string workingDirectory)
+        {
+            if (!string.IsNullOrEmpty(workingDirectory))
+            {
+                string venvPython = Path.Combine(workingDirectory, ".venv", "Scripts", "python.exe");
+                if (File.Exists(venvPython))
+                {
+                    return venvPython;
+                }
+            }
+
+            return "python";
         }
     }
 }
