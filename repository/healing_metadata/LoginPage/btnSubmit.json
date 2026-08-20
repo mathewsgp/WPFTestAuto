@@ -7,39 +7,192 @@
     "control_type": null,
     "xpath": null,
     "parent_xpath": null,
-    "text": null,
+    "text": "",
     "position": null,
     "is_visible": false,
-    "is_enabled": true,
-    "captured_at": "2026-08-19T13:59:45.856188",
-    "last_verified": "2026-08-19T13:59:45.856197",
-    "verification_count": 8,
-    "driver_used": "WPFSpy",
-    "search_method": "XPath",
-    "search_value": "Button[@AutomationId='btnSubmit']"
+    "is_enabled": false,
+    "captured_at": "2026-08-20T08:31:39.792040",
+    "last_verified": "2026-08-20T08:31:39.792045",
+    "verification_count": 2,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnSubmit"
   },
-  "healing_history": [],
+  "healing_history": [
+    {
+      "timestamp": "2026-08-19T19:05:45.924997",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "'name'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "is_visible": false,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T19:08:43.737641",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "'name'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "is_visible": false,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T22:16:26.105417",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "'name'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "is_visible": false,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T22:16:47.911599",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "'name'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "is_visible": false,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T23:06:25.556032",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "'name'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "is_visible": false,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-20T00:46:22.272326",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "'name'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "is_visible": false,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-20T00:46:50.944247",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "'name'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "is_visible": false,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-20T00:47:13.710797",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSubmit",
+      "failure_reason": "'name'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Button[@AutomationId='btnSubmit']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "is_visible": false,
+        "is_enabled": true
+      }
+    }
+  ],
   "strategy_stats": {
     "WPFSpy:XPath": {
-      "success_count": 2,
+      "success_count": 18,
       "failure_count": 0,
-      "total_duration_ms": 71.05851173400879,
-      "last_success": "2026-08-19T13:59:45.384190",
+      "total_duration_ms": 434.10563468933105,
+      "last_success": "2026-08-20T00:47:13.710822",
       "last_failure": null,
-      "avg_duration_ms": 35.529255867004395
+      "avg_duration_ms": 24.116979704962837
     },
     "FlaUI:AutomationId": {
-      "success_count": 6,
+      "success_count": 16,
       "failure_count": 0,
-      "total_duration_ms": 2205.1985263824463,
-      "last_success": "2026-08-19T13:55:16.325231",
+      "total_duration_ms": 5043.597221374512,
+      "last_success": "2026-08-20T08:31:23.146686",
       "last_failure": null,
-      "avg_duration_ms": 367.5330877304077
+      "avg_duration_ms": 315.224826335907
+    },
+    "WPFSpy:AutomationId": {
+      "success_count": 0,
+      "failure_count": 8,
+      "total_duration_ms": 13.463735580444336,
+      "last_success": null,
+      "last_failure": "2026-08-20T00:47:13.260838",
+      "avg_duration_ms": 1.682966947555542
     }
   },
-  "total_interactions": 16,
+  "total_interactions": 60,
   "first_seen": "2026-08-19T13:47:05.514524",
-  "last_interaction": "2026-08-19T13:59:45.856203",
+  "last_interaction": "2026-08-20T08:31:39.792049",
   "consecutive_failures": 0,
-  "consecutive_successes": 16
+  "consecutive_successes": 4
 }
