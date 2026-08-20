@@ -7,25 +7,6 @@
     </UserControl.Resources>
 
     <DockPanel Background="{DynamicResource BackgroundBrush}">
-        <!-- Header -->
-        <Border DockPanel.Dock="Top" Background="{DynamicResource PanelBrush}" Padding="8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="🌳" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBlock Text="Element Tree" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Content="+" ToolTip="Add Folder" Padding="6,2" FontSize="12" 
-                            Command="{Binding AddFolderCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand"/>
-                    <Button Content="➕" ToolTip="Add Element" Padding="4,2" FontSize="10" Margin="4,0,0,0"
-                            Command="{Binding AddElementCommand}" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand"/>
-                </StackPanel>
-            </Grid>
-        </Border>
 
         <!-- Search Box + D1 filter chip header -->
         <Border DockPanel.Dock="Top" Padding="8">
