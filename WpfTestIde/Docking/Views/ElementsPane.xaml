@@ -12,17 +12,16 @@
         <!-- Toolbar -->
         <Border DockPanel.Dock="Top" Margin="0,6,0,6" Padding="4" Background="{DynamicResource PanelBrush}" CornerRadius="3">
             <StackPanel Orientation="Horizontal">
-                <Button x:Name="btnAddFolder" Content="+ Folder" ToolTip="Add Folder" Padding="6,2" FontSize="11"
-                        Command="{Binding ElementTree.AddFolderCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnAddFolder"/>
-                <Button x:Name="btnAddElement" Content="+ Element" ToolTip="Add Element to selected folder" Padding="6,2" FontSize="11" Margin="4,0,0,0"
-                        Command="{Binding ElementTree.AddElementCommand}" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnAddElement"/>
-                <Button x:Name="btnPickElement" Content="🔍 Pick" ToolTip="Pick Element from target app" Padding="6,2" FontSize="11" Margin="4,0,0,0"
+                <Button x:Name="btnPickElement" Content="🔍 Pick" ToolTip="Pick Element from target app" Padding="6,2" FontSize="11"
                         Command="{Binding PickElementCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnPickElement"/>
                 <Button x:Name="btnPreviewElement" Content="👁 Preview" ToolTip="Preview selected element" Padding="6,2" FontSize="11" Margin="4,0,0,0"
                         Command="{Binding PreviewElementCommand}" Background="{DynamicResource WarningBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnPreviewElement"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnImportElements" Content="📥 Import YAML" ToolTip="Import elements from repository YAML" Padding="6,2" FontSize="11"
                         Command="{Binding ImportElementsCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnImportElements"/>
+                <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
+                <Button x:Name="btnExportRepo" Content="Export Repository (.yaml)" ToolTip="Export element repository YAML" Padding="6,2" FontSize="11"
+                        Command="{Binding ExportRepositoryCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnExportRepo"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnExpandAll" Content="⬇️ Expand All" ToolTip="Expand All" Padding="6,2" FontSize="11"
                         Command="{Binding ElementTree.ExpandAllCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnExpandAll"/>

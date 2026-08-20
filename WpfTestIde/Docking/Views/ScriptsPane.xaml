@@ -19,7 +19,6 @@
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnSaveScript" Style="{DynamicResource ToolbarButton}" Content="Save Script" ToolTip="Save the generated script (Ctrl+S)"
                         Command="{Binding SaveScriptCommand}" AutomationProperties.AutomationId="btnSaveScript"/>
-                <Button x:Name="btnExportRepo" Style="{DynamicResource ToolbarButton}" Content="Export Repository (.yaml)" Command="{Binding ExportRepositoryCommand}" AutomationProperties.AutomationId="btnExportRepo"/>
                 <Button x:Name="btnExportScript" Style="{DynamicResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnExportStepsYaml" Style="{DynamicResource ToolbarButton}" Content="Export Steps (.yaml)" Command="{Binding ExportStepsAsYamlCommand}" AutomationProperties.AutomationId="btnExportStepsYaml"/>
