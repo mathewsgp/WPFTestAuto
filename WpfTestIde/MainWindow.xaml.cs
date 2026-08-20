@@ -242,6 +242,45 @@ namespace WpfTestIde
             LayoutPersistence.Save(state);
         }
 
+        public void ResetLayout()
+        {
+            try
+            {
+                // Clear the saved layout state so next launch uses XAML defaults.
+                var defaultState = new LayoutState();
+                LayoutPersistence.Save(defaultState);
+
+                // Recreate the default dock panes in the root panel.
+                if (dockManager.Layout?.RootPanel is LayoutPanel rootPanel)
+                {
+                    RecreateDefaultDockPanes(rootPanel);
+                    dockManager.UpdateLayout();
+                }
+
+                // Reset window geometry to defaults.
+                Width = defaultState.Width;
+                Height = defaultState.Height;
+                WindowState = System.Windows.WindowState.Normal;
+                Left = 0;
+                Top = 0;
+                WindowStartupLocation = WindowStartupLocation.CenterScreen;
+
+                // Reset splitter state to defaults.
+                if (DataContext is MainViewModel vm)
+                {
+                    vm.RepositoryPanelExpanded = false;
+                    vm.OcrPanelExpanded = false;
+                    vm.RunOutputPanelExpanded = false;
+                }
+
+                System.Diagnostics.Debug.WriteLine("Layout reset to defaults.");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ResetLayout failed: {ex.Message}");
+            }
+        }
+
         private void ActivityElements_Click(object sender, RoutedEventArgs e)
         {
             if (DataContext is MainViewModel vm)

@@ -458,6 +458,7 @@ namespace WpfTestIde.ViewModels
         public ICommand ExportStepsAsYamlCommand { get; }
         public ICommand ImportStepsCommand { get; }
         public ICommand ResetCommand { get; }
+        public ICommand ResetLayoutCommand { get; }
         public ICommand CheckPipeConnectionCommand { get; }
         public ICommand AddElementCommand { get; }
         public ICommand EditElementCommand { get; }
@@ -490,6 +491,7 @@ namespace WpfTestIde.ViewModels
             ExportStepsAsYamlCommand = new RelayCommand(_ => ExportStepsAsYaml());
             ImportStepsCommand = new RelayCommand(_ => ImportSteps());
             ResetCommand = new RelayCommand(_ => Reset());
+            ResetLayoutCommand = new RelayCommand(_ => ResetLayout());
             CheckPipeConnectionCommand = new AsyncRelayCommand(_ => CheckPipeConnectionAsync(), _ => IsAttached);
             AddElementCommand = new RelayCommand(_ => AddElement());
             EditElementCommand = new RelayCommand(param => EditElement(param as ElementEntry));
@@ -1649,11 +1651,17 @@ namespace WpfTestIde.ViewModels
             RunOutputLines.Clear();
             RunOutputLog.Clear();
             RunSummaryText = "";
-            // A5: collapse the bottom tail back to its default hidden state so a
-            // fresh sample doesn't look like the last run is still streaming.
             RunOutputPanelExpanded = false;
             EditingElement = null;
             SelectedElement = null;
+        }
+
+        private void ResetLayout()
+        {
+            if (Application.Current.MainWindow is MainWindow mw)
+            {
+                mw.ResetLayout();
+            }
         }
 
         // ------------------------------------------------------------
