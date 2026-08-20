@@ -21,6 +21,9 @@
                         Command="{Binding SaveScriptCommand}" AutomationProperties.AutomationId="btnSaveScript"/>
                 <Button x:Name="btnExportRepo" Style="{DynamicResource ToolbarButton}" Content="Export Repository (.yaml)" Command="{Binding ExportRepositoryCommand}" AutomationProperties.AutomationId="btnExportRepo"/>
                 <Button x:Name="btnExportScript" Style="{DynamicResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
+                <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
+                <Button x:Name="btnExportStepsYaml" Style="{DynamicResource ToolbarButton}" Content="Export Steps (.yaml)" Command="{Binding ExportStepsAsYamlCommand}" AutomationProperties.AutomationId="btnExportStepsYaml"/>
+                <Button x:Name="btnImportSteps" Style="{DynamicResource ToolbarButton}" Content="Import Steps (.yaml)" Command="{Binding ImportStepsCommand}" AutomationProperties.AutomationId="btnImportSteps"/>
             </StackPanel>
         </Border>
 

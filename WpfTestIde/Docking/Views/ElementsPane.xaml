@@ -21,6 +21,9 @@
                 <Button x:Name="btnPreviewElement" Content="👁 Preview" ToolTip="Preview selected element" Padding="6,2" FontSize="11" Margin="4,0,0,0"
                         Command="{Binding PreviewElementCommand}" Background="{DynamicResource WarningBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnPreviewElement"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
+                <Button x:Name="btnImportElements" Content="📥 Import YAML" ToolTip="Import elements from repository YAML" Padding="6,2" FontSize="11"
+                        Command="{Binding ImportElementsCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnImportElements"/>
+                <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnExpandAll" Content="⬇️ Expand All" ToolTip="Expand All" Padding="6,2" FontSize="11"
                         Command="{Binding ElementTree.ExpandAllCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnExpandAll"/>
                 <Button x:Name="btnCollapseAll" Content="⬆️ Collapse" ToolTip="Collapse All" Padding="6,2" FontSize="11" Margin="4,0,0,0"

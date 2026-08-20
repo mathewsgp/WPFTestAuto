@@ -454,6 +454,9 @@ namespace WpfTestIde.ViewModels
         public ICommand ExportScriptCommand { get; }
         public ICommand SaveScriptCommand { get; }
         public ICommand LoadSampleCommand { get; }
+        public ICommand ImportElementsCommand { get; }
+        public ICommand ExportStepsAsYamlCommand { get; }
+        public ICommand ImportStepsCommand { get; }
         public ICommand ResetCommand { get; }
         public ICommand CheckPipeConnectionCommand { get; }
         public ICommand AddElementCommand { get; }
@@ -483,6 +486,9 @@ namespace WpfTestIde.ViewModels
             ExportScriptCommand = new RelayCommand(_ => ExportScript());
             SaveScriptCommand = new RelayCommand(_ => SaveScript());
             LoadSampleCommand = new RelayCommand(_ => LoadSample());
+            ImportElementsCommand = new RelayCommand(_ => ImportElements());
+            ExportStepsAsYamlCommand = new RelayCommand(_ => ExportStepsAsYaml());
+            ImportStepsCommand = new RelayCommand(_ => ImportSteps());
             ResetCommand = new RelayCommand(_ => Reset());
             CheckPipeConnectionCommand = new AsyncRelayCommand(_ => CheckPipeConnectionAsync(), _ => IsAttached);
             AddElementCommand = new RelayCommand(_ => AddElement());
@@ -1293,6 +1299,184 @@ namespace WpfTestIde.ViewModels
                 // E3: mirror the StatusText line with a green Success toast so
                 // a save from a different tab is still noticed at a glance.
                 EnqueueToast($"Saved: {dialog.FileName}", ToastKind.Success);
+            }
+        }
+
+        private void ImportElements()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "YAML files (*.yaml)|*.yaml",
+                InitialDirectory = Path.Combine(FrameworkRoot, "repository", "elements"),
+                Multiselect = false
+            };
+            if (dialog.ShowDialog() != true) return;
+
+            var deserializer = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build();
+
+            try
+            {
+                string yaml = File.ReadAllText(dialog.FileName);
+                var root = deserializer.Deserialize<Dictionary<object, object>>(yaml);
+                if (root == null || !root.TryGetValue("elements", out var elementsObj)) return;
+
+                var elementsDict = ConvertToDictionary(elementsObj);
+                if (elementsDict == null) return;
+
+                int imported = 0;
+                foreach (var kv in elementsDict)
+                {
+                    string alias = kv.Key?.ToString() ?? "";
+                    if (string.IsNullOrEmpty(alias)) continue;
+
+                    if (Elements.Any(e => e.Alias == alias)) continue;
+
+                    var entry = ConvertToDictionary(kv.Value);
+                    if (entry == null) continue;
+
+                    var element = new ElementEntry
+                    {
+                        Alias = alias,
+                        DisplayName = entry.ContainsKey("displayName") ? (entry["displayName"] as string ?? "") : "",
+                        ControlType = entry.ContainsKey("controlType") ? (entry["controlType"] as string ?? "") : "",
+                        AutomationId = entry.ContainsKey("automationId") ? (entry["automationId"] as string ?? null) : null,
+                        Name = entry.ContainsKey("name") ? (entry["name"] as string ?? "") : "",
+                        XPath = entry.ContainsKey("relativeXPath") ? (entry["relativeXPath"] as string ?? null) : null,
+                        DriverPriority = entry.ContainsKey("driverPriority") ? (entry["driverPriority"] as List<object> ?? new List<object>()).Cast<string>().ToList() : null,
+                    };
+
+                    Elements.Add(element);
+                    imported++;
+                }
+
+                StatusText = $"Imported {imported} element(s) from {Path.GetFileName(dialog.FileName)}.";
+                EnqueueToast($"Imported {imported} elements", ToastKind.Success);
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Import failed: {ex.Message}";
+                EnqueueToast($"Import failed: {ex.Message}", ToastKind.Error);
+            }
+        }
+
+        private void ExportStepsAsYaml()
+        {
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = "recorded_steps.yaml",
+                Filter = "YAML files (*.yaml)|*.yaml",
+                InitialDirectory = Path.Combine(FrameworkRoot, "repository", "steps")
+            };
+            if (dialog.ShowDialog() != true) return;
+
+            var stepsList = new List<object>();
+            foreach (var step in Steps)
+            {
+                var stepDict = new Dictionary<string, object>
+                {
+                    ["kind"] = step.Kind.ToString(),
+                    ["alias"] = step.Alias,
+                    ["action"] = step.Action.ToString(),
+                    ["nonStandard"] = step.NonStandard
+                };
+
+                if (!string.IsNullOrEmpty(step.Value))
+                    stepDict["value"] = step.Value;
+                if (!string.IsNullOrEmpty(step.AttributeName))
+                    stepDict["attributeName"] = step.AttributeName;
+                if (!string.IsNullOrEmpty(step.TargetAlias))
+                    stepDict["targetAlias"] = step.TargetAlias;
+                if (!string.IsNullOrEmpty(step.PropertyName))
+                    stepDict["propertyName"] = step.PropertyName;
+                if (!string.IsNullOrEmpty(step.ExpectedCount))
+                    stepDict["expectedCount"] = step.ExpectedCount;
+                if (!string.IsNullOrEmpty(step.AppId))
+                    stepDict["appId"] = step.AppId;
+
+                stepsList.Add(stepDict);
+            }
+
+            var root = new Dictionary<string, object> { ["steps"] = stepsList };
+            var serializer = new SerializerBuilder().Build();
+            File.WriteAllText(dialog.FileName, serializer.Serialize(root));
+            StatusText = $"Steps exported to {dialog.FileName}";
+            EnqueueToast($"Exported steps: {dialog.FileName}", ToastKind.Success);
+        }
+
+        private void ImportSteps()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "YAML files (*.yaml)|*.yaml",
+                InitialDirectory = Path.Combine(FrameworkRoot, "repository", "steps"),
+                Multiselect = false
+            };
+            if (dialog.ShowDialog() != true) return;
+
+            var deserializer = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build();
+
+            try
+            {
+                string yaml = File.ReadAllText(dialog.FileName);
+                var root = deserializer.Deserialize<Dictionary<object, object>>(yaml);
+                if (root == null || !root.TryGetValue("steps", out var stepsObj)) return;
+
+                var stepsList = stepsObj as List<object>;
+                if (stepsList == null) return;
+
+                int imported = 0;
+                foreach (var stepObj in stepsList)
+                {
+                    var stepDict = ConvertToDictionary(stepObj);
+                    if (stepDict == null) continue;
+
+                    if (!stepDict.TryGetValue("alias", out var aliasObj) || aliasObj?.ToString() is not string alias || string.IsNullOrEmpty(alias))
+                        continue;
+
+                    if (!stepDict.TryGetValue("kind", out var kindObj) || kindObj?.ToString() is not string kindStr)
+                        continue;
+                    if (!Enum.TryParse<StepKind>(kindStr, out var kind)) continue;
+
+                    if (!stepDict.TryGetValue("action", out var actionObj) || actionObj?.ToString() is not string actionStr)
+                        continue;
+                    if (!Enum.TryParse<ActionKind>(actionStr, out var action)) continue;
+
+                    var step = new RecordedStep
+                    {
+                        Kind = kind,
+                        Alias = alias,
+                        Action = action,
+                        NonStandard = stepDict.TryGetValue("nonStandard", out var nsObj) && nsObj is bool ns && ns
+                    };
+
+                    if (stepDict.TryGetValue("value", out var valueObj) && valueObj != null)
+                        step.Value = valueObj.ToString();
+                    if (stepDict.TryGetValue("attributeName", out var attrObj) && attrObj != null)
+                        step.AttributeName = attrObj.ToString();
+                    if (stepDict.TryGetValue("targetAlias", out var targetObj) && targetObj != null)
+                        step.TargetAlias = targetObj.ToString();
+                    if (stepDict.TryGetValue("propertyName", out var propObj) && propObj != null)
+                        step.PropertyName = propObj.ToString();
+                    if (stepDict.TryGetValue("expectedCount", out var countObj) && countObj != null)
+                        step.ExpectedCount = countObj.ToString();
+                    if (stepDict.TryGetValue("appId", out var appIdObj) && appIdObj != null)
+                        step.AppId = appIdObj.ToString();
+
+                    Steps.Add(step);
+                    imported++;
+                }
+
+                StatusText = $"Imported {imported} step(s) from {Path.GetFileName(dialog.FileName)}.";
+                EnqueueToast($"Imported {imported} steps", ToastKind.Success);
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Import failed: {ex.Message}";
+                EnqueueToast($"Import failed: {ex.Message}", ToastKind.Error);
             }
         }
 
