@@ -10,13 +10,26 @@ namespace WpfTestIde.Converters
 {
     public class StepKindToBrushConverter : IValueConverter
     {
-        private static readonly Brush ActionBrush = new SolidColorBrush(Color.FromRgb(0xF7, 0xF8, 0xFA));
-        private static readonly Brush VerifyBrush = new SolidColorBrush(Color.FromRgb(0xEA, 0xF6, 0xEC));
-        private static readonly Brush VerifyOcrBrush = new SolidColorBrush(Color.FromRgb(0xE3, 0xF2, 0xFD));
+        private static readonly Brush LightActionBrush = new SolidColorBrush(Color.FromRgb(0xF7, 0xF8, 0xFA));
+        private static readonly Brush LightVerifyBrush = new SolidColorBrush(Color.FromRgb(0xEA, 0xF6, 0xEC));
+        private static readonly Brush LightVerifyOcrBrush = new SolidColorBrush(Color.FromRgb(0xE3, 0xF2, 0xFD));
 
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
-            value is StepKind.VerifyOcr ? VerifyOcrBrush :
-            value is StepKind.Verify ? VerifyBrush : ActionBrush;
+        private static readonly Brush DarkActionBrush = new SolidColorBrush(Color.FromRgb(0x2D, 0x2D, 0x30));
+        private static readonly Brush DarkVerifyBrush = new SolidColorBrush(Color.FromRgb(0x1E, 0x3A, 0x2F));
+        private static readonly Brush DarkVerifyOcrBrush = new SolidColorBrush(Color.FromRgb(0x1E, 0x2D, 0x3D));
+
+        private static bool IsDark => Themes.ThemeManager.CurrentTheme == "Dark";
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (IsDark)
+            {
+                return value is StepKind.VerifyOcr ? DarkVerifyOcrBrush :
+                       value is StepKind.Verify ? DarkVerifyBrush : DarkActionBrush;
+            }
+            return value is StepKind.VerifyOcr ? LightVerifyOcrBrush :
+                   value is StepKind.Verify ? LightVerifyBrush : LightActionBrush;
+        }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
             throw new NotSupportedException();
