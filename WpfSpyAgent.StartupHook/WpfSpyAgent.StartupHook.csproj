@@ -4,12 +4,13 @@
       <!-- Startup hooks are a .NET Core 3.0+ / .NET 5+ mechanism — this
            does NOT work against .NET Framework targets. See
            docs/INJECTION_OPTIONS.md for the .NET Framework equivalent. -->
-      <TargetFramework>net8.0-windows</TargetFramework>
+	  <TargetFrameworks>net9.0-windows</TargetFrameworks>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <AssemblyName>WpfSpyAgent.StartupHook</AssemblyName>
     <RootNamespace>WpfSpyAgent.StartupHook</RootNamespace>
+    <BaseOutputPath>..\bin</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

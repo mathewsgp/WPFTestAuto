@@ -9,6 +9,7 @@
     <AssemblyName>WpfTestIde</AssemblyName>
     <RootNamespace>WpfTestIde</RootNamespace>
     <ApplicationIcon></ApplicationIcon>
+    <BaseOutputPath>..\bin</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

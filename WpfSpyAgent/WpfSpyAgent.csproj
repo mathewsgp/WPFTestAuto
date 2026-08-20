@@ -8,13 +8,14 @@
          injection mechanisms (WpfSpyAgent.StartupHook for .NET,
          WpfSpyAgent.FrameworkHook for .NET Framework) each reference
          whichever build of THIS project matches their own TFM. -->
-      <TargetFrameworks>net8.0-windows;net461</TargetFrameworks>
+      <TargetFrameworks>net9.0-windows;net461</TargetFrameworks>
      <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <AssemblyName>WpfSpyAgent</AssemblyName>
     <RootNamespace>WpfSpyAgent</RootNamespace>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <BaseOutputPath>..\bin</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">

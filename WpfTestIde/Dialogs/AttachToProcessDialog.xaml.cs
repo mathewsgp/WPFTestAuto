@@ -216,13 +216,13 @@ namespace WpfTestIde.Dialogs
                 StatusText.Text = $"Checking if Spy Agent is already running in PID {processId}...";
 
                 // First, check if the agent is already running
-                var (isSupported, reason) = RuntimeInjector.CheckSupport();
+                //var (isSupported, reason) = RuntimeInjector.CheckSupport();
 
-                if (!isSupported)
-                {
-                    StatusText.Text = reason;
-                    return false;
-                }
+                //if (!isSupported)
+                //{
+                //    StatusText.Text = reason;
+                //    return false;
+                //}
 
                 // Try to connect to the existing agent
                 if (await RuntimeInjector.TestExistingConnectionAsync(processId, pipeName))

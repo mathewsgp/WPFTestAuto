@@ -303,7 +303,7 @@ namespace WpfTestIde.ViewModels
 
         // Paths — defaults match this repo's layout when the IDE is run
         // from WpfTestIde/bin/.../ against the sibling WpfTestFramework checkout.
-        public string FrameworkRoot { get; set; } = Path.GetFullPath(Path.Combine(System.AppContext.BaseDirectory, "..", "..", "..", ".."));
+        public string FrameworkRoot { get; set; } = Path.GetFullPath(Path.Combine(System.AppContext.BaseDirectory, "..", "..", ".."));
         public string PipeName { get; set; } = "WPFSpyAgentPipe";
         public int SelectedProcessId { get; set; }
 

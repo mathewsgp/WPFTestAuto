@@ -25,11 +25,11 @@ shift
 goto parse_args
 
 :done_args
-set "TARGET_FW=net8.0-windows"
-set "SAMPLE_APP_DIR=%FW_ROOT%SampleWpfApp\bin\%CONFIGURATION%\net8.0-windows"
+set "TARGET_FW=net9.0-windows"
+set "SAMPLE_APP_DIR=%FW_ROOT%\bin\%CONFIGURATION%\net9.0-windows"
 if /i "%TARGET_VERSION%"=="framework" (
     set "TARGET_FW=net461"
-    set "SAMPLE_APP_DIR=%FW_ROOT%SampleWpfApp\bin\%CONFIGURATION%\net461"
+    set "SAMPLE_APP_DIR=%FW_ROOT%\bin\%CONFIGURATION%\net461"
 )
 set "TARGET_PATH=%SAMPLE_APP_DIR%\SampleWpfApp.exe"
 
@@ -50,9 +50,9 @@ set "IDE_PROJECT=%FW_ROOT%WpfTestIde\WpfTestIde.csproj"
 
 echo.
 echo [1/5] Building WpfSpyAgent...
-dotnet build "%AGENT_PROJECT%" -c %CONFIGURATION% -f net8.0-windows
+dotnet build "%AGENT_PROJECT%" -c %CONFIGURATION% -f net9.0-windows
 if errorlevel 1 (
-    echo ERROR: Failed to build WpfSpyAgent ^(net8.0-windows^)
+    echo ERROR: Failed to build WpfSpyAgent ^(net9.0-windows^)
     pause
     exit /b 1
 )
@@ -74,17 +74,19 @@ echo.
 echo [3/5] Building injection hook...
 if /i "%TARGET_FW%"=="net461" (
     dotnet build "%FRAMEWORK_HOOK_PROJECT%" -c %CONFIGURATION%
-    set "HOOK_DIR=%FW_ROOT%WpfSpyAgent.FrameworkHook\bin\%CONFIGURATION%\net461"
+    set "HOOK_DIR=%FW_ROOT%\bin\%CONFIGURATION%\net461"
 ) else (
     dotnet build "%STARTUP_HOOK_PROJECT%" -c %CONFIGURATION%
-    set "HOOK_DIR=%FW_ROOT%WpfSpyAgent.StartupHook\bin\%CONFIGURATION%\net8.0-windows"
+    set "HOOK_DIR=%FW_ROOT%\bin\%CONFIGURATION%\net9.0-windows"
 )
 
 echo.
 echo [4/5] Building NativeInject C++ DLL...
 :: Find MSBuild for C++ project
 set "MSBUILD_VS="
-if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" (
+if exist "C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe" (
+    set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe"
+) else if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" (
     set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
 ) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" (
     set "MSBUILD_VS=C:\Program Files (x86)\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
@@ -94,7 +96,7 @@ if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\
     set "MSBUILD_VS=C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
 )
 if defined MSBUILD_VS (
-    "!MSBUILD_VS!" "%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
+    "!MSBUILD_VS!" "%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2022.vcxproj" /p:Configuration=%CONFIGURATION% /p:Platform=x64 /t:Build /v:minimal
     if not errorlevel 1 (
         echo       NativeInject C++ DLL built successfully.
         set "NATIVE_BUILT=1"
@@ -108,15 +110,15 @@ if defined MSBUILD_VS (
 
 echo.
 echo [5/5] Copying DLLs...
-copy /Y "%FW_ROOT%WpfSpyAgent\bin\%CONFIGURATION%\%TARGET_FW%\WpfSpyAgent.dll" "%SAMPLE_APP_DIR%\" >nul
+copy /Y "%FW_ROOT%\bin\%CONFIGURATION%\%TARGET_FW%\WpfSpyAgent.dll" "%SAMPLE_APP_DIR%\" >nul
 if /i "%TARGET_FW%"=="net461" (
     copy /Y "%HOOK_DIR%\WpfSpyAgent.FrameworkHook.dll" "%SAMPLE_APP_DIR%\" >nul
 ) else (
     copy /Y "%HOOK_DIR%\WpfSpyAgent.StartupHook.dll" "%SAMPLE_APP_DIR%\" >nul
 )
 if defined NATIVE_BUILT (
-    copy /Y "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%SAMPLE_APP_DIR%\" >nul
-    copy /Y "%FW_ROOT%WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%WpfTestIde\bin\%CONFIGURATION%\net9.0-windows\" >nul 2>nul
+    copy /Y "%FW_ROOT%\WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%SAMPLE_APP_DIR%\" >nul
+    copy /Y "%FW_ROOT%\WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%\bin\%CONFIGURATION%\net9.0-windows\" >nul 2>nul
 )
 
 echo.
