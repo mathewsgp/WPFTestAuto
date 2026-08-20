@@ -66,6 +66,11 @@ docs/
 | Visual Test Builder | Done | [Guide](./features/VISUAL_TEST_BUILDER.md) |
 | Checkpoint Wizard | Done | [Guide](./features/CHECKPOINT_WIZARD.md) |
 | Screenshot on Failure | Done | [Guide](./features/SCREENSHOT_ON_FAILURE.md) |
+| Element Import/Export (YAML) | Done | [IDE Guide](./guides/IDE_GUIDE.md) |
+| Steps Import/Export (YAML) | Done | [IDE Guide](./guides/IDE_GUIDE.md) |
+| Layout Persistence | Done | [IDE Guide](./guides/IDE_GUIDE.md) |
+| Dark/Light Theme | Done | [IDE Guide](./guides/IDE_GUIDE.md) |
+| Drag-to-Reorder Steps | Done | [IDE Guide](./guides/IDE_GUIDE.md) |
 
 ---
 
@@ -92,4 +97,4 @@ See [Contributing Guide](./deployment/CONTRIBUTING.md) for:
 
 ---
 
-*Last updated: 2024*
+*Last updated: 2026-08-20*

@@ -285,6 +285,14 @@ Directly walks WPF visual tree without UI Automation.
 - `BuildXPath(element)`: Generates XPath path to element
 - `Invoke/SetValue/GetText/Toggle/IsVisible`: Control interactions
 
+**Recent Improvements**:
+- **Unified walk-up**: `ResolveHitToNamedElement` now uses a single eligibility check at every ancestor (AutomationId → ISpyInteractable → known interactive type → non-template Name) instead of separate pass-throughs for ButtonBase/Toggle.
+- **Repeating-container awareness**: `IsInsideRepeatingContainer` walks the full ancestor chain, so `BuildXPath` correctly skips names inside DevExpress `LayoutGroup`/`LayoutItem` and falls back to sibling-indexed paths.
+- **LayoutPanel indexing**: `BuildXPath` includes `LayoutPanel` in the generated path when it is a direct child of `LayoutGroup`/`LayoutItem` and there are multiple `LayoutPanel` siblings, preventing path collisions.
+- **ElementHandlerRegistry**: Centralized type dispatch for Invoke/SetValue/GetText/etc. via a registry of typed handlers, keeping `VisualTreeInspector` from growing into a monolithic switch block.
+- **Hit-test filtering**: `HitTestRespectingInputVisibility` no longer prunes transparent containers during the filter pass; WPF's native hit-testing correctly evaluates visible children through null backgrounds.
+- **Thread-safe logging**: `Log`/`LogVerbose` use a lock around `File.AppendAllText`, with 5 MB rotation and up to 3 backup files.
+
 **XPath Syntax** (WPF visual-tree subset):
 ```
 /Window[@Name='MainWindow']/Grid/Button[@Name='btnSubmit']

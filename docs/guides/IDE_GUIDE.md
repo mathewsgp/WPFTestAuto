@@ -16,6 +16,9 @@ A real WPF desktop application that implements the full authoring loop as a GUI 
 | **Checkpoint Wizard** | Point-and-click creation of verification points |
 | **Visual Test Builder** | Drag-and-drop test creation with Robot code generation |
 | **Element Tree View** | Hierarchical view of all elements with search and filtering |
+| **Import Elements** | Import element entries from existing `repository/elements/*.yaml` files |
+| **Export Steps / Import Steps** | Save recorded steps to YAML or load them back into the IDE |
+| **Reset Layout** | Restore the IDE layout to its default state via **View → Reset Layout** |
 
 ## Recording uses the framework's own self-healing philosophy
 
@@ -62,13 +65,19 @@ WpfTestIde/
 └── RelayCommand.cs
 ```
 
-## Build & run (on Windows, .NET 6 SDK + WPF workload)
+## Build & run (on Windows, .NET 9 SDK + WPF workload)
 
 ```powershell
 cd WpfTestIde
 dotnet restore
 dotnet build
 dotnet run
+```
+
+Or use the bundled script from the repo root:
+
+```bat
+build_and_run_vs2022.bat
 ```
 
 ## Attaching to Processes
@@ -106,9 +115,9 @@ dotnet build
 
 # Launch your app with the hook
 cd ..\SampleWpfApp
-$env:DOTNET_STARTUP_HOOKS = "$(Resolve-Path ..\WpfSpyAgent.StartupHook\bin\Debug\net6.0-windows\WpfSpyAgent.StartupHook.dll)"
+$env:DOTNET_STARTUP_HOOKS = "$(Resolve-Path ..\WpfSpyAgent.StartupHook\bin\Debug\net8.0-windows\WpfSpyAgent.StartupHook.dll)"
 $env:WPFSPY_AGENT_ENABLED = "1"
-dotnet run -f net6.0-windows
+dotnet run -f net8.0-windows
 
 # Then attach from the IDE
 ```
@@ -133,13 +142,15 @@ See [Injection Options](../technical/INJECTION_OPTIONS.md) for more details.
   configured once at Attach time (window-title substring → page alias);
   it doesn't auto-discover new page names as new windows open. Add a row
   per screen your app navigates to before recording.
-- **FlaUI's re-query on focus-lost** (`ElementProbe.GetCurrentValue`)
-  uses the cached `AutomationElement` reference from the original probe.
-  If the control was recreated (rare, but possible after certain layout
-  changes) this could throw; the exception is caught and the last-known
-  text is used instead.
+- **Element resolution during recording** uses the same FlaUI-first,
+  WPFSpy-fallback logic as test execution. Custom-rendered controls that
+  lack AutomationPeers are resolved via the in-process WPFSpy agent's
+  live visual-tree hit-testing.
 - **No undo/redo** on the Recorded Steps list — delete and re-record
   instead.
+- **Layout persistence** is best-effort. If `%AppData%\WpfTestIde\layout.json`
+  is corrupt, the IDE falls back to the XAML default layout on next launch.
+  Use **View → Reset Layout** to force defaults.
 - This project could not be compiled or run in the sandbox used to write
   it (no Windows/.NET SDK available there) — see the repo's top-level
   README for the same caveat that applies to `SampleWpfApp` and

@@ -84,6 +84,33 @@ properties: `TextBox.Text`, `ButtonBase.Click`, etc.) and on custom
 controls via the opt-in `ISpyInteractable` interface, never via
 `System.Windows.Automation`. See `WpfSpyAgent/VisualTreeInspector.cs`.
 
+## Recent inspector improvements
+
+- **Unified hit-test walk-up**: `ResolveHitToNamedElement` checks every
+  ancestor in priority order (AutomationId → ISpyInteractable → known
+  interactive type → non-template Name) in a single pass, instead of
+  separate fallback walks. This fixes unnamed-but-interactive template
+  visuals being walked past.
+- **Repeating-container aware**: `IsInsideRepeatingContainer` now scans
+  the full ancestor chain, so names inside DevExpress `LayoutGroup` /
+  `LayoutItem` / `DataGridRow` are correctly treated as per-instance
+  and excluded from global anchors in `BuildXPath`.
+- **LayoutPanel collision fix**: `BuildXPath` includes `LayoutPanel` in
+  the generated path when it is a direct child of `LayoutGroup` /
+  `LayoutItem` and there are multiple `LayoutPanel` siblings, preventing
+  identical paths for structurally identical buttons in different panels.
+- **DataGrid cell accuracy**: `GetDataGridContent` now retrieves the
+  correct `DataGridCell` per column index using
+  `DataGridColumn.GetCellContent(row)` instead of always returning the
+  first cell.
+- **Centralized dispatch**: `ElementHandlerRegistry` maps element types
+  to action handlers (Invoke, SetValue, GetText, etc.) so adding support
+  for new controls doesn't grow `VisualTreeInspector` into a monolithic
+  switch block.
+- **Thread-safe logging**: probe logs are written under a lock with
+  5 MB rotation and backup files, preventing `IOException` from
+  concurrent IPC calls and unbounded log growth.
+
 ## Reliability payoff
 
 Because `OrdersPage.PriorityCheckbox`'s `FlaUI` strategy in

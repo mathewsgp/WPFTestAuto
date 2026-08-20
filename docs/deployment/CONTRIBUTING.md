@@ -59,6 +59,13 @@ automatically (see `docs/ELEMENT_REPOSITORY_GUIDE.md`).
 - [ ] Docs updated if you changed the schema, added a driver, or changed
       the authoring workflow
 
+## Development setup (Windows)
+
+After cloning, run `setup_env.bat` from the repo root to create a Python
+virtual environment and install all dependencies. Then build the .NET
+side with `build_and_run_vs2022.bat` or by opening
+`WpfTestFramework.sln` in Visual Studio.
+
 ## Proposed (not yet implemented) tooling
 
 See the architecture deck's "Suggested Design Improvements" slide for a

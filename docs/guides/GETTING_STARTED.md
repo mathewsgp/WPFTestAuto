@@ -2,15 +2,43 @@
 
 ## 1. Install
 
-```bash
-python3 -m venv .venv && source .venv/bin/activate   # optional but recommended
-pip install -r requirements.txt
+### Windows (recommended)
+
+From the repo root, run the bundled setup script:
+
+```bat
+setup_env.bat
 ```
 
-Requires Python 3.9+ and Robot Framework 7.x (installed via
-requirements.txt).
+This creates `.venv`, activates it, upgrades `pip`, and installs all
+required + optional packages (`robotframework`, `pyyaml`, `pytest`,
+`robotframework-requests`, `pywin32`, `FlaUILibrary`,
+`robotframework-SikuliLibrary`, `pytesseract`, `Pillow`).
 
-## 2. Run the suite
+### Manual / cross-platform
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate.bat
+pip install -U pip
+pip install robotframework pyyaml pytest robotframework-requests pywin32
+pip install FlaUILibrary robotframework-SikuliLibrary pytesseract Pillow
+```
+
+Requires Python 3.9+.
+
+## 2. Build the .NET side (Windows only)
+
+The framework includes a WPF sample app, the WPFSpy agent, and the WPF
+Test IDE. Build them with:
+
+```bat
+build_and_run_vs2022.bat
+```
+
+or open `WpfTestFramework.sln` in Visual Studio 2022/2026 and build.
+
+## 3. Run the suite
 
 ```bash
 ./run_tests.sh
@@ -19,7 +47,13 @@ requirements.txt).
 or directly:
 
 ```bash
-python3 -m robot --outputdir results tests/
+python3 -m robot --outputdir output tests/
+```
+
+Windows PowerShell:
+
+```powershell
+.\run_tests.ps1
 ```
 
 You should see:

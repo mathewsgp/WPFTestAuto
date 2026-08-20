@@ -129,7 +129,7 @@ This document consolidates gap analysis, implementation priorities, and UI impro
 └────────────────────────────────────────────────────────────────┘
 ```
 
-**Implementation:** Use AvalonDock or similar docking library
+**Status:** ✅ Implemented via AvalonDock v5. ELEMENTS/SCRIPTS/RESULTS are docked `LayoutAnchorable` panes in a horizontal `LayoutPanel`. Pane widths are persisted explicitly in addition to the dock JSON.
 
 ### 2. Project Explorer Panel
 
@@ -143,12 +143,16 @@ This document consolidates gap analysis, implementation priorities, and UI impro
 └── 📄 config.yaml
 ```
 
+**Status:** ⬜ Not started.
+
 ### 3. Test Visualizer (Screenshots per Step)
 
 Add visual feedback during test execution:
 - Screenshot at each step
 - Highlight element being acted upon
 - Before/after comparison
+
+**Status:** ⬜ Not started.
 
 ### 4. Keyboard Shortcuts
 
@@ -162,11 +166,15 @@ Add visual feedback during test execution:
 | Ctrl+Z | Undo |
 | Ctrl+D | Duplicate Step |
 
+**Status:** ✅ Implemented. `Ctrl+S` Save, `Ctrl+R`/`F5` Run, `Ctrl+Shift+R` Toggle Record, `F12` Spy Tool.
+
 ### 5. Status Indicators with Icons
 
 ```
 ● Attached: Notepad (PID: 1234) │ 🔴 Recording │ ⚡ 5 Steps
 ```
+
+**Status:** ✅ Implemented. Real `StatusBar` with `StatusText`, `PipeStatusText`, Record/Run checkboxes, and driver indicators.
 
 ### 6. Context Menus
 
@@ -174,9 +182,13 @@ Right-click menus for:
 - **Steps:** Run, Delete, Duplicate, Add Verification, Move Up/Down
 - **Elements:** Edit, Delete, Preview, Find in Tree
 
+**Status:** ✅ Implemented. Element tree context menu includes Edit, Preview, Copy Alias/XPath, Delete. Steps list has drag-reorder + Up/Down buttons.
+
 ### 7. Theme Support (Dark/Light Mode)
 
 Toggle between dark and light themes.
+
+**Status:** ✅ Implemented. `ThemeManager` with Light/Dark themes, persisted in layout state.
 
 ### 8. Quick Search / Command Palette
 
@@ -189,6 +201,8 @@ Toggle between dark and light themes.
 └─────────────────────────────────────────┘
 ```
 
+**Status:** ⬜ Not started.
+
 ### 9. Test Results Dashboard
 
 ```
@@ -200,6 +214,8 @@ Test Results: Login Test
 Passed: 6/8 (75%) │ Failed: 2 │ Duration: 12.5s
 ```
 
+**Status:** ⬜ Not started.
+
 ### 10. Progress Indicator During Recording
 
 ```
@@ -208,6 +224,8 @@ Passed: 6/8 (75%) │ Failed: 2 │ Duration: 12.5s
 │ Elapsed: 00:05.3 │ Steps: 3 │ Last: Click [btn]     │
 └─────────────────────────────────────────────────────────┘
 ```
+
+**Status:** ✅ Implemented. Recording state shown in status bar with step count and last action.
 
 ---
 
