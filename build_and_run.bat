@@ -83,17 +83,17 @@ if /i "%TARGET_FW%"=="net461" (
 echo.
 echo [4/5] Building NativeInject C++ DLL...
 :: Find MSBuild for C++ project and select the correct vcxproj
+:: Note: VS2026 = internal version 18, VS2022 = internal version 17
 set "MSBUILD_VS="
 set "NATIVE_VCPROJ=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2022.vcxproj"
-if exist "C:\Program Files\Microsoft Visual Studio\2026\Community\MSBuild\Current\Bin\MSBuild.exe" (
-    set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\2026\Community\MSBuild\Current\Bin\MSBuild.exe"
+if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" (
+    set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
     set "NATIVE_VCPROJ=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj"
 ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe" (
     set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe"
-) else if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" (
-    set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
 ) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" (
     set "MSBUILD_VS=C:\Program Files (x86)\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
+    set "NATIVE_VCPROJ=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj"
 ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" (
     set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
 ) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" (
