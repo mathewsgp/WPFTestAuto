@@ -43,7 +43,7 @@
             <TextBlock Text="Driver Priority Order" FontSize="11" FontWeight="Bold" Margin="0,0,0,2"/>
             <DockPanel Margin="0,0,0,8">
                 <ListBox x:Name="DriverPriorityListBox" ItemsSource="{Binding EditingElement.DriverPriority}" 
-                         Height="80" Width="200" FontSize="11" Margin="0,0,4,0" AutomationProperties.AutomationId="DriverPriorityListBox"/>
+                         Height="80" FontSize="11" Margin="0,0,4,0" AutomationProperties.AutomationId="DriverPriorityListBox"/>
                 <StackPanel Orientation="Vertical" DockPanel.Dock="Right">
                     <Button x:Name="btnMovePriorityUp" Content="Up" Command="{Binding MoveElementPriorityUpCommand}" Padding="6,2" FontSize="10" Margin="0,0,0,1" AutomationProperties.AutomationId="btnMovePriorityUp"/>
                     <Button x:Name="btnMovePriorityDown" Content="Down" Command="{Binding MoveElementPriorityDownCommand}" Padding="6,2" FontSize="10" AutomationProperties.AutomationId="btnMovePriorityDown"/>
