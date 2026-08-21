@@ -901,6 +901,10 @@ namespace WpfSpyAgent
                     {
                         segments.Insert(0, $"Window[@Name='{window.Name}']");
                     }
+                    else if (!string.IsNullOrEmpty(window.Title))
+                    {
+                        segments.Insert(0, $"Window[@Name='{window.Title}']");
+                    }
                     else if (!string.IsNullOrEmpty(windowAutoId))
                     {
                         segments.Insert(0, $"Window[@AutomationId='{windowAutoId}']");
@@ -1321,7 +1325,14 @@ namespace WpfSpyAgent
             }
             else if (namePredicate != null)
             {
-                if (!(element is FrameworkElement fe) || fe.Name != namePredicate)
+                if (element is Window window)
+                {
+                    if (window.Title != namePredicate)
+                    {
+                        return false;
+                    }
+                }
+                else if (!(element is FrameworkElement fe) || fe.Name != namePredicate)
                 {
                     return false;
                 }

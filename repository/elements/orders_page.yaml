@@ -27,11 +27,12 @@ elements:
     displayName: "Orders Window"
     controlType: "Window"
     windowAutomationId: "OrdersWindow"
+    name: "Sample WPF App — Orders"
     parentAlias: null  # This is the root
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
-          value: "OrdersWindow"
+        - searchBy: "Name"
+          value: "Sample WPF App — Orders"
           priority: 1
 
   # SKU Combo Box - direct child of Window

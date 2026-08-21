@@ -116,12 +116,17 @@ class MockWpfApp:
         
         # Add Window first
         window_aid = "MainWindow"
+        window_name = None
         if control.container_chain:
             # Get window from first container
             if control.container_chain[0].get("type") == "Window":
                 window_aid = control.container_chain[0].get("automationId") or "MainWindow"
+                window_name = control.container_chain[0].get("name")
         
-        path_parts.append(f"Window[@AutomationId='{window_aid}']")
+        if window_name and window_name != window_aid:
+            path_parts.append(f"Window[@Name='{window_name}']")
+        else:
+            path_parts.append(f"Window[@AutomationId='{window_aid}']")
         
         # Add container chain (only identifiable containers)
         for container in control.container_chain:

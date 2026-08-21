@@ -131,12 +131,13 @@ def get_relative_xpath(alias: str, app_id: str = None) -> Optional[str]:
     return _element_relative_xpath_cache.get(cache_key)
 
 
-def resolve_full_path(alias: str, app_id: str = None) -> Tuple[str, str]:
+def resolve_full_path(alias: str, app_id: str = None, driver_name: str = None) -> Tuple[str, str]:
     """Resolve the full XPath for an element by walking up the parent chain.
     
     Args:
         alias: Element alias
         app_id: Optional app context ID to filter elements.
+        driver_name: Optional driver name (FlaUI uses Name for Window, others use AutomationId).
     
     Returns:
         Tuple of (full_path, parent_alias)
@@ -160,7 +161,14 @@ def resolve_full_path(alias: str, app_id: str = None) -> Tuple[str, str]:
         if "xpathPrefix" in element:
             path_parts.insert(0, element["xpathPrefix"])
         elif control_type == "Window":
-            path_parts.insert(0, f"Window[@AutomationId='{window_id}']")
+            if driver_name == "FlaUI":
+                window_name = element.get("name") or window_id
+                if window_name and window_name != window_id:
+                    path_parts.insert(0, f"Window[@Name='{window_name}']")
+                else:
+                    path_parts.insert(0, f"Window[@AutomationId='{window_id}']")
+            else:
+                path_parts.insert(0, f"Window[@AutomationId='{window_id}']")
         elif "automationId" in element:
             path_parts.insert(0, f"{control_type}[@AutomationId='{element['automationId']}']")
         elif "name" in element:
@@ -177,14 +185,15 @@ def resolve_full_path(alias: str, app_id: str = None) -> Tuple[str, str]:
     return full_path, parent_alias
 
 
-def build_absolute_xpath(alias: str, app_id: str = None) -> str:
+def build_absolute_xpath(alias: str, app_id: str = None, driver_name: str = None) -> str:
     """Build the complete absolute XPath for an element.
     
     Args:
         alias: Element alias
         app_id: Optional app context ID to filter elements.
+        driver_name: Optional driver name for driver-specific Window prefix.
     """
-    full_path, parent_alias = resolve_full_path(alias, app_id=app_id)
+    full_path, parent_alias = resolve_full_path(alias, app_id=app_id, driver_name=driver_name)
     relative_xpath = get_relative_xpath(alias, app_id=app_id)
     
     if relative_xpath:

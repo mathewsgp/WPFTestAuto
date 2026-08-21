@@ -752,7 +752,7 @@ class DriverAgnosticApi:
                 strategy_desc = f"{driver_name}:{search_by}"
                 
                 # Resolve full XPath from parent chain if needed
-                resolved_strategy = self._resolve_strategy_with_parent(strategy, alias)
+                resolved_strategy = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
                 
                 start_time = time.time()
                 logger.debug(
@@ -1019,7 +1019,7 @@ class DriverAgnosticApi:
                 priority = strategy.get("priority", 99)
                 strategy_desc = f"{driver_name}:{search_by}"
                 
-                resolved_strategy = self._resolve_strategy_with_parent(strategy, alias)
+                resolved_strategy = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
                 
                 start_time = time.time()
                 logger.debug(
@@ -1223,13 +1223,14 @@ class DriverAgnosticApi:
         
         return properties
     
-    def _resolve_strategy_with_parent(self, strategy: dict, alias: str, app_id: Optional[str] = None) -> dict:
+    def _resolve_strategy_with_parent(self, strategy: dict, alias: str, app_id: Optional[str] = None, driver_name: Optional[str] = None) -> dict:
         """Resolve strategy by building full XPath from parent chain.
         
         Args:
             strategy: Strategy dict with searchBy and value
             alias: Element alias for parent chain lookup
             app_id: Optional app context ID
+            driver_name: Optional driver name (FlaUI uses Name for Window, others use AutomationId)
         
         Returns:
             Strategy dict with resolved full XPath
@@ -1243,17 +1244,18 @@ class DriverAgnosticApi:
         if value.startswith("/"):
             return resolved
         
-        full_path = self._build_full_path_from_alias(alias, app_id)
+        full_path = self._build_full_path_from_alias(alias, app_id, driver_name)
         resolved["value"] = f"{full_path}/{value}"
         
         return resolved
     
-    def _build_full_path_from_alias(self, alias: str, app_id: Optional[str] = None) -> str:
+    def _build_full_path_from_alias(self, alias: str, app_id: Optional[str] = None, driver_name: Optional[str] = None) -> str:
         """Build full XPath by walking parent chain.
         
         Args:
             alias: Element alias to resolve
             app_id: Optional app context ID
+            driver_name: Optional driver name for driver-specific Window prefix
         
         Returns:
             Full XPath from Window to the element's parent.
@@ -1279,8 +1281,15 @@ class DriverAgnosticApi:
             window_id = element.get("windowAutomationId", "MainWindow")
             
             if control_type == "Window":
-                # This is the root Window
-                path_parts.insert(0, f"Window[@AutomationId='{window_id}']")
+                # FlaUI uses UIA Name (Title) for Window; WPFSpy reads AutomationId directly
+                if driver_name == "FlaUI":
+                    window_name = element.get("name") or window_id
+                    if window_name and window_name != window_id:
+                        path_parts.insert(0, f"Window[@Name='{window_name}']")
+                    else:
+                        path_parts.insert(0, f"Window[@AutomationId='{window_id}']")
+                else:
+                    path_parts.insert(0, f"Window[@AutomationId='{window_id}']")
                 break
             elif "automationId" in element:
                 path_parts.insert(0, f"{control_type}[@AutomationId='{element['automationId']}']")
@@ -1533,7 +1542,7 @@ class DriverAgnosticApi:
                 continue
             for strategy in target_strategies[driver_name]:
                 try:
-                    resolved = self._resolve_strategy_with_parent(strategy, target_alias, app_id)
+                    resolved = self._resolve_strategy_with_parent(strategy, target_alias, app_id, driver_name)
                     target_element = driver.find_element(resolved)
                     break
                 except Exception:
@@ -1618,7 +1627,7 @@ class DriverAgnosticApi:
                 driver_strategies = strategies[driver_name]
                 for strategy in driver_strategies:
                     try:
-                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
                         element = driver.find_element(resolved)
                         if driver.is_visible(element):
                             return True
@@ -1641,7 +1650,7 @@ class DriverAgnosticApi:
             driver_strategies = strategies[driver_name]
             for strategy in driver_strategies:
                 try:
-                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
                     element = driver.find_element(resolved)
                     if driver.is_enabled(element):
                         return True
@@ -1663,7 +1672,7 @@ class DriverAgnosticApi:
             driver_strategies = strategies[driver_name]
             for strategy in driver_strategies:
                 try:
-                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
                     found = driver.find_elements(resolved)
                     results.extend(found)
                 except Exception:
@@ -1683,7 +1692,7 @@ class DriverAgnosticApi:
             driver_strategies = strategies[driver_name]
             for strategy in driver_strategies:
                 try:
-                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
                     element = driver.find_element(resolved)
                     if driver.is_actionable(element):
                         return True
@@ -1721,7 +1730,7 @@ class DriverAgnosticApi:
                     continue
                 for strategy in strategies[driver_name]:
                     try:
-                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
                         driver.find_element(resolved)
                         return True
                     except Exception:
@@ -1770,7 +1779,7 @@ class DriverAgnosticApi:
                     continue
                 for strategy in strategies[driver_name]:
                     try:
-                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
                         element = driver.find_element(resolved)
                         if driver.is_visible(element):
                             return True
@@ -1817,7 +1826,7 @@ class DriverAgnosticApi:
                     continue
                 for strategy in strategies[driver_name]:
                     try:
-                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
                         element = driver.find_element(resolved)
                         if driver.is_enabled(element):
                             return True
@@ -1864,7 +1873,7 @@ class DriverAgnosticApi:
                     continue
                 for strategy in strategies[driver_name]:
                     try:
-                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id)
+                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
                         element = driver.find_element(resolved)
                         if driver.is_actionable(element):
                             return True

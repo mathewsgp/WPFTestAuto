@@ -14,11 +14,12 @@ elements:
     displayName: "WPF Test IDE Main Window"
     controlType: "Window"
     windowAutomationId: "MainWindow"
+    name: "WPF Test IDE"
     parentAlias: null
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
-          value: "MainWindow"
+        - searchBy: "Name"
+          value: "WPF Test IDE"
           priority: 1
 
   # ================= Toolbar Buttons =================
@@ -687,11 +688,12 @@ elements:
     displayName: "Attach to Process Dialog"
     controlType: "Window"
     windowAutomationId: "AttachToProcessDialog"
+    name: "Attach to Process"
     parentAlias: null
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
-          value: "AttachToProcessDialog"
+        - searchBy: "Name"
+          value: "Attach to Process"
           priority: 1
 
   AttachToProcessDialog.StatusText:
@@ -876,11 +878,12 @@ elements:
     displayName: "Manage Applications Dialog"
     controlType: "Window"
     windowAutomationId: "MultiAppDialog"
+    name: "Manage Applications"
     parentAlias: null
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
-          value: "MultiAppDialog"
+        - searchBy: "Name"
+          value: "Manage Applications"
           priority: 1
 
   MultiAppDialog.AppsGrid:
@@ -929,11 +932,12 @@ elements:
     displayName: "Checkpoint Wizard Dialog"
     controlType: "Window"
     windowAutomationId: "CheckpointWizardDialog"
+    name: "Checkpoint Wizard"
     parentAlias: null
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
-          value: "CheckpointWizardDialog"
+        - searchBy: "Name"
+          value: "Checkpoint Wizard"
           priority: 1
 
   CheckpointWizardDialog.StepIndicator:
@@ -975,11 +979,12 @@ elements:
     displayName: "Spy Tool Dialog"
     controlType: "Window"
     windowAutomationId: "SpyToolDialog"
+    name: "Spy Tool - Element Inspector"
     parentAlias: null
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
-          value: "SpyToolDialog"
+        - searchBy: "Name"
+          value: "Spy Tool - Element Inspector"
           priority: 1
 
   SpyToolDialog.XPathStatus:
@@ -1038,11 +1043,12 @@ elements:
     displayName: "Visual Test Builder Dialog"
     controlType: "Window"
     windowAutomationId: "TestFlowDialog"
+    name: "Visual Test Builder"
     parentAlias: null
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
-          value: "TestFlowDialog"
+        - searchBy: "Name"
+          value: "Visual Test Builder"
           priority: 1
 
   TestFlowDialog.TestNameBox:
@@ -1404,11 +1410,12 @@ elements:
     displayName: "Add Verification Dialog"
     controlType: "Window"
     windowAutomationId: "AddVerificationDialog"
+    name: "Add Verification"
     parentAlias: null
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
-          value: "AddVerificationDialog"
+        - searchBy: "Name"
+          value: "Add Verification"
           priority: 1
 
   AddVerificationDialog.AliasCombo:

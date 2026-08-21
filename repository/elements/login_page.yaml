@@ -24,11 +24,12 @@ elements:
     displayName: "Main Window"
     controlType: "Window"
     windowAutomationId: "MainWindow"
+    name: "WPF Test IDE"
     parentAlias: null  # This is the root
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
-          value: "MainWindow"
+        - searchBy: "Name"
+          value: "WPF Test IDE"
           priority: 1
 
   # Username TextBox - parent is MainWindow (direct child of Window)
