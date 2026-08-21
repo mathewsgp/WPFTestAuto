@@ -4,10 +4,10 @@ setlocal enabledelayedexpansion
 set "FW_ROOT=%~dp0"
 
 :: Parse arguments simply
-set "INJECTION_MODE=launch"
+set "INJECTION_MODE=runtime"
 set "CONFIGURATION=Debug"
-set "RUN_IDE=false"
-set "TARGET_VERSION=net"
+set "RUN_IDE=true"
+set "TARGET_VERSION=framework"
 
 :parse_args
 if "%~1"=="" goto done_args
