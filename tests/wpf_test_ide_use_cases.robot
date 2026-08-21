@@ -26,7 +26,7 @@ UC-002 Open Attach To Process Dialog
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
-    Sleep    1s
+    Wait Until Element Exists    AttachToProcessDialog.StatusText    timeout=15
     ${status}=    Get Element Text    AttachToProcessDialog.StatusText
     Should Not Be Empty    ${status}
     Capture Screenshot    app_id=ide    filename=ide_attach_dialog.png
