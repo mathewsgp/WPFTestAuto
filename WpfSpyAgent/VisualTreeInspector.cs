@@ -152,6 +152,13 @@ namespace WpfSpyAgent
             "ListBoxItem", "ListBoxEditItem", "TreeListNode", "TreeViewControlNode"
         };
 
+        private static readonly System.Collections.Generic.Dictionary<string, System.Collections.Generic.HashSet<string>> ContainerInclusionRules
+            = new(StringComparer.Ordinal)
+        {
+            ["LayoutPanel"] = new HashSet<string>(StringComparer.Ordinal) { "LayoutGroup", "LayoutItem" },
+            ["DocumentPanel"] = new HashSet<string>(StringComparer.Ordinal) { "DocumentGroup" }
+        };
+
         private enum SegmentKind : byte
         {
             Generic,
@@ -930,31 +937,31 @@ namespace WpfSpyAgent
 
                 if (profile.SkipLayout)
                 {
-                    bool includeLayoutPanel = false;
-                    if (typeName == "LayoutPanel")
+                    bool includeContainer = false;
+                    if (ContainerInclusionRules.TryGetValue(typeName, out var parentTypes))
                     {
-                        DependencyObject? layoutParent = VisualTreeHelper.GetParent(current);
-                        if (layoutParent != null)
+                        DependencyObject? containerParent = VisualTreeHelper.GetParent(current);
+                        if (containerParent != null)
                         {
-                            string parentType = layoutParent.GetType().Name;
-                            if (parentType == "LayoutGroup" || parentType == "LayoutItem")
+                            string parentTypeName = containerParent.GetType().Name;
+                            if (parentTypes.Contains(parentTypeName))
                             {
-                                int panelSiblings = 0;
-                                int childCount = VisualTreeHelper.GetChildrenCount(layoutParent);
+                                int siblingCount = 0;
+                                int childCount = VisualTreeHelper.GetChildrenCount(containerParent);
                                 for (int i = 0; i < childCount; i++)
                                 {
-                                    if (VisualTreeHelper.GetChild(layoutParent, i).GetType().Name == "LayoutPanel")
-                                        panelSiblings++;
+                                    if (VisualTreeHelper.GetChild(containerParent, i).GetType().Name == typeName)
+                                        siblingCount++;
                                 }
-                                if (panelSiblings > 1)
+                                if (siblingCount > 1)
                                 {
-                                    includeLayoutPanel = true;
+                                    includeContainer = true;
                                 }
                             }
                         }
                     }
 
-                    if (!includeLayoutPanel)
+                    if (!includeContainer)
                     {
                         current = VisualTreeHelper.GetParent(current);
                         continue;
