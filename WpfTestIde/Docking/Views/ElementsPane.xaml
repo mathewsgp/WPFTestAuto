@@ -23,6 +23,8 @@
                 <Button x:Name="btnExportRepo" Content="Export Repository (.yaml)" ToolTip="Export element repository YAML" Padding="6,2" FontSize="11"
                         Command="{Binding ExportRepositoryCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnExportRepo"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
+                <Button x:Name="btnSpyTool" Style="{StaticResource ToolbarButton}" Content="Spy Tool" Command="{Binding OpenSpyToolCommand}" AutomationProperties.AutomationId="btnSpyTool"/>
+                <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnExpandAll" Content="⬇️ Expand All" ToolTip="Expand All" Padding="6,2" FontSize="11"
                         Command="{Binding ElementTree.ExpandAllCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnExpandAll"/>
                 <Button x:Name="btnCollapseAll" Content="⬆️ Collapse" ToolTip="Collapse All" Padding="6,2" FontSize="11" Margin="4,0,0,0"

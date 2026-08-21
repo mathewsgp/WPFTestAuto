@@ -216,8 +216,6 @@
                             <Button x:Name="btnRecord" Style="{StaticResource ToolbarButton}" Content="{Binding RecordButtonLabel}" Command="{Binding ToggleRecordingCommand}" AutomationProperties.AutomationId="btnRecord"/>
                             <Button x:Name="btnLoadSample" Style="{StaticResource ToolbarButton}" Content="Load Sample" Command="{Binding LoadSampleCommand}" AutomationProperties.AutomationId="btnLoadSample"/>
                             <Button x:Name="btnReset" Style="{StaticResource ToolbarButton}" Content="Reset" Command="{Binding ResetCommand}" AutomationProperties.AutomationId="btnReset"/>
-                            <Separator Margin="8,0"/>
-                            <Button x:Name="btnAddStep" Style="{StaticResource ToolbarButton}" Content="Add Step" Command="{Binding AddStepCommand}" AutomationProperties.AutomationId="btnAddStep"/>
                         </StackPanel>
                     </StackPanel>
 
@@ -231,12 +229,6 @@
                     <StackPanel Style="{StaticResource ToolbarBand}">
                         <TextBlock Style="{StaticResource ToolbarBandLabel}" Text="Tools"/>
                         <StackPanel Orientation="Horizontal">
-                            <Button x:Name="btnOcrDataGrid" Style="{StaticResource ToolbarButton}" Content="OCR DataGrid" Command="{Binding GetDataGridContentOcrCommand}" AutomationProperties.AutomationId="btnOcrDataGrid"/>
-                            <Separator Margin="8,0"/>
-                            <Button x:Name="btnCheckpointWizard" Style="{StaticResource ToolbarButton}" Content="Checkpoint Wizard" Command="{Binding OpenCheckpointWizardCommand}" AutomationProperties.AutomationId="btnCheckpointWizard"/>
-                            <Separator Margin="8,0"/>
-                            <Button x:Name="btnSpyTool" Style="{StaticResource ToolbarButton}" Content="Spy Tool" Command="{Binding OpenSpyToolCommand}" AutomationProperties.AutomationId="btnSpyTool"/>
-                            <Separator Margin="8,0"/>
                             <Button x:Name="btnVisualTestBuilder" Style="{StaticResource ToolbarButton}" Content="Visual Test Builder" Command="{Binding OpenVisualTestBuilderCommand}" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnVisualTestBuilder"/>
                         </StackPanel>
                     </StackPanel>

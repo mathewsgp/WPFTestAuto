@@ -23,6 +23,9 @@
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnExportStepsYaml" Style="{DynamicResource ToolbarButton}" Content="Export Steps (.yaml)" Command="{Binding ExportStepsAsYamlCommand}" AutomationProperties.AutomationId="btnExportStepsYaml"/>
                 <Button x:Name="btnImportSteps" Style="{DynamicResource ToolbarButton}" Content="Import Steps (.yaml)" Command="{Binding ImportStepsCommand}" AutomationProperties.AutomationId="btnImportSteps"/>
+                <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
+                <Button x:Name="btnAddStep" Style="{DynamicResource ToolbarButton}" Content="Add Step" Command="{Binding AddStepCommand}" AutomationProperties.AutomationId="btnAddStep"/>
+                <Button x:Name="btnCheckpointWizard" Style="{DynamicResource ToolbarButton}" Content="Checkpoint Wizard" Command="{Binding OpenCheckpointWizardCommand}" AutomationProperties.AutomationId="btnCheckpointWizard"/>
             </StackPanel>
         </Border>
 
