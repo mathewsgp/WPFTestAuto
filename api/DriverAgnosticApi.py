@@ -277,14 +277,24 @@ def _get_drivers() -> dict:
     The WPFSpy driver is created based on current mode:
     - In 'real' mode: uses WPFSpyRealDriver (named pipe communication)
     - In 'mock' mode: uses WPFSpyMockDriver (in-memory mock app)
+    
+    Optional drivers (FlaUI, Sikuli) are skipped if their dependencies
+    are not installed.
     """
     global _DRIVERS, _DRIVERS_INITIALIZED
     if not _DRIVERS_INITIALIZED:
-        _DRIVERS = {
-            "FlaUI": FlaUIDriver(),
-            "WPFSpy": _create_wpfspy_driver(),  # Create based on current mode
-            "Sikuli": SikuliDriver(),
+        _DRIVERS = {}
+        # Try optional drivers; skip any that are not installed
+        driver_factories = {
+            "FlaUI": lambda: FlaUIDriver(),
+            "WPFSpy": _create_wpfspy_driver,
+            "Sikuli": lambda: SikuliDriver(),
         }
+        for name, factory in driver_factories.items():
+            try:
+                _DRIVERS[name] = factory()
+            except ImportError as e:
+                logger.warning(f"Driver {name} not available: {e}")
         _DRIVERS_INITIALIZED = True
         logger.info("Drivers initialized", drivers=list(_DRIVERS.keys()))
     return _DRIVERS

@@ -99,26 +99,12 @@ class FlaUIDriver:
     def _init_library(self):
         """Initialize the FlaUILibrary and attach to the application."""
         try:
-            import importlib.util
-            import os
-            
-            # Load the installed FlaUILibrary package directly by file path
-            # to avoid circular import with this local file
-            installed_init = os.path.join(os.path.dirname(os.__file__), "..", "Lib", "site-packages", "FlaUILibrary", "__init__.py")
-            installed_init = os.path.abspath(installed_init)
-            
-            if not os.path.isfile(installed_init):
-                raise ImportError("FlaUILibrary package __init__.py not found in site-packages")
-            
-            spec = importlib.util.spec_from_file_location("installed_flaui_library", installed_init)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            
-            self._lib = module.FlaUILibrary()
-            self._rf_lib_class = module.FlaUILibrary
+            import FlaUILibrary
+            self._lib = FlaUILibrary.FlaUILibrary()
+            self._rf_lib_class = FlaUILibrary.FlaUILibrary
             self._connected = False
         except ImportError as e:
-            raise ImportError(f"FlaUILibrary not available: {e}. Install with: pip install robotframework-flaui")
+            raise ImportError("FlaUILibrary not available. Install with: pip install robotframework-flaui") from e
 
     def _ensure_attached(self):
         """Ensure the driver is attached to the application."""
