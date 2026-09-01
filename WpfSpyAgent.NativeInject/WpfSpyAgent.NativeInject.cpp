@@ -194,33 +194,41 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
     
     // Get the path to our DLL directory
     std::wstring dllDir = GetDllDirectory();
-    
-    // Determine target framework by checking for framework-specific DLLs
-    // WpfSpyAgent.dll should be in the same directory as the target app's DLLs
-    std::wstring agentDllPath = dllDir + L"\\WpfSpyAgent.dll";
-    std::wstring agentDllFwPath = dllDir + L"\\net461\\WpfSpyAgent.dll";  // .NET Framework version
-    
-    // Check which version of WpfSpyAgent.dll exists
-    bool hasFwAgent = (GetFileAttributes(agentDllFwPath.c_str()) != INVALID_FILE_ATTRIBUTES);
-    bool hasDefaultAgent = (GetFileAttributes(agentDllPath.c_str()) != INVALID_FILE_ATTRIBUTES);
-    
-    if (hasFwAgent) {
-        agentDllPath = agentDllFwPath;
+
+    // Determine target framework BEFORE picking the agent DLL path. Otherwise
+    // a stray net461\WpfSpyAgent.dll in a sibling folder causes us to use the
+    // Framework build against a .NET Core app (or vice versa).
+    bool isCoreClr = IsCoreClrLoaded();
+    swprintf(msg, 512, L"[Inject] .NET Core runtime detected: %s", isCoreClr ? L"YES" : L"NO");
+    Log(msg);
+
+    // Determine target framework by checking for framework-specific DLLs.
+    // For .NET Core / 5+: WpfSpyAgent.dll is in dllDir.
+    // For .NET Framework 4.x: WpfSpyAgent.dll is in dllDir\net461\.
+    std::wstring agentDllPath;
+    std::wstring agentDllFwPath = dllDir + L"\\net461\\WpfSpyAgent.dll";  // .NET Framework 4.x
+    std::wstring agentDllModernPath = dllDir + L"\\WpfSpyAgent.dll";      // .NET Core / 5+
+
+    bool hasFwAgent     = (GetFileAttributes(agentDllFwPath.c_str())     != INVALID_FILE_ATTRIBUTES);
+    bool hasModernAgent = (GetFileAttributes(agentDllModernPath.c_str()) != INVALID_FILE_ATTRIBUTES);
+
+    if (isCoreClr) {
+        // Prefer the modern build when targeting .NET Core. Fall back to net461
+        // only if it is the only one present.
+        agentDllPath = hasModernAgent ? agentDllModernPath : agentDllFwPath;
+    } else {
+        // .NET Framework target — prefer net461 subfolder, fall back to root.
+        agentDllPath = hasFwAgent ? agentDllFwPath : agentDllModernPath;
     }
-    
+
     swprintf(msg, 512, L"[Inject] Looking for Spy Agent DLL: %s", agentDllPath.c_str());
     Log(msg);
-    
+
     if (GetFileAttributes(agentDllPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
         swprintf(msg, 512, L"[Inject] Spy Agent DLL not found at: %s", agentDllPath.c_str());
         Log(msg);
         return false;
     }
-    
-    // Check if this is a .NET Core app (coreclr.dll is loaded)
-    bool isCoreClr = IsCoreClrLoaded();
-    swprintf(msg, 512, L"[Inject] .NET Core runtime detected: %s", isCoreClr ? L"YES" : L"NO");
-    Log(msg);
     
     ICLRRuntimeHost* runtimeHost = nullptr;
     
@@ -291,15 +299,19 @@ static bool TryStartSpyAgentCLR(const wchar_t* pipeName) {
                 
                 ICLRRuntimeHost* host = (ICLRRuntimeHost*)lpParam;
                 
-                // Get the agent DLL path
+                // Get the agent DLL path. Use the same TFM-aware selection as
+                // TryStartSpyAgentCLR: .NET Core -> dllDir\WpfSpyAgent.dll,
+                // .NET Framework -> dllDir\net461\WpfSpyAgent.dll.
                 std::wstring dllDir = GetDllDirectory();
-                std::wstring agentDllPath = dllDir + L"\\WpfSpyAgent.dll";
-                std::wstring agentDllFwPath = dllDir + L"\\net461\\WpfSpyAgent.dll";
-                
-                if (GetFileAttributes(agentDllFwPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
-                    agentDllPath = agentDllFwPath;
-                }
-                
+                std::wstring agentDllFwPath     = dllDir + L"\\net461\\WpfSpyAgent.dll";
+                std::wstring agentDllModernPath = dllDir + L"\\WpfSpyAgent.dll";
+                bool hasFwAgent     = (GetFileAttributes(agentDllFwPath.c_str())     != INVALID_FILE_ATTRIBUTES);
+                bool hasModernAgent = (GetFileAttributes(agentDllModernPath.c_str()) != INVALID_FILE_ATTRIBUTES);
+                bool coreClr = IsCoreClrLoaded();
+                std::wstring agentDllPath = coreClr
+                    ? (hasModernAgent ? agentDllModernPath : agentDllFwPath)
+                    : (hasFwAgent     ? agentDllFwPath     : agentDllModernPath);
+
                 DWORD exitCode = 0;
                 HRESULT hr = host->ExecuteInDefaultAppDomain(
                     agentDllPath.c_str(),

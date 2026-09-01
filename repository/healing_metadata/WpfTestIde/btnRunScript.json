@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": false,
     "is_enabled": false,
-    "captured_at": "2026-08-19T10:09:35.013784",
-    "last_verified": "2026-08-19T10:09:35.013794",
-    "verification_count": 66,
+    "captured_at": "2026-09-01T12:24:12.001222",
+    "last_verified": "2026-09-01T12:24:12.001232",
+    "verification_count": 69,
     "driver_used": "FlaUI",
     "search_method": "AutomationId",
     "search_value": "btnRunScript"
@@ -29,17 +29,17 @@
       "avg_duration_ms": 4.979937763537391
     },
     "FlaUI:AutomationId": {
-      "success_count": 7,
+      "success_count": 10,
       "failure_count": 0,
-      "total_duration_ms": 4824.500322341919,
-      "last_success": "2026-08-19T10:09:33.148947",
+      "total_duration_ms": 7210.797309875488,
+      "last_success": "2026-09-01T12:24:10.683236",
       "last_failure": null,
-      "avg_duration_ms": 689.2143317631313
+      "avg_duration_ms": 721.0797309875488
     }
   },
-  "total_interactions": 132,
+  "total_interactions": 138,
   "first_seen": "2026-08-09T12:22:09.522898",
-  "last_interaction": "2026-08-19T10:09:35.013800",
+  "last_interaction": "2026-09-01T12:24:12.001238",
   "consecutive_failures": 0,
-  "consecutive_successes": 132
+  "consecutive_successes": 138
 }

@@ -16,6 +16,7 @@ import subprocess
 import time
 import json
 import socket
+import shutil
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict, Any
 from dataclasses import dataclass
@@ -28,6 +29,7 @@ class InjectionResult:
     process_id: Optional[int] = None
     message: str = ""
     method: str = ""
+    staged_dlls: Optional[List[str]] = None
 
 
 class RuntimeInjector:
@@ -72,19 +74,265 @@ class RuntimeInjector:
             Path(__file__).parent.parent / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net8.0-windows",
             Path(__file__).parent.parent / ".." / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net8.0-windows",
         ]
-        
+
         for base in base_paths:
             dll_path = base / "WpfSpyAgent.StartupHook.dll"
             if dll_path.exists():
                 return str(dll_path.resolve())
-        
+
         # Also check environment variable
         env_path = os.environ.get("WPFSPY_STARTUP_HOOK_DLL")
         if env_path and Path(env_path).exists():
             return env_path
-        
+
         return None
-    
+
+    def _find_framework_hook(self) -> Optional[str]:
+        """Find the FrameworkHook DLL in common locations (for .NET Framework AUTs)."""
+        base_paths = [
+            Path(__file__).parent.parent,
+            Path(__file__).parent.parent / "WpfSpyAgent.FrameworkHook" / "bin" / "Debug" / "net461",
+            Path(__file__).parent.parent / ".." / "WpfSpyAgent.FrameworkHook" / "bin" / "Debug" / "net461",
+        ]
+        for base in base_paths:
+            dll_path = base / "WpfSpyAgent.FrameworkHook.dll"
+            if dll_path.exists():
+                return str(dll_path.resolve())
+        env_path = os.environ.get("WPFSPY_FRAMEWORK_HOOK_DLL")
+        if env_path and Path(env_path).exists():
+            return env_path
+        return None
+
+    def _detect_target_framework(self, app_path: str) -> str:
+        """Detect whether the target app is .NET / .NET Core (modern) or .NET Framework.
+
+        Used as a fallback when no live PID is available (i.e. we are about to
+        launch a new process). For an already-running process, prefer
+        `_detect_target_framework_by_pid` which inspects loaded modules.
+        """
+        try:
+            with open(app_path, "rb") as f:
+                head = f.read(4096)
+            # PE signature sanity check
+            if head[:2] != b"MZ":
+                return "framework"
+            # Modern .NET apps are typically published as framework-dependent
+            # (hostfxr + apphost) with a host config file (.runtimeconfig.json)
+            # alongside the exe. .NET Framework apps do not have this file.
+            app_dir = Path(app_path).parent
+            if (app_dir / f"{Path(app_path).stem}.runtimeconfig.json").exists():
+                return "modern"
+            # .NET single-file publishes also lack runtimeconfig.json, but
+            # contain the .NET marker signature; treat as modern.
+            if b"coreclr" in head.lower() or b"hostfxr" in head.lower():
+                return "modern"
+            return "framework"
+        except OSError:
+            return "framework"
+
+    def _detect_target_framework_by_pid(self, pid: int) -> str:
+        """Inspect a running process's loaded modules to detect its CLR.
+
+        Returns "modern" if coreclr.dll is loaded, "framework" if mscoree.dll
+        / clr.dll / mscoreei.dll is loaded, "modern" otherwise (fallback).
+        """
+        if sys.platform != "win32":
+            return "modern"
+        try:
+            import psutil  # type: ignore
+        except ImportError:
+            psutil = None
+        try:
+            has_coreclr = False
+            has_fw_clr = False
+            if psutil is not None:
+                proc = psutil.Process(pid)
+                for m in proc.memory_maps():
+                    path = (m.path or "").lower()
+                    if not path:
+                        continue
+                    base = path.rsplit("\\", 1)[-1]
+                    if base == "coreclr.dll":
+                        has_coreclr = True
+                    elif base in ("clr.dll", "mscoree.dll", "mscoreei.dll"):
+                        has_fw_clr = True
+            else:
+                # Fallback: use EnumProcessModules via ctypes if psutil is absent.
+                import ctypes
+                from ctypes import wintypes
+                psapi = ctypes.WinDLL("psapi.dll")
+                kernel32 = ctypes.WinDLL("kernel32.dll")
+                PROCESS_QUERY_INFORMATION = 0x0400
+                PROCESS_VM_READ = 0x0010
+                hproc = kernel32.OpenProcess(
+                    PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, False, pid)
+                if not hproc:
+                    return "modern"
+                try:
+                    buf = (wintypes.HMODULE * 1024)()
+                    needed = wintypes.DWORD()
+                    if psapi.EnumProcessModules(
+                            hproc, buf, ctypes.sizeof(buf), ctypes.byref(needed)):
+                        count = needed.value // ctypes.sizeof(wintypes.HMODULE)
+                        for i in range(count):
+                            name = ctypes.create_unicode_buffer(512)
+                            n = psapi.GetModuleBaseNameW(
+                                hproc, buf[i], name, ctypes.sizeof(name))
+                            if not n:
+                                continue
+                            base = name.value.lower()
+                            if base == "coreclr.dll":
+                                has_coreclr = True
+                            elif base in ("clr.dll", "mscoree.dll", "mscoreei.dll"):
+                                has_fw_clr = True
+                finally:
+                    kernel32.CloseHandle(hproc)
+            if has_fw_clr and not has_coreclr:
+                return "framework"
+            return "modern"
+        except Exception:
+            return "modern"
+
+    def _find_framework_agent_dir(self) -> Optional[Path]:
+        """Find the directory containing the .NET Framework 4.x build of the Spy Agent.
+
+        Returns the directory itself (not a child path) so the caller can
+        decide whether to copy the contents flat or under a net461\ subfolder.
+        """
+        candidates = [
+            Path(__file__).parent.parent / "bin" / "Debug" / "net461",
+            Path(__file__).parent.parent / "bin" / "Release" / "net461",
+            Path(__file__).parent.parent / ".." / "WpfSpyAgent" / "bin" / "Debug" / "net461",
+            Path(__file__).parent.parent / ".." / "WpfSpyAgent" / "bin" / "Release" / "net461",
+            Path(__file__).parent.parent / "WpfSpyAgent" / "bin" / "Debug" / "net461",
+            Path(__file__).parent.parent / "WpfSpyAgent" / "bin" / "Release" / "net461",
+            Path(__file__).parent.parent / ".." / "WpfSpyAgent.FrameworkHook" / "bin" / "Debug" / "net461",
+            Path(__file__).parent.parent / ".." / "WpfSpyAgent.FrameworkHook" / "bin" / "Release" / "net461",
+        ]
+        for c in candidates:
+            if c.is_dir() and (c / "WpfSpyAgent.dll").exists():
+                return c
+        return None
+
+    def _stage_dll_set(
+        self,
+        aut_root: Path,
+        target_dir: Path,
+        src_dir: Path,
+        dll_names: List[str],
+    ) -> List[str]:
+        """Copy a set of DLLs from src_dir to target_dir using timestamp comparison.
+
+        Copies only when source is missing, or strictly newer than the staged copy.
+        Returns the list of relative paths (relative to `aut_root`) actually
+        copied/updated, so callers can unstage by passing the returned list back
+        to `unstage_dlls`. Bare filenames are used when target_dir equals aut_root;
+        `net461/file.dll` style paths are used when target_dir is a subfolder.
+        """
+        copied: List[str] = []
+        for name in dll_names:
+            src = src_dir / name
+            if not src.exists():
+                continue
+            dst = target_dir / name
+            try:
+                if dst.exists():
+                    src_mtime = src.stat().st_mtime
+                    dst_mtime = dst.stat().st_mtime
+                    if dst_mtime >= src_mtime:
+                        continue
+                shutil.copy2(src, dst)
+                # Record the path relative to the AUT root, using forward slashes
+                # for cross-platform stability (Windows accepts both).
+                try:
+                    rel = dst.relative_to(aut_root).as_posix()
+                except ValueError:
+                    rel = name
+                copied.append(rel)
+            except OSError:
+                # Best-effort: don't abort the launch just because one DLL failed.
+                pass
+        return copied
+
+    def stage_dlls(self, app_path: str, target_pid: Optional[int] = None) -> List[str]:
+        """Stage Spy Agent DLLs next to the target application.
+
+        TFM-aware: only the build matching the target's runtime is copied.
+
+          - Modern pair goes to <target_dir>\ root
+              * WpfSpyAgent.dll
+              * WpfSpyAgent.StartupHook.dll
+          - Framework trio goes to <target_dir>\net461\
+              * WpfSpyAgent.dll       (Framework build)
+              * WpfSpyAgent.FrameworkHook.dll
+              * Newtonsoft.Json.dll    (Framework-only dependency)
+
+        Detection priority:
+          1. If `target_pid` is given, inspect the process's loaded modules
+             for coreclr.dll vs mscoree.dll / clr.dll.
+          2. Otherwise fall back to PE-header detection (look for a sidecar
+             runtimeconfig.json or coreclr/hostfxr markers).
+
+        Idempotent: subsequent calls with unchanged sources are no-ops.
+        Returns the list of relative paths (relative to the AUT folder) that
+        were copied/updated. Unstage with `unstage_dlls(app_path, returned_list)`.
+        """
+        target_dir = Path(app_path).parent
+        target_dir.mkdir(parents=True, exist_ok=True)
+        copied: List[str] = []
+
+        if target_pid is not None:
+            framework = self._detect_target_framework_by_pid(target_pid)
+        else:
+            framework = self._detect_target_framework(app_path)
+
+        if framework == "framework":
+            # ---- .NET Framework 4.x build -> AUT\net461\ ----
+            fw_dir = self._find_framework_agent_dir()
+            if fw_dir is None:
+                return []
+            net461_target = target_dir / "net461"
+            net461_target.mkdir(parents=True, exist_ok=True)
+            copied.extend(self._stage_dll_set(
+                aut_root=target_dir, target_dir=net461_target, src_dir=fw_dir,
+                dll_names=["WpfSpyAgent.dll", "WpfSpyAgent.FrameworkHook.dll", "Newtonsoft.Json.dll"],
+            ))
+        else:
+            # ---- Modern build -> AUT root ----
+            if not self.startup_hook_path:
+                return []
+            src_dir = Path(self.startup_hook_path).parent
+            copied.extend(self._stage_dll_set(
+                aut_root=target_dir, target_dir=target_dir, src_dir=src_dir,
+                dll_names=["WpfSpyAgent.dll", "WpfSpyAgent.StartupHook.dll"],
+            ))
+
+        return copied
+
+    def unstage_dlls(self, app_path: str, dll_names: List[str]) -> None:
+        """Remove previously staged DLLs from the target app directory.
+
+        Only removes the names that were originally staged by `stage_dlls` —
+        caller passes the list returned from `stage_dlls`. We do NOT remove
+        files we did not stage (defensive: avoid clobbering user files).
+        Also removes the `net461\` subfolder if it is empty after cleanup.
+        """
+        target_dir = Path(app_path).parent
+        for name in dll_names:
+            dst = target_dir / name
+            try:
+                if dst.exists():
+                    dst.unlink()
+            except OSError:
+                pass
+        # Best-effort: drop the net461 subfolder if it ended up empty.
+        try:
+            sub = target_dir / "net461"
+            if sub.is_dir() and not any(sub.iterdir()):
+                sub.rmdir()
+        except OSError:
+            pass
+
     def launch_with_hook(
         self,
         app_path: str,
@@ -93,11 +341,12 @@ class RuntimeInjector:
         wait_for_agent: bool = True,
         timeout: float = 30.0,
         cwd: Optional[str] = None,
-        env: Optional[Dict[str, str]] = None
+        env: Optional[Dict[str, str]] = None,
+        stage_dlls: bool = False,
     ) -> InjectionResult:
         """
         Launch an application with Spy Agent automatically injected via DOTNET_STARTUP_HOOKS.
-        
+
         Args:
             app_path: Path to the application executable
             arguments: Command-line arguments (optional)
@@ -106,7 +355,10 @@ class RuntimeInjector:
             timeout: Maximum time to wait for agent
             cwd: Working directory
             env: Additional environment variables
-            
+            stage_dlls: When True, copy the Spy Agent managed DLLs into the
+                        target app's folder (timestamp-aware: only updates
+                        when source is newer). Required when the AUT lives in
+                        a different path from the framework's bin folder.
         Returns:
             InjectionResult with success status and process ID
         """
@@ -115,13 +367,25 @@ class RuntimeInjector:
                 success=False,
                 message=f"Application not found: {app_path}"
             )
-        
+
         if not self.startup_hook_path:
             return InjectionResult(
                 success=False,
                 message="Startup hook DLL not found. Set WPFSPY_STARTUP_HOOK_DLL or build WpfSpyAgent.StartupHook"
             )
-        
+
+        # Optionally stage DLLs into the target app's folder. Tracks which
+        # files were copied so the caller can clean up on teardown.
+        staged: List[str] = []
+        if stage_dlls:
+            try:
+                staged = self.stage_dlls(app_path)
+            except Exception as e:
+                return InjectionResult(
+                    success=False,
+                    message=f"DLL staging failed: {e}"
+                )
+
         # Build environment
         full_env = os.environ.copy()
         full_env["DOTNET_STARTUP_HOOKS"] = self.startup_hook_path
@@ -132,17 +396,17 @@ class RuntimeInjector:
             "WPFSPY_AGENT_ENABLED": "1",
             "WPFSPY_PIPE_NAME": pipe_name
         }
-        
+
         # Add any additional env vars
         if env:
             full_env.update(env)
-        
+
         try:
             # Start the process
             cmd = [app_path]
             if arguments:
                 cmd.append(arguments)
-            
+
             process = subprocess.Popen(
                 cmd,
                 env=full_env,
@@ -150,7 +414,7 @@ class RuntimeInjector:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
-            
+
             if wait_for_agent:
                 # Wait for agent to be ready
                 if not self._wait_for_agent(pipe_name, timeout):
@@ -159,14 +423,15 @@ class RuntimeInjector:
                         success=False,
                         message=f"Agent not ready within {timeout}s"
                     )
-            
+
             return InjectionResult(
                 success=True,
                 process_id=process.pid,
                 message=f"Launched with Spy Agent (PID: {process.pid})",
-                method="startup_hook"
+                method="startup_hook",
+                staged_dlls=staged,
             )
-            
+
         except Exception as e:
             return InjectionResult(
                 success=False,
@@ -334,23 +599,25 @@ class RuntimeInjector:
 class ProcessLauncher:
     """
     High-level application launcher with Spy Agent support.
-    
+
     Usage:
         launcher = ProcessLauncher()
-        
+
         # Launch with automatic injection
         process = launcher.launch("C:\\path\\to\\app.exe")
-        
+
         # Or use context manager
-        with launcher.launch("C:\\path\\to\\app.exe") as process:
+        with launcher.launch("C:\\path\\to\\app.exe", stage_dlls=True) as process:
             # Run tests
             pass
     """
-    
+
     def __init__(self, startup_hook_path: Optional[str] = None):
         self.injector = RuntimeInjector(startup_hook_path)
         self.process: Optional[subprocess.Popen] = None
-    
+        self.staged_dlls: List[str] = []
+        self._launched_app_path: Optional[str] = None
+
     def launch(
         self,
         app_path: str,
@@ -359,11 +626,12 @@ class ProcessLauncher:
         wait: bool = True,
         timeout: float = 30.0,
         cwd: Optional[str] = None,
-        env: Optional[Dict[str, str]] = None
+        env: Optional[Dict[str, str]] = None,
+        stage_dlls: bool = False,
     ) -> subprocess.Popen:
         """
         Launch application with Spy Agent.
-        
+
         Args:
             app_path: Path to executable
             arguments: Command-line arguments
@@ -372,10 +640,11 @@ class ProcessLauncher:
             timeout: Timeout for agent readiness
             cwd: Working directory
             env: Additional environment variables
-            
+            stage_dlls: Copy Spy Agent DLLs into the AUT folder (timestamp-aware)
+
         Returns:
             subprocess.Popen process object
-            
+
         Raises:
             RuntimeError: If launch fails
         """
@@ -386,22 +655,27 @@ class ProcessLauncher:
             wait_for_agent=wait,
             timeout=timeout,
             cwd=cwd,
-            env=env
+            env=env,
+            stage_dlls=stage_dlls,
         )
-        
+
         if not result.success:
             raise RuntimeError(f"Failed to launch app: {result.message}")
-        
+
+        # Track what we staged so __exit__ can clean up.
+        self.staged_dlls = result.staged_dlls or []
+        self._launched_app_path = app_path
+
         # Re-create process with same environment
         full_env = os.environ.copy()
         full_env.update(self.injector.env_vars_added)
         if env:
             full_env.update(env)
-        
+
         cmd = [app_path]
         if arguments:
             cmd.append(arguments)
-        
+
         self.process = subprocess.Popen(
             cmd,
             env=full_env,
@@ -409,19 +683,31 @@ class ProcessLauncher:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
-        
+
         return self.process
-    
+
     def __enter__(self) -> subprocess.Popen:
         if not self.process:
             raise RuntimeError("Call launch() first")
         return self.process
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.process:
-            self.process.terminate()
-            self.process.wait(timeout=5)
-            self.process = None
+        try:
+            if self.process:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                self.process = None
+        finally:
+            # Always clean up any DLLs we staged into the AUT folder.
+            if self._launched_app_path and self.staged_dlls:
+                try:
+                    self.injector.unstage_dlls(self._launched_app_path, self.staged_dlls)
+                finally:
+                    self.staged_dlls = []
+                    self._launched_app_path = None
 
 
 def launch_app(

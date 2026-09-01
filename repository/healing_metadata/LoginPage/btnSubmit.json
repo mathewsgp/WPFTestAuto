@@ -7,13 +7,13 @@
     "control_type": null,
     "xpath": null,
     "parent_xpath": null,
-    "text": "",
+    "text": "Login",
     "position": null,
     "is_visible": false,
-    "is_enabled": false,
-    "captured_at": "2026-08-20T08:31:39.792040",
-    "last_verified": "2026-08-20T08:31:39.792045",
-    "verification_count": 2,
+    "is_enabled": true,
+    "captured_at": "2026-09-01T12:18:43.804869",
+    "last_verified": "2026-09-01T12:18:43.804879",
+    "verification_count": 8,
     "driver_used": "FlaUI",
     "search_method": "AutomationId",
     "search_value": "btnSubmit"
@@ -174,12 +174,12 @@
       "avg_duration_ms": 24.116979704962837
     },
     "FlaUI:AutomationId": {
-      "success_count": 16,
-      "failure_count": 0,
-      "total_duration_ms": 5043.597221374512,
-      "last_success": "2026-08-20T08:31:23.146686",
-      "last_failure": null,
-      "avg_duration_ms": 315.224826335907
+      "success_count": 22,
+      "failure_count": 1,
+      "total_duration_ms": 10421.900510787964,
+      "last_success": "2026-09-01T12:18:42.128883",
+      "last_failure": "2026-09-01T12:13:48.345888",
+      "avg_duration_ms": 473.722750490362
     },
     "WPFSpy:AutomationId": {
       "success_count": 0,
@@ -190,9 +190,9 @@
       "avg_duration_ms": 1.682966947555542
     }
   },
-  "total_interactions": 60,
+  "total_interactions": 73,
   "first_seen": "2026-08-19T13:47:05.514524",
-  "last_interaction": "2026-08-20T08:31:39.792049",
+  "last_interaction": "2026-09-01T12:18:43.804887",
   "consecutive_failures": 0,
   "consecutive_successes": 4
 }

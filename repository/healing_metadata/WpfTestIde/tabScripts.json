@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-08-19T10:09:31.328199",
-    "last_verified": "2026-08-19T10:09:31.328208",
-    "verification_count": 185,
+    "captured_at": "2026-09-01T12:26:34.367502",
+    "last_verified": "2026-09-01T12:26:34.367513",
+    "verification_count": 202,
     "driver_used": "FlaUI",
     "search_method": "Name",
     "search_value": "SCRIPTS"
@@ -130,17 +130,17 @@
       "avg_duration_ms": 0.0
     },
     "FlaUI:Name": {
-      "success_count": 29,
+      "success_count": 46,
       "failure_count": 0,
-      "total_duration_ms": 22271.37064933777,
-      "last_success": "2026-08-19T10:09:29.679075",
+      "total_duration_ms": 37077.72135734558,
+      "last_success": "2026-09-01T12:26:33.126929",
       "last_failure": null,
-      "avg_duration_ms": 767.9782982530265
+      "avg_duration_ms": 806.0374208118604
     }
   },
-  "total_interactions": 387,
+  "total_interactions": 421,
   "first_seen": "2026-08-09T01:54:58.163554",
-  "last_interaction": "2026-08-19T10:09:31.328214",
+  "last_interaction": "2026-09-01T12:26:34.367519",
   "consecutive_failures": 0,
-  "consecutive_successes": 58
+  "consecutive_successes": 92
 }

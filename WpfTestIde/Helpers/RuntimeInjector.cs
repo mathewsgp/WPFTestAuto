@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -396,6 +398,335 @@ namespace WpfTestIde.Helpers
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Stage the managed Spy Agent DLLs into the target process's directory
+        /// so the NativeInject C++ shim can find them after LoadLibrary.
+        ///
+        /// The target process's `AppDomain.BaseDirectory` is its own exe folder,
+        /// not the framework's bin folder, so the managed DLLs must be copied there.
+        /// We copy only when the source mtime is strictly newer than the destination
+        /// (idempotent for re-attach scenarios).
+        ///
+        /// TFM-aware: this inspects the target's loaded modules to pick the right
+        /// build. If coreclr.dll is present, only the modern (.NET Core / .NET 5+)
+        /// pair is staged at the AUT root. If mscoree.dll / clr.dll is present,
+        /// only the .NET Framework 4.x trio is staged under `net461\`. Mixed-mode
+        /// and unknown targets fall back to the modern pair.
+        ///
+        /// Returns the list of relative paths (relative to the AUT folder) of
+        /// files that were actually copied. Caller is responsible for cleanup
+        /// (UnstageAgentDlls) when the attach ends.
+        /// </summary>
+        public static List<string> StageAgentDllsForTarget(int targetProcessId)
+        {
+            var copied = new List<string>();
+            try
+            {
+                var target = Process.GetProcessById(targetProcessId);
+                string? targetExe = target.MainModule?.FileName;
+                if (string.IsNullOrEmpty(targetExe) || !File.Exists(targetExe))
+                {
+                    StatusChanged?.Invoke($"Stage: cannot resolve target exe path for PID {targetProcessId}");
+                    return copied;
+                }
+
+                var targetDir = Path.GetDirectoryName(targetExe);
+                if (string.IsNullOrEmpty(targetDir))
+                    return copied;
+
+                // Pick the TFM by inspecting the target's already-loaded modules.
+                string clr = DetectTargetClr(target);
+                StatusChanged?.Invoke($"Stage: target CLR detected as {clr}");
+
+                if (clr == "framework")
+                {
+                    StageFrameworkOnly(targetDir, copied);
+                }
+                else
+                {
+                    StageModernOnly(targetDir, copied);
+                }
+
+                if (copied.Count > 0)
+                {
+                    StatusChanged?.Invoke($"Stage: copied {string.Join(", ", copied)} -> {targetDir}");
+                }
+                else
+                {
+                    StatusChanged?.Invoke("Stage: target already up to date");
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusChanged?.Invoke($"Stage: error - {ex.GetType().Name}: {ex.Message}");
+            }
+            return copied;
+        }
+
+        /// <summary>
+        /// Inspect a target Process's loaded modules and decide which Spy Agent
+        /// build to use. Returns:
+        ///   "modern"    -> .NET Core / .NET 5+ runtime is loaded
+        ///   "framework" -> .NET Framework 4.x runtime is loaded
+        /// Defaults to "modern" for any ambiguous/unknown case so the modern
+        /// pair (the only one that loads via DOTNET_STARTUP_HOOKS) is staged.
+        /// </summary>
+        public static string DetectTargetClr(Process target)
+        {
+            if (target is null) return "modern";
+            try
+            {
+                bool hasCoreClr = false;
+                bool hasFrameworkClr = false;
+                foreach (ProcessModule m in target.Modules)
+                {
+                    if (m is null || string.IsNullOrEmpty(m.ModuleName))
+                        continue;
+                    var name = m.ModuleName!;
+                    var lname = name.ToLowerInvariant();
+                    if (lname == "coreclr.dll")
+                        hasCoreClr = true;
+                    else if (lname == "clr.dll" || lname == "mscoree.dll" || lname == "mscoreei.dll")
+                        hasFrameworkClr = true;
+                }
+                // Framework takes priority when both are present (some hosts load
+                // both; mscoree shows up whenever a managed assembly is loaded
+                // on .NET Framework). But a pure .NET Core app does not have
+                // mscoree.dll loaded, so coreclr alone means modern.
+                if (hasFrameworkClr && !hasCoreClr) return "framework";
+                if (hasCoreClr) return "modern";
+                return "modern";
+            }
+            catch
+            {
+                // Access to Modules can be denied on protected processes; default
+                // to modern since that path is the safer fallback (StartupHook
+                // refuses to load unless WPFSPY_AGENT_ENABLED=1, but at least we
+                // don't pollute the AUT with a net461\ folder that won't be used).
+                return "modern";
+            }
+        }
+
+        /// <summary>
+        /// Stage only the modern (.NET Core / .NET 5+) build of the Spy Agent
+        /// into the AUT root. Layout:
+        ///   &lt;AUT&gt;\WpfSpyAgent.dll
+        ///   &lt;AUT&gt;\WpfSpyAgent.StartupHook.dll
+        /// </summary>
+        private static void StageModernOnly(string targetDir, List<string> copied)
+        {
+            var modernSource = FindAgentSourceDir();
+            if (modernSource is null)
+            {
+                StatusChanged?.Invoke("Stage: modern Spy Agent source directory not found");
+                return;
+            }
+            CopyNewerIfMissing(
+                Path.Combine(modernSource, "WpfSpyAgent.dll"),
+                Path.Combine(targetDir, "WpfSpyAgent.dll"),
+                "WpfSpyAgent.dll", copied);
+            CopyNewerIfMissing(
+                Path.Combine(modernSource, "WpfSpyAgent.StartupHook.dll"),
+                Path.Combine(targetDir, "WpfSpyAgent.StartupHook.dll"),
+                "WpfSpyAgent.StartupHook.dll", copied);
+        }
+
+        /// <summary>
+        /// Stage only the .NET Framework 4.x build of the Spy Agent into the
+        /// AUT. The C++ injector probes for "&lt;dllDir&gt;\net461\WpfSpyAgent.dll"
+        /// when coreclr is not loaded, so the subfolder layout must be preserved.
+        /// Layout:
+        ///   &lt;AUT&gt;\net461\WpfSpyAgent.dll
+        ///   &lt;AUT&gt;\net461\WpfSpyAgent.FrameworkHook.dll
+        ///   &lt;AUT&gt;\net461\Newtonsoft.Json.dll
+        /// </summary>
+        private static void StageFrameworkOnly(string targetDir, List<string> copied)
+        {
+            var fwSource = FindFrameworkAgentSourceDir();
+            if (fwSource is null)
+            {
+                StatusChanged?.Invoke("Stage: .NET Framework Spy Agent source directory not found (net461 build)");
+                return;
+            }
+            var net461Subdir = Path.Combine(targetDir, "net461");
+            Directory.CreateDirectory(net461Subdir);
+
+            CopyNewerIfMissing(
+                Path.Combine(fwSource, "WpfSpyAgent.dll"),
+                Path.Combine(net461Subdir, "WpfSpyAgent.dll"),
+                Path.Combine("net461", "WpfSpyAgent.dll"), copied);
+            CopyNewerIfMissing(
+                Path.Combine(fwSource, "WpfSpyAgent.FrameworkHook.dll"),
+                Path.Combine(net461Subdir, "WpfSpyAgent.FrameworkHook.dll"),
+                Path.Combine("net461", "WpfSpyAgent.FrameworkHook.dll"), copied);
+            // Newtonsoft.Json is only required by the net461 build (see
+            // WpfSpyAgent.csproj:24). Include it so the Framework CLR can
+            // resolve its dependency once ExecuteInDefaultAppDomain starts.
+            CopyNewerIfMissing(
+                Path.Combine(fwSource, "Newtonsoft.Json.dll"),
+                Path.Combine(net461Subdir, "Newtonsoft.Json.dll"),
+                Path.Combine("net461", "Newtonsoft.Json.dll"), copied);
+        }
+
+        /// <summary>
+        /// Copy `src` -> `dst` only if `src` is strictly newer than `dst` (or dst is
+        /// missing). On success, append `relativePath` to `copied`. Errors are
+        /// logged via StatusChanged but do not abort the overall staging.
+        /// </summary>
+        private static void CopyNewerIfMissing(
+            string src,
+            string dst,
+            string relativePath,
+            List<string> copied)
+        {
+            try
+            {
+                if (!File.Exists(src))
+                    return;
+                if (File.Exists(dst))
+                {
+                    var srcTime = File.GetLastWriteTimeUtc(src);
+                    var dstTime = File.GetLastWriteTimeUtc(dst);
+                    if (dstTime >= srcTime)
+                        return;
+                }
+                Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
+                File.Copy(src, dst, overwrite: true);
+                copied.Add(relativePath);
+            }
+            catch (Exception ex)
+            {
+                StatusChanged?.Invoke($"Stage: failed to copy {relativePath}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Remove DLLs previously staged into a target folder. Defensive:
+        /// only removes the names that were passed in. Cleans up a `net461\`
+        /// subfolder of managed files (and removes the subfolder itself if empty).
+        /// </summary>
+        public static void UnstageAgentDlls(string? targetExePath, IEnumerable<string> names)
+        {
+            if (string.IsNullOrEmpty(targetExePath) || names is null)
+                return;
+            try
+            {
+                var dir = Path.GetDirectoryName(targetExePath);
+                if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+                    return;
+                foreach (var n in names)
+                {
+                    try
+                    {
+                        var p = Path.Combine(dir, n);
+                        if (File.Exists(p))
+                            File.Delete(p);
+                    }
+                    catch
+                    {
+                        // Best-effort: don't fail the detach on a delete error.
+                    }
+                }
+                // If the net461 subfolder ended up empty after cleanup, remove it too.
+                try
+                {
+                    var sub = Path.Combine(dir, "net461");
+                    if (Directory.Exists(sub) && !Directory.EnumerateFileSystemEntries(sub).Any())
+                    {
+                        Directory.Delete(sub);
+                    }
+                }
+                catch { }
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        /// <summary>
+        /// Resolve the directory holding the framework's modern Spy Agent DLLs.
+        /// `AppDomain.CurrentDomain.BaseDirectory` for WpfTestIde is
+        /// <repo>\bin\Debug\net9.0-windows\ (per WpfTestIde.csproj's
+        /// BaseOutputPath=..\bin). The framework's other builds live at:
+        ///   <repo>\bin\Debug\net9.0-windows\WpfSpyAgent.dll (same dir as IDE)
+        ///   <repo>\bin\Debug\net8.0-windows\WpfSpyAgent.dll
+        ///   <repo>\bin\Debug\net461\WpfSpyAgent.dll (Framework — also in same parent Debug\)
+        ///   <repo>\WpfSpyAgent\bin\Debug\net9.0-windows\WpfSpyAgent.dll (per-project)
+        ///   <repo>\WpfSpyAgent\bin\Debug\net8.0-windows\WpfSpyAgent.dll
+        ///   <repo>\WpfSpyAgent\bin\Debug\net461\WpfSpyAgent.dll
+        ///   <repo>\WpfSpyAgent.FrameworkHook\bin\Debug\net461\WpfSpyAgent.dll
+        /// </summary>
+        private static string? FindAgentSourceDir()
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var searchPaths = new[]
+            {
+                // Same dir as the IDE (most common case — both share BaseOutputPath=..\bin)
+                Path.Combine(baseDir, "WpfSpyAgent.dll"),
+                // Sibling builds in the same shared <repo>\bin\Debug\ folder
+                Path.Combine(baseDir, "..", "..", "Debug", "net9.0-windows", "WpfSpyAgent.dll"),
+                Path.Combine(baseDir, "..", "..", "Debug", "net8.0-windows", "WpfSpyAgent.dll"),
+                Path.Combine(baseDir, "..", "..", "Debug", "net6.0-windows", "WpfSpyAgent.dll"),
+                // Per-project build outputs (3 levels up to repo root)
+                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Debug", "net9.0-windows", "WpfSpyAgent.dll"),
+                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.dll"),
+                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Release", "net9.0-windows", "WpfSpyAgent.dll"),
+                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Release", "net8.0-windows", "WpfSpyAgent.dll"),
+            };
+            foreach (var p in searchPaths)
+            {
+                try
+                {
+                    var full = Path.GetFullPath(p);
+                    if (File.Exists(full))
+                        return Path.GetDirectoryName(full);
+                }
+                catch { }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Resolve the directory holding the framework's .NET Framework 4.x build
+        /// of the Spy Agent. The C++ injector (NativeInject.cpp) probes
+        /// <dllDir>\net461\WpfSpyAgent.dll for Framework targets.
+        ///
+        /// From the IDE's BaseDirectory (bin\Debug\net9.0-windows\), the framework
+        /// net461 build lives at one of:
+        ///   bin\Debug\net461\ (shared bin folder)
+        ///   WpfSpyAgent\bin\Debug\net461\ (per-project, multi-target)
+        ///   WpfSpyAgent.FrameworkHook\bin\Debug\net461\ (per-project, net461-only)
+        /// </summary>
+        private static string? FindFrameworkAgentSourceDir()
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var searchPaths = new[]
+            {
+                // Shared <repo>\bin\Debug\net461\ (most common — WpfSpyAgent.csproj multi-targets net9;net461
+                // and uses BaseOutputPath=..\bin, so its net461 build lives next to the IDE's build).
+                Path.Combine(baseDir, "..", "..", "Debug", "net461"),
+                Path.Combine(baseDir, "..", "..", "Release", "net461"),
+                // Per-project WpfSpyAgent multi-target output
+                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Debug", "net461"),
+                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Release", "net461"),
+                // FrameworkHook project (net461-only)
+                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent.FrameworkHook", "bin", "Debug", "net461"),
+                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent.FrameworkHook", "bin", "Release", "net461"),
+            };
+            foreach (var p in searchPaths)
+            {
+                try
+                {
+                    var full = Path.GetFullPath(p);
+                    if (Directory.Exists(full) && File.Exists(Path.Combine(full, "WpfSpyAgent.dll")))
+                        return full;
+                }
+                catch { }
+            }
+            return null;
         }
 
         /// <summary>

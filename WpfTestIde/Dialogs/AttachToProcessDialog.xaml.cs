@@ -233,6 +233,19 @@ namespace WpfTestIde.Dialogs
 
                 StatusText.Text = "Spy Agent not found. Attempting runtime injection...";
 
+                // Stage the managed Spy Agent DLLs next to the target exe so the
+                // native injector (WpfSpyAgent.NativeInject.dll) can find them
+                // after LoadLibrary. Idempotent: skipped if the staged copies
+                // are already up to date.
+                try
+                {
+                    RuntimeInjector.StageAgentDllsForTarget(processId);
+                }
+                catch (Exception stageEx)
+                {
+                    StatusText.Text = $"Staging warning: {stageEx.Message}";
+                }
+
                 // Try runtime injection
                 var dllPath = GetStartupHookDllPath();
                 if (string.IsNullOrEmpty(dllPath))

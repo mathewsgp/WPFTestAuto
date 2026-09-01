@@ -26,10 +26,10 @@ goto parse_args
 
 :done_args
 set "TARGET_FW=net9.0-windows"
-set "SAMPLE_APP_DIR=%FW_ROOT%\bin\%CONFIGURATION%\net9.0-windows"
+set "SAMPLE_APP_DIR=%FW_ROOT%\bin\SampleWPFApp\%CONFIGURATION%\net9.0-windows"
 if /i "%TARGET_VERSION%"=="framework" (
     set "TARGET_FW=net461"
-    set "SAMPLE_APP_DIR=%FW_ROOT%\bin\%CONFIGURATION%\net461"
+    set "SAMPLE_APP_DIR=%FW_ROOT%\bin\SampleWPFApp\%CONFIGURATION%\net461"
 )
 set "TARGET_PATH=%SAMPLE_APP_DIR%\SampleWpfApp.exe"
 

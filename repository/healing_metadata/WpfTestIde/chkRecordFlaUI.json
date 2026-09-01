@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-08-19T10:04:15.643187",
-    "last_verified": "2026-08-19T10:04:15.643196",
-    "verification_count": 72,
+    "captured_at": "2026-09-01T12:28:16.335976",
+    "last_verified": "2026-09-01T12:28:16.335986",
+    "verification_count": 78,
     "driver_used": "FlaUI",
     "search_method": "AutomationId",
     "search_value": "chkRecordFlaUI"
@@ -21,12 +21,12 @@
   "healing_history": [],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 20,
+      "success_count": 26,
       "failure_count": 0,
-      "total_duration_ms": 9760.22219657898,
-      "last_success": "2026-08-19T10:04:15.042428",
+      "total_duration_ms": 14977.339744567871,
+      "last_success": "2026-09-01T12:28:15.846232",
       "last_failure": null,
-      "avg_duration_ms": 488.011109828949
+      "avg_duration_ms": 576.0515286372258
     },
     "WPFSpy:XPath": {
       "success_count": 52,
@@ -37,9 +37,9 @@
       "avg_duration_ms": 36.32762340398935
     }
   },
-  "total_interactions": 144,
+  "total_interactions": 156,
   "first_seen": "2026-08-09T08:22:28.698359",
-  "last_interaction": "2026-08-19T10:04:15.643202",
+  "last_interaction": "2026-09-01T12:28:16.335991",
   "consecutive_failures": 0,
-  "consecutive_successes": 144
+  "consecutive_successes": 156
 }
