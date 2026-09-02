@@ -30,6 +30,9 @@ class AppContext:
         app_path: Optional[str] = None,
         launch_args: Optional[List[str]] = None,
         env: Optional[Dict[str, str]] = None,
+        start_in: Optional[str] = None,
+        auto_attach: bool = False,
+        spy_agent: bool = True,
     ):
         self.app_id = app_id
         self.app_name = app_name
@@ -39,6 +42,9 @@ class AppContext:
         self.app_path = app_path
         self.launch_args = launch_args or []
         self.env = env or {}
+        self.start_in = start_in
+        self.auto_attach = auto_attach
+        self.spy_agent = spy_agent
 
         self.drivers: Dict[str, Any] = {}
         self.process: Optional[subprocess.Popen] = None
@@ -47,7 +53,7 @@ class AppContext:
     def get_driver(self, driver_name: str) -> Any:
         if driver_name not in self.drivers:
             self.drivers[driver_name] = _create_driver_for_app(driver_name, self)
-        return self.drivers[driver_name]
+        return self.drivers
 
     def close(self):
         try:
@@ -69,6 +75,8 @@ class AppContext:
             "app_path": self.app_path,
             "launch_args": self.launch_args,
             "env": self.env,
+            "start_in": self.start_in,
+            "auto_attach": self.auto_attach,
         }
 
 
@@ -134,7 +142,16 @@ def _create_driver_for_app(driver_name: str, app_context: AppContext) -> Any:
     if driver_name == "WPFSpy":
         if effective_mode == "real":
             if app_context.pipe_name is None:
-                raise ValueError("WPFSpy real driver requires pipe_name in AppContext")
+                # No pipe name means the app didn't have a WPFSpy agent
+                # injected (e.g. the IDE itself, or a non-WPF target). Fall
+                # back to the mock driver so the multi-driver iteration
+                # doesn't blow up — strategy matching by driver name will
+                # still skip it if it can't resolve.
+                try:
+                    from WPFSpyLibrary import WPFSpyMockDriver
+                    return WPFSpyMockDriver()
+                except ImportError:
+                    raise ImportError("WPFSpy mock driver not available")
             try:
                 from WPFSpyLibrary import WPFSpyRealDriver
                 return WPFSpyRealDriver(pipe_name=app_context.pipe_name)
@@ -164,7 +181,8 @@ def _launch_app_for_context(app_context: AppContext) -> subprocess.Popen:
     env = os.environ.copy()
     env.update(app_context.env)
 
-    if app_context.driver == "WPFSpy":
+    # Only enable Spy Agent if explicitly requested and driver is WPFSpy
+    if app_context.driver == "WPFSpy" and app_context.spy_agent:
         from runtime_injector import RuntimeInjector
         injector = RuntimeInjector()
         if injector.startup_hook_path:
@@ -179,6 +197,7 @@ def _launch_app_for_context(app_context: AppContext) -> subprocess.Popen:
     proc = subprocess.Popen(
         cmd,
         env=env,
+        cwd=app_context.start_in or None,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )

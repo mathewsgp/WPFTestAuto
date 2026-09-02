@@ -53,10 +53,13 @@
             <ComboBoxItem Content="DataGrid Checkpoint"/>
             <ComboBoxItem Content="Count Checkpoint"/>
             <ComboBoxItem Content="Attribute Checkpoint"/>
+            <Separator/>
+            <ComboBoxItem Content="Launch Application"/>
+            <ComboBoxItem Content="Terminate Application"/>
         </ComboBox>
 
         <!-- Element -->
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="Element:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" x:Name="ElementLabel" Text="Element:" VerticalAlignment="Center" Margin="0,0,8,8"/>
         <ComboBox Grid.Row="1" Grid.Column="1" x:Name="AliasCombo" Margin="0,0,0,8" SelectionChanged="AliasCombo_SelectionChanged" AutomationProperties.AutomationId="AliasCombo"/>
 
         <!-- Value / Expected Text / Attribute Name -->
@@ -79,8 +82,8 @@
                  VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="TimeoutBox" Visibility="Collapsed"/>
 
         <!-- Description -->
-        <TextBlock Grid.Row="4" Grid.Column="0" Text="Description:" VerticalAlignment="Top" Margin="0,8,8,0"/>
-        <TextBox Grid.Row="4" Grid.Column="1" x:Name="DescriptionBox" Margin="0,8,0,0" 
+        <TextBlock Grid.Row="4" Grid.Column="0" x:Name="DescriptionLabel" Text="Description:" VerticalAlignment="Top" Margin="0,8,8,0"/>
+        <TextBox Grid.Row="4" Grid.Column="1" x:Name="DescriptionBox" Margin="0,8,0,0"
                  Height="40" TextWrapping="Wrap" AcceptsReturn="False"
                  AutomationProperties.AutomationId="DescriptionBox"/>
 
@@ -104,6 +107,60 @@
         <StackPanel Grid.Row="5" Grid.ColumnSpan="2" x:Name="CountPanel" Visibility="Collapsed" Margin="0,8,0,8">
             <TextBlock Text="Expected Count:" Margin="0,0,0,4"/>
             <TextBox x:Name="CountBox" Width="100" HorizontalAlignment="Left" AutomationProperties.AutomationId="CountBox"/>
+        </StackPanel>
+
+        <!-- Launch Application Options (for Launch Application step) -->
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" x:Name="LaunchAppPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Application ID (logical name):" Margin="0,0,0,4"/>
+            <TextBox x:Name="LaunchAppIdBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="LaunchAppIdBox"
+                     ToolTip="Logical name used to refer to this app in subsequent steps. Used to derive pipe name if not specified."
+                     TextChanged="LaunchAppIdBox_TextChanged"/>
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Path to executable:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <Button Grid.Column="1" x:Name="btnBrowseAppPath" Content="Browse..." Width="80" Click="BrowseAppPath_Click" AutomationProperties.AutomationId="btnBrowseAppPath"/>
+            </Grid>
+            <TextBox x:Name="LaunchAppPathBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="LaunchAppPathBox"/>
+            <TextBlock Text="Start in (working directory, optional):" Margin="0,0,0,4"/>
+            <TextBox x:Name="LaunchStartInBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="LaunchStartInBox"/>
+            <TextBlock Text="Command-line arguments (optional):" Margin="0,0,0,4"/>
+            <TextBox x:Name="LaunchArgsBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="LaunchArgsBox"/>
+            <CheckBox x:Name="LaunchAutoAttachCheck" Content="Automatically attach" Margin="0,0,0,4"
+                      AutomationProperties.AutomationId="LaunchAutoAttachCheck"
+                      ToolTip="After launching, wait for the Spy Agent / driver to be ready and register the app for subsequent keywords."/>
+            <CheckBox x:Name="LaunchSpyAgentCheck" Content="Enable Spy Agent" Margin="0,0,0,4" IsChecked="True"
+                      AutomationProperties.AutomationId="LaunchSpyAgentCheck"
+                      ToolTip="Enable the in-process Spy Agent for this application (sets DOTNET_STARTUP_HOOKS and WPFSPY_AGENT_ENABLED)."/>
+            <TextBlock Text="Pipe name (optional, for Spy Agent):" Margin="0,0,0,4"/>
+            <TextBox x:Name="LaunchPipeNameBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="LaunchPipeNameBox"
+                     ToolTip="Named pipe for Spy Agent communication. Leave empty to use default (WPFSpyAgentPipe_&lt;app_id&gt;)."/>
+        </StackPanel>
+
+        <!-- Terminate Application Options (for Terminate Application step) -->
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" x:Name="TerminateAppPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Application ID (logical name, optional):" Margin="0,0,0,4"/>
+            <TextBox x:Name="TerminateAppIdBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="TerminateAppIdBox"
+                     ToolTip="If set, the framework's known process for this app_id is terminated and the app is unregistered."/>
+            <TextBlock Text="OR — Main window title contains (case-insensitive, optional):" Margin="0,0,0,4"/>
+            <TextBox x:Name="TerminateWindowTitleBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="TerminateWindowTitleBox"
+                     ToolTip="Substring match against the main window title of running processes."/>
+            <TextBlock Text="OR — Process name (executable image, e.g. SampleWpfApp.exe, optional):" Margin="0,0,0,4"/>
+            <TextBox x:Name="TerminateProcessNameBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="TerminateProcessNameBox"
+                     ToolTip="Exact match (case-insensitive) against the executable image name."/>
+            <CheckBox x:Name="TerminateForceCheck" Content="Force terminate" Margin="0,4,0,0"
+                      AutomationProperties.AutomationId="TerminateForceCheck"
+                      ToolTip="Use taskkill /F instead of a graceful close."/>
         </StackPanel>
 
         <!-- Buttons -->

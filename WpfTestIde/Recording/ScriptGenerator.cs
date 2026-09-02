@@ -121,6 +121,55 @@ namespace WpfTestIde.Recording
                     case StepKind.CheckpointAttribute:
                         sb.AppendLine($"    Attribute Checkpoint    {step.Alias}    {step.AttributeName}    {step.Value}{appIdArg}");
                         continue;
+                     case StepKind.LaunchApplication:
+                     {
+                         // Layout: Launch Application    <app_path>    [app_id=<id>]    [start_in=...]    [args=...]    [attach=Yes/No]    [driver=...]    [spy_agent=Yes/No]    [pipe_name=...]
+                         // The path is positional (must come first), then all named args.
+                         // This avoids Robot Framework's "positional after named" error.
+                         //
+                         // Paths are emitted with forward slashes. Robot Framework strips
+                         // backslashes from unquoted arguments (it interprets \W, \n, etc. as
+                         // escape sequences), which silently corrupts Windows paths. Forward
+                         // slashes are accepted by Popen + CreateProcess on Windows and
+                         // avoid the issue entirely.
+                         var la = new List<string> { "    Launch Application" };
+                         la.Add(NormalizePathForRobot(step.AppPath));
+                         if (!string.IsNullOrWhiteSpace(step.AppId))
+                             la.Add($"app_id={step.AppId}");
+                         if (!string.IsNullOrWhiteSpace(step.StartIn))
+                             la.Add($"start_in={NormalizePathForRobot(step.StartIn)}");
+                         if (!string.IsNullOrWhiteSpace(step.Args))
+                             la.Add($"args={step.Args}");
+                         la.Add($"attach={(step.AutoAttach ? "Yes" : "No")}");
+                         // Always emit driver=WPFSpy when spy agent is enabled, so the
+                         // Python framework sets DOTNET_STARTUP_HOOKS for the launched app.
+                         if (step.SpyAgentEnabled)
+                             la.Add($"driver=WPFSpy");
+                         else if (!string.IsNullOrWhiteSpace(step.LaunchDriver) && step.LaunchDriver != "WPFSpy")
+                             la.Add($"driver={step.LaunchDriver}");
+                         // Spy Agent options
+                         if (!step.SpyAgentEnabled)
+                             la.Add("spy_agent=No");
+                         if (!string.IsNullOrWhiteSpace(step.PipeName))
+                             la.Add($"pipe_name={step.PipeName}");
+                         sb.AppendLine(string.Join("    ", la));
+                         continue;
+                     }
+                    case StepKind.TerminateApplication:
+                    {
+                        // Layout: Terminate Application    [app_id=...]    [window_title=...]    [process_name=...]    [force=Yes/No]
+                        var ta = new List<string> { "    Terminate Application" };
+                        if (!string.IsNullOrWhiteSpace(step.AppId))
+                            ta.Add($"app_id={step.AppId}");
+                        if (!string.IsNullOrWhiteSpace(step.WindowTitle))
+                            ta.Add($"window_title={step.WindowTitle}");
+                        if (!string.IsNullOrWhiteSpace(step.ProcessName))
+                            ta.Add($"process_name={step.ProcessName}");
+                        if (step.ForceTerminate)
+                            ta.Add("force=Yes");
+                        sb.AppendLine(string.Join("    ", ta));
+                        continue;
+                    }
                 }
 
                 switch (step.Action)
@@ -162,6 +211,23 @@ namespace WpfTestIde.Recording
             }
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Convert a Windows path (with backslashes) to a Robot-Framework-safe
+        /// form. Robot strips backslashes from unquoted arguments because it
+        /// interprets \W, \n, \t, etc. as escape sequences — a path like
+        /// "C:\Windows\notepad.exe" silently becomes "C:Windows\notepad.exe"
+        /// and the launch fails. Forward slashes are accepted by Popen +
+        /// CreateProcess on Windows and avoid the issue.
+        ///
+        /// If the path is null/empty it is returned unchanged so callers can
+        /// decide whether to emit it.
+        /// </summary>
+        public static string NormalizePathForRobot(string? path)
+        {
+            if (string.IsNullOrEmpty(path)) return path ?? "";
+            return path.Replace('\\', '/');
         }
     }
 }

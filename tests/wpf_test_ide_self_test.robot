@@ -12,7 +12,7 @@ ${IDE_APP_PATH}       WpfTestIde/bin/Debug/net9.0-windows/WpfTestIde.exe
 *** Test Cases ***
 Framework Can Launch And Drive SampleWpfApp
     [Documentation]    Validate core framework by driving the sample app end-to-end.
-    Launch Application    sample    ${SAMPLE_APP_PATH}    WPFSpy
+    Launch Application    ${SAMPLE_APP_PATH}    app_id=sample
     Wait For Application    sample    timeout=30
     Switch Application    sample
     Click Element    LoginPage.MainWindow.btnSubmit
@@ -21,7 +21,7 @@ Framework Can Launch And Drive SampleWpfApp
 
 Framework Can Launch WpfTestIde
     [Documentation]    Validate that the framework can launch and verify the IDE app.
-    Launch Application    ide    ${IDE_APP_PATH}    FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide
     Wait For Application    ide    timeout=30
     Switch Application    ide
     ${apps}=    Get Application List
@@ -31,8 +31,8 @@ Framework Can Launch WpfTestIde
 
 Multi App Both Apps Running
     [Documentation]    Validate multi-app context with both apps simultaneously.
-    Launch Application    sample    ${SAMPLE_APP_PATH}    WPFSpy
-    Launch Application    ide    ${IDE_APP_PATH}    FlaUI
+    Launch Application    ${SAMPLE_APP_PATH}    app_id=sample
+    Launch Application    ${IDE_APP_PATH}    app_id=ide
     Wait For Application    sample    timeout=30
     Wait For Application    ide    timeout=30
     ${apps}=    Get Application List
@@ -49,7 +49,7 @@ Multi App Both Apps Running
 
 Legacy Mode Still Works
     [Documentation]    Ensure backward compatibility when no apps are registered.
-    Launch Application    legacy    ${SAMPLE_APP_PATH}    WPFSpy
+    Launch Application    ${SAMPLE_APP_PATH}    app_id=legacy
     Wait For Application    legacy    timeout=30
     Switch Application    legacy
     Click Element    LoginPage.MainWindow.txtUsername

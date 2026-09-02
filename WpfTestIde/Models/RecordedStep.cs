@@ -2,7 +2,14 @@ using System;
 
 namespace WpfTestIde.Models
 {
-    public enum StepKind { Action, Verify, VerifyOcr, VerifyEnabled, VerifyVisible, VerifyContains, VerifyRegex, VerifyAttribute, WaitExists, WaitVisible, WaitEnabled, WaitTextContains, CheckpointProperty, CheckpointArea, CheckpointImage, CheckpointDataGrid, CheckpointCount, CheckpointAttribute }
+    public enum StepKind
+    {
+        Action, Verify, VerifyOcr, VerifyEnabled, VerifyVisible, VerifyContains,
+        VerifyRegex, VerifyAttribute, WaitExists, WaitVisible, WaitEnabled, WaitTextContains,
+        CheckpointProperty, CheckpointArea, CheckpointImage, CheckpointDataGrid,
+        CheckpointCount, CheckpointAttribute,
+        LaunchApplication, TerminateApplication,
+    }
     public enum ActionKind { Invoke, SetValue, Toggle, DoubleClick, RightClick, DragDrop, Hover, PressKeys, Scroll, SikuliClick, SikuliType }
 
     /// <summary>
@@ -32,6 +39,38 @@ namespace WpfTestIde.Models
 
         /// <summary>Expected count for Count Checkpoint steps.</summary>
         public string? ExpectedCount { get; set; }
+
+        // ----- Launch Application parameters (StepKind.LaunchApplication) -----
+        /// <summary>Path to the executable to launch. Required for LaunchApplication.</summary>
+        public string? AppPath { get; set; }
+
+        /// <summary>Working directory for the launched process. Optional.</summary>
+        public string? StartIn { get; set; }
+
+        /// <summary>Command-line arguments for the launched process. Optional.</summary>
+        public string? Args { get; set; }
+
+        /// <summary>True to automatically attach the framework to the spawned process.</summary>
+        public bool AutoAttach { get; set; }
+
+        /// <summary>Driver to use for the launched process. Default "WPFSpy".</summary>
+        public string LaunchDriver { get; set; } = "WPFSpy";
+
+        /// <summary>Whether to enable Spy Agent for the launched process. Default true.</summary>
+        public bool SpyAgentEnabled { get; set; } = true;
+
+        /// <summary>Named pipe name for the Spy Agent. If null, derived from app id.</summary>
+        public string? PipeName { get; set; }
+
+        // ----- Terminate Application parameters (StepKind.TerminateApplication) -----
+        /// <summary>Substring match against the main window title. Optional.</summary>
+        public string? WindowTitle { get; set; }
+
+        /// <summary>Executable image name (e.g. "SampleWpfApp" or "SampleWpfApp.exe"). Optional.</summary>
+        public string? ProcessName { get; set; }
+
+        /// <summary>True to force-kill the process (taskkill /F).</summary>
+        public bool ForceTerminate { get; set; }
 
         public DateTime Timestamp { get; set; } = DateTime.Now;
 
@@ -63,6 +102,8 @@ namespace WpfTestIde.Models
             StepKind.CheckpointDataGrid => "DataGrid Checkpoint",
             StepKind.CheckpointCount => "Count Checkpoint",
             StepKind.CheckpointAttribute => "Attribute Checkpoint",
+            StepKind.LaunchApplication => "Launch Application",
+            StepKind.TerminateApplication => "Terminate Application",
             _ => Action switch
             {
                 ActionKind.Invoke => "Click Element",

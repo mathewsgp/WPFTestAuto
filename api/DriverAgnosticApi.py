@@ -486,25 +486,135 @@ class DriverAgnosticApi:
         self._app_id = app_id
         logger.info("Switched application context", app_id=app_id)
 
-    def launch_application(self, app_id: str, app_path: str, driver: str = "FlaUI", *args) -> str:
+    def launch_application(
+        self,
+        app_path: str,
+        app_id: Optional[str] = None,
+        driver: Optional[str] = None,
+        args: Optional[Union[str, List[str]]] = None,
+        start_in: Optional[str] = None,
+        attach: bool = False,
+        pipe_name: Optional[str] = None,
+        spy_agent: Optional[bool] = None,
+        timeout: float = 30.0,
+    ) -> str:
         """Launch an application and register it.
 
         Args:
-            app_id: Logical ID for this app.
-            app_path: Path to executable/DLL.
-            driver: Primary driver.
-            *args: Additional launch arguments.
+            app_path: Path to executable/DLL. First positional — the natural
+                Robot Framework usage is
+                ``Launch Application    <path>    app_id=<id>    ...``.
+            app_id: Logical ID for this app. Optional; when None, a default
+                of ``<exe-name>`` is generated. Use ``app_id=`` from Robot to
+                keep the call argument order clean (positional after named is
+                rejected by Robot).
+            driver: Primary driver. When None (default), auto-detected from
+                the app path/name — ``.dll`` or a name containing ``wpf`` /
+                ``xaml`` selects ``WPFSpy``; otherwise ``FlaUI``.
+            args: Command-line arguments. Either a single string (will be
+                split on whitespace respecting simple quotes) or a list of
+                strings.
+            start_in: Working directory for the launched process. Optional.
+            attach: If True, automatically register the spawned process with
+                `attach_to_application` so subsequent keywords can drive it
+                without a separate attach step. Defaults to False.
+            pipe_name: Named pipe for WPFSpy. Defaults to a per-app
+                `WPFSpyAgentPipe_<app_id>` when driver=='WPFSpy'.
+            spy_agent: If True, enable the in-process Spy Agent for the
+                launched application (sets DOTNET_STARTUP_HOOKS and
+                WPFSPY_AGENT_ENABLED). When None (default), follows the
+                driver — True for WPFSpy, False for FlaUI. Set explicitly
+                to override.
+            timeout: Seconds to wait for the process to become available
+                before returning.
 
         Returns:
             The registered app_id.
         """
+        # Normalize args to a list of strings.
+        if args is None:
+            launch_args: List[str] = []
+        elif isinstance(args, str):
+            # Naive split that respects simple double-quoted substrings.
+            import shlex
+            try:
+                launch_args = shlex.split(args, posix=False)
+            except ValueError:
+                launch_args = [args]
+        else:
+            launch_args = list(args)
+
+        # Default app_id to the executable name (no extension) when the caller
+        # didn't supply one. This keeps backward compatibility with the older
+        # signature while making the new positional-first form ergonomic.
+        if not app_id:
+            base = os.path.basename(app_path)
+            stem = os.path.splitext(base)[0]
+            app_id = (stem or "app").lower()
+
+        effective_pipe = pipe_name
+        if effective_pipe is None and driver == "WPFSpy":
+            effective_pipe = f"WPFSpyAgentPipe_{app_id}"
+
+        # Auto-detect driver and spy_agent when the caller didn't specify them.
+        # WPF heuristics: .dll extension or filename containing 'wpf'/'xaml'.
+        norm_for_detect = (app_path or "").replace("/", "\\").lower()
+        base_for_detect = os.path.basename(norm_for_detect)
+        is_likely_wpf = (
+            base_for_detect.endswith(".dll")
+            or "wpf" in base_for_detect
+            or "xaml" in base_for_detect
+        )
+        if driver is None:
+            driver = "WPFSpy" if is_likely_wpf else "FlaUI"
+        if spy_agent is None:
+            spy_agent = driver == "WPFSpy"
+        # Recompute pipe name if driver was previously None and got resolved.
+        if effective_pipe is None and driver == "WPFSpy":
+            effective_pipe = f"WPFSpyAgentPipe_{app_id}"
+
+        # Capture process_id before registering so the registration sees the
+        # live pid (used by WPFSpy attach for pipe lookups).
+        from app_context import _launch_app_for_context, AppContext
+
+        # DIAGNOSTIC: log the exact strings we received, so launch failures
+        # are easy to diagnose from the test log.
+        logger.info(
+            "launch_application received",
+            app_path_repr=repr(app_path),
+            app_id_repr=repr(app_id),
+            start_in_repr=repr(start_in),
+            args_repr=repr(args),
+            attach=attach,
+        )
+
+        # Normalize the path: forward slashes are accepted on Windows but
+        # Popen+CreateProcess is happiest with backslashes. Also reject
+        # empty paths and any path that contains an actual newline (which
+        # would silently break Popen and surface as WinError 2).
+        norm_path = (app_path or "").replace("/", "\\").strip()
+        if "\n" in norm_path or "\r" in norm_path:
+            raise ValueError(
+                f"app_path contains a newline character (will break CreateProcess): {norm_path!r}"
+            )
+        if not norm_path:
+            raise ValueError("app_path is required and cannot be empty")
+        norm_start_in = (start_in or "").replace("/", "\\").strip() or None
+        if norm_start_in and ("\n" in norm_start_in or "\r" in norm_start_in):
+            raise ValueError(
+                f"start_in contains a newline character: {norm_start_in!r}"
+            )
+
         app_context = AppContext(
             app_id=app_id,
-            app_name=os.path.basename(app_path),
+            app_name=os.path.basename(norm_path),
             driver=driver,
-            app_path=app_path,
-            launch_args=list(args),
-            pipe_name=f"WPFSpyAgentPipe_{app_id}" if driver == "WPFSpy" else None,
+            app_path=norm_path,
+            launch_args=launch_args,
+            pipe_name=effective_pipe,
+            start_in=norm_start_in,
+            auto_attach=attach,
+            spy_agent=spy_agent,
         )
         try:
             app_context.process = _launch_app_for_context(app_context)
@@ -514,7 +624,25 @@ class DriverAgnosticApi:
             logger.error(f"Failed to launch application: {e}")
             raise
         _MULTI_APP_CONTEXT.register_app(app_context)
-        logger.info("Launched application", app_id=app_id, app_path=app_path, pid=app_context.process_id)
+        logger.info(
+            "Launched application",
+            app_id=app_id,
+            app_path=app_path,
+            pid=app_context.process_id,
+            start_in=start_in,
+            attach=attach,
+        )
+
+        # If the user asked us to auto-attach (e.g. for WPFSpy), make sure the
+        # WPFSpy agent is reachable via the named pipe before continuing.
+        if attach and driver == "WPFSpy":
+            try:
+                self.wait_for_application(app_id, timeout=timeout)
+            except Exception as e:
+                logger.warning(
+                    f"Auto-attach wait for {app_id} did not confirm agent readiness: {e}"
+                )
+
         return app_id
 
     def attach_to_application(self, app_id: str, process_id: Union[int, str], driver: str = "FlaUI", pipe_name: Optional[str] = None) -> str:
@@ -554,6 +682,209 @@ class DriverAgnosticApi:
         """
         _MULTI_APP_CONTEXT.unregister_app(app_id)
         logger.info("Closed application", app_id=app_id)
+
+    def terminate_application(
+        self,
+        app_id: Optional[str] = None,
+        window_title: Optional[str] = None,
+        process_name: Optional[str] = None,
+        force: bool = False,
+    ) -> int:
+        """Terminate a running application by registered app_id, window title,
+        or process name (executable image name).
+
+        At least one of `app_id`, `window_title`, or `process_name` must be
+        provided. When multiple identifiers match, all matching processes are
+        terminated and the framework state is updated (unregistered, if
+        applicable). Returns the number of processes terminated.
+
+        Args:
+            app_id: Optional registered app_id (preferred). When supplied,
+                the framework's known process for that app is terminated.
+            window_title: Optional substring match against the main window
+                title of running processes. Case-insensitive contains.
+            process_name: Optional executable image name (e.g. "SampleWpfApp"
+                or "SampleWpfApp.exe"). Case-insensitive exact match.
+            force: When True, force-kill (taskkill /F). Default sends a
+                graceful WM_CLOSE first, then escalates to force if the
+                process is still alive after a short timeout.
+        """
+        if not (app_id or window_title or process_name):
+            raise ValueError(
+                "terminate_application requires one of: app_id, window_title, process_name"
+            )
+
+        terminated = 0
+
+        # Path 1: terminate by app_id (framework-registered process).
+        if app_id:
+            try:
+                ctx = _MULTI_APP_CONTEXT.get_app(app_id)
+            except Exception:
+                ctx = None
+            if ctx is not None and ctx.process_id:
+                if self._kill_pid(int(ctx.process_id), force=force):
+                    terminated += 1
+                try:
+                    _MULTI_APP_CONTEXT.unregister_app(app_id)
+                except Exception:
+                    pass
+                return terminated
+
+        # Path 2: discover processes by window title or process name.
+        targets = self._find_pids_by_title_or_name(
+            window_title=window_title,
+            process_name=process_name,
+        )
+        for pid in targets:
+            if self._kill_pid(int(pid), force=force):
+                terminated += 1
+
+        logger.info(
+            "terminate_application completed",
+            app_id=app_id,
+            window_title=window_title,
+            process_name=process_name,
+            terminated=terminated,
+        )
+        return terminated
+
+    @staticmethod
+    def _kill_pid(pid: int, force: bool = False) -> bool:
+        """Kill a single PID. Returns True on success.
+
+        Tries graceful WM_CLOSE (only meaningful for top-level windows on
+        Windows) and falls back to terminate / force.
+        """
+        if pid is None or pid <= 0:
+            return False
+        try:
+            if not force and sys.platform == "win32":
+                # Best-effort graceful close for windows that own a top-level
+                # window. If WM_CLOSE doesn't work we fall through to taskkill.
+                try:
+                    import ctypes
+                    from ctypes import wintypes
+                    user32 = ctypes.WinDLL("user32", use_last_error=True)
+                    EnumWindows = user32.EnumWindows
+                    EnumWindowsProc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+                    GetWindowThreadProcessId = user32.GetWindowThreadProcessId
+
+                    class PIDHolder(ctypes.Structure):
+                        _fields_ = [("pid", wintypes.DWORD),
+                                    ("hwnd", wintypes.HWND)]
+
+                    holder = PIDHolder(pid, 0)
+
+                    def callback(hwnd, lparam):
+                        owner_pid = wintypes.DWORD()
+                        GetWindowThreadProcessId(hwnd, ctypes.byref(owner_pid))
+                        if owner_pid.value == pid and user32.IsWindowVisible(hwnd):
+                            holder.hwnd = hwnd
+                            return 0
+                        return 1
+
+                    EnumWindows(EnumWindowsProc(callback), 0)
+                    if holder.hwnd:
+                        user32.PostMessageW(holder.hwnd, 0x0010, 0, 0)  # WM_CLOSE
+                        time.sleep(1.0)
+                except Exception:
+                    pass
+
+            # Final escalation to taskkill.
+            if sys.platform == "win32":
+                args = ["taskkill", "/PID", str(pid)]
+                if force:
+                    args.append("/F")
+                subprocess.run(args, check=False,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                import signal as _sig
+                try:
+                    os.kill(pid, _sig.SIGKILL if force else _sig.SIGTERM)
+                except ProcessLookupError:
+                    return False
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to kill pid {pid}: {e}")
+            return False
+
+    @staticmethod
+    def _find_pids_by_title_or_name(
+        window_title: Optional[str] = None,
+        process_name: Optional[str] = None,
+    ) -> List[int]:
+        """Return PIDs whose process name matches `process_name` (case-insensitive
+        exact match) OR whose main window title contains `window_title`
+        (case-insensitive substring)."""
+        results: List[int] = []
+        if not (window_title or process_name):
+            return results
+        if sys.platform != "win32":
+            # POSIX fallback: psutil if available, else empty.
+            try:
+                import psutil  # type: ignore
+                for p in psutil.process_iter(["pid", "name"]):
+                    if process_name and p.info["name"].lower() == process_name.lower():
+                        results.append(int(p.info["pid"]))
+            except Exception:
+                pass
+            return results
+
+        try:
+            import psutil  # type: ignore
+        except ImportError:
+            psutil = None  # type: ignore
+
+        if psutil is not None:
+            try:
+                for p in psutil.process_iter(["pid", "name"]):
+                    try:
+                        if process_name and p.info["name"].lower() == process_name.lower():
+                            results.append(int(p.info["pid"]))
+                            continue
+                        if window_title:
+                            title = ""
+                            try:
+                                title = p.info.get("windows_title") or ""
+                                if not title:
+                                    # psutil's windows_title is None unless explicitly requested
+                                    title = ""
+                            except Exception:
+                                title = ""
+                            if window_title.lower() in title.lower():
+                                results.append(int(p.info["pid"]))
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+            except Exception as e:
+                logger.debug(f"psutil enumeration failed: {e}")
+            return results
+
+        # Fallback without psutil: tasklist + window enumeration.
+        try:
+            out = subprocess.check_output(
+                ["tasklist", "/FO", "CSV", "/NH"], text=True, errors="ignore"
+            )
+            for line in out.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split("\",\"")
+                if len(parts) < 2:
+                    continue
+                name = parts[0].strip('"')
+                pid_s = parts[1].strip('"')
+                try:
+                    pid = int(pid_s)
+                except ValueError:
+                    continue
+                if process_name and name.lower() == process_name.lower():
+                    results.append(pid)
+            # Window title matching requires Win32 EnumWindows; without psutil
+            # we skip window-title filtering and rely on process_name only.
+        except Exception as e:
+            logger.debug(f"tasklist fallback failed: {e}")
+        return results
 
     def get_application_list(self) -> List[str]:
         """List all registered application IDs."""
@@ -1735,9 +2066,10 @@ class DriverAgnosticApi:
             for driver_name in _get_run_modes():
                 if driver_name not in strategies:
                     continue
-                driver = app_context.drivers.get(driver_name)
-                if driver is None:
-                    continue
+                # Create driver if it doesn't exist (same as _resolve_and_execute)
+                if driver_name not in app_context.drivers:
+                    app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
+                driver = app_context.drivers[driver_name]
                 for strategy in strategies[driver_name]:
                     try:
                         resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
@@ -1784,9 +2116,10 @@ class DriverAgnosticApi:
             for driver_name in _get_run_modes():
                 if driver_name not in strategies:
                     continue
-                driver = app_context.drivers.get(driver_name)
-                if driver is None:
-                    continue
+                # Create driver if it doesn't exist
+                if driver_name not in app_context.drivers:
+                    app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
+                driver = app_context.drivers[driver_name]
                 for strategy in strategies[driver_name]:
                     try:
                         resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
@@ -1831,9 +2164,10 @@ class DriverAgnosticApi:
             for driver_name in _get_run_modes():
                 if driver_name not in strategies:
                     continue
-                driver = app_context.drivers.get(driver_name)
-                if driver is None:
-                    continue
+                # Create driver if it doesn't exist
+                if driver_name not in app_context.drivers:
+                    app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
+                driver = app_context.drivers[driver_name]
                 for strategy in strategies[driver_name]:
                     try:
                         resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
@@ -1860,27 +2194,28 @@ class DriverAgnosticApi:
         app_id: Optional[str] = None,
     ):
         """Wait for element to be visible and enabled.
-        
+
         Raises WaitTimeoutError if element is not actionable within timeout.
         """
         start_time = time.time()
         strategies = repo.get_strategies(alias)
         app_context = _MULTI_APP_CONTEXT.get_app(app_id)
-        
+
         if not strategies:
             raise AllStrategiesFailedError(
                 alias=alias,
                 attempts=[],
                 details={"reason": "No strategies configured"}
             )
-        
+
         while time.time() - start_time < timeout:
             for driver_name in _get_run_modes():
                 if driver_name not in strategies:
                     continue
-                driver = app_context.drivers.get(driver_name)
-                if driver is None:
-                    continue
+                # Create driver if it doesn't exist
+                if driver_name not in app_context.drivers:
+                    app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
+                driver = app_context.drivers[driver_name]
                 for strategy in strategies[driver_name]:
                     try:
                         resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
@@ -1889,11 +2224,11 @@ class DriverAgnosticApi:
                             return True
                     except Exception:
                         continue
-            
+
             remaining = timeout - (time.time() - start_time)
             if remaining > 0:
                 time.sleep(min(poll_interval, remaining))
-        
+
         raise WaitTimeoutError(
             condition="element actionable",
             timeout=timeout
@@ -1966,5 +2301,249 @@ class DriverAgnosticApi:
         useful in assertions/logging for the self-healing demo tests.
         """
         return self.last_strategy_used
+
+    # ------------------------------------------------------------------
+    # Clipboard Operations
+    # ------------------------------------------------------------------
+    def set_clipboard_text(self, text: str):
+        """Sets the Windows clipboard to the given text.
+
+        Args:
+            text: The text to place on the clipboard.
+
+        Example:
+            | Set Clipboard Text    Hello World |
+        """
+        import win32clipboard
+        import win32con
+        win32clipboard.OpenClipboard()
+        try:
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardText(text, win32clipboard.CF_UNICODETEXT)
+        finally:
+            win32clipboard.CloseClipboard()
+        logger.info("Clipboard text set", text_length=len(text))
+
+    def get_clipboard_text(self) -> str:
+        """Returns the current text from the Windows clipboard.
+
+        Returns:
+            The clipboard text as a string.
+
+        Example:
+            | ${text}=    Get Clipboard Text |
+        """
+        import win32clipboard
+        win32clipboard.OpenClipboard()
+        try:
+            data = win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT)
+        finally:
+            win32clipboard.CloseClipboard()
+        logger.info("Clipboard text retrieved", text_length=len(data))
+        return data
+
+    def copy_element_text(self, alias: str, app_id: Optional[str] = None):
+        """Gets the text of an element and places it on the clipboard.
+
+        Args:
+            alias: Element alias from repository.
+            app_id: Optional application context ID.
+
+        Example:
+            | Copy Element Text    LoginPage.MainWindow.txtUsername |
+        """
+        text = self.get_element_text(alias, app_id)
+        self.set_clipboard_text(text)
+        logger.info("Element text copied to clipboard", alias=alias, text=text)
+
+    # ------------------------------------------------------------------
+    # Window Activation
+    # ------------------------------------------------------------------
+    def activate_window(self, app_id: Optional[str] = None, window_title: Optional[str] = None):
+        """Activates (brings to front and focuses) a window by app_id or title.
+
+        Args:
+            app_id: Registered application ID. Uses default app if not provided.
+            window_title: Window title to search for (used if app_id not provided).
+
+        Example:
+            | Activate Window    app_id=notepad |
+            | Activate Window    window_title=Untitled - Notepad |
+        """
+        import ctypes
+        from ctypes import wintypes
+
+        user32 = ctypes.WinDLL("user32", use_last_error=True)
+        hwnd = None
+        target_pid = None
+
+        logger.info(f"activate_window called", app_id=app_id, window_title=window_title)
+
+        if app_id or (not window_title and not app_id):
+            # Get window by process ID
+            if app_id is None:
+                app_id = _MULTI_APP_CONTEXT.default_app_id
+            if app_id:
+                try:
+                    app_context = _MULTI_APP_CONTEXT.get_app(app_id)
+                    target_pid = app_context.process_id
+                    logger.info(f"activate_window: found app_context app_id={app_id} process_id={target_pid} app_name={app_context.app_name}")
+                except Exception as e:
+                    logger.warning(f"activate_window: failed to get app_context app_id={app_id} error={e}")
+
+                if target_pid:
+                    EnumWindows = user32.EnumWindows
+                    EnumWindowsProc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+                    GetWindowThreadProcessId = user32.GetWindowThreadProcessId
+
+                    class PIDHolder(ctypes.Structure):
+                        _fields_ = [("pid", wintypes.DWORD), ("hwnd", wintypes.HWND)]
+
+                    holder = PIDHolder(target_pid, 0)
+
+                    def callback(hwnd, lparam):
+                        owner_pid = wintypes.DWORD()
+                        GetWindowThreadProcessId(hwnd, ctypes.byref(owner_pid))
+                        if owner_pid.value == target_pid and user32.IsWindowVisible(hwnd):
+                            holder.hwnd = hwnd
+                            return 0
+                        return 1
+
+                    EnumWindows(EnumWindowsProc(callback), 0)
+                    hwnd = holder.hwnd
+                    logger.info(f"activate_window: window enumeration result", hwnd=hwnd)
+
+        if hwnd is None and target_pid:
+            # Fallback: try to find window by enumerating all windows and checking process name
+            try:
+                import psutil
+                # Get the process name for the target_pid
+                try:
+                    target_proc = psutil.Process(target_pid)
+                    target_proc_name = target_proc.name()
+                except psutil.NoSuchProcess:
+                    target_proc_name = None
+
+                if target_proc_name:
+                    # Enumerate all windows and find one belonging to a process with the same name
+                    EnumWindows = user32.EnumWindows
+                    EnumWindowsProc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+                    GetWindowThreadProcessId = user32.GetWindowThreadProcessId
+
+                    class NameHolder(ctypes.Structure):
+                        _fields_ = [("name", ctypes.c_wchar_p), ("hwnd", wintypes.HWND)]
+
+                    holder = NameHolder(target_proc_name.lower(), 0)
+
+                    def callback(hwnd, lparam):
+                        if not user32.IsWindowVisible(hwnd):
+                            return 1
+                        owner_pid = wintypes.DWORD()
+                        GetWindowThreadProcessId(hwnd, ctypes.byref(owner_pid))
+                        try:
+                            proc = psutil.Process(owner_pid.value)
+                            if proc.name().lower() == holder.name:
+                                holder.hwnd = hwnd
+                                return 0
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass
+                        return 1
+
+                    EnumWindows(EnumWindowsProc(callback), 0)
+                    hwnd = holder.hwnd
+                    logger.info(f"activate_window: fallback by process name result", hwnd=hwnd, proc_name=target_proc_name)
+            except Exception as e:
+                logger.warning(f"activate_window: fallback by process name failed", error=str(e))
+
+        if hwnd is None and window_title:
+            # Find window by title
+            hwnd = user32.FindWindowW(None, window_title)
+
+        if hwnd is None and target_pid is None and app_id:
+            # Fallback: try to find window by process name
+            try:
+                import psutil
+                app_context = _MULTI_APP_CONTEXT.get_app(app_id)
+                proc_name = app_context.app_name
+                for proc in psutil.process_iter(["pid", "name"]):
+                    if proc.info["name"] and proc.info["name"].lower() in proc_name.lower():
+                        target_pid = int(proc.info["pid"])
+                        # Try to find window for this PID
+                        EnumWindows = user32.EnumWindows
+                        EnumWindowsProc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+                        GetWindowThreadProcessId = user32.GetWindowThreadProcessId
+
+                        class PIDHolder(ctypes.Structure):
+                            _fields_ = [("pid", wintypes.DWORD), ("hwnd", wintypes.HWND)]
+
+                        holder = PIDHolder(target_pid, 0)
+
+                        def callback(hwnd, lparam):
+                            owner_pid = wintypes.DWORD()
+                            GetWindowThreadProcessId(hwnd, ctypes.byref(owner_pid))
+                            if owner_pid.value == target_pid and user32.IsWindowVisible(hwnd):
+                                holder.hwnd = hwnd
+                                return 0
+                            return 1
+
+                        EnumWindows(EnumWindowsProc(callback), 0)
+                        if holder.hwnd:
+                            hwnd = holder.hwnd
+                            break
+            except Exception:
+                pass
+
+        if hwnd is None:
+            raise RuntimeError(f"Could not find window to activate (app_id={app_id}, title={window_title})")
+
+        # Restore if minimized
+        if user32.IsIconic(hwnd):
+            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+
+        # Bring to front and set focus
+        user32.SetForegroundWindow(hwnd)
+        user32.SetFocus(hwnd)
+        logger.info("Window activated", app_id=app_id, window_title=window_title)
+
+    def paste_clipboard_to_element(self, alias: str, app_id: Optional[str] = None):
+        """Pastes the current clipboard text into the specified element.
+
+        Args:
+            alias: Element alias from repository.
+            app_id: Optional application context ID.
+
+        Example:
+            | Paste Clipboard To Element    Notepad.Editor |
+        """
+        import time
+        time.sleep(0.2)
+        self._resolve_and_execute(alias, "press_keys", app_id, "^v")
+        logger.info("Clipboard pasted to element", alias=alias)
+
+    def send_keys_to_window(self, window_title: str, keys: str):
+        """Sends keystrokes to a window by title using WScript.Shell.
+
+        Args:
+            window_title: The title of the window to activate.
+            keys: The keys to send (e.g., "^v" for Ctrl+V).
+
+        Example:
+            | Send Keys To Window    Untitled - Notepad    ^v |
+        """
+        import subprocess
+        import time
+        # Escape single quotes in keys for VBScript
+        escaped_keys = keys.replace("'", "''")
+        cmd = (
+            'powershell -Command "'
+            f"$wshell = New-Object -ComObject WScript.Shell; "
+            f"$wshell.AppActivate('{window_title}'); "
+            f"Start-Sleep -Milliseconds 300; "
+            f"$wshell.SendKeys('{escaped_keys}')"
+            '"'
+        )
+        subprocess.run(cmd, shell=True, check=False, capture_output=True)
+        time.sleep(0.3)
+        logger.info("Keys sent to window", window_title=window_title, keys=keys)
 
 

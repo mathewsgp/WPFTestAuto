@@ -496,6 +496,13 @@ class WPFSpyMockDriver:
                 raise ElementNotFoundError(f"WPFSpy: no element with Name='{value}'")
             return ctrl
         
+        elif search_by == "AutomationId":
+            self._log_ipc("FindByAutomationId", automationId=value)
+            ctrl = APP_INSTANCE.find_by_automation_id(value)
+            if ctrl is None:
+                raise ElementNotFoundError(f"WPFSpy: no element with AutomationId='{value}'")
+            return ctrl
+        
         elif search_by == "TypeAndIndex":
             # Parse "ControlType[index]" format
             import re

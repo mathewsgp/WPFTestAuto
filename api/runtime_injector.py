@@ -72,7 +72,10 @@ class RuntimeInjector:
         base_paths = [
             Path(__file__).parent.parent,  # Repository root
             Path(__file__).parent.parent / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net8.0-windows",
+            Path(__file__).parent.parent / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net9.0-windows",
             Path(__file__).parent.parent / ".." / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net8.0-windows",
+            Path(__file__).parent.parent / ".." / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net9.0-windows",
+            Path(__file__).parent.parent / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net8.0-windows" / "WpfSpyAgent.StartupHook.dll",
         ]
 
         for base in base_paths:

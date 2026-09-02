@@ -31,12 +31,21 @@ namespace WpfTestIde.Recording
             {
                 var strategies = new Dictionary<string, List<object>>();
 
-                // Use per-element recording modes if available, otherwise fall back to global modes
+                // Use per-element recording modes if available, otherwise fall back to global modes.
+                // If the element was resolved via FlaUI probe, always include a FlaUI strategy
+                // (even if global recording modes don't include FlaUI) — otherwise the recorded
+                // step will fail to find the element at replay time.
                 var modes = entry.RecordingModes ?? recordingModes;
+                bool resolvedViaFlaUI = entry.NonStandard == false && !string.IsNullOrEmpty(entry.XPath) == false;
+                bool resolvedViaWPFSpy = !string.IsNullOrEmpty(entry.XPath) && entry.XPath!.Contains("[@AutomationId=");
+                // Heuristic: elements with an AutomationId or resolved by FlaUI probe get FlaUI strategies.
+                bool includeFlaUI = (modes == null || modes.Contains("FlaUI"))
+                    || !string.IsNullOrEmpty(entry.AutomationId)
+                    || entry.ControlType == "Window"  // window-level fallbacks always need FlaUI
+                    || (!string.IsNullOrEmpty(entry.Name) && entry.Name.Length > 0);
 
                 // FlaUI strategy: AutomationId-based (most stable for standard controls)
-                if ((modes == null || modes.Contains("FlaUI")) &&
-                    !string.IsNullOrEmpty(entry.AutomationId))
+                if (includeFlaUI && !string.IsNullOrEmpty(entry.AutomationId))
                 {
                     strategies["FlaUI"] = new List<object>
                     {
@@ -45,6 +54,33 @@ namespace WpfTestIde.Recording
                             ["searchBy"] = "AutomationId",
                             ["value"] = entry.AutomationId!,
                             ["scope"] = "Descendant",
+                        }
+                    };
+                }
+                else if (includeFlaUI && !string.IsNullOrEmpty(entry.Name))
+                {
+                    // No AutomationId — fall back to Name-based FlaUI strategy.
+                    strategies["FlaUI"] = new List<object>
+                    {
+                        new Dictionary<string, object>
+                        {
+                            ["searchBy"] = "Name",
+                            ["value"] = entry.Name,
+                            ["scope"] = "Descendant",
+                        }
+                    };
+                }
+                else if (includeFlaUI && entry.ControlType == "Window" && !string.IsNullOrEmpty(entry.XPath))
+                {
+                    // Window-level fallback (e.g. UWP apps without UIA): use the XPath
+                    // that targets the window by name. FlaUI can resolve this via
+                    // AutomationElement.RootElement.FindFirst.
+                    strategies["FlaUI"] = new List<object>
+                    {
+                        new Dictionary<string, object>
+                        {
+                            ["searchBy"] = "XPath",
+                            ["value"] = entry.XPath!,
                         }
                     };
                 }

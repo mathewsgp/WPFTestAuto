@@ -472,6 +472,7 @@ namespace WpfTestIde.ViewModels
         public ICommand OpenSpyToolCommand { get; }            
         public ICommand OpenVisualTestBuilderCommand { get; }  
         public ICommand OpenMultiAppDialogCommand { get; }
+            public ICommand EnableLaunchAttachRecordingCommand { get; }
 
         public MainViewModel()
         {
@@ -505,6 +506,7 @@ namespace WpfTestIde.ViewModels
             OpenSpyToolCommand = new RelayCommand(_ => OpenSpyTool());
             OpenVisualTestBuilderCommand = new RelayCommand(_ => OpenVisualTestBuilder());
             OpenMultiAppDialogCommand = new RelayCommand(_ => OpenMultiAppDialog(), _ => AttachedApps.Count > 0);
+            EnableLaunchAttachRecordingCommand = new RelayCommand(_ => EnableRecordingForLaunchedApps(), _ => Steps.Any(s => s.Kind == StepKind.LaunchApplication && s.AutoAttach));
             MoveElementPriorityUpCommand = new RelayCommand(_ => MoveElementPriorityUp(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
             MoveElementPriorityDownCommand = new RelayCommand(_ => MoveElementPriorityDown(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
 
@@ -683,13 +685,109 @@ namespace WpfTestIde.ViewModels
             StatusText = $"Detached from {app.AppName} (PID {app.ProcessId}).";
         }
 
+        /// <summary>
+        /// Parse the script and find Launch Application steps with attach=Yes.
+        /// For each such step, create an AppContext and enable recording.
+        /// This allows recording multiple application scenarios when attach is chosen
+        /// in the launch application step.
+        /// </summary>
+        public void EnableRecordingForLaunchedApps()
+        {
+            // Find all Launch Application steps with AutoAttach=true
+            var launchSteps = Steps.Where(s => s.Kind == StepKind.LaunchApplication && s.AutoAttach).ToList();
+
+            if (!launchSteps.Any())
+            {
+                StatusText = "No Launch Application steps with attach=Yes found. Record button requires at least one attached app.";
+                return;
+            }
+
+            // Clear existing launched apps (keep manually attached ones)
+            var launchedApps = AttachedApps.Where(a => a.AppPath != null && !string.IsNullOrEmpty(a.AppPath)).ToList();
+            foreach (var app in launchedApps)
+            {
+                AttachedApps.Remove(app);
+            }
+
+            // Create AppContext for each launched application
+            foreach (var step in launchSteps)
+            {
+                if (string.IsNullOrWhiteSpace(step.AppPath))
+                    continue;
+
+                string appId = step.AppId ?? System.IO.Path.GetFileNameWithoutExtension(step.AppPath).ToLowerInvariant();
+                string appName = System.IO.Path.GetFileNameWithoutExtension(step.AppPath);
+                string pipeName = step.PipeName ?? $"WPFSpyAgentPipe_{appId}";
+
+                // Use FlaUI driver when spy agent is disabled (e.g. Notepad, Calc),
+                // WPFSpy when the agent is enabled.
+                string driver = step.SpyAgentEnabled
+                    ? (step.LaunchDriver ?? "WPFSpy")
+                    : "FlaUI";
+
+                var appContext = new WpfTestIde.Models.AppContext
+                {
+                    AppId = appId,
+                    AppName = appName,
+                    Driver = driver,
+                    ProcessId = 0, // Will be set after launch
+                    PipeName = pipeName,
+                    AppPath = step.AppPath,
+                    IsAttached = true,
+                    IsDefault = AttachedApps.Count == 0,
+                };
+
+                // Remove existing app with same ID
+                var existingApp = AttachedApps.FirstOrDefault(a => a.AppId == appId);
+                if (existingApp != null)
+                {
+                    AttachedApps.Remove(existingApp);
+                }
+
+                AttachedApps.Add(appContext);
+            }
+
+            // Select the first launched app
+            SelectedApp = AttachedApps.FirstOrDefault();
+            if (SelectedApp != null)
+            {
+                PipeName = SelectedApp.PipeName;
+            }
+
+            // Create recording session for the first launched app.
+            // Use WPFSpy probe mode when spy agent is enabled; otherwise fall
+            // back to the FlaUI/UIA probe so apps like Notepad can be recorded.
+            var firstApp = AttachedApps.FirstOrDefault();
+            if (firstApp != null)
+            {
+                var firstStep = launchSteps.FirstOrDefault(s =>
+                    (s.AppId ?? System.IO.Path.GetFileNameWithoutExtension(s.AppPath ?? "").ToLowerInvariant()) == firstApp.AppId);
+
+                bool useFlaUI = firstStep != null && !firstStep.SpyAgentEnabled;
+
+                _session?.Dispose();
+                _session = new RecordingSession(
+                    firstApp.PipeName,
+                    firstApp.ProcessId,
+                    new List<(string, string)>(),
+                    firstApp.AppId,
+                    useFlaUI ? RecordingSession.ProbeMode.FlaUI : RecordingSession.ProbeMode.WPFSpy,
+                    firstApp.AppPath);
+                _session.StepCaptured += OnStepCaptured;
+
+                IsAttached = true;
+                string modeLabel = useFlaUI ? "FlaUI/UIA" : "WPFSpy";
+                StatusText = $"Ready to record ({modeLabel} mode). {AttachedApps.Count} application(s) configured. Run the script to launch and attach.";
+            }
+        }
+
         public void SetDefaultApplication(string appId)
         {
             foreach (var app in AttachedApps)
             {
                 app.IsDefault = app.AppId == appId;
             }
-            
+
             var selected = AttachedApps.FirstOrDefault(a => a.AppId == appId);
             if (selected != null)
             {
@@ -886,6 +984,26 @@ namespace WpfTestIde.ViewModels
                     NonStandard = step.NonStandard,
                     AppId = step.AppId,
                 };
+
+                // Choose driver priority based on which probe mode the session is using.
+                // For FlaUI-resolved elements, WPFSpy is meaningless (no spy agent in the app).
+                // For WPFSpy-resolved elements, the full [FlaUI, WPFSpy, Sikuli] priority applies.
+                List<string> driverPriority;
+                List<string>? recordingModes = entry.RecordingModes;
+                if (recordingModes != null && recordingModes.Count > 0)
+                {
+                    driverPriority = new List<string>(recordingModes);
+                }
+                else
+                {
+                    // Default to whatever the session is currently using.
+                    driverPriority = new List<string>(GetSelectedRecordingModes());
+                    if (driverPriority.Count == 0)
+                    {
+                        driverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" };
+                    }
+                }
+
                 entry = new ElementEntry
                 {
                     Alias = resolvedAlias,
@@ -894,7 +1012,8 @@ namespace WpfTestIde.ViewModels
                     AutomationId = entry.AutomationId,
                     Name = entry.Name,
                     XPath = entry.XPath,
-                    DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" }
+                    RecordingModes = recordingModes,
+                    DriverPriority = driverPriority,
                 };
 
                 Steps.Add(step);
