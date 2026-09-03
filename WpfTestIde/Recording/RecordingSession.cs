@@ -31,6 +31,12 @@ namespace WpfTestIde.Recording
         internal ElementProbe? WpfProbe { get; set; }
         internal FlaUIElementProbe? FlaProbe { get; set; }
 
+        // Cached page name for this target. Resolved on the FIRST click in
+        // this target's window and reused for all subsequent steps so that
+        // apps whose window title changes per-keystroke (Notepad) don't
+        // produce a new page alias on every typed character.
+        internal string? CachedPageAlias { get; set; }
+
         public RecordingTarget(
             string appId,
             string pipeName,
@@ -152,6 +158,7 @@ namespace WpfTestIde.Recording
             {
                 _targets[target.AppId] = target;
             }
+            target.CachedPageAlias = null;
             Log($"[RecordingSession] AddTarget appId={target.AppId} mode={target.Mode} pipe={target.PipeName} pid={target.ProcessId} exe={target.ExeName} priority={target.Priority}");
         }
 
@@ -163,6 +170,7 @@ namespace WpfTestIde.Recording
                 if (_targets.TryGetValue(appId, out var t))
                 {
                     t.WpfProbe = null;
+                    t.CachedPageAlias = null;
                     _targets.Remove(appId);
                     Log($"[RecordingSession] RemoveTarget appId={appId}");
                 }
@@ -177,6 +185,7 @@ namespace WpfTestIde.Recording
                 foreach (var t in _targets.Values)
                 {
                     t.WpfProbe = null;
+                    t.CachedPageAlias = null;
                 }
                 _targets.Clear();
             }
@@ -628,6 +637,11 @@ namespace WpfTestIde.Recording
 
         private string ResolvePage(int x, int y, RecordingTarget target)
         {
+            // Cache per target so dynamic titles (e.g. Notepad's "*1 - Notepad",
+            // "*12 - Notepad", ...) don't produce a new page alias per click.
+            if (!string.IsNullOrEmpty(target.CachedPageAlias)) return target.CachedPageAlias!;
+
+            string rawTitle = "";
             if (target.Mode == ProbeMode.WPFSpy)
             {
                 try
@@ -638,14 +652,7 @@ namespace WpfTestIde.Recording
                         var response = client.Send("GetMainWindowTitle");
                         if (response.Success && !string.IsNullOrEmpty(response.Data))
                         {
-                            string title = response.Data;
-                            foreach (var (titleContains, pageAlias) in target.PageMap)
-                            {
-                                if (title.Contains(titleContains, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    return pageAlias;
-                                }
-                            }
+                            rawTitle = response.Data;
                         }
                     }
                 }
@@ -653,31 +660,104 @@ namespace WpfTestIde.Recording
             }
             else
             {
-                try
+                // FlaUI mode: enumerate THIS target's own windows (not the
+                // global foreground, which may belong to a different app and
+                // would cross-pollinate aliases across apps).
+                int livePid = ResolveLivePidForTarget(target);
+                if (livePid > 0)
                 {
-                    IntPtr hwnd = GetForegroundWindow();
-                    if (hwnd != IntPtr.Zero)
+                    rawTitle = PickBestWindowTitleForTarget(livePid, x, y);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(rawTitle))
+            {
+                // 1) user-configured page map wins
+                foreach (var (titleContains, pageAlias) in target.PageMap)
+                {
+                    if (rawTitle.Contains(titleContains, StringComparison.OrdinalIgnoreCase))
                     {
-                        int len = GetWindowTextLength(hwnd);
-                        if (len > 0)
-                        {
-                            System.Text.StringBuilder sb = new System.Text.StringBuilder(len + 1);
-                            GetWindowText(hwnd, sb, sb.Capacity);
-                            string title = sb.ToString();
-                            foreach (var (titleContains, pageAlias) in target.PageMap)
-                            {
-                                if (title.Contains(titleContains, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    return pageAlias;
-                                }
-                            }
-                            return title;
-                        }
+                        target.CachedPageAlias = pageAlias;
+                        return pageAlias;
                     }
                 }
-                catch { }
+
+                // 2) Otherwise, sanitize the title. Notepad-style titles are
+                //    "Untitled - Notepad", "*1 - Notepad", "*12345 - Notepad".
+                //    The dynamic part is the document name (everything before
+                //    the last " - "); the stable app suffix is everything
+                //    after it. Use the stable suffix when present.
+                string sanitized = StripDynamicDocumentPrefix(rawTitle);
+                target.CachedPageAlias = sanitized;
+                return sanitized;
             }
+
+            target.CachedPageAlias = "UnknownPage";
             return "UnknownPage";
+        }
+
+        /// <summary>
+        /// Among all top-level visible windows owned by <paramref name="targetPid"/>,
+        /// pick the one whose title we should treat as the page alias. Prefer
+        /// the window containing the click point; otherwise the largest
+        /// visible window of the target process.
+        /// </summary>
+        private string PickBestWindowTitleForTarget(int targetPid, int x, int y)
+        {
+            try
+            {
+                string? containing = null;
+                string? largest = null;
+                int largestArea = 0;
+                EnumWindows((hWnd, lParam) =>
+                {
+                    if (!IsWindowVisible(hWnd)) return true;
+                    GetWindowThreadProcessId(hWnd, out uint pid);
+                    if ((int)pid != targetPid) return true;
+                    string title = GetWindowTitle(hWnd);
+                    if (string.IsNullOrEmpty(title)) return true;
+
+                    if (GetWindowRect(hWnd, out RECT rect))
+                    {
+                        int area = (rect.Right - rect.Left) * (rect.Bottom - rect.Top);
+                        if (area > largestArea)
+                        {
+                            largestArea = area;
+                            largest = title;
+                        }
+                        if (x >= rect.Left && x <= rect.Right && y >= rect.Top && y <= rect.Bottom)
+                        {
+                            containing = title;
+                        }
+                    }
+                    return true;
+                }, IntPtr.Zero);
+                return containing ?? largest ?? "";
+            }
+            catch (Exception ex)
+            {
+                Log($"[PickBestWindowTitleForTarget] exception: {ex.Message}");
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// Strips the dynamic document-name prefix from app window titles.
+        /// "Untitled - Notepad"  -> "Notepad"
+        /// "*1 - Notepad"        -> "Notepad"
+        /// "*12345 - Notepad"    -> "Notepad"
+        /// "Sample WPF App Login" -> "Sample WPF App Login" (unchanged)
+        /// </summary>
+        internal static string StripDynamicDocumentPrefix(string title)
+        {
+            if (string.IsNullOrEmpty(title)) return "UnknownPage";
+            int idx = title.LastIndexOf(" - ", StringComparison.Ordinal);
+            if (idx > 0 && idx < title.Length - 3)
+            {
+                string suffix = title.Substring(idx + 3).Trim();
+                if (!string.IsNullOrEmpty(suffix)) return suffix;
+            }
+            return title.Trim();
         }
 
         [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
