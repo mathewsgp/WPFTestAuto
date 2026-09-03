@@ -1,6 +1,23 @@
 {
   "alias": "OrdersPage.OrdersWindow",
-  "baseline": null,
+  "baseline": {
+    "alias": "OrdersPage.OrdersWindow",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Sample WPF App \u2014 Orders",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-09-03T02:12:22.142269",
+    "last_verified": "2026-09-03T02:12:22.142278",
+    "verification_count": 1,
+    "driver_used": "FlaUI",
+    "search_method": "Name",
+    "search_value": "Sample WPF App \u2014 Orders"
+  },
   "healing_history": [
     {
       "timestamp": "2026-08-09T00:32:51.976801",
@@ -31,11 +48,19 @@
       "last_success": null,
       "last_failure": null,
       "avg_duration_ms": 0.0
+    },
+    "FlaUI:Name": {
+      "success_count": 1,
+      "failure_count": 0,
+      "total_duration_ms": 3320.343017578125,
+      "last_success": "2026-09-03T02:12:21.998290",
+      "last_failure": null,
+      "avg_duration_ms": 3320.343017578125
     }
   },
-  "total_interactions": 2,
+  "total_interactions": 4,
   "first_seen": "2026-08-09T00:32:51.975820",
-  "last_interaction": "2026-08-09T00:32:51.976815",
-  "consecutive_failures": 2,
-  "consecutive_successes": 0
+  "last_interaction": "2026-09-03T02:12:22.142282",
+  "consecutive_failures": 0,
+  "consecutive_successes": 2
 }

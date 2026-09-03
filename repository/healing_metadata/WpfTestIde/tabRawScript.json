@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-09-01T12:26:37.516203",
-    "last_verified": "2026-09-01T12:26:37.516213",
-    "verification_count": 11,
+    "captured_at": "2026-09-03T01:40:13.682944",
+    "last_verified": "2026-09-03T01:40:13.682953",
+    "verification_count": 16,
     "driver_used": "FlaUI",
     "search_method": "AutomationId",
     "search_value": "tabRawScript"
@@ -74,17 +74,17 @@
       "avg_duration_ms": 0.0
     },
     "FlaUI:AutomationId": {
-      "success_count": 10,
+      "success_count": 15,
       "failure_count": 0,
-      "total_duration_ms": 11389.324426651001,
-      "last_success": "2026-09-01T12:26:36.064457",
+      "total_duration_ms": 15800.78148841858,
+      "last_success": "2026-09-03T01:40:12.132609",
       "last_failure": null,
-      "avg_duration_ms": 1138.9324426651
+      "avg_duration_ms": 1053.3854325612385
     }
   },
-  "total_interactions": 28,
+  "total_interactions": 38,
   "first_seen": "2026-08-09T12:21:41.977156",
-  "last_interaction": "2026-09-01T12:26:37.516218",
+  "last_interaction": "2026-09-03T01:40:13.682959",
   "consecutive_failures": 0,
-  "consecutive_successes": 20
+  "consecutive_successes": 30
 }

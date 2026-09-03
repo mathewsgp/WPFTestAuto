@@ -16,6 +16,7 @@ enabling version control and easy diff review.
 
 import json
 import os
+import re
 import time
 from dataclasses import dataclass, asdict, field
 from datetime import datetime
@@ -181,21 +182,39 @@ class HealingMetadataStore:
     
     def _get_element_file(self, alias: str) -> Path:
         """Get the metadata file path for an element alias.
-        
+
         Creates a subdirectory structure based on the alias prefix.
+        Page name is sanitized to a filesystem-safe slug so recordings
+        against apps like Notepad (e.g. "*1 - Notepad") don't blow up
+        when the page part is used as a directory name.
         """
-        # Convert alias to safe filename: LoginPage.btnSubmit -> LoginPage/btnSubmit.json
         parts = alias.split(".")
         if len(parts) > 1:
-            subdir = parts[0]
-            filename = parts[-1] + ".json"
+            subdir = self._safe_dirname(parts[0])
+            filename = self._safe_filename(parts[-1]) + ".json"
         else:
             subdir = "_root"
-            filename = alias + ".json"
-        
+            filename = self._safe_filename(alias) + ".json"
+
         element_dir = self.metadata_dir / subdir
         element_dir.mkdir(parents=True, exist_ok=True)
         return element_dir / filename
+
+    @staticmethod
+    def _safe_dirname(name: str) -> str:
+        """Sanitize a string for use as a directory name on Windows/POSIX."""
+        if not name:
+            return "_root"
+        sanitized = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", name).strip(" .")
+        return sanitized or "_root"
+
+    @staticmethod
+    def _safe_filename(name: str) -> str:
+        """Sanitize a string for use as a filename (preserves the .json ext)."""
+        if not name:
+            return "_unnamed"
+        sanitized = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", name).strip(" .")
+        return sanitized or "_unnamed"
     
     def _load_all(self):
         """Load all metadata files from disk."""

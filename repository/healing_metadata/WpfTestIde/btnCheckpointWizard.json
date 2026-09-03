@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-09-01T12:27:23.913508",
-    "last_verified": "2026-09-01T12:27:23.913517",
-    "verification_count": 94,
+    "captured_at": "2026-09-03T01:40:50.373200",
+    "last_verified": "2026-09-03T01:40:50.373211",
+    "verification_count": 99,
     "driver_used": "FlaUI",
     "search_method": "AutomationId",
     "search_value": "btnCheckpointWizard"
@@ -21,12 +21,12 @@
   "healing_history": [],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 37,
+      "success_count": 42,
       "failure_count": 0,
-      "total_duration_ms": 20316.044807434082,
-      "last_success": "2026-09-01T12:27:22.263843",
+      "total_duration_ms": 25232.32936859131,
+      "last_success": "2026-09-03T01:40:48.714298",
       "last_failure": null,
-      "avg_duration_ms": 549.0822920928131
+      "avg_duration_ms": 600.7697468712216
     },
     "WPFSpy:XPath": {
       "success_count": 57,
@@ -37,9 +37,9 @@
       "avg_duration_ms": 45.81159876103987
     }
   },
-  "total_interactions": 188,
+  "total_interactions": 198,
   "first_seen": "2026-08-09T01:54:35.362318",
-  "last_interaction": "2026-09-01T12:27:23.913523",
+  "last_interaction": "2026-09-03T01:40:50.373218",
   "consecutive_failures": 0,
-  "consecutive_successes": 188
+  "consecutive_successes": 198
 }

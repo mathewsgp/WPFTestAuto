@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-09-01T12:19:47.415298",
-    "last_verified": "2026-09-01T12:19:47.415307",
-    "verification_count": 106,
+    "captured_at": "2026-09-03T02:07:13.504925",
+    "last_verified": "2026-09-03T02:07:13.504934",
+    "verification_count": 110,
     "driver_used": "FlaUI",
     "search_method": "AutomationId",
     "search_value": "btnAttach"
@@ -70,12 +70,12 @@
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 42,
+      "success_count": 46,
       "failure_count": 2,
-      "total_duration_ms": 40799.89957809448,
-      "last_success": "2026-09-01T12:19:46.442498",
+      "total_duration_ms": 42367.393255233765,
+      "last_success": "2026-09-03T02:07:12.456336",
       "last_failure": "2026-08-19T10:14:27.745488",
-      "avg_duration_ms": 971.426180430821
+      "avg_duration_ms": 921.0302881572558
     },
     "WPFSpy:XPath": {
       "success_count": 64,
@@ -94,9 +94,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 221,
+  "total_interactions": 229,
   "first_seen": "2026-08-09T01:54:20.915068",
-  "last_interaction": "2026-09-01T12:19:47.415314",
+  "last_interaction": "2026-09-03T02:07:13.504940",
   "consecutive_failures": 0,
-  "consecutive_successes": 38
+  "consecutive_successes": 46
 }

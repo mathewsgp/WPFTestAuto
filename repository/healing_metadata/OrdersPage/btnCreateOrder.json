@@ -1,7 +1,7 @@
 {
-  "alias": "OrdersPage.OrdersWindow.btnCreateOrder",
+  "alias": "OrdersPage.Sample WPF App \u2014 Orders.btnCreateOrder",
   "baseline": {
-    "alias": "OrdersPage.OrdersWindow.btnCreateOrder",
+    "alias": "OrdersPage.Sample WPF App \u2014 Orders.btnCreateOrder",
     "automation_id": null,
     "name": null,
     "control_type": null,
@@ -11,101 +11,56 @@
     "position": null,
     "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-08-20T08:31:42.130459",
-    "last_verified": "2026-08-20T08:31:42.130469",
-    "verification_count": 2,
+    "captured_at": "2026-09-03T02:12:16.397984",
+    "last_verified": "2026-09-03T02:12:16.397995",
+    "verification_count": 1,
     "driver_used": "FlaUI",
     "search_method": "AutomationId",
     "search_value": "btnCreateOrder"
   },
   "healing_history": [
     {
-      "timestamp": "2026-08-20T00:46:22.401704",
-      "primary_driver": "WPFSpy",
+      "timestamp": "2026-09-03T02:14:30.702233",
+      "primary_driver": "FlaUI",
       "primary_search_method": "AutomationId",
       "primary_search_value": "btnCreateOrder",
-      "failure_reason": "'name'",
-      "healing_driver": "WPFSpy",
-      "healing_search_method": "XPath",
-      "healing_search_value": "Button[@AutomationId='btnCreateOrder']",
-      "healing_successful": true,
-      "new_properties": {
-        "automation_id": "btnCreateOrder",
-        "name": "btnCreateOrder",
-        "control_type": "Button",
-        "text": "Create Order",
-        "is_visible": true,
-        "is_enabled": true
-      }
-    },
-    {
-      "timestamp": "2026-08-20T00:46:51.047650",
-      "primary_driver": "WPFSpy",
-      "primary_search_method": "AutomationId",
-      "primary_search_value": "btnCreateOrder",
-      "failure_reason": "'name'",
-      "healing_driver": "WPFSpy",
-      "healing_search_method": "XPath",
-      "healing_search_value": "Button[@AutomationId='btnCreateOrder']",
-      "healing_successful": true,
-      "new_properties": {
-        "automation_id": "btnCreateOrder",
-        "name": "btnCreateOrder",
-        "control_type": "Button",
-        "text": "Create Order",
-        "is_visible": true,
-        "is_enabled": true
-      }
-    },
-    {
-      "timestamp": "2026-08-20T00:47:13.798105",
-      "primary_driver": "WPFSpy",
-      "primary_search_method": "AutomationId",
-      "primary_search_value": "btnCreateOrder",
-      "failure_reason": "'name'",
-      "healing_driver": "WPFSpy",
-      "healing_search_method": "XPath",
-      "healing_search_value": "Button[@AutomationId='btnCreateOrder']",
-      "healing_successful": true,
-      "new_properties": {
-        "automation_id": "btnCreateOrder",
-        "name": "btnCreateOrder",
-        "control_type": "Button",
-        "text": "Create Order",
-        "is_visible": true,
-        "is_enabled": true
-      }
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnCreateOrder': Element from XPath '//*[@A",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
     }
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 6,
-      "failure_count": 0,
-      "total_duration_ms": 1699.695110321045,
-      "last_success": "2026-08-20T08:31:41.628296",
-      "last_failure": null,
-      "avg_duration_ms": 283.2825183868408
-    },
-    "WPFSpy:AutomationId": {
-      "success_count": 0,
-      "failure_count": 3,
-      "total_duration_ms": 7.712841033935547,
-      "last_success": null,
-      "last_failure": "2026-08-20T00:47:13.775989",
-      "avg_duration_ms": 2.570947011311849
+      "success_count": 1,
+      "failure_count": 2,
+      "total_duration_ms": 2661.025047302246,
+      "last_success": "2026-09-03T02:12:13.115941",
+      "last_failure": "2026-09-03T02:14:30.702245",
+      "avg_duration_ms": 887.0083491007487
     },
     "WPFSpy:XPath": {
-      "success_count": 6,
+      "success_count": 0,
+      "failure_count": 1,
+      "total_duration_ms": 10019.325256347656,
+      "last_success": null,
+      "last_failure": "2026-09-03T02:14:30.700786",
+      "avg_duration_ms": 10019.325256347656
+    },
+    "None:N/A": {
+      "success_count": 0,
       "failure_count": 0,
-      "total_duration_ms": 12.579679489135742,
-      "last_success": "2026-08-20T00:47:13.798131",
+      "total_duration_ms": 0.0,
+      "last_success": null,
       "last_failure": null,
-      "avg_duration_ms": 2.0966132481892905
+      "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 21,
-  "first_seen": "2026-08-19T13:52:09.503208",
-  "last_interaction": "2026-08-20T08:31:42.130475",
-  "consecutive_failures": 0,
-  "consecutive_successes": 4
+  "total_interactions": 5,
+  "first_seen": "2026-09-03T02:12:13.115933",
+  "last_interaction": "2026-09-03T02:14:30.702248",
+  "consecutive_failures": 3,
+  "consecutive_successes": 0
 }

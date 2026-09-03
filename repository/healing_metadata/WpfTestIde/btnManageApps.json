@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": false,
     "is_enabled": false,
-    "captured_at": "2026-09-01T12:26:45.647521",
-    "last_verified": "2026-09-01T12:26:45.647532",
-    "verification_count": 140,
+    "captured_at": "2026-09-03T02:07:34.969967",
+    "last_verified": "2026-09-03T02:07:34.969977",
+    "verification_count": 149,
     "driver_used": "FlaUI",
     "search_method": "AutomationId",
     "search_value": "btnManageApps"
@@ -58,12 +58,12 @@
   ],
   "strategy_stats": {
     "FlaUI:AutomationId": {
-      "success_count": 41,
+      "success_count": 50,
       "failure_count": 1,
-      "total_duration_ms": 17358.26539993286,
-      "last_success": "2026-09-01T12:26:45.197563",
+      "total_duration_ms": 21051.23782157898,
+      "last_success": "2026-09-03T02:07:34.503704",
       "last_failure": "2026-08-19T11:02:04.474916",
-      "avg_duration_ms": 423.3723268276308
+      "avg_duration_ms": 421.0247564315796
     },
     "WPFSpy:XPath": {
       "success_count": 99,
@@ -82,9 +82,9 @@
       "avg_duration_ms": 0.0
     }
   },
-  "total_interactions": 287,
+  "total_interactions": 305,
   "first_seen": "2026-08-09T01:54:28.412630",
-  "last_interaction": "2026-09-01T12:26:45.647538",
+  "last_interaction": "2026-09-03T02:07:34.969982",
   "consecutive_failures": 0,
-  "consecutive_successes": 16
+  "consecutive_successes": 34
 }

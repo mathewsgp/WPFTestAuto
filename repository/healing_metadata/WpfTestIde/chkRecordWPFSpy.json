@@ -11,9 +11,9 @@
     "position": null,
     "is_visible": false,
     "is_enabled": true,
-    "captured_at": "2026-09-01T12:28:17.702073",
-    "last_verified": "2026-09-01T12:28:17.702082",
-    "verification_count": 72,
+    "captured_at": "2026-09-03T01:39:36.514590",
+    "last_verified": "2026-09-03T01:39:36.514600",
+    "verification_count": 77,
     "driver_used": "FlaUI",
     "search_method": "AutomationId",
     "search_value": "chkRecordWPFSpy"
@@ -29,17 +29,17 @@
       "avg_duration_ms": 5.950822280003474
     },
     "FlaUI:AutomationId": {
-      "success_count": 20,
+      "success_count": 25,
       "failure_count": 0,
-      "total_duration_ms": 7504.690647125244,
-      "last_success": "2026-09-01T12:28:17.176516",
+      "total_duration_ms": 9421.348094940186,
+      "last_success": "2026-09-03T01:39:35.942976",
       "last_failure": null,
-      "avg_duration_ms": 375.2345323562622
+      "avg_duration_ms": 376.8539237976074
     }
   },
-  "total_interactions": 144,
+  "total_interactions": 154,
   "first_seen": "2026-08-09T12:26:31.257207",
-  "last_interaction": "2026-09-01T12:28:17.702087",
+  "last_interaction": "2026-09-03T01:39:36.514605",
   "consecutive_failures": 0,
-  "consecutive_successes": 144
+  "consecutive_successes": 154
 }
