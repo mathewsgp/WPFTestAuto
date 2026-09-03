@@ -831,10 +831,14 @@ namespace WpfTestIde.ViewModels
 
         /// <summary>
         /// Returns the canonical "base" app id for a process: the executable
-        /// name without extension (e.g. "notepad", "SampleWpfApp"), or
-        /// "app_{pid}" when no path is available. This is what the user
-        /// types as their app_id; uniqueness across multiple attached
-        /// processes with the same name is resolved by <see cref="ResolveUniqueAppId"/>.
+        /// name without extension (e.g. "notepad", "SampleWpfApp"). For
+        /// runtime attach (no appPath), derives the name from the live
+        /// process via <see cref="TryGetProcessExeStem"/>; only falls back
+        /// to "app_{pid}" when no name is resolvable (e.g. protected
+        /// process, access denied, or process already exited). This is the
+        /// stable id used by the user; uniqueness across multiple attached
+        /// processes with the same name is resolved by
+        /// <see cref="ResolveUniqueAppId"/>.
         /// </summary>
         private static string ComputeBaseAppId(int processId, string? appPath)
         {
@@ -843,7 +847,42 @@ namespace WpfTestIde.ViewModels
                 string name = Path.GetFileNameWithoutExtension(appPath);
                 if (!string.IsNullOrEmpty(name)) return name;
             }
+            string liveStem = TryGetProcessExeStem(processId);
+            if (!string.IsNullOrEmpty(liveStem)) return liveStem;
             return $"app_{processId}";
+        }
+
+        /// <summary>
+        /// Returns the executable name (without extension) of the given
+        /// process. Prefers <c>MainModule.FileName</c> (full path) and
+        /// falls back to <c>ProcessName</c> when the module is not
+        /// accessible (e.g. elevated / system processes). Returns an
+        /// empty string if the process is no longer running or the info
+        /// can't be read.
+        /// </summary>
+        private static string TryGetProcessExeStem(int processId)
+        {
+            try
+            {
+                using var p = Process.GetProcessById(processId);
+                try
+                {
+                    string? modulePath = p.MainModule?.FileName;
+                    if (!string.IsNullOrEmpty(modulePath))
+                    {
+                        string stem = Path.GetFileNameWithoutExtension(modulePath);
+                        if (!string.IsNullOrEmpty(stem)) return stem;
+                    }
+                }
+                catch { /* MainModule can throw for protected processes */ }
+
+                string procName = p.ProcessName;
+                return string.IsNullOrEmpty(procName) ? "" : procName;
+            }
+            catch
+            {
+                return "";
+            }
         }
 
         /// <summary>
