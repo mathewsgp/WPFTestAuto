@@ -674,15 +674,13 @@ namespace WpfTestIde.Recording
         }
 
         /// <summary>
-        /// WPF Window's default Name is "MainWindow" (or the x:Name in XAML).
-        /// "MainWindow" is not a meaningful alias - prefer the title in that
-        /// case. Empty / null are obviously not meaningful.
+        /// A non-empty window identifier is considered meaningful - "MainWindow"
+        /// (the WPF default x:Name) is just as valid as any other explicit
+        /// name. Empty / null are not.
         /// </summary>
         private static bool IsMeaningfulWindowIdentifier(string? value)
         {
-            if (string.IsNullOrEmpty(value)) return false;
-            if (value == "MainWindow") return false;
-            return true;
+            return !string.IsNullOrEmpty(value);
         }
 
         /// <summary>
