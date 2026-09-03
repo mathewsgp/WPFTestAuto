@@ -358,12 +358,16 @@ namespace WpfTestIde.Recording
 
             Log($"[OnClick] accepted for appId={target.AppId}: {probed.ControlType} name={probed.Name} automationId={probed.AutomationId}");
 
-            string page = ResolvePage(x, y, target);
+            string processName = ResolveProcessName(target);
+            string windowSegment = ResolveWindowSegment(x, y, target);
             string ancestorPath = BuildAncestorPath(probed);
             string idOrName = string.IsNullOrEmpty(probed.AutomationId) ? probed.Name : probed.AutomationId!;
-            string alias = string.IsNullOrEmpty(ancestorPath)
-                ? $"{page}.{idOrName}"
-                : $"{page}.{ancestorPath}.{idOrName}";
+
+            // Alias format: <ProcessName>.<WindowSegment>[.<AncestorPath>].<Element>
+            var parts = new List<string> { processName, windowSegment };
+            if (!string.IsNullOrEmpty(ancestorPath)) parts.Add(ancestorPath);
+            parts.Add(idOrName);
+            string alias = string.Join(".", parts);
 
             bool isTextEntry = probed.ControlType is "TextBox" or "Edit" or "ComboBox" or "PasswordBox" or "Document";
             if (isTextEntry)
@@ -570,13 +574,38 @@ namespace WpfTestIde.Recording
 
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
-        private string ResolvePage(int x, int y, RecordingTarget target)
+        /// <summary>
+        /// Returns the first segment of the alias: a stable process-derived
+        /// name taken from the target's exe path. e.g. "SampleWpfApp.exe" ->
+        /// "SampleWpfApp", "notepad.exe" -> "notepad".
+        /// </summary>
+        internal static string ResolveProcessName(RecordingTarget target)
         {
-            // Cache per target so dynamic titles (e.g. Notepad's "*1 - Notepad",
-            // "*12 - Notepad", ...) don't produce a new page alias per click.
+            if (!string.IsNullOrEmpty(target.ExeName))
+            {
+                string stem = System.IO.Path.GetFileNameWithoutExtension(target.ExeName);
+                if (!string.IsNullOrEmpty(stem)) return stem;
+            }
+            if (!string.IsNullOrEmpty(target.AppId)) return target.AppId;
+            return "App";
+        }
+
+        /// <summary>
+        /// Returns the second segment of the alias: a window-level identifier.
+        /// Precedence: WindowAutomationId -> WindowName (UIA Name) ->
+        /// sanitized WindowTitle. Notepad-style dynamic prefixes are stripped
+        /// from the title. A user-configured PageMap is honored as override
+        /// for the title-derived value.
+        /// </summary>
+        private string ResolveWindowSegment(int x, int y, RecordingTarget target)
+        {
+            // Cache per target so we don't re-derive on every click.
             if (!string.IsNullOrEmpty(target.CachedPageAlias)) return target.CachedPageAlias!;
 
             string rawTitle = "";
+            string? windowAutomationId = null;
+            string? windowName = null;
+
             if (target.Mode == ProbeMode.WPFSpy)
             {
                 try
@@ -595,19 +624,25 @@ namespace WpfTestIde.Recording
             }
             else
             {
-                // FlaUI mode: enumerate THIS target's own windows (not the
-                // global foreground, which may belong to a different app and
-                // would cross-pollinate aliases across apps).
                 int livePid = ResolveLivePidForTarget(target);
                 if (livePid > 0)
                 {
-                    rawTitle = PickBestWindowTitleForTarget(livePid, x, y);
+                    // Pick the window containing the click point, else the
+                    // largest visible window of the target process.
+                    var picked = PickBestWindowForTarget(livePid, x, y);
+                    if (picked.HasValue)
+                    {
+                        windowAutomationId = TryGetWindowAutomationId(picked.Value.hwnd);
+                        windowName = TryGetWindowName(picked.Value.hwnd);
+                        rawTitle = picked.Value.title;
+                    }
                 }
             }
 
+            // User-configured page map: matches against the raw title and
+            // overrides auto-derivation (acts as a stable window alias).
             if (!string.IsNullOrEmpty(rawTitle))
             {
-                // 1) user-configured page map wins
                 foreach (var (titleContains, pageAlias) in target.PageMap)
                 {
                     if (rawTitle.Contains(titleContains, StringComparison.OrdinalIgnoreCase))
@@ -616,33 +651,45 @@ namespace WpfTestIde.Recording
                         return pageAlias;
                     }
                 }
-
-                // 2) Otherwise, sanitize the title. Notepad-style titles are
-                //    "Untitled - Notepad", "*1 - Notepad", "*12345 - Notepad".
-                //    The dynamic part is the document name (everything before
-                //    the last " - "); the stable app suffix is everything
-                //    after it. Use the stable suffix when present.
-                string sanitized = StripDynamicDocumentPrefix(rawTitle);
-                target.CachedPageAlias = sanitized;
-                return sanitized;
             }
 
-            target.CachedPageAlias = "UnknownPage";
-            return "UnknownPage";
+            // Precedence: AutomationId -> Name -> sanitized Title.
+            string resolved = "";
+            if (IsMeaningfulWindowIdentifier(windowAutomationId)) resolved = windowAutomationId!;
+            else if (IsMeaningfulWindowIdentifier(windowName)) resolved = windowName!;
+            else resolved = StripDynamicDocumentPrefix(rawTitle);
+
+            if (string.IsNullOrEmpty(resolved)) resolved = "Window";
+            target.CachedPageAlias = resolved;
+            return resolved;
+        }
+
+        /// <summary>
+        /// WPF Window's default Name is "MainWindow" (or the x:Name in XAML).
+        /// "MainWindow" is not a meaningful alias - prefer the title in that
+        /// case. Empty / null are obviously not meaningful.
+        /// </summary>
+        private static bool IsMeaningfulWindowIdentifier(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return false;
+            if (value == "MainWindow") return false;
+            return true;
         }
 
         /// <summary>
         /// Among all top-level visible windows owned by <paramref name="targetPid"/>,
-        /// pick the one whose title we should treat as the page alias. Prefer
+        /// pick the one we should treat as the click's target window. Prefer
         /// the window containing the click point; otherwise the largest
         /// visible window of the target process.
         /// </summary>
-        private string PickBestWindowTitleForTarget(int targetPid, int x, int y)
+        private (IntPtr hwnd, string title)? PickBestWindowForTarget(int targetPid, int x, int y)
         {
             try
             {
-                string? containing = null;
-                string? largest = null;
+                IntPtr? containing = null;
+                string? containingTitle = null;
+                IntPtr? largest = null;
+                string? largestTitle = null;
                 int largestArea = 0;
                 EnumWindows((hWnd, lParam) =>
                 {
@@ -658,21 +705,68 @@ namespace WpfTestIde.Recording
                         if (area > largestArea)
                         {
                             largestArea = area;
-                            largest = title;
+                            largest = hWnd;
+                            largestTitle = title;
                         }
                         if (x >= rect.Left && x <= rect.Right && y >= rect.Top && y <= rect.Bottom)
                         {
-                            containing = title;
+                            containing = hWnd;
+                            containingTitle = title;
                         }
                     }
                     return true;
                 }, IntPtr.Zero);
-                return containing ?? largest ?? "";
+                if (containing.HasValue) return (containing.Value, containingTitle ?? "");
+                if (largest.HasValue) return (largest.Value, largestTitle ?? "");
+                return null;
             }
             catch (Exception ex)
             {
-                Log($"[PickBestWindowTitleForTarget] exception: {ex.Message}");
-                return "";
+                Log($"[PickBestWindowForTarget] exception: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Reads a window's AutomationId via UIA. Returns null if the
+        /// HWND has no UIA representation, no AutomationId, or if the
+        /// process is elevated differently.
+        /// </summary>
+        private string? TryGetWindowAutomationId(IntPtr hwnd)
+        {
+            try
+            {
+                var el = System.Windows.Automation.AutomationElement.FromHandle(hwnd);
+                if (el == null) return null;
+                string? id = el.Current.AutomationId;
+                if (string.IsNullOrEmpty(id)) return null;
+                return id;
+            }
+            catch (Exception ex)
+            {
+                Log($"[TryGetWindowAutomationId] exception: {ex.GetType().Name}: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Reads a window's UIA Name property. This is the same value that
+        /// appears in the window's title bar for most apps.
+        /// </summary>
+        private string? TryGetWindowName(IntPtr hwnd)
+        {
+            try
+            {
+                var el = System.Windows.Automation.AutomationElement.FromHandle(hwnd);
+                if (el == null) return null;
+                string? name = el.Current.Name;
+                if (string.IsNullOrEmpty(name)) return null;
+                return name;
+            }
+            catch (Exception ex)
+            {
+                Log($"[TryGetWindowName] exception: {ex.GetType().Name}: {ex.Message}");
+                return null;
             }
         }
 
