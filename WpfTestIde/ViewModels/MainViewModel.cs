@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -613,8 +614,13 @@ namespace WpfTestIde.ViewModels
             }
 
             // Create app context for multi-app support
+            // Default app_id is the process name. If another attached app
+            // already has the same name, append the window title (with
+            // whitespace stripped) so the disambiguated id is still stable
+            // for the lifetime of the recording.
+            string baseAppId = ComputeBaseAppId(dialog.SelectedProcessId.Value, dialog.ApplicationPath);
             string appId = string.IsNullOrWhiteSpace(dialog.AppId)
-                ? GenerateAppId(dialog.SelectedProcessId.Value, dialog.ApplicationPath)
+                ? ResolveUniqueAppId(baseAppId, dialog.SelectedProcessId.Value)
                 : dialog.AppId.Trim();
 
             string appName = string.IsNullOrWhiteSpace(dialog.ApplicationPath)
@@ -726,7 +732,7 @@ namespace WpfTestIde.ViewModels
                 if (string.IsNullOrWhiteSpace(step.AppPath))
                     continue;
 
-                string appId = step.AppId ?? System.IO.Path.GetFileNameWithoutExtension(step.AppPath).ToLowerInvariant();
+                string appId = step.AppId ?? ComputeBaseAppId(0, step.AppPath);
                 string appName = System.IO.Path.GetFileNameWithoutExtension(step.AppPath);
                 string pipeName = step.PipeName ?? $"WPFSpyAgentPipe_{appId}";
 
@@ -823,14 +829,83 @@ namespace WpfTestIde.ViewModels
             dialog.ShowDialog();
         }
 
-        private static string GenerateAppId(int processId, string? appPath)
+        /// <summary>
+        /// Returns the canonical "base" app id for a process: the executable
+        /// name without extension (e.g. "notepad", "SampleWpfApp"), or
+        /// "app_{pid}" when no path is available. This is what the user
+        /// types as their app_id; uniqueness across multiple attached
+        /// processes with the same name is resolved by <see cref="ResolveUniqueAppId"/>.
+        /// </summary>
+        private static string ComputeBaseAppId(int processId, string? appPath)
         {
             if (!string.IsNullOrWhiteSpace(appPath))
             {
                 string name = Path.GetFileNameWithoutExtension(appPath);
-                return $"{name}_{processId}";
+                if (!string.IsNullOrEmpty(name)) return name;
             }
             return $"app_{processId}";
+        }
+
+        /// <summary>
+        /// Returns an app_id that is unique across the currently attached
+        /// apps. Starts from <paramref name="baseAppId"/>; if a sibling
+        /// attached app already uses that id, appends the target process's
+        /// main window title (with whitespace stripped) so the new id is
+        /// both unique and stable. The user-supplied dialog.AppId (when
+        /// non-empty) bypasses this resolution.
+        /// </summary>
+        private string ResolveUniqueAppId(string baseAppId, int processId)
+        {
+            if (!AttachedApps.Any(a => string.Equals(a.AppId, baseAppId, StringComparison.OrdinalIgnoreCase)))
+            {
+                return baseAppId;
+            }
+            string title = TryGetProcessMainWindowTitle(processId);
+            string titleSlug = SanitizeForAppId(title);
+            if (string.IsNullOrEmpty(titleSlug))
+            {
+                return $"{baseAppId}_{processId}";
+            }
+            return $"{baseAppId}_{titleSlug}";
+        }
+
+        /// <summary>
+        /// Returns the main window title of the given process, or an empty
+        /// string if the process is no longer running or has no main window.
+        /// </summary>
+        private static string TryGetProcessMainWindowTitle(int processId)
+        {
+            try
+            {
+                using var p = Process.GetProcessById(processId);
+                return p.MainWindowTitle ?? "";
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// Strips whitespace and characters that are illegal in a Robot
+        /// Framework variable / argument so the title can be safely used
+        /// as part of an app_id (and as a directory name downstream).
+        /// </summary>
+        private static string SanitizeForAppId(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            var sb = new System.Text.StringBuilder(value.Length);
+            foreach (char ch in value)
+            {
+                if (char.IsWhiteSpace(ch)) continue;
+                if (ch is '_' or '-') { sb.Append(ch); continue; }
+                if (char.IsLetterOrDigit(ch)) { sb.Append(ch); continue; }
+                // Collapse everything else to '_' so titles like
+                // "Sample WPF App - Login" become "SampleWPFApp-Login"
+                // rather than dropping characters entirely.
+                sb.Append('_');
+            }
+            return sb.ToString().Trim('_');
         }
 
         /// <summary>
