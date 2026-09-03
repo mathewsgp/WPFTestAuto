@@ -21,7 +21,6 @@ namespace WpfTestIde.Recording
         public string PipeName { get; }
         public int ProcessId { get; set; }                // mutable: live pid may be discovered later
         public string? ExeName { get; }
-        public List<(string TitleContains, string PageAlias)> PageMap { get; }
         public ProbeMode Mode { get; }
         public int Priority { get; }                       // lower = checked first
 
@@ -31,18 +30,18 @@ namespace WpfTestIde.Recording
         internal ElementProbe? WpfProbe { get; set; }
         internal FlaUIElementProbe? FlaProbe { get; set; }
 
-        // Cached page name for this target. Resolved on the FIRST click in
-        // this target's window and reused for all subsequent steps so that
-        // apps whose window title changes per-keystroke (Notepad) don't
-        // produce a new page alias on every typed character.
-        internal string? CachedPageAlias { get; set; }
+        // Cached window identifier (AutomationId / Name / sanitized Title)
+        // for this target. Resolved on the FIRST click in this target's
+        // window and reused for all subsequent steps so that apps whose
+        // window title changes per-keystroke (Notepad) don't produce a
+        // new alias on every typed character.
+        internal string? CachedWindowSegment { get; set; }
 
         public RecordingTarget(
             string appId,
             string pipeName,
             int processId,
             string? exeName,
-            List<(string, string)> pageMap,
             ProbeMode mode,
             int priority = 0)
         {
@@ -50,7 +49,6 @@ namespace WpfTestIde.Recording
             PipeName = pipeName ?? "";
             ProcessId = processId;
             ExeName = exeName;
-            PageMap = pageMap ?? new List<(string, string)>();
             Mode = mode;
             Priority = priority;
 
@@ -159,7 +157,7 @@ namespace WpfTestIde.Recording
             {
                 _targets[target.AppId] = target;
             }
-            target.CachedPageAlias = null;
+            target.CachedWindowSegment = null;
             Log($"[RecordingSession] AddTarget appId={target.AppId} mode={target.Mode} pipe={target.PipeName} pid={target.ProcessId} exe={target.ExeName} priority={target.Priority}");
         }
 
@@ -171,7 +169,7 @@ namespace WpfTestIde.Recording
                 if (_targets.TryGetValue(appId, out var t))
                 {
                     t.WpfProbe = null;
-                    t.CachedPageAlias = null;
+                    t.CachedWindowSegment = null;
                     _targets.Remove(appId);
                     Log($"[RecordingSession] RemoveTarget appId={appId}");
                 }
@@ -186,7 +184,7 @@ namespace WpfTestIde.Recording
                 foreach (var t in _targets.Values)
                 {
                     t.WpfProbe = null;
-                    t.CachedPageAlias = null;
+                    t.CachedWindowSegment = null;
                 }
                 _targets.Clear();
             }
@@ -594,13 +592,12 @@ namespace WpfTestIde.Recording
         /// Returns the second segment of the alias: a window-level identifier.
         /// Precedence: WindowAutomationId -> WindowName (UIA Name) ->
         /// sanitized WindowTitle. Notepad-style dynamic prefixes are stripped
-        /// from the title. A user-configured PageMap is honored as override
-        /// for the title-derived value.
+        /// from the title. The result is cached per target for the lifetime
+        /// of the recording session.
         /// </summary>
         private string ResolveWindowSegment(int x, int y, RecordingTarget target)
         {
-            // Cache per target so we don't re-derive on every click.
-            if (!string.IsNullOrEmpty(target.CachedPageAlias)) return target.CachedPageAlias!;
+            if (!string.IsNullOrEmpty(target.CachedWindowSegment)) return target.CachedWindowSegment!;
 
             string rawTitle = "";
             string? windowAutomationId = null;
@@ -665,20 +662,6 @@ namespace WpfTestIde.Recording
                 }
             }
 
-            // User-configured page map: matches against the raw title and
-            // overrides auto-derivation (acts as a stable window alias).
-            if (!string.IsNullOrEmpty(rawTitle))
-            {
-                foreach (var (titleContains, pageAlias) in target.PageMap)
-                {
-                    if (rawTitle.Contains(titleContains, StringComparison.OrdinalIgnoreCase))
-                    {
-                        target.CachedPageAlias = pageAlias;
-                        return pageAlias;
-                    }
-                }
-            }
-
             // Precedence: AutomationId -> Name -> sanitized Title.
             string resolved = "";
             if (IsMeaningfulWindowIdentifier(windowAutomationId)) resolved = windowAutomationId!;
@@ -686,7 +669,7 @@ namespace WpfTestIde.Recording
             else resolved = StripDynamicDocumentPrefix(rawTitle);
 
             if (string.IsNullOrEmpty(resolved)) resolved = "Window";
-            target.CachedPageAlias = resolved;
+            target.CachedWindowSegment = resolved;
             return resolved;
         }
 

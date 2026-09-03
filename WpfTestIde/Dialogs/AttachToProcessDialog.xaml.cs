@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -12,32 +11,18 @@ using WpfTestIde.Helpers;
 
 namespace WpfTestIde.Dialogs
 {
-    public class PageMapRow
-    {
-        public string TitleContains { get; set; } = "";
-        public string PageAlias { get; set; } = "";
-    }
-
     public partial class AttachToProcessDialog : Window
     {
         public int? SelectedProcessId { get; private set; }
         public string PipeName { get; private set; } = "WPFSpyAgentPipe";
         public string AppId { get; private set; } = "";
-        public List<(string, string)> PageMap { get; private set; } = new();
         public string? ApplicationPath { get; private set; }
         public string? Arguments { get; private set; }
         public AttachMode Mode { get; private set; } = AttachMode.RuntimeAttach;
 
-        private readonly ObservableCollection<PageMapRow> _pageMapRows = new()
-        {
-            new PageMapRow { TitleContains = "Login", PageAlias = "LoginPage" },
-            new PageMapRow { TitleContains = "Orders", PageAlias = "OrdersPage" },
-        };
-
         public AttachToProcessDialog()
         {
             InitializeComponent();
-            PageMapGrid.ItemsSource = _pageMapRows;
             RefreshProcessList();
             StatusText.Text = "Select a process to attach to, or launch a new process";
         }
@@ -123,10 +108,6 @@ namespace WpfTestIde.Dialogs
         {
             PipeName = string.IsNullOrWhiteSpace(PipeNameBox.Text) ? "WPFSpyAgentPipe" : PipeNameBox.Text.Trim();
             AppId = string.IsNullOrWhiteSpace(AppIdBox.Text) ? "" : AppIdBox.Text.Trim();
-            PageMap = _pageMapRows
-                .Where(r => !string.IsNullOrWhiteSpace(r.TitleContains) && !string.IsNullOrWhiteSpace(r.PageAlias))
-                .Select(r => (r.TitleContains, r.PageAlias))
-                .ToList();
 
             if (Mode == AttachMode.RuntimeAttach)
             {

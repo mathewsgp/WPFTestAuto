@@ -655,7 +655,6 @@ namespace WpfTestIde.ViewModels
                 pipeName: dialog.PipeName,
                 processId: dialog.SelectedProcessId.Value,
                 exeName: dialog.ApplicationPath,
-                pageMap: dialog.PageMap,
                 mode: ProbeMode.WPFSpy));
 
             string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "repository", "attach_log.txt");
@@ -789,7 +788,6 @@ namespace WpfTestIde.ViewModels
                     pipeName: app.PipeName,
                     processId: app.ProcessId,
                     exeName: app.AppPath,
-                    pageMap: new List<(string, string)>(),
                     mode: useFlaUI ? ProbeMode.FlaUI : ProbeMode.WPFSpy,
                     priority: priority++));
             }
