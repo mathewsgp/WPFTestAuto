@@ -109,11 +109,12 @@ namespace WpfTestIde.Recording
     /// Orchestrates recording against one or more attached target apps:
     ///  - a global mouse hook (see GlobalMouseHook) detects clicks anywhere
     ///    on screen;
-    ///  - for each click, the session finds the FIRST target whose
-    ///    PointBelongsToTarget accepts the click point (pid/title match),
-    ///    then resolves the element via that target's probe
-    ///    (WPFSpy named pipe when an in-process agent is present, or the
-    ///    system-wide UIA tree otherwise);
+    ///  - for each click, FindOwningTarget picks the target that owns
+    ///    the click point: WindowFromPoint, then root-owner walk, then
+    ///    a topmost-aware bounds scan across all registered targets'
+    ///    windows; the picked target's probe (WPFSpy named pipe when
+    ///    an in-process agent is present, or the system-wide UIA tree
+    ///    otherwise) resolves the element;
     ///  - text-entry controls commit their final value as a SetValue step
     ///    on the next click, so typed text is captured on "blur" rather
     ///    than per keystroke;
@@ -209,84 +210,123 @@ namespace WpfTestIde.Recording
             Log($"[RecordingSession] Stop");
         }
 
-        // Returns the first target that claims ownership of (x,y), or null.
+        // Returns the target that claims ownership of (x,y), or null.
+        // Strategy:
+        //  1) WindowFromPoint -> if its pid is a registered target, accept.
+        //  2) Owner-walk (top-level root owner of the topmost HWND) -> if
+        //     its pid is a registered target, accept.
+        //  3) Bounds scan across ALL registered targets' top-level windows.
+        //     If multiple targets' rects contain the point, prefer the
+        //     topmost (last HWND yielded by EnumWindows for that target).
+        //     This handles overlapping windows and UWP / non-client clicks
+        //     where WindowFromPoint doesn't attribute to the right HWND.
         private RecordingTarget? FindOwningTarget(int x, int y)
         {
             List<RecordingTarget> snapshot;
             lock (_targetsLock) { snapshot = _targets.Values.OrderBy(t => t.Priority).ToList(); }
+            if (snapshot.Count == 0) return null;
 
-            // Pre-compute the topmost HWND's pid once. If a sibling target
-            // owns the topmost window at (x,y), no other target can claim
-            // the click - this prevents misrouting when two registered
-            // apps' window bounding rects overlap.
-            int topPid = GetTopmostTargetPidAt(x, y, snapshot);
-
+            // Build pid -> target map (resolving live pids on demand).
+            Dictionary<int, RecordingTarget> pidMap = new();
             foreach (var t in snapshot)
             {
-                if (topPid > 0)
-                {
-                    int thisPid = t.ProcessId > 0 ? t.ProcessId : ResolveLivePidForTarget(t);
-                    if (thisPid > 0 && thisPid != topPid)
-                    {
-                        // The topmost HWND belongs to a different target. Skip
-                        // the bounds/foreground fallbacks for this target so
-                        // overlapping rects don't hijack the click.
-                        continue;
-                    }
-                }
-                if (PointBelongsToTarget(x, y, t)) return t;
+                int livePid = t.ProcessId > 0 ? t.ProcessId : ResolveLivePidForTarget(t);
+                if (livePid > 0) pidMap[livePid] = t;
             }
-            return null;
-        }
+            if (pidMap.Count == 0) return null;
 
-        /// <summary>
-        /// Returns the pid of whichever target in <paramref name="candidates"/>
-        /// owns the topmost HWND at (x, y), or 0 if none does. Used to short-
-        /// circuit the per-target point check when overlapping windows would
-        /// otherwise allow a sibling target's bounds to absorb the click.
-        /// </summary>
-        private int GetTopmostTargetPidAt(int x, int y, List<RecordingTarget> candidates)
-        {
+            // 1) Topmost HWND.
+            IntPtr topHwnd = IntPtr.Zero;
+            int topPid = 0;
             try
             {
-                IntPtr hwnd = WindowFromPoint(x, y);
-                if (hwnd == IntPtr.Zero) return 0;
-                GetWindowThreadProcessId(hwnd, out uint pid);
-                int pidAsInt = (int)pid;
-                foreach (var t in candidates)
+                topHwnd = WindowFromPoint(x, y);
+                if (topHwnd != IntPtr.Zero)
                 {
-                    int livePid = t.ProcessId > 0 ? t.ProcessId : 0;
-                    if (livePid == 0) livePid = ResolveLivePidForTarget(t);
-                    if (livePid == pidAsInt) return pidAsInt;
+                    GetWindowThreadProcessId(topHwnd, out uint pid);
+                    topPid = (int)pid;
+                    if (pidMap.TryGetValue(topPid, out var t)) return t;
                 }
             }
             catch (Exception ex)
             {
-                Log($"[GetTopmostTargetPidAt] exception: {ex.GetType().Name}: {ex.Message}");
+                Log($"[FindOwningTarget] WindowFromPoint exception: {ex.GetType().Name}: {ex.Message}");
             }
-            return 0;
-        }
 
-        /// <summary>
-        /// Returns true if <paramref name="pid"/> is the live pid of any
-        /// registered target OTHER than <paramref name="self"/>. Used to
-        /// reject clicks whose topmost HWND belongs to a sibling target so
-        /// overlapping window rects don't misroute the click to the wrong
-        /// target via the bounds-scan fallback.
-        /// </summary>
-        private bool IsPidOwnedByAnyOtherTarget(RecordingTarget self, int pid)
-        {
-            if (pid <= 0) return false;
-            lock (_targetsLock)
+            // 2) Root-owner walk of the topmost HWND.
+            try
             {
-                foreach (var t in _targets.Values)
+                if (topHwnd != IntPtr.Zero)
                 {
-                    if (ReferenceEquals(t, self)) continue;
-                    int livePid = t.ProcessId > 0 ? t.ProcessId : ResolveLivePidForTarget(t);
-                    if (livePid == pid) return true;
+                    IntPtr ownerHwnd = GetAncestor(topHwnd, GA_ROOTOWNER);
+                    if (ownerHwnd != IntPtr.Zero && ownerHwnd != topHwnd)
+                    {
+                        GetWindowThreadProcessId(ownerHwnd, out uint pidOwner);
+                        if (pidMap.TryGetValue((int)pidOwner, out var t)) return t;
+                    }
                 }
             }
-            return false;
+            catch (Exception ex)
+            {
+                Log($"[FindOwningTarget] owner-walk exception: {ex.GetType().Name}: {ex.Message}");
+            }
+
+            // 3) Bounds scan across all registered targets' windows. For each
+            //    target, remember the LAST window in EnumWindows order whose
+            //    rect contains (x,y); that's the topmost candidate for that
+            //    target. Then return the topmost candidate across targets by
+            //    re-scanning all windows in Z-order and returning the first
+            //    (topmost) one whose target also had a rect match.
+            Dictionary<int, IntPtr> topMatchPerTarget = new();
+            HashSet<int> targetPids = new(pidMap.Keys);
+            try
+            {
+                EnumWindows((hWnd, lParam) =>
+                {
+                    if (!IsWindowVisible(hWnd)) return true;
+                    GetWindowThreadProcessId(hWnd, out uint pid);
+                    if (!targetPids.Contains((int)pid)) return true;
+                    if (GetWindowRect(hWnd, out RECT rect))
+                    {
+                        if (x >= rect.Left && x <= rect.Right && y >= rect.Top && y <= rect.Bottom)
+                        {
+                            // Keep the most recently seen (topmost) HWND per target.
+                            topMatchPerTarget[(int)pid] = hWnd;
+                        }
+                    }
+                    return true;
+                }, IntPtr.Zero);
+
+                // Now find the overall topmost (first in EnumWindows order) HWND
+                // among the matching set.
+                IntPtr topmost = IntPtr.Zero;
+                int topmostPid = 0;
+                EnumWindows((hWnd, lParam) =>
+                {
+                    if (!IsWindowVisible(hWnd)) return true;
+                    GetWindowThreadProcessId(hWnd, out uint pid);
+                    if (!targetPids.Contains((int)pid)) return true;
+                    if (topMatchPerTarget.TryGetValue((int)pid, out IntPtr recorded) && recorded == hWnd)
+                    {
+                        topmost = hWnd;
+                        topmostPid = (int)pid;
+                        return false; // stop enumeration
+                    }
+                    return true;
+                }, IntPtr.Zero);
+
+                if (topmostPid > 0 && pidMap.TryGetValue(topmostPid, out var matchedTarget))
+                {
+                    Log($"[FindOwningTarget] bounds-scan matched pid={topmostPid} appId={matchedTarget.AppId}");
+                    return matchedTarget;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[FindOwningTarget] bounds-scan exception: {ex.GetType().Name}: {ex.Message}");
+            }
+
+            return null;
         }
 
         private void OnClick(int x, int y)
@@ -373,158 +413,6 @@ namespace WpfTestIde.Recording
             _pendingFocusedTarget = null;
             _pendingFocusedAlias = null;
         }
-
-        /// <summary>
-        /// Returns true if (x,y) is inside any window owned by the given target.
-        /// For WPFSpy mode the agent reports its main window title; we layer a
-        /// Win32 WindowFromPoint pid check on top so we can distinguish between
-        /// multiple WPF apps that happen to all expose agents.
-        /// For FlaUI mode we use the same pid-comparison strategies as before
-        /// (WindowFromPoint, bounds scan, foreground).
-        /// </summary>
-        private bool PointBelongsToTarget(int x, int y, RecordingTarget target)
-        {
-            // Compute the live pid for this target. For WPFSpy we ask the
-            // agent (it owns its process) but also layer the Win32 check.
-            int livePid = target.ProcessId;
-            if (livePid <= 0 && target.Mode == ProbeMode.FlaUI)
-            {
-                livePid = ResolveLivePidForTarget(target);
-            }
-            if (livePid <= 0 && target.Mode == ProbeMode.WPFSpy)
-            {
-                livePid = ResolveLivePidForTarget(target);
-            }
-
-            if (target.Mode == ProbeMode.WPFSpy)
-            {
-                // 1) Pipe-level liveness + title presence.
-                bool agentOk = false;
-                try
-                {
-                    if (!string.IsNullOrEmpty(target.PipeName))
-                    {
-                        var client = new SpyAgentClient(target.PipeName);
-                        var response = client.Send("GetMainWindowTitle");
-                        if (response.Success && !string.IsNullOrEmpty(response.Data))
-                        {
-                            agentOk = true;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log($"[PointBelongsToTarget] WPFSpy agent exception for appId={target.AppId}: {ex.GetType().Name}: {ex.Message}");
-                }
-
-                if (!agentOk) return false;
-
-                // 2) Layered pid disambiguation. If we have a live pid for this
-                // target, confirm the click belongs to it via WindowFromPoint.
-                // This is what makes multi-app recording work: two WPF apps
-                // can both have agents, but only one owns the cursor.
-                if (livePid > 0)
-                {
-                    try
-                    {
-                        IntPtr hwndAtPoint = WindowFromPoint(x, y);
-                        if (hwndAtPoint != IntPtr.Zero)
-                        {
-                            GetWindowThreadProcessId(hwndAtPoint, out uint pidAtPoint);
-                            if ((int)pidAtPoint == livePid) return true;
-
-                            IntPtr ownerHwnd = GetAncestor(hwndAtPoint, GA_ROOTOWNER);
-                            if (ownerHwnd != IntPtr.Zero && ownerHwnd != hwndAtPoint)
-                            {
-                                GetWindowThreadProcessId(ownerHwnd, out uint pidOwner);
-                                if ((int)pidOwner == livePid) return true;
-                            }
-
-                            // Sibling target owns the topmost HWND - reject
-                            // so overlapping windows don't route the click
-                            // to this target via the bounds fallback.
-                            if (IsPidOwnedByAnyOtherTarget(target, (int)pidAtPoint))
-                            {
-                                Log($"[PointBelongsToTarget] WPFSpy rejected: topmost pid={pidAtPoint} belongs to another registered target");
-                                return false;
-                            }
-                        }
-                        if (IsPointInTargetProcessWindows(x, y, livePid)) return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"[PointBelongsToTarget] WPFSpy pid check exception for appId={target.AppId}: {ex.GetType().Name}: {ex.Message}");
-                    }
-                    // Agent responded but the click isn't in this app's window.
-                    return false;
-                }
-                // No pid known — fall back to the original "agent says it's OK"
-                // behavior (single-app case where the pipe IS the source of truth).
-                return true;
-            }
-            else
-            {
-                // FlaUI mode: trust UIA hit-test + pid filter inside the probe.
-                if (livePid == 0) return false;
-
-                try
-                {
-                    Log($"[PointBelongsToTarget] FlaUI click at ({x},{y}) appId={target.AppId} target_pid={livePid}");
-
-                    IntPtr hwndAtPoint = WindowFromPoint(x, y);
-                    if (hwndAtPoint != IntPtr.Zero)
-                    {
-                        GetWindowThreadProcessId(hwndAtPoint, out uint pidAtPoint);
-                        string titleAtPoint = GetWindowTitle(hwndAtPoint);
-                        Log($"[PointBelongsToTarget] WindowFromPoint hwnd={hwndAtPoint} pid={pidAtPoint} title='{titleAtPoint}'");
-                        if ((int)pidAtPoint == livePid) return true;
-
-                        IntPtr ownerHwnd = GetAncestor(hwndAtPoint, GA_ROOTOWNER);
-                        if (ownerHwnd != IntPtr.Zero && ownerHwnd != hwndAtPoint)
-                        {
-                            GetWindowThreadProcessId(ownerHwnd, out uint pidOwner);
-                            string titleOwner = GetWindowTitle(ownerHwnd);
-                            Log($"[PointBelongsToTarget] Owner hwnd={ownerHwnd} pid={pidOwner} title='{titleOwner}'");
-                            if ((int)pidOwner == livePid) return true;
-                        }
-
-                        // Sibling target owns the topmost HWND - reject
-                        // before the bounds fallback can misroute.
-                        if (IsPidOwnedByAnyOtherTarget(target, (int)pidAtPoint))
-                        {
-                            Log($"[PointBelongsToTarget] FlaUI rejected: topmost pid={pidAtPoint} belongs to another registered target");
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        Log($"[PointBelongsToTarget] WindowFromPoint returned NULL");
-                    }
-
-                    if (IsPointInTargetProcessWindows(x, y, livePid))
-                    {
-                        Log($"[PointBelongsToTarget] Strategy 2 (bounds) ACCEPTED click at ({x},{y}) for appId={target.AppId}");
-                        return true;
-                    }
-                    Log($"[PointBelongsToTarget] Strategy 2 (bounds) rejected click at ({x},{y}) for appId={target.AppId}");
-
-                    IntPtr hwnd = GetForegroundWindow();
-                    if (hwnd != IntPtr.Zero)
-                    {
-                        GetWindowThreadProcessId(hwnd, out uint pid);
-                        string title = GetWindowTitle(hwnd);
-                        Log($"[PointBelongsToTarget] Foreground hwnd={hwnd} pid={pid} title='{title}'");
-                        if ((int)pid == livePid) return true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log($"[PointBelongsToTarget] FlaUI exception for appId={target.AppId}: {ex.GetType().Name}: {ex.Message}");
-                }
-                return false;
-            }
-        }
-
         private int ResolveLivePidForTarget(RecordingTarget target)
         {
             if (target.ProcessId > 0) return target.ProcessId;
@@ -681,44 +569,6 @@ namespace WpfTestIde.Recording
         private static extern bool IsWindowVisible(IntPtr hWnd);
 
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
-
-        private bool IsPointInTargetProcessWindows(int x, int y, int targetPid)
-        {
-            try
-            {
-                bool result = false;
-                int windowsChecked = 0;
-                int windowsMatchedPid = 0;
-                System.Text.StringBuilder boundsLog = new System.Text.StringBuilder();
-                EnumWindows((hWnd, lParam) =>
-                {
-                    if (!IsWindowVisible(hWnd)) return true;
-                    GetWindowThreadProcessId(hWnd, out uint pid);
-                    windowsChecked++;
-                    if ((int)pid != targetPid) return true;
-                    windowsMatchedPid++;
-                    if (GetWindowRect(hWnd, out RECT rect))
-                    {
-                        string title = GetWindowTitle(hWnd);
-                        boundsLog.AppendLine($"  hwnd={hWnd} title='{title}' bounds={rect.Left},{rect.Top},{rect.Right},{rect.Bottom}");
-                        if (x >= rect.Left && x <= rect.Right && y >= rect.Top && y <= rect.Bottom)
-                        {
-                            Log($"[IsPointInTargetProcessWindows] point ({x},{y}) is in window hwnd={hWnd} title='{title}' bounds={rect.Left},{rect.Top},{rect.Right},{rect.Bottom}");
-                            result = true;
-                            return false;
-                        }
-                    }
-                    return true;
-                }, IntPtr.Zero);
-                Log($"[IsPointInTargetProcessWindows] checked {windowsChecked} windows, {windowsMatchedPid} owned by pid={targetPid}, point ({x},{y}) result={result}. Target windows:{Environment.NewLine}{boundsLog}");
-                return result;
-            }
-            catch (Exception ex)
-            {
-                Log($"[IsPointInTargetProcessWindows] exception: {ex.Message}");
-                return false;
-            }
-        }
 
         private string ResolvePage(int x, int y, RecordingTarget target)
         {

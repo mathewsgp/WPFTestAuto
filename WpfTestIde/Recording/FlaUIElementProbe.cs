@@ -46,9 +46,9 @@ namespace WpfTestIde.Recording
                     }
                     catch { }
                 }
-                // If pid is unknown, accept the element (the foreground-window
-                // check in RecordingSession.PointBelongsToTargetProcess is the
-                // primary guard against recording against the wrong app).
+                // If pid is unknown, accept the element (the FindOwningTarget
+                // check in RecordingSession is the primary guard against
+                // recording against the wrong app).
 
                 return BuildProbedElement(element);
             }
