@@ -327,6 +327,44 @@ namespace WpfSpyAgent
                     }
                     return SpyResponse.Ok(title);
                 }
+                case "GetMainWindow":
+                {
+                    // Returns JSON with the main window's AutomationId, Name,
+                    // and Title so the recorder can pick the best window-level
+                    // identifier for alias generation. Format:
+                    //   { "automationId": "...", "name": "...", "title": "..." }
+                    string title = "(no main window)";
+                    string? automationId = null;
+                    string? name = null;
+                    foreach (Window w in Application.Current.Windows)
+                    {
+                        if (!w.IsVisible) continue;
+                        if (string.IsNullOrEmpty(title) || title == "(no main window)")
+                        {
+                            title = w.Title ?? "";
+                        }
+                        if (automationId is null)
+                        {
+                            try { automationId = System.Windows.Automation.AutomationProperties.GetAutomationId(w); } catch { }
+                        }
+                        if (name is null)
+                        {
+                            try { name = w.Name; } catch { }
+                        }
+                        if (!string.IsNullOrEmpty(title) && title != "(no main window)"
+                            && !string.IsNullOrEmpty(automationId))
+                        {
+                            break;
+                        }
+                    }
+                    var payload = new Dictionary<string, object?>
+                    {
+                        ["automationId"] = string.IsNullOrEmpty(automationId) ? null : automationId,
+                        ["name"] = string.IsNullOrEmpty(name) ? null : name,
+                        ["title"] = title,
+                    };
+                    return SpyResponse.Ok(JsonHelper.Serialize(payload));
+                }
                 case "GetBounds":
                 {
                     FrameworkElement? element = null;

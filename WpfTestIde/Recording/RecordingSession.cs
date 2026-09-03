@@ -613,14 +613,40 @@ namespace WpfTestIde.Recording
                     if (!string.IsNullOrEmpty(target.PipeName))
                     {
                         var client = new SpyAgentClient(target.PipeName);
-                        var response = client.Send("GetMainWindowTitle");
+                        var response = client.Send("GetMainWindow");
                         if (response.Success && !string.IsNullOrEmpty(response.Data))
                         {
-                            rawTitle = response.Data;
+                            try
+                            {
+                                using var doc = System.Text.Json.JsonDocument.Parse(response.Data);
+                                var root = doc.RootElement;
+                                if (root.TryGetProperty("automationId", out var aidEl)
+                                    && aidEl.ValueKind == System.Text.Json.JsonValueKind.String)
+                                {
+                                    windowAutomationId = aidEl.GetString();
+                                }
+                                if (root.TryGetProperty("name", out var nameEl)
+                                    && nameEl.ValueKind == System.Text.Json.JsonValueKind.String)
+                                {
+                                    windowName = nameEl.GetString();
+                                }
+                                if (root.TryGetProperty("title", out var titleEl)
+                                    && titleEl.ValueKind == System.Text.Json.JsonValueKind.String)
+                                {
+                                    rawTitle = titleEl.GetString() ?? "";
+                                }
+                            }
+                            catch (Exception parseEx)
+                            {
+                                Log($"[ResolveWindowSegment] GetMainWindow JSON parse failed: {parseEx.GetType().Name}: {parseEx.Message}");
+                            }
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Log($"[ResolveWindowSegment] WPFSpy agent exception: {ex.GetType().Name}: {ex.Message}");
+                }
             }
             else
             {
