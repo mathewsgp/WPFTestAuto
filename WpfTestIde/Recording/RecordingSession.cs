@@ -214,11 +214,79 @@ namespace WpfTestIde.Recording
         {
             List<RecordingTarget> snapshot;
             lock (_targetsLock) { snapshot = _targets.Values.OrderBy(t => t.Priority).ToList(); }
+
+            // Pre-compute the topmost HWND's pid once. If a sibling target
+            // owns the topmost window at (x,y), no other target can claim
+            // the click - this prevents misrouting when two registered
+            // apps' window bounding rects overlap.
+            int topPid = GetTopmostTargetPidAt(x, y, snapshot);
+
             foreach (var t in snapshot)
             {
+                if (topPid > 0)
+                {
+                    int thisPid = t.ProcessId > 0 ? t.ProcessId : ResolveLivePidForTarget(t);
+                    if (thisPid > 0 && thisPid != topPid)
+                    {
+                        // The topmost HWND belongs to a different target. Skip
+                        // the bounds/foreground fallbacks for this target so
+                        // overlapping rects don't hijack the click.
+                        continue;
+                    }
+                }
                 if (PointBelongsToTarget(x, y, t)) return t;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Returns the pid of whichever target in <paramref name="candidates"/>
+        /// owns the topmost HWND at (x, y), or 0 if none does. Used to short-
+        /// circuit the per-target point check when overlapping windows would
+        /// otherwise allow a sibling target's bounds to absorb the click.
+        /// </summary>
+        private int GetTopmostTargetPidAt(int x, int y, List<RecordingTarget> candidates)
+        {
+            try
+            {
+                IntPtr hwnd = WindowFromPoint(x, y);
+                if (hwnd == IntPtr.Zero) return 0;
+                GetWindowThreadProcessId(hwnd, out uint pid);
+                int pidAsInt = (int)pid;
+                foreach (var t in candidates)
+                {
+                    int livePid = t.ProcessId > 0 ? t.ProcessId : 0;
+                    if (livePid == 0) livePid = ResolveLivePidForTarget(t);
+                    if (livePid == pidAsInt) return pidAsInt;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[GetTopmostTargetPidAt] exception: {ex.GetType().Name}: {ex.Message}");
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Returns true if <paramref name="pid"/> is the live pid of any
+        /// registered target OTHER than <paramref name="self"/>. Used to
+        /// reject clicks whose topmost HWND belongs to a sibling target so
+        /// overlapping window rects don't misroute the click to the wrong
+        /// target via the bounds-scan fallback.
+        /// </summary>
+        private bool IsPidOwnedByAnyOtherTarget(RecordingTarget self, int pid)
+        {
+            if (pid <= 0) return false;
+            lock (_targetsLock)
+            {
+                foreach (var t in _targets.Values)
+                {
+                    if (ReferenceEquals(t, self)) continue;
+                    int livePid = t.ProcessId > 0 ? t.ProcessId : ResolveLivePidForTarget(t);
+                    if (livePid == pid) return true;
+                }
+            }
+            return false;
         }
 
         private void OnClick(int x, int y)
@@ -371,6 +439,15 @@ namespace WpfTestIde.Recording
                                 GetWindowThreadProcessId(ownerHwnd, out uint pidOwner);
                                 if ((int)pidOwner == livePid) return true;
                             }
+
+                            // Sibling target owns the topmost HWND - reject
+                            // so overlapping windows don't route the click
+                            // to this target via the bounds fallback.
+                            if (IsPidOwnedByAnyOtherTarget(target, (int)pidAtPoint))
+                            {
+                                Log($"[PointBelongsToTarget] WPFSpy rejected: topmost pid={pidAtPoint} belongs to another registered target");
+                                return false;
+                            }
                         }
                         if (IsPointInTargetProcessWindows(x, y, livePid)) return true;
                     }
@@ -409,6 +486,14 @@ namespace WpfTestIde.Recording
                             string titleOwner = GetWindowTitle(ownerHwnd);
                             Log($"[PointBelongsToTarget] Owner hwnd={ownerHwnd} pid={pidOwner} title='{titleOwner}'");
                             if ((int)pidOwner == livePid) return true;
+                        }
+
+                        // Sibling target owns the topmost HWND - reject
+                        // before the bounds fallback can misroute.
+                        if (IsPidOwnedByAnyOtherTarget(target, (int)pidAtPoint))
+                        {
+                            Log($"[PointBelongsToTarget] FlaUI rejected: topmost pid={pidAtPoint} belongs to another registered target");
+                            return false;
                         }
                     }
                     else
