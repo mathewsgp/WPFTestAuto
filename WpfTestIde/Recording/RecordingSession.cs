@@ -838,7 +838,7 @@ namespace WpfTestIde.Recording
             }
             if (windowIdx < 0) return (string.Empty, xpath);
 
-            string windowFromSegment = ExtractNameAttr(parts[windowIdx]);
+            string windowFromSegment = ExtractAliasName(parts[windowIdx]);
             if (!string.IsNullOrEmpty(windowFromSegment))
             {
                 var ancestorOnly = new System.Text.StringBuilder();
@@ -846,7 +846,7 @@ namespace WpfTestIde.Recording
                 {
                     if (!IsMeaningfulAliasName(parts[k])) continue;
                     if (ancestorOnly.Length > 0) ancestorOnly.Append('.');
-                    ancestorOnly.Append(ExtractNameAttr(parts[k]));
+                    ancestorOnly.Append(ExtractAliasName(parts[k]));
                 }
                 return (windowFromSegment, ancestorOnly.ToString());
             }
@@ -862,13 +862,13 @@ namespace WpfTestIde.Recording
             }
             if (nameStart < 0) return (string.Empty, string.Empty);
 
-            string windowName = ExtractNameAttr(parts[nameStart]);
+            string windowName = ExtractAliasName(parts[nameStart]);
             var ancestor = new System.Text.StringBuilder();
             for (int k = nameStart + 1; k < parts.Length; k++)
             {
                 if (!IsMeaningfulAliasName(parts[k])) continue;
                 if (ancestor.Length > 0) ancestor.Append('.');
-                ancestor.Append(ExtractNameAttr(parts[k]));
+                ancestor.Append(ExtractAliasName(parts[k]));
             }
             return (windowName, ancestor.ToString());
         }
@@ -878,18 +878,33 @@ namespace WpfTestIde.Recording
             if (string.IsNullOrEmpty(segment)) return false;
             if (!segment.StartsWith("[", StringComparison.Ordinal)) return false;
             if (segment.StartsWith("[@", StringComparison.Ordinal)) return false;
-            var name = ExtractNameAttr(segment);
+            var name = ExtractAliasName(segment);
             return !string.IsNullOrEmpty(name) && name != "MainWindow";
         }
 
-        private static string ExtractNameAttr(string segment)
+        /// <summary>
+        /// Returns the @Name='...' value if present, otherwise the
+        /// @AutomationId='...' value. Both are meaningful identifiers for
+        /// the alias path; the agent prefers AutomationId when naming the
+        /// Window segment, so this must accept both.
+        /// </summary>
+        private static string ExtractAliasName(string segment)
         {
             int at = segment.IndexOf("@Name='", StringComparison.Ordinal);
-            if (at < 0) return string.Empty;
-            int start = at + "@Name='".Length;
-            int end = segment.IndexOf("'", start, StringComparison.Ordinal);
-            if (end < 0) return string.Empty;
-            return segment.Substring(start, end - start);
+            if (at >= 0)
+            {
+                int start = at + "@Name='".Length;
+                int end = segment.IndexOf("'", start, StringComparison.Ordinal);
+                if (end > start) return segment.Substring(start, end - start);
+            }
+            at = segment.IndexOf("@AutomationId='", StringComparison.Ordinal);
+            if (at >= 0)
+            {
+                int start = at + "@AutomationId='".Length;
+                int end = segment.IndexOf("'", start, StringComparison.Ordinal);
+                if (end > start) return segment.Substring(start, end - start);
+            }
+            return string.Empty;
         }
 
         private static string BuildAncestorPath(ProbedElement probed)
