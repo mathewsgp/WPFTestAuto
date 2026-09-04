@@ -828,7 +828,7 @@ namespace WpfTestIde.Recording
 
             var parts = xpath.Split('/');
             int windowIdx = -1;
-            for (int i = 0; i < parts.Length; i++)
+            for (int i = parts.Length - 1; i >= 0; i--)
             {
                 if (parts[i].StartsWith("Window[", StringComparison.Ordinal))
                 {
