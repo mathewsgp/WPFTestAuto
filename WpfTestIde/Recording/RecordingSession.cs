@@ -989,18 +989,28 @@ namespace WpfTestIde.Recording
                 || name == "uniformGrid";
         }
 
-        private ElementEntry BuildEntry(string alias, ProbedElement probed, RecordingTarget target) => new()
+        private ElementEntry BuildEntry(string alias, ProbedElement probed, RecordingTarget target)
         {
-            Alias = alias,
-            DisplayName = probed.Name,
-            ControlType = probed.ControlType,
-            AutomationId = probed.AutomationId,
-            Name = probed.Name,
-            XPath = probed.XPath,
-            RecordingModes = target.Mode == ProbeMode.FlaUI
+            var modes = target.Mode == ProbeMode.FlaUI
                 ? new List<string> { "FlaUI" }
-                : new List<string> { "FlaUI", "WPFSpy" },
-        };
+                : new List<string> { "FlaUI", "WPFSpy" };
+
+            if (RecordSikuli)
+            {
+                modes.Add("Sikuli");
+            }
+
+            return new ElementEntry
+            {
+                Alias = alias,
+                DisplayName = probed.Name,
+                ControlType = probed.ControlType,
+                AutomationId = probed.AutomationId,
+                Name = probed.Name,
+                XPath = probed.XPath,
+                RecordingModes = modes,
+            };
+        }
 
         /// <summary>
         /// Phase 2.3: ask the WpfSpyAgent to capture a template PNG of the

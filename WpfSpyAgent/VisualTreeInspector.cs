@@ -990,7 +990,7 @@ namespace WpfSpyAgent
                     string? windowAutoId = AutomationProperties.GetAutomationId(window);
                     if (!string.IsNullOrEmpty(windowAutoId))
                     {
-                        segments.Insert(0, $"Window[@Name='{windowAutoId}']");
+                        segments.Insert(0, $"Window[@AutomationId='{windowAutoId}']");
                     }
                     else if (!string.IsNullOrEmpty(window.Name))
                     {
@@ -1418,7 +1418,7 @@ namespace WpfSpyAgent
             {
                 if (element is Window window)
                 {
-                    if (window.Title != namePredicate)
+                    if (window.Title != namePredicate && window.Name != namePredicate)
                     {
                         return false;
                     }

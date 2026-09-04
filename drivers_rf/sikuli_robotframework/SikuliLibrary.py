@@ -47,6 +47,21 @@ def _resolve_template_path(value: str, image_path: Optional[str]) -> str:
         candidate = image_path
     if os.path.isabs(candidate):
         return candidate
+
+    # Try the canonical framework repo root first (same root the rest of
+    # the Python framework uses for repository/elements/*).
+    try:
+        from repository_access import _REPO_ROOT
+        abs1 = os.path.join(_REPO_ROOT, "repository", candidate)
+        if os.path.exists(abs1):
+            return abs1
+        abs2 = os.path.join(_REPO_ROOT, candidate)
+        if os.path.exists(abs2):
+            return abs2
+    except Exception:
+        pass
+
+    # Fallback: resolve relative to this driver's file location.
     here = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.normpath(os.path.join(here, "..", "..", ".."))
     abs1 = os.path.join(repo_root, "repository", candidate)

@@ -271,7 +271,16 @@ namespace WpfTestIde.ViewModels
         public bool RecordSikuli
         {
             get => _recordSikuli;
-            set { _recordSikuli = value; OnPropertyChanged(); RegenerateScript(); }
+            set
+            {
+                _recordSikuli = value;
+                OnPropertyChanged();
+                RegenerateScript();
+                if (_session != null)
+                {
+                    _session.RecordSikuli = _recordSikuli;
+                }
+            }
         }
 
         // Run mode checkboxes (FlaUI, WPFSpy, Sikuli)
@@ -699,6 +708,7 @@ namespace WpfTestIde.ViewModels
             {
                 _session = new RecordingSession();
                 _session.StepCaptured += OnStepCaptured;
+                _session.RecordSikuli = RecordSikuli;
             }
             _session.RemoveTarget(appId);
             _session.AddTarget(new RecordingTarget(
@@ -822,6 +832,7 @@ namespace WpfTestIde.ViewModels
             {
                 _session = new RecordingSession();
                 _session.StepCaptured += OnStepCaptured;
+                _session.RecordSikuli = RecordSikuli;
             }
             else
             {
@@ -1193,6 +1204,7 @@ namespace WpfTestIde.ViewModels
                     XPath = entry.XPath,
                     RecordingModes = recordingModes,
                     DriverPriority = driverPriority,
+                    ImagePath = entry.ImagePath,
                 };
 
                 Steps.Add(step);
