@@ -124,6 +124,10 @@ class SikuliDriver:
         # surfaces in the HTML report with full context.
         self._screenshot_sink = None
 
+        # Last successful image-match score; consumed by the framework
+        # for healing-metadata recording. None until the first match.
+        self._last_match_score: Optional[float] = None
+
     @property
     def screenshot_sink(self):
         return self._screenshot_sink
@@ -133,6 +137,17 @@ class SikuliDriver:
         """Register a callback that receives (image_bgr, alias, ok, action)
         after every action. Pass None to disable."""
         self._screenshot_sink = fn
+
+    @property
+    def last_match_score(self) -> Optional[float]:
+        """The score of the most recent successful find_element, or None
+        if the driver has not yet matched anything (or the last match
+        was a mock-app fallback which doesn't have a score).
+
+        The framework reads this to populate the healing store's
+        image_match_score column so regressions are diagnosable.
+        """
+        return self._last_match_score
 
     def _emit_screenshot(self, element, ok: bool, action: str) -> None:
         """Capture a region screenshot and forward it to the sink, if
@@ -225,6 +240,7 @@ class SikuliDriver:
                         f"Sikuli: no on-screen match for template '{template_path}' "
                         f"(thresholds down to {max(0.0, similarity - 0.10):.2f})"
                     )
+            self._last_match_score = m.score
             return _RegionHandle(m, template_path, hwnd=int(hwnd) if hwnd else None, alias=str(alias))
 
         # Mock fallback

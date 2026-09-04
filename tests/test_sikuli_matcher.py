@@ -241,5 +241,44 @@ class TestScreenshotSink(unittest.TestCase):
         self.assertIsNone(d._screenshot_sink)
 
 
+class TestLastMatchScore(unittest.TestCase):
+    def test_starts_as_none(self):
+        from drivers_rf.sikuli_robotframework.SikuliLibrary import SikuliDriver
+        from drivers_rf.sikuli_robotframework.image_matcher import StubImageMatcher
+        from drivers_rf.sikuli_robotframework.screen_capture import StubScreenCapture
+
+        d = SikuliDriver(
+            matcher=StubImageMatcher(),
+            capture=StubScreenCapture(),
+            use_mock=False,
+        )
+        self.assertIsNone(d.last_match_score)
+
+    def test_set_to_match_score_on_success(self):
+        from drivers_rf.sikuli_robotframework.SikuliLibrary import SikuliDriver
+        from drivers_rf.sikuli_robotframework.image_matcher import StubImageMatcher
+        from drivers_rf.sikuli_robotframework.screen_capture import StubScreenCapture
+
+        d = SikuliDriver(
+            matcher=StubImageMatcher(),  # stub returns score=1.0
+            capture=StubScreenCapture(),
+            use_mock=False,
+        )
+        # Use a fake template file that exists.
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            import numpy as np
+            try:
+                import cv2  # type: ignore
+            except ImportError:
+                self.skipTest("opencv-python not installed")
+            template_path = os.path.join(tmp, "template.png")
+            cv2.imwrite(template_path, np.zeros((10, 10, 3), dtype=np.uint8))
+            d.find_element({"searchBy": "Image", "value": template_path, "alias": "x"})
+        self.assertIsNotNone(d.last_match_score)
+        self.assertGreaterEqual(d.last_match_score, 0.0)
+        self.assertLessEqual(d.last_match_score, 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()

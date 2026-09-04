@@ -1130,12 +1130,14 @@ class DriverAgnosticApi:
                     # Phase 1: Capture baseline and record healing
                     if healing_store is not None:
                         # Record strategy attempt for statistics
+                        image_score = getattr(driver, "last_match_score", None)
                         healing_store.record_strategy_attempt(
                             alias=alias,
                             driver=driver_name,
                             search_method=search_by,
                             success=True,
-                            duration_ms=duration_ms
+                            duration_ms=duration_ms,
+                            image_match_score=image_score,
                         )
                         
                         # If this was a healing success (fallback worked)

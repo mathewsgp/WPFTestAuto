@@ -78,12 +78,21 @@ class StrategyStats:
     last_success: Optional[str] = None
     last_failure: Optional[str] = None
     avg_duration_ms: float = 0.0
+    # Phase 3.4: most-recent similarity score for image-based
+    # strategies (Sikuli). None when the strategy doesn't produce one
+    # (FlaUI/WPFSpy) or the driver hasn't reported one yet.
+    last_image_match_score: Optional[float] = None
+    min_image_match_score: Optional[float] = None
 
-    def record_success(self, duration_ms: float):
+    def record_success(self, duration_ms: float, image_match_score: Optional[float] = None):
         self.success_count += 1
         self.total_duration_ms += duration_ms
         self.last_success = datetime.now().isoformat()
         self.avg_duration_ms = self.total_duration_ms / self.success_count if self.success_count > 0 else 0
+        if image_match_score is not None:
+            self.last_image_match_score = float(image_match_score)
+            if self.min_image_match_score is None or image_match_score < self.min_image_match_score:
+                self.min_image_match_score = float(image_match_score)
 
     def record_failure(self, duration_ms: float):
         self.failure_count += 1
@@ -429,28 +438,34 @@ class HealingMetadataStore:
         driver: str,
         search_method: str,
         success: bool,
-        duration_ms: float = 0
+        duration_ms: float = 0,
+        image_match_score: Optional[float] = None
     ):
         """Record a strategy attempt for statistics tracking.
-        
+
         Args:
             alias: Element alias
             driver: Driver used
             search_method: Search method used
             success: Whether the attempt succeeded
             duration_ms: How long the attempt took
+            image_match_score: Phase 3.4 - similarity score for image-
+                based strategies (Sikuli). Forwarded to StrategyStats so
+                regressions are diagnosable from the healing metadata.
         """
         metadata = self._get_or_create_metadata(alias)
-        
+
         strategy_key = f"{driver}:{search_method}"
         if strategy_key not in metadata.strategy_stats:
             metadata.strategy_stats[strategy_key] = StrategyStats()
-        
+
         if success:
-            metadata.strategy_stats[strategy_key].record_success(duration_ms)
+            metadata.strategy_stats[strategy_key].record_success(
+                duration_ms, image_match_score=image_match_score
+            )
         else:
             metadata.strategy_stats[strategy_key].record_failure(duration_ms)
-        
+
         metadata.record_interaction(success=success)
         self._modified = True
         self._save(alias)

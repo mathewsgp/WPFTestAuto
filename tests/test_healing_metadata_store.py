@@ -470,5 +470,23 @@ class TestHealingMetadataStoreIntegration:
         assert len(metadata.healing_history) == 3
 
 
+def test_record_strategy_attempt_accepts_image_match_score():
+    tmp = tempfile.mkdtemp()
+    store = HealingMetadataStore(metadata_dir=tmp)
+    store.record_strategy_attempt(
+        alias="SampleWpfApp.OrdersWindow.btnLogout",
+        driver="Sikuli",
+        search_method="Image",
+        success=True,
+        duration_ms=120.0,
+        image_match_score=0.91,
+    )
+    key = "Sikuli:Image"
+    stats = store._metadata["SampleWpfApp.OrdersWindow.btnLogout"].strategy_stats[key]
+    assert stats.success_count == 1
+    assert stats.last_image_match_score == 0.91
+    assert stats.min_image_match_score == 0.91
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
