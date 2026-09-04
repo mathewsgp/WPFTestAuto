@@ -149,6 +149,14 @@ namespace WpfTestIde.Recording
             _mouseHook.LeftButtonDown += OnClick;
         }
 
+        /// <summary>When true, OnClick calls the agent's CaptureElement
+        /// command for every accepted step and writes a template PNG
+        /// under repository/sikuli/. The recorded element's ImagePath is
+        /// then propagated through to the emitted YAML so the Sikuli
+        /// strategy uses the captured image rather than a placeholder.
+        /// Default is false so existing self-tests are unaffected.</summary>
+        public bool RecordSikuli { get; set; }
+
         /// <summary>Add a target to this session. Idempotent on AppId.</summary>
         public void AddTarget(RecordingTarget target)
         {
@@ -399,6 +407,18 @@ namespace WpfTestIde.Recording
 
             bool isToggle = probed.ControlType == "CheckBox" || probed.ControlType.Contains("Toggle");
             var entry = BuildEntry(alias, probed, target);
+
+            // Phase 2.3: when the operator has Sikuli recording turned on
+            // and the agent can see the element, capture a template PNG of
+            // its on-screen rect and write it to repository/sikuli/. The
+            // resulting imagePath is propagated through BuildEntry -> step
+            // -> RepositoryWriter so the emitted YAML uses a real image
+            // instead of the placeholder name.
+            if (RecordSikuli)
+            {
+                TryCaptureElementImage(entry, target);
+            }
+
             var step = new RecordedStep
             {
                 Kind = StepKind.Action,
@@ -981,6 +1001,107 @@ namespace WpfTestIde.Recording
                 ? new List<string> { "FlaUI" }
                 : new List<string> { "FlaUI", "WPFSpy" },
         };
+
+        /// <summary>
+        /// Phase 2.3: ask the WpfSpyAgent to capture a template PNG of the
+        /// element's on-screen rect and save it to
+        /// repository/sikuli/&lt;safe-alias&gt;.png. The agent's
+        /// CaptureElement command returns the PNG as base64 plus the rect;
+        /// we set entry.ImagePath on success so RepositoryWriter emits
+        /// a Sikuli strategy that points at the captured template.
+        /// </summary>
+        private void TryCaptureElementImage(ElementEntry entry, RecordingTarget target)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(target.PipeName))
+                {
+                    Log("[CaptureElementImage] skipped: target has no pipe name");
+                    return;
+                }
+
+                var client = new SpyAgentClient(target.PipeName);
+                // Prefer XPath (resolves the right element on page
+                // navigation), fall back to AutomationId / Name.
+                string? xpath = entry.XPath;
+                string? name = !string.IsNullOrEmpty(entry.AutomationId) ? null : entry.Name;
+                if (string.IsNullOrEmpty(xpath) && string.IsNullOrEmpty(name))
+                {
+                    Log($"[CaptureElementImage] skipped: no locator for {entry.Alias}");
+                    return;
+                }
+
+                var response = client.Send(
+                    "CaptureElement",
+                    name: name,
+                    xpath: xpath,
+                    width: 4 /* padding px */);
+
+                if (!response.Success || string.IsNullOrEmpty(response.Data))
+                {
+                    Log($"[CaptureElementImage] agent failed for {entry.Alias}: {response.Error ?? "(no data)"}");
+                    return;
+                }
+
+                // The response is the JSON payload {pngBase64, x, y, ...}
+                // — extract pngBase64 and decode it.
+                using var doc = System.Text.Json.JsonDocument.Parse(response.Data!);
+                if (!doc.RootElement.TryGetProperty("pngBase64", out var base64El))
+                {
+                    Log($"[CaptureElementImage] response missing pngBase64 for {entry.Alias}");
+                    return;
+                }
+                byte[] png = Convert.FromBase64String(base64El.GetString() ?? "");
+
+                // Resolve the repository root from the IDE's working
+                // directory (we don't have a direct FrameworkRoot here,
+                // so we walk up from the bin directory).
+                string? repoRoot = ResolveRepositoryRoot();
+                if (repoRoot is null)
+                {
+                    Log("[CaptureElementImage] skipped: could not resolve repository root");
+                    return;
+                }
+                string sikuliDir = System.IO.Path.Combine(repoRoot, "repository", "sikuli");
+                System.IO.Directory.CreateDirectory(sikuliDir);
+                string fileName = SafeFileName(entry.Alias) + ".png";
+                string fullPath = System.IO.Path.Combine(sikuliDir, fileName);
+                System.IO.File.WriteAllBytes(fullPath, png);
+
+                entry.ImagePath = $"sikuli/{fileName}";
+                Log($"[CaptureElementImage] saved {fullPath} ({png.Length} bytes) for {entry.Alias}");
+            }
+            catch (Exception ex)
+            {
+                Log($"[CaptureElementImage] exception for {entry.Alias}: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        private static string SafeFileName(string alias)
+        {
+            var invalid = System.IO.Path.GetInvalidFileNameChars();
+            var chars = alias.Select(c => invalid.Contains(c) ? '_' : c).ToArray();
+            return new string(chars);
+        }
+
+        private static string? ResolveRepositoryRoot()
+        {
+            try
+            {
+                string dir = System.AppContext.BaseDirectory;
+                for (int i = 0; i < 6 && !string.IsNullOrEmpty(dir); i++)
+                {
+                    if (System.IO.File.Exists(System.IO.Path.Combine(dir, "setup_env.bat"))
+                        || System.IO.Directory.Exists(System.IO.Path.Combine(dir, "repository")))
+                    {
+                        return dir;
+                    }
+                    dir = System.IO.Path.GetDirectoryName(dir) ?? "";
+                }
+            }
+            catch { }
+            return null;
+        }
 
         internal static void Log(string message)
         {
