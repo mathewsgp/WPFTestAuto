@@ -101,5 +101,44 @@ class TestStubScreenCapture(unittest.TestCase):
         self.assertEqual(img.dtype, np.uint8)
 
 
+class TestOcrGracefulDegrade(unittest.TestCase):
+    def test_ocr_text_returns_empty_when_tesseract_missing(self):
+        # Force the import inside ocr_text to fail by stubbing sys.modules
+        # entries before calling. This simulates a clean install with no
+        # pytesseract.
+        from importlib import reload
+        import drivers_rf.sikuli_robotframework.ocr as ocr_mod
+
+        original = sys.modules.pop("pytesseract", None)
+        sys.modules["pytesseract"] = None  # type: ignore[assignment]
+        try:
+            reload(ocr_mod)
+            out = ocr_mod.ocr_text(np.zeros((50, 50, 3), np.uint8))
+            self.assertEqual(out, "")
+        finally:
+            if original is not None:
+                sys.modules["pytesseract"] = original
+            else:
+                sys.modules.pop("pytesseract", None)
+            reload(ocr_mod)
+
+    def test_ocr_grid_csv_returns_empty_when_tesseract_missing(self):
+        from importlib import reload
+        import drivers_rf.sikuli_robotframework.ocr as ocr_mod
+
+        original = sys.modules.pop("pytesseract", None)
+        sys.modules["pytesseract"] = None  # type: ignore[assignment]
+        try:
+            reload(ocr_mod)
+            out = ocr_mod.ocr_grid_csv(np.zeros((100, 200, 3), np.uint8))
+            self.assertEqual(out, "")
+        finally:
+            if original is not None:
+                sys.modules["pytesseract"] = original
+            else:
+                sys.modules.pop("pytesseract", None)
+            reload(ocr_mod)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -26,6 +26,7 @@ import time
 from typing import Any, List, Optional, Tuple
 
 from image_matcher import ImageMatcher, Match, create_matcher
+from ocr import ocr_grid_csv, ocr_text
 from screen_capture import ScreenCapture, create_capture
 from wait_utils import retry_match, wait_until_stable
 
@@ -304,10 +305,14 @@ class SikuliDriver:
     def get_text(self, element) -> str:
         if not self._use_real():
             return APP_INSTANCE.get_text(element)
-        # Phase 1.5 will replace this with pytesseract OCR. For now we
-        # just hand back the element's alias as a deterministic label so
-        # tests can run without OCR installed.
-        return getattr(element, "alias", "") or ""
+        try:
+            if element is not None and getattr(element, "match", None) is not None:
+                img = self._capture.grab(region=element.match.rect)
+            else:
+                img = self._capture.grab()
+            return ocr_text(img, region=(0, 0, img.shape[1], img.shape[0]))
+        except Exception:
+            return ""
 
     def is_visible(self, element) -> bool:
         if not self._use_real():
@@ -418,9 +423,14 @@ class SikuliDriver:
     def get_data_grid_content_ocr(self, element) -> str:
         if not self._use_real():
             return APP_INSTANCE.get_data_grid_content_ocr(element) if hasattr(APP_INSTANCE, "get_data_grid_content_ocr") else ""
-        # Phase 1.5 will wire pytesseract here. For now, return an empty
-        # CSV so the calling keyword can continue to a clean failure.
-        return ""
+        try:
+            if element is not None and getattr(element, "match", None) is not None:
+                img = self._capture.grab(region=element.match.rect)
+            else:
+                img = self._capture.grab()
+            return ocr_grid_csv(img)
+        except Exception:
+            return ""
 
     def toggle(self, element, state: bool = None):
         if self._use_real():
