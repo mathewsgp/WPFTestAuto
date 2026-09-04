@@ -92,6 +92,65 @@ class TestMultiScaleMatcher(unittest.TestCase):
         r = m.match(screen, scaled, threshold=0.9)
         self.assertIsNotNone(r)
 
+    def test_default_scales_include_one(self):
+        m = MultiScaleImageMatcher()
+        self.assertIn(1.0, m._scales)
+        self.assertGreaterEqual(len(m._scales), 2)
+
+    def test_env_overrides_scales(self):
+        os.environ["SIKULI_SCALES"] = "0.8,1.0,1.2"
+        try:
+            m = MultiScaleImageMatcher()
+            self.assertEqual(m._scales, [0.8, 1.0, 1.2])
+        finally:
+            del os.environ["SIKULI_SCALES"]
+
+
+class TestRetryMatchThresholdLadder(unittest.TestCase):
+    def setUp(self):
+        try:
+            import cv2  # noqa: F401
+        except ImportError:
+            self.skipTest("opencv-python not installed")
+
+    def test_exact_template_matches_at_strict_threshold(self):
+        import drivers_rf.sikuli_robotframework.wait_utils as wait_utils
+        from importlib import reload
+
+        reload(wait_utils)
+
+        screen, template = _make_screen_and_template()
+        matcher = OpenCvImageMatcher()
+        m = wait_utils.retry_match(
+            lambda r: screen,
+            matcher,
+            template,
+            thresholds=(0.85, 0.80, 0.75),
+            attempts_per_threshold=1,
+            settle_ms=0,
+        )
+        self.assertIsNotNone(m)
+
+    def test_strict_threshold_rejects_unrelated_template(self):
+        import drivers_rf.sikuli_robotframework.wait_utils as wait_utils
+        from importlib import reload
+
+        reload(wait_utils)
+
+        screen, _ = _make_screen_and_template()
+        rs = np.random.RandomState(123)
+        unrelated = rs.randint(0, 255, (40, 40, 3), dtype=np.uint8)
+        matcher = OpenCvImageMatcher()
+        m = wait_utils.retry_match(
+            lambda r: screen,
+            matcher,
+            unrelated,
+            thresholds=(0.99,),
+            attempts_per_threshold=1,
+            settle_ms=0,
+        )
+        self.assertIsNone(m)
+
 
 class TestStubScreenCapture(unittest.TestCase):
     def test_returns_bgr_three_channel(self):
