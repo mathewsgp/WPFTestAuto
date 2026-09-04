@@ -193,23 +193,6 @@ elements:
           value: "Button[@AutomationId='btnSaveScript']"
           priority: 1
 
-  WpfTestIde.MainWindow.btnOcrDataGrid:
-    displayName: "OCR DataGrid Button"
-    controlType: "Button"
-    automationId: "btnOcrDataGrid"
-    name: "OCR DataGrid"
-    parentAlias: "WpfTestIde.MainWindow"
-    relativeXPath: "Button[@AutomationId='btnOcrDataGrid']"
-    strategies:
-      FlaUI:
-        - searchBy: "AutomationId"
-          value: "btnOcrDataGrid"
-          priority: 1
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "Button[@AutomationId='btnOcrDataGrid']"
-          priority: 1
-
   WpfTestIde.MainWindow.btnCheckpointWizard:
     displayName: "Checkpoint Wizard Button"
     controlType: "Button"
@@ -259,6 +242,23 @@ elements:
       WPFSpy:
         - searchBy: "XPath"
           value: "Button[@AutomationId='btnVisualTestBuilder']"
+          priority: 1
+
+  WpfTestIde.MainWindow.btnSettings:
+    displayName: "Settings Button"
+    controlType: "Button"
+    automationId: "btnSettings"
+    name: "Settings"
+    parentAlias: "WpfTestIde.MainWindow"
+    relativeXPath: ".//Button[@AutomationId='btnSettings']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnSettings"
+          priority: 1
+      WPFSpy:
+        - searchBy: "XPath"
+          value: ".//Button[@AutomationId='btnSettings']"
           priority: 1
 
   # ================= Status Bar =================
@@ -679,8 +679,93 @@ elements:
           value: "txtRunOutput"
           priority: 1
       WPFSpy:
-        - searchBy: "XPath"
-          value: "//ListView[@AutomationId='txtRunOutput']"
+         - searchBy: "XPath"
+           value: "//ListView[@AutomationId='txtRunOutput']"
+           priority: 1
+
+  # ================= Sikuli Settings Dialog =================
+  SikuliSettingsDialog:
+    displayName: "Sikuli Settings Dialog"
+    controlType: "Window"
+    windowAutomationId: "SikuliSettingsDialog"
+    name: "Sikuli Settings"
+    parentAlias: null
+    strategies:
+      FlaUI:
+        - searchBy: "Name"
+          value: "Sikuli Settings"
+          priority: 1
+
+  SikuliSettingsDialog.sldSimilarity:
+    displayName: "Similarity Slider"
+    controlType: "Slider"
+    automationId: "sldSimilarity"
+    parentAlias: "SikuliSettingsDialog"
+    relativeXPath: "Slider[@AutomationId='sldSimilarity']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "sldSimilarity"
+          priority: 1
+
+  SikuliSettingsDialog.sldPadding:
+    displayName: "Padding Slider"
+    controlType: "Slider"
+    automationId: "sldPadding"
+    parentAlias: "SikuliSettingsDialog"
+    relativeXPath: "Slider[@AutomationId='sldPadding']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "sldPadding"
+          priority: 1
+
+  SikuliSettingsDialog.cbMatcher:
+    displayName: "Matcher ComboBox"
+    controlType: "ComboBox"
+    automationId: "cbMatcher"
+    parentAlias: "SikuliSettingsDialog"
+    relativeXPath: "ComboBox[@AutomationId='cbMatcher']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "cbMatcher"
+          priority: 1
+
+  SikuliSettingsDialog.cbCapture:
+    displayName: "Capture ComboBox"
+    controlType: "ComboBox"
+    automationId: "cbCapture"
+    parentAlias: "SikuliSettingsDialog"
+    relativeXPath: "ComboBox[@AutomationId='cbCapture']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "cbCapture"
+          priority: 1
+
+  SikuliSettingsDialog.btnOk:
+    displayName: "OK Button"
+    controlType: "Button"
+    automationId: "btnOk"
+    parentAlias: "SikuliSettingsDialog"
+    relativeXPath: "Button[@AutomationId='btnOk']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnOk"
+          priority: 1
+
+  SikuliSettingsDialog.btnCancel:
+    displayName: "Cancel Button"
+    controlType: "Button"
+    automationId: "btnCancel"
+    parentAlias: "SikuliSettingsDialog"
+    relativeXPath: "Button[@AutomationId='btnCancel']"
+    strategies:
+      FlaUI:
+        - searchBy: "AutomationId"
+          value: "btnCancel"
           priority: 1
 
   # ================= Attach to Process Dialog =================
@@ -728,10 +813,6 @@ elements:
         - searchBy: "Name"
           value: "Cancel"
           priority: 2
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "Button[@AutomationId='btnAttachCancel']"
-          priority: 1
       WPFSpy:
         - searchBy: "XPath"
           value: "Button[@AutomationId='btnAttachCancel']"
@@ -914,13 +995,6 @@ elements:
       FlaUI:
         - searchBy: "AutomationId"
           value: "btnMultiAppClose"
-          priority: 1
-        - searchBy: "Name"
-          value: "Close"
-          priority: 2
-      WPFSpy:
-        - searchBy: "XPath"
-          value: "Button[@AutomationId='btnMultiAppClose']"
           priority: 1
       WPFSpy:
         - searchBy: "XPath"

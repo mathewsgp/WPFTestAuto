@@ -180,7 +180,7 @@
                 <Button Content="🔎" ToolTip="Spy Tool" Background="Transparent" BorderThickness="0" Padding="10,8" Click="ActivitySpy_Click"/>
                 <Button Content="🧩" ToolTip="Visual Builder" Background="Transparent" BorderThickness="0" Padding="10,8" Click="ActivityBuilder_Click"/>
                 <Separator Margin="8,4" Background="{DynamicResource BorderBrush}"/>
-                <Button Content="⚙️" ToolTip="Settings" Background="Transparent" BorderThickness="0" Padding="10,8" Click="ActivitySettings_Click"/>
+                <Button Content="⚙️" ToolTip="Settings" Background="Transparent" BorderThickness="0" Padding="10,8" Click="ActivitySettings_Click" AutomationProperties.AutomationId="btnSettings"/>
             </StackPanel>
         </Border>
 

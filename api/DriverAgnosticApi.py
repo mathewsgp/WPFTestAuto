@@ -2100,7 +2100,6 @@ class DriverAgnosticApi:
         
         Uses exponential backoff on poll interval for better performance.
         """
-        from wait_utils import Wait
         from exceptions import WaitTimeoutError
         
         start_time = time.time()
