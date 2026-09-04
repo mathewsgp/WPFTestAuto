@@ -838,6 +838,19 @@ namespace WpfTestIde.Recording
             }
             if (windowIdx < 0) return (string.Empty, xpath);
 
+            string windowFromSegment = ExtractNameAttr(parts[windowIdx]);
+            if (!string.IsNullOrEmpty(windowFromSegment))
+            {
+                var ancestorOnly = new System.Text.StringBuilder();
+                for (int k = windowIdx + 1; k < parts.Length; k++)
+                {
+                    if (!IsMeaningfulAliasName(parts[k])) continue;
+                    if (ancestorOnly.Length > 0) ancestorOnly.Append('.');
+                    ancestorOnly.Append(ExtractNameAttr(parts[k]));
+                }
+                return (windowFromSegment, ancestorOnly.ToString());
+            }
+
             int nameStart = -1;
             for (int j = windowIdx + 1; j < parts.Length; j++)
             {

@@ -902,6 +902,19 @@ namespace WpfSpyAgent
             }
             if (windowIdx < 0) return new AliasSplit { WindowName = string.Empty, AncestorPath = xpath };
 
+            string windowFromSegment = ExtractName(parts[windowIdx]);
+            if (!string.IsNullOrEmpty(windowFromSegment))
+            {
+                var ancestorOnly = new System.Text.StringBuilder();
+                for (int k = windowIdx + 1; k < parts.Length; k++)
+                {
+                    if (!IsMeaningfulName(parts[k])) continue;
+                    if (ancestorOnly.Length > 0) ancestorOnly.Append('.');
+                    ancestorOnly.Append(ExtractName(parts[k]));
+                }
+                return new AliasSplit { WindowName = windowFromSegment, AncestorPath = ancestorOnly.ToString() };
+            }
+
             int nameStart = -1;
             for (int j = windowIdx + 1; j < parts.Length; j++)
             {
