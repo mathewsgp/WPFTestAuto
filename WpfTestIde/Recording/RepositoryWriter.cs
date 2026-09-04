@@ -38,14 +38,48 @@ namespace WpfTestIde.Recording
                 var modes = entry.RecordingModes ?? recordingModes;
                 bool resolvedViaFlaUI = entry.NonStandard == false && !string.IsNullOrEmpty(entry.XPath) == false;
                 bool resolvedViaWPFSpy = !string.IsNullOrEmpty(entry.XPath) && entry.XPath!.Contains("[@AutomationId=");
-                // Heuristic: elements with an AutomationId or resolved by FlaUI probe get FlaUI strategies.
+                // Heuristic: elements with an XPath always get an XPath-based FlaUI strategy
+                // as the default (mirrors the WPFSpy default), so the recorded step is
+                // symmetric across drivers and stable when AutomationId is missing or
+                // collides. AutomationId/Name are kept as fallbacks.
                 bool includeFlaUI = (modes == null || modes.Contains("FlaUI"))
                     || !string.IsNullOrEmpty(entry.AutomationId)
-                    || entry.ControlType == "Window"  // window-level fallbacks always need FlaUI
+                    || entry.ControlType == "Window"
                     || (!string.IsNullOrEmpty(entry.Name) && entry.Name.Length > 0);
 
-                // FlaUI strategy: AutomationId-based (most stable for standard controls)
-                if (includeFlaUI && !string.IsNullOrEmpty(entry.AutomationId))
+                if (includeFlaUI && !string.IsNullOrEmpty(entry.XPath))
+                {
+                    // Default FlaUI strategy: XPath (UIA control types, built by
+                    // FlaUIElementProbe.BuildXPath — already compatible with FlaUI).
+                    var flauiStrategies = new List<object>
+                    {
+                        new Dictionary<string, object>
+                        {
+                            ["searchBy"] = "XPath",
+                            ["value"] = entry.XPath!,
+                        }
+                    };
+                    if (!string.IsNullOrEmpty(entry.AutomationId))
+                    {
+                        flauiStrategies.Add(new Dictionary<string, object>
+                        {
+                            ["searchBy"] = "AutomationId",
+                            ["value"] = entry.AutomationId!,
+                            ["scope"] = "Descendant",
+                        });
+                    }
+                    if (!string.IsNullOrEmpty(entry.Name) && entry.Name != entry.AutomationId)
+                    {
+                        flauiStrategies.Add(new Dictionary<string, object>
+                        {
+                            ["searchBy"] = "Name",
+                            ["value"] = entry.Name,
+                            ["scope"] = "Descendant",
+                        });
+                    }
+                    strategies["FlaUI"] = flauiStrategies;
+                }
+                else if (includeFlaUI && !string.IsNullOrEmpty(entry.AutomationId))
                 {
                     strategies["FlaUI"] = new List<object>
                     {
@@ -59,7 +93,6 @@ namespace WpfTestIde.Recording
                 }
                 else if (includeFlaUI && !string.IsNullOrEmpty(entry.Name))
                 {
-                    // No AutomationId — fall back to Name-based FlaUI strategy.
                     strategies["FlaUI"] = new List<object>
                     {
                         new Dictionary<string, object>
@@ -67,20 +100,6 @@ namespace WpfTestIde.Recording
                             ["searchBy"] = "Name",
                             ["value"] = entry.Name,
                             ["scope"] = "Descendant",
-                        }
-                    };
-                }
-                else if (includeFlaUI && entry.ControlType == "Window" && !string.IsNullOrEmpty(entry.XPath))
-                {
-                    // Window-level fallback (e.g. UWP apps without UIA): use the XPath
-                    // that targets the window by name. FlaUI can resolve this via
-                    // AutomationElement.RootElement.FindFirst.
-                    strategies["FlaUI"] = new List<object>
-                    {
-                        new Dictionary<string, object>
-                        {
-                            ["searchBy"] = "XPath",
-                            ["value"] = entry.XPath!,
                         }
                     };
                 }
@@ -111,11 +130,16 @@ namespace WpfTestIde.Recording
                     };
                 }
 
+                var aliasParts = entry.Alias.Split('.');
+                string parentAlias = aliasParts.Length >= 2
+                    ? string.Join(".", aliasParts.Take(aliasParts.Length - 1))
+                    : (aliasParts[0] + ".MainWindow");
+
                 var elementDef = new Dictionary<string, object>
                 {
                     ["displayName"] = entry.DisplayName,
                     ["controlType"] = entry.ControlType,
-                    ["parentAlias"] = entry.Alias.Split('.')[0] + ".MainWindow",
+                    ["parentAlias"] = parentAlias,
                     ["defaultTimeout"] = 10,
                     ["tags"] = entry.NonStandard
                         ? new List<string> { "recorded", "self-healing-demo" }
