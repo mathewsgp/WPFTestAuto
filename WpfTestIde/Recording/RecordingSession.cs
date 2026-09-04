@@ -357,9 +357,29 @@ namespace WpfTestIde.Recording
             Log($"[OnClick] accepted for appId={target.AppId}: {probed.ControlType} name={probed.Name} automationId={probed.AutomationId}");
 
             string processName = ResolveProcessName(target);
-            string windowSegment = ResolveWindowSegment(x, y, target);
-            string ancestorPath = BuildAncestorPath(probed);
+            string windowSegment;
+            string ancestorPath;
             string idOrName = string.IsNullOrEmpty(probed.AutomationId) ? probed.Name : probed.AutomationId!;
+
+            if (!string.IsNullOrEmpty(probed.XPath))
+            {
+                var (xpathWindow, xpathAncestor) = SplitXPathForAlias(probed.XPath);
+                if (!string.IsNullOrEmpty(xpathWindow))
+                {
+                    windowSegment = xpathWindow;
+                    ancestorPath = xpathAncestor;
+                }
+                else
+                {
+                    windowSegment = ResolveWindowSegment(x, y, target);
+                    ancestorPath = BuildAncestorPath(probed);
+                }
+            }
+            else
+            {
+                windowSegment = ResolveWindowSegment(x, y, target);
+                ancestorPath = BuildAncestorPath(probed);
+            }
 
             // Alias format: <ProcessName>.<WindowSegment>[.<AncestorPath>].<Element>
             var parts = new List<string> { processName, windowSegment };
@@ -801,6 +821,63 @@ namespace WpfTestIde.Recording
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern int GetWindowTextLength(IntPtr hWnd);
+
+        private static (string WindowName, string AncestorPath) SplitXPathForAlias(string xpath)
+        {
+            if (string.IsNullOrEmpty(xpath)) return (string.Empty, string.Empty);
+
+            var parts = xpath.Split('/');
+            int windowIdx = -1;
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (parts[i].StartsWith("Window[", StringComparison.Ordinal))
+                {
+                    windowIdx = i;
+                    break;
+                }
+            }
+            if (windowIdx < 0) return (string.Empty, xpath);
+
+            int nameStart = -1;
+            for (int j = windowIdx + 1; j < parts.Length; j++)
+            {
+                if (IsMeaningfulAliasName(parts[j]))
+                {
+                    nameStart = j;
+                    break;
+                }
+            }
+            if (nameStart < 0) return (string.Empty, string.Empty);
+
+            string windowName = ExtractNameAttr(parts[nameStart]);
+            var ancestor = new System.Text.StringBuilder();
+            for (int k = nameStart + 1; k < parts.Length; k++)
+            {
+                if (!IsMeaningfulAliasName(parts[k])) continue;
+                if (ancestor.Length > 0) ancestor.Append('.');
+                ancestor.Append(ExtractNameAttr(parts[k]));
+            }
+            return (windowName, ancestor.ToString());
+        }
+
+        private static bool IsMeaningfulAliasName(string segment)
+        {
+            if (string.IsNullOrEmpty(segment)) return false;
+            if (!segment.StartsWith("[", StringComparison.Ordinal)) return false;
+            if (segment.StartsWith("[@", StringComparison.Ordinal)) return false;
+            var name = ExtractNameAttr(segment);
+            return !string.IsNullOrEmpty(name) && name != "MainWindow";
+        }
+
+        private static string ExtractNameAttr(string segment)
+        {
+            int at = segment.IndexOf("@Name='", StringComparison.Ordinal);
+            if (at < 0) return string.Empty;
+            int start = at + "@Name='".Length;
+            int end = segment.IndexOf("'", start, StringComparison.Ordinal);
+            if (end < 0) return string.Empty;
+            return segment.Substring(start, end - start);
+        }
 
         private static string BuildAncestorPath(ProbedElement probed)
         {

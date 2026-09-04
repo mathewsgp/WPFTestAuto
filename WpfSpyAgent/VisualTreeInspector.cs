@@ -886,6 +886,69 @@ namespace WpfSpyAgent
         /// SelectorItem-derived) are indexed via ItemContainerGenerator, which
         /// stays correct across virtualization/scrolling.
         /// </summary>
+        public static AliasSplit SplitXPathForAlias(string xpath)
+        {
+            if (string.IsNullOrEmpty(xpath)) return new AliasSplit { WindowName = string.Empty, AncestorPath = string.Empty };
+
+            var parts = xpath.Split('/');
+            int windowIdx = -1;
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (parts[i].StartsWith("Window[", StringComparison.Ordinal))
+                {
+                    windowIdx = i;
+                    break;
+                }
+            }
+            if (windowIdx < 0) return new AliasSplit { WindowName = string.Empty, AncestorPath = xpath };
+
+            int nameStart = -1;
+            for (int j = windowIdx + 1; j < parts.Length; j++)
+            {
+                if (IsMeaningfulName(parts[j]))
+                {
+                    nameStart = j;
+                    break;
+                }
+            }
+            if (nameStart < 0) return new AliasSplit { WindowName = string.Empty, AncestorPath = string.Empty };
+
+            string windowName = ExtractName(parts[nameStart]);
+            var ancestor = new System.Text.StringBuilder();
+            for (int k = nameStart + 1; k < parts.Length; k++)
+            {
+                if (!IsMeaningfulName(parts[k])) continue;
+                if (ancestor.Length > 0) ancestor.Append('.');
+                ancestor.Append(ExtractName(parts[k]));
+            }
+            return new AliasSplit { WindowName = windowName, AncestorPath = ancestor.ToString() };
+        }
+
+        public struct AliasSplit
+        {
+            public string WindowName;
+            public string AncestorPath;
+        }
+
+        private static bool IsMeaningfulName(string segment)
+        {
+            if (string.IsNullOrEmpty(segment)) return false;
+            if (!segment.StartsWith("[", StringComparison.Ordinal)) return false;
+            if (segment.StartsWith("[@", StringComparison.Ordinal)) return false;
+            var name = ExtractName(segment);
+            return !string.IsNullOrEmpty(name) && name != "MainWindow";
+        }
+
+        private static string ExtractName(string segment)
+        {
+            int at = segment.IndexOf("@Name='", StringComparison.Ordinal);
+            if (at < 0) return string.Empty;
+            int start = at + "@Name='".Length;
+            int end = segment.IndexOf("'", start, StringComparison.Ordinal);
+            if (end < 0) return string.Empty;
+            return segment.Substring(start, end - start);
+        }
+
         public static string BuildXPath(FrameworkElement element)
         {
             var segments = new System.Collections.Generic.List<string>();
@@ -897,17 +960,17 @@ namespace WpfSpyAgent
                 if (current is Window window)
                 {
                     string? windowAutoId = AutomationProperties.GetAutomationId(window);
-                    if (!string.IsNullOrEmpty(window.Name))
+                    if (!string.IsNullOrEmpty(windowAutoId))
+                    {
+                        segments.Insert(0, $"Window[@Name='{windowAutoId}']");
+                    }
+                    else if (!string.IsNullOrEmpty(window.Name))
                     {
                         segments.Insert(0, $"Window[@Name='{window.Name}']");
                     }
                     else if (!string.IsNullOrEmpty(window.Title))
                     {
                         segments.Insert(0, $"Window[@Name='{window.Title}']");
-                    }
-                    else if (!string.IsNullOrEmpty(windowAutoId))
-                    {
-                        segments.Insert(0, $"Window[@AutomationId='{windowAutoId}']");
                     }
                     else
                     {
