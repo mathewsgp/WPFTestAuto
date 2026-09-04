@@ -40,6 +40,13 @@ namespace WpfTestIde.Models
         /// <summary>App context ID for multi-app support. Null/empty means global element.</summary>
         public string? AppId { get; set; }
 
+        /// <summary>Path to a reference image under repository/sikuli/
+        /// captured by the WpfSpyAgent at recording time. When set, the
+        /// emitted Sikuli strategy uses this image instead of a derived
+        /// file name. Stored as a repository-relative path so the YAML
+        /// stays portable across machines.</summary>
+        public string? ImagePath { get; set; }
+
         public ElementEntry Clone()
         {
             return new ElementEntry
@@ -53,6 +60,7 @@ namespace WpfTestIde.Models
                 RecordingModes = RecordingModes != null ? new List<string>(RecordingModes) : null,
                 DriverPriority = DriverPriority != null ? new List<string>(DriverPriority) : null,
                 AppId = AppId,
+                ImagePath = ImagePath,
             };
         }
     }

@@ -117,17 +117,25 @@ namespace WpfTestIde.Recording
                     };
                 }
 
-                // Sikuli strategy: image-based (placeholder — image capture not yet implemented)
+                // Sikuli strategy: image-based. When a reference image was
+                // captured during recording (entry.ImagePath), use that
+                // path as imagePath and the alias as a stable value tag.
+                // Otherwise fall back to the placeholder name that was
+                // emitted before the recorder could capture.
                 if (modes == null || modes.Contains("Sikuli"))
                 {
-                    strategies["Sikuli"] = new List<object>
+                    var sikuliStrategy = new Dictionary<string, object>
                     {
-                        new Dictionary<string, object>
-                        {
-                            ["searchBy"] = "Image",
-                            ["value"] = $"{entry.Alias.Split('.').Last().ToLower()}.png",
-                        }
+                        ["searchBy"] = "Image",
+                        ["value"] = entry.ImagePath
+                            ?? $"sikuli/{entry.Alias.Split('.').Last().ToLower()}.png",
                     };
+                    if (!string.IsNullOrEmpty(entry.ImagePath))
+                    {
+                        sikuliStrategy["imagePath"] = entry.ImagePath!;
+                    }
+                    sikuliStrategy["similarity"] = 0.85;
+                    strategies["Sikuli"] = new List<object> { sikuliStrategy };
                 }
 
                 var aliasParts = entry.Alias.Split('.');
