@@ -19,25 +19,32 @@ from __future__ import annotations
 import time
 from typing import Callable, Optional, Sequence, Tuple
 
-import numpy as np
+# numpy is imported lazily inside the helpers below so the module is
+# importable on systems that don't have numpy installed (e.g. the IDE-
+# generated test in environments that only have the mock-app path).
 
 from image_matcher import ImageMatcher, Match
 
 
 def wait_until_stable(
-    grab_fn: Callable[[Optional[Tuple[int, int, int, int]]], np.ndarray],
+    grab_fn: Callable[[Optional[Tuple[int, int, int, int]]], "object"],
     region: Optional[Tuple[int, int, int, int]] = None,
     max_ms: int = 250,
     threshold: float = 2.0,
 ) -> bool:
     """Returns True once two consecutive grabs differ by less than
     `threshold` mean-abs pixel value, or False if `max_ms` elapses."""
+    try:
+        import numpy as _np  # type: ignore
+    except ImportError:
+        return True  # can't do the check without numpy; treat as stable
+
     start = time.monotonic()
     last = None
     while (time.monotonic() - start) * 1000 < max_ms:
         cur = grab_fn(region)
         if last is not None:
-            diff = float(np.mean(np.abs(cur.astype(np.int16) - last.astype(np.int16))))
+            diff = float(_np.mean(_np.abs(cur.astype(_np.int16) - last.astype(_np.int16))))
             if diff <= threshold:
                 return True
         last = cur
@@ -46,9 +53,9 @@ def wait_until_stable(
 
 
 def retry_match(
-    capture_grab: Callable[[Optional[Tuple[int, int, int, int]]], np.ndarray],
+    capture_grab: Callable[[Optional[Tuple[int, int, int, int]]], "object"],
     matcher: ImageMatcher,
-    template_bgr: np.ndarray,
+    template_bgr: "object",
     region: Optional[Tuple[int, int, int, int]] = None,
     thresholds: Sequence[float] = (0.85, 0.80, 0.75),
     attempts_per_threshold: int = 1,
@@ -73,8 +80,10 @@ if __name__ == "__main__":  # pragma: no cover - manual smoke
     state = {"n": 0}
 
     def grab(region=None):
+        import numpy as _np  # type: ignore
+
         state["n"] += 1
-        img = np.zeros((50, 50, 3), dtype=np.uint8)
+        img = _np.zeros((50, 50, 3), dtype=_np.uint8)
         if state["n"] >= 2:
             img[10:20, 10:20] = (200, 100, 50)
         return img

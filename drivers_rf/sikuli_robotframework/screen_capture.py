@@ -21,11 +21,11 @@ import sys
 import threading
 from typing import Optional, Tuple
 
-import numpy as np
-
 # numpy is a hard requirement for the BGR buffer format. It's already in
 # the project via opencv-python transitively, so this never triggers
-# ImportError in practice.
+# ImportError in practice. We import lazily inside grab() so the module
+# is importable in environments that have no numpy (e.g. a clean test
+# runner that only exercises the stub).
 
 
 class ScreenCapture:
@@ -33,7 +33,7 @@ class ScreenCapture:
 
     name: str = "base"
 
-    def grab(self, region: Optional[Tuple[int, int, int, int]] = None) -> np.ndarray:
+    def grab(self, region: Optional[Tuple[int, int, int, int]] = None):
         """Return a BGR image covering the given screen region.
 
         If region is None, the entire primary monitor is returned.
@@ -41,7 +41,7 @@ class ScreenCapture:
         """
         raise NotImplementedError
 
-    def grab_window(self, hwnd: int) -> np.ndarray:
+    def grab_window(self, hwnd: int):
         """Return a BGR image of the window with the given HWND.
 
         Falls back to grab() on platforms where this is unsupported.
@@ -62,7 +62,9 @@ class StubScreenCapture(ScreenCapture):
         self._h = height
 
     def grab(self, region=None):
-        return np.zeros((self._h, self._w, 3), dtype=np.uint8)
+        import numpy as _np  # lazy: keep module importable without numpy
+
+        return _np.zeros((self._h, self._w, 3), dtype=_np.uint8)
 
     def is_available(self) -> bool:
         return True
@@ -103,6 +105,7 @@ class MssScreenCapture(ScreenCapture):
         try:
             import mss  # type: ignore
             import cv2  # type: ignore
+            import numpy as _np  # type: ignore
         except ImportError as e:  # pragma: no cover - import guard
             raise RuntimeError(
                 "mss + opencv-python are required for MssScreenCapture; "
@@ -117,7 +120,7 @@ class MssScreenCapture(ScreenCapture):
             mon = {"left": int(x), "top": int(y), "width": int(w), "height": int(h)}
 
         raw = sct.grab(mon)
-        bgr = cv2.cvtColor(np.array(raw), cv2.COLOR_BGRA2BGR)
+        bgr = cv2.cvtColor(_np.array(raw), cv2.COLOR_BGRA2BGR)
         return bgr
 
 
@@ -134,13 +137,14 @@ class PrintWindowScreenCapture(ScreenCapture):
     def is_available(self) -> bool:
         return sys.platform == "win32"
 
-    def grab_window(self, hwnd: int) -> np.ndarray:
+    def grab_window(self, hwnd: int):
         if not self.is_available():  # pragma: no cover
             raise RuntimeError("PrintWindowScreenCapture is Windows-only")
         try:
             import ctypes
             from ctypes import wintypes
             import cv2  # type: ignore
+            import numpy as _np  # type: ignore
         except ImportError as e:  # pragma: no cover
             raise RuntimeError("opencv-python is required") from e
 
@@ -152,7 +156,7 @@ class PrintWindowScreenCapture(ScreenCapture):
         width = rect.right - rect.left
         height = rect.bottom - rect.top
         if width <= 0 or height <= 0:
-            return np.zeros((1, 1, 3), dtype=np.uint8)
+            return _np.zeros((1, 1, 3), dtype=_np.uint8)
 
         hdc_window = user32.GetWindowDC(hwnd)
         hdc_mem = gdi32.CreateCompatibleDC(hdc_window)
@@ -194,7 +198,7 @@ class PrintWindowScreenCapture(ScreenCapture):
         gdi32.DeleteDC(hdc_mem)
         user32.ReleaseDC(hwnd, hdc_window)
 
-        arr = np.frombuffer(buf, dtype=np.uint8).reshape(height, width, 4)
+        arr = _np.frombuffer(buf, dtype=_np.uint8).reshape(height, width, 4)
         bgr = cv2.cvtColor(arr, cv2.COLOR_BGRA2BGR)
         return bgr
 

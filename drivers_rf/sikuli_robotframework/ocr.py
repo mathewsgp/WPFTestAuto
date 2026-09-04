@@ -14,15 +14,13 @@ from __future__ import annotations
 
 from typing import Optional, Tuple
 
-import numpy as np
-
 try:
     from PIL import Image  # type: ignore
 except ImportError:  # pragma: no cover
     Image = None  # type: ignore
 
 
-def _bgr_to_pil(img_bgr: np.ndarray):
+def _bgr_to_pil(img_bgr):
     if Image is None:  # pragma: no cover
         raise RuntimeError("Pillow is required for OCR")
     import cv2  # type: ignore
@@ -32,7 +30,7 @@ def _bgr_to_pil(img_bgr: np.ndarray):
 
 
 def ocr_text(
-    img_bgr: np.ndarray,
+    img_bgr,
     region: Optional[Tuple[int, int, int, int]] = None,
     psm: int = 6,
     lang: str = "eng",
@@ -63,7 +61,7 @@ def ocr_text(
         return ""
 
 
-def ocr_grid_csv(img_bgr: np.ndarray, lang: str = "eng") -> str:
+def ocr_grid_csv(img_bgr, lang: str = "eng") -> str:
     """OCR a grid-like region as CSV. Uses psm=6 and splits on
     whitespace runs of 2+ to approximate columns.
 
