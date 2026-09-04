@@ -199,5 +199,47 @@ class TestOcrGracefulDegrade(unittest.TestCase):
             reload(ocr_mod)
 
 
+class TestScreenshotSink(unittest.TestCase):
+    def test_sink_receives_screenshot_on_real_driver(self):
+        from drivers_rf.sikuli_robotframework.SikuliLibrary import SikuliDriver
+        from drivers_rf.sikuli_robotframework.image_matcher import StubImageMatcher
+        from drivers_rf.sikuli_robotframework.screen_capture import StubScreenCapture
+
+        d = SikuliDriver(
+            matcher=StubImageMatcher(),
+            capture=StubScreenCapture(width=200, height=200),
+            use_mock=False,  # force real path
+            similarity=0.5,
+        )
+        received = []
+
+        def sink(image_bgr, alias, ok, action):
+            received.append((alias, ok, action, image_bgr.shape if image_bgr is not None else None))
+
+        d.screenshot_sink = sink
+        # Directly drive the emitter to keep the test self-contained.
+        d._emit_screenshot(element=None, ok=True, action="invoke")
+        self.assertEqual(len(received), 1)
+        alias, ok, action, shape = received[0]
+        self.assertEqual(ok, True)
+        self.assertEqual(action, "invoke")
+        self.assertEqual(shape, (200, 200, 3))
+
+    def test_sink_does_not_fire_when_unset(self):
+        from drivers_rf.sikuli_robotframework.SikuliLibrary import SikuliDriver
+        from drivers_rf.sikuli_robotframework.image_matcher import StubImageMatcher
+        from drivers_rf.sikuli_robotframework.screen_capture import StubScreenCapture
+
+        d = SikuliDriver(
+            matcher=StubImageMatcher(),
+            capture=StubScreenCapture(width=10, height=10),
+            use_mock=False,
+        )
+        d._emit_screenshot(element=None, ok=True, action="invoke")
+        # No exception means success; the sink is None and _emit_screenshot
+        # returns early.
+        self.assertIsNone(d._screenshot_sink)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -118,7 +118,40 @@ class SikuliDriver:
         self._padding_px = int(padding_px)
 
         # Optional last-captured screenshot sink (set by framework/tests).
-        self._screenshot_sink = None  # callable(image_bgr, alias, ok)
+        # Callable signature: sink(image_bgr: np.ndarray, alias: str,
+        # ok: bool, action: str) -> None. The framework wires this to
+        # api.screenshot_manager so every click (success or failure)
+        # surfaces in the HTML report with full context.
+        self._screenshot_sink = None
+
+    @property
+    def screenshot_sink(self):
+        return self._screenshot_sink
+
+    @screenshot_sink.setter
+    def screenshot_sink(self, fn):
+        """Register a callback that receives (image_bgr, alias, ok, action)
+        after every action. Pass None to disable."""
+        self._screenshot_sink = fn
+
+    def _emit_screenshot(self, element, ok: bool, action: str) -> None:
+        """Capture a region screenshot and forward it to the sink, if
+        one is registered. Best-effort: never raises."""
+        sink = self._screenshot_sink
+        if sink is None:
+            return
+        if not self._use_real():
+            return
+        try:
+            region = None
+            if element is not None and getattr(element, "match", None) is not None:
+                region = element.match.rect
+            img = self._capture.grab(region=region)
+            alias = getattr(element, "alias", "") or ""
+            sink(img, alias, ok, action)
+        except Exception:
+            # Sinks must never break the driver.
+            pass
 
     # ---------- mock-app helpers ----------
     def _use_real(self) -> bool:
@@ -295,7 +328,13 @@ class SikuliDriver:
     # ---------- public actions (API parity with FlaUI/WPFSpy drivers) ----------
     def invoke(self, element):
         if self._use_real():
-            self._click_region(element)
+            try:
+                self._click_region(element)
+                ok = True
+            except Exception:
+                self._emit_screenshot(element, ok=False, action="invoke")
+                raise
+            self._emit_screenshot(element, ok=True, action="invoke")
         else:
             APP_INSTANCE.invoke(element)
 
@@ -310,8 +349,11 @@ class SikuliDriver:
                 img = self._capture.grab(region=element.match.rect)
             else:
                 img = self._capture.grab()
-            return ocr_text(img, region=(0, 0, img.shape[1], img.shape[0]))
+            text = ocr_text(img, region=(0, 0, img.shape[1], img.shape[0]))
+            self._emit_screenshot(element, ok=True, action="get_text")
+            return text
         except Exception:
+            self._emit_screenshot(element, ok=False, action="get_text")
             return ""
 
     def is_visible(self, element) -> bool:
