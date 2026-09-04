@@ -553,42 +553,61 @@ case "GetDataGridContent":
                     var y = (int)(request.Y ?? 0);
                     var width = (int)(request.Width ?? 100);
                     var height = (int)(request.Height ?? 100);
-                    
+
                     try
                     {
-                        // Use P/Invoke for cross-framework screen capture
-                        var hDesk = NativeMethods.GetDesktopWindow();
-                        var hSrce = NativeMethods.GetWindowDC(hDesk);
-                        var hDest = NativeMethods.CreateCompatibleDC(hSrce);
-                        var hBmp = NativeMethods.CreateCompatibleBitmap(hSrce, width, height);
-                        var hOld = NativeMethods.SelectObject(hDest, hBmp);
-                        
-                        NativeMethods.BitBlt(hDest, 0, 0, width, height, hSrce, x, y, NativeMethods.SRCCOPY);
-                        
-                        NativeMethods.SelectObject(hDest, hOld);
-                        
-                        // Convert HBITMAP to PNG using WPF
-                        var sourceBitmap = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
-                            hBmp, IntPtr.Zero, System.Windows.Int32Rect.Empty,
-                            System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
-                        
-                        var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
-                        encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(sourceBitmap));
-                        
-                        using var ms = new System.IO.MemoryStream();
-                        encoder.Save(ms);
-                        var base64 = Convert.ToBase64String(ms.ToArray());
-                        
-                        // Cleanup
-                        NativeMethods.DeleteObject(hBmp);
-                        NativeMethods.DeleteDC(hDest);
-                        NativeMethods.ReleaseDC(hDesk, hSrce);
-                        
-                        return SpyResponse.Ok(base64);
+                        var cap = CaptureScreenRegion(x, y, width, height);
+                        return SpyResponse.Ok(cap.Base64);
                     }
                     catch (Exception ex)
                     {
                         return SpyResponse.Fail($"CaptureArea failed: {ex.Message}");
+                    }
+                }
+                case "CaptureElement":
+                {
+                    // Used by the WpfTestIde recorder when RecordSikuli is
+                    // on. Locates the element by name (FrameworkElement.Name)
+                    // or by XPath, computes its on-screen rect (with a few
+                    // pixels of padding so the template matcher has
+                    // whitespace margin), captures that rect, and returns
+                    // both the PNG (base64) and the rect in one JSON
+                    // payload.
+                    int padding = (int)(request.Width ?? 4);
+                    try
+                    {
+                        var element = ResolveElementForCapture(request);
+                        if (element is null)
+                        {
+                            return SpyResponse.Fail(
+                                "CaptureElement: element not found (need name or xpath)");
+                        }
+
+                        var rect = ComputeElementScreenRect(element, padding);
+                        if (rect.Width <= 0 || rect.Height <= 0)
+                        {
+                            return SpyResponse.Fail("CaptureElement: element has zero size on screen");
+                        }
+
+                        var cap = CaptureScreenRegion(rect.X, rect.Y, rect.Width, rect.Height);
+                        var payload = new
+                        {
+                            pngBase64 = cap.Base64,
+                            x = rect.X,
+                            y = rect.Y,
+                            width = rect.Width,
+                            height = rect.Height,
+                            controlType = element.GetType().Name,
+                            name = element is FrameworkElement fe ? fe.Name : "",
+                            automationId = (element is FrameworkElement fe2
+                                ? System.Windows.Automation.AutomationProperties.GetAutomationId(fe2)
+                                : null),
+                        };
+                        return SpyResponse.Ok(WpfSpyAgent.JsonHelper.Serialize(payload));
+                    }
+                    catch (Exception ex)
+                    {
+                        return SpyResponse.Fail($"CaptureElement failed: {ex.GetType().Name}: {ex.Message}");
                     }
                 }
                 // --- End UIA Event Recording Commands ---
@@ -619,6 +638,108 @@ case "GetDataGridContent":
                 throw new InvalidOperationException($"No element with Name='{name}' found in the current visual tree");
             }
             return namedElement;
+        }
+
+        /// <summary>
+        /// Resolves the element addressed by a SpyRequest for the
+        /// CaptureElement command. Prefers XPath when supplied, otherwise
+        /// falls back to the element's WPF Name. Returns null when neither
+        /// resolves (the caller turns that into a clean Fail).
+        /// </summary>
+        private static System.Windows.FrameworkElement? ResolveElementForCapture(SpyRequest request)
+        {
+            if (!string.IsNullOrEmpty(request.XPath))
+            {
+                return VisualTreeInspector.FindByXPath(request.XPath);
+            }
+            if (!string.IsNullOrEmpty(request.Name))
+            {
+                return VisualTreeInspector.FindByName(request.Name);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the on-screen bounding rect of a FrameworkElement with
+        /// `padding` pixels of whitespace on every side so the resulting
+        /// template has margin around the control — that's the single
+        /// biggest accuracy boost for TM_CCOEFF_NORMED matching.
+        /// </summary>
+        private static System.Windows.Rect ComputeElementScreenRect(
+            System.Windows.FrameworkElement element,
+            int padding)
+        {
+            try
+            {
+                var topLeft = element.PointToScreen(new System.Windows.Point(0, 0));
+                var bottomRight = element.PointToScreen(
+                    new System.Windows.Point(element.ActualWidth, element.ActualHeight));
+                double x = topLeft.X - padding;
+                double y = topLeft.Y - padding;
+                double w = (bottomRight.X - topLeft.X) + (padding * 2);
+                double h = (bottomRight.Y - topLeft.Y) + (padding * 2);
+                if (w < 1) w = 1;
+                if (h < 1) h = 1;
+                return new System.Windows.Rect(x, y, w, h);
+            }
+            catch
+            {
+                return new System.Windows.Rect(0, 0, 0, 0);
+            }
+        }
+
+        /// <summary>
+        /// Captures the given screen rectangle via the same GDI path used
+        /// by CaptureArea and returns the PNG as base64 plus the raw
+        /// byte count. The two-output shape lets callers embed the bytes
+        /// in JSON without re-decoding.
+        /// </summary>
+        private static CaptureResult CaptureScreenRegion(
+            double x, double y, double width, double height)
+        {
+            int ix = (int)System.Math.Round(x);
+            int iy = (int)System.Math.Round(y);
+            int iw = (int)System.Math.Round(width);
+            int ih = (int)System.Math.Round(height);
+
+            var hDesk = NativeMethods.GetDesktopWindow();
+            var hSrce = NativeMethods.GetWindowDC(hDesk);
+            var hDest = NativeMethods.CreateCompatibleDC(hSrce);
+            var hBmp = NativeMethods.CreateCompatibleBitmap(hSrce, iw, ih);
+            var hOld = NativeMethods.SelectObject(hDest, hBmp);
+
+            NativeMethods.BitBlt(hDest, 0, 0, iw, ih, hSrce, ix, iy, NativeMethods.SRCCOPY);
+            NativeMethods.SelectObject(hDest, hOld);
+
+            var sourceBitmap = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+                hBmp, IntPtr.Zero, System.Windows.Int32Rect.Empty,
+                System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+
+            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(sourceBitmap));
+
+            byte[] png;
+            using (var ms = new System.IO.MemoryStream())
+            {
+                encoder.Save(ms);
+                png = ms.ToArray();
+            }
+
+            NativeMethods.DeleteObject(hBmp);
+            NativeMethods.DeleteDC(hDest);
+            NativeMethods.ReleaseDC(hDesk, hSrce);
+
+            return new CaptureResult
+            {
+                Base64 = Convert.ToBase64String(png),
+                Bytes = png.Length,
+            };
+        }
+
+        private sealed class CaptureResult
+        {
+            public string Base64 { get; set; } = "";
+            public int Bytes { get; set; }
         }
 
         private static void ResetAppState()
