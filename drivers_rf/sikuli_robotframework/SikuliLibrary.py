@@ -27,6 +27,7 @@ from typing import Any, List, Optional, Tuple
 
 from image_matcher import ImageMatcher, Match, create_matcher
 from screen_capture import ScreenCapture, create_capture
+from wait_utils import retry_match, wait_until_stable
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "drivers", "mock_wpf_app"))
 from mock_app import APP_INSTANCE, ElementNotFoundError, ElementNotInteractableError  # noqa: E402
@@ -162,20 +163,34 @@ class SikuliDriver:
 
         if self._use_real():
             template_path = _resolve_template_path(str(tag), strategy.get("imagePath"))
+            template = _load_template_bgr(template_path)
+
+            def _grab(region=None):
+                return self._capture.grab(region)
+
             if region is None and hwnd:
                 # When the AUT HWND is known, capture that specific window
                 # for a stable, occlusion-resistant match.
                 screen = self._capture.grab_window(int(hwnd))
-                import cv2  # type: ignore
-
-                template = _load_template_bgr(template_path)
                 m = self._matcher.match(screen, template, threshold=similarity)
                 if m is None:
                     raise ElementNotFoundError(
                         f"Sikuli: no on-screen match for template '{template_path}' in hwnd={hwnd}"
                     )
             else:
-                m = self._find_on_screen(template_path, region=tuple(region) if region else None, threshold=similarity)
+                m = retry_match(
+                    _grab,
+                    self._matcher,
+                    template,
+                    region=tuple(region) if region else None,
+                    thresholds=(similarity, max(0.0, similarity - 0.05), max(0.0, similarity - 0.10)),
+                    attempts_per_threshold=1,
+                )
+                if m is None:
+                    raise ElementNotFoundError(
+                        f"Sikuli: no on-screen match for template '{template_path}' "
+                        f"(thresholds down to {max(0.0, similarity - 0.10):.2f})"
+                    )
             return _RegionHandle(m, template_path, hwnd=int(hwnd) if hwnd else None, alias=str(alias))
 
         # Mock fallback
@@ -244,6 +259,17 @@ class SikuliDriver:
             raise RuntimeError(
                 "pyautogui is required for real Sikuli clicks; install with: pip install pyautogui"
             ) from e
+
+        # Wait for the element's region to settle before clicking so we
+        # don't fire the click during a repaint / fade-in.
+        rect = region.match.rect
+        wait_until_stable(
+            lambda r: self._capture.grab(r),
+            region=rect,
+            max_ms=250,
+            threshold=2.0,
+        )
+
         cx, cy = region.match.center
         pyautogui.moveTo(cx, cy, duration=0.05)
         pyautogui.click(cx, cy, button=button, clicks=count)
