@@ -355,7 +355,12 @@ class SikuliDriver:
             APP_INSTANCE.invoke(element)
 
     def set_value(self, element, value: str):
-        self._type_text(element, str(value))
+        try:
+            self._type_text(element, str(value))
+            self._emit_screenshot(element, ok=True, action="set_value")
+        except Exception:
+            self._emit_screenshot(element, ok=False, action="set_value")
+            raise
 
     def get_text(self, element) -> str:
         if not self._use_real():

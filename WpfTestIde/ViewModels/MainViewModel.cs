@@ -296,6 +296,34 @@ namespace WpfTestIde.ViewModels
             set { _runSikuli = value; OnPropertyChanged(); RegenerateScript(); }
         }
 
+        private double _sikuliSimilarity = 0.85;
+        public double SikuliSimilarity
+        {
+            get => _sikuliSimilarity;
+            set { _sikuliSimilarity = value; OnPropertyChanged(); }
+        }
+
+        private int _sikuliCapturePadding = 4;
+        public int SikuliCapturePadding
+        {
+            get => _sikuliCapturePadding;
+            set { _sikuliCapturePadding = value; OnPropertyChanged(); }
+        }
+
+        private string _sikuliMatcher = "multi";
+        public string SikuliMatcher
+        {
+            get => _sikuliMatcher;
+            set { _sikuliMatcher = value; OnPropertyChanged(); }
+        }
+
+        private string _sikuliScreenCapture = "mss";
+        public string SikuliScreenCapture
+        {
+            get => _sikuliScreenCapture;
+            set { _sikuliScreenCapture = value; OnPropertyChanged(); }
+        }
+
         public ICommand MoveElementPriorityUpCommand { get; }
         public ICommand MoveElementPriorityDownCommand { get; }
 
@@ -517,7 +545,24 @@ namespace WpfTestIde.ViewModels
             ShowScriptsCommand = new RelayCommand(_ => SelectedTabIndex = 1);
             ShowResultsCommand = new RelayCommand(_ => SelectedTabIndex = 2);
             ShowSearchCommand = new RelayCommand(_ => { /* TODO: implement search */ });
-            OpenSettingsCommand = new RelayCommand(_ => { /* TODO: implement settings */ });
+            OpenSettingsCommand = new RelayCommand(_ =>
+            {
+                var dlg = new Dialogs.SikuliSettingsDialog
+                {
+                    Owner = Application.Current.MainWindow,
+                    Similarity = SikuliSimilarity,
+                    CapturePaddingPx = SikuliCapturePadding,
+                    Matcher = SikuliMatcher,
+                    ScreenCapture = SikuliScreenCapture,
+                };
+                if (dlg.ShowDialog() == true)
+                {
+                    SikuliSimilarity = dlg.Similarity;
+                    SikuliCapturePadding = dlg.CapturePaddingPx;
+                    SikuliMatcher = dlg.Matcher;
+                    SikuliScreenCapture = dlg.ScreenCapture;
+                }
+            });
             ExitCommand = new RelayCommand(_ => Application.Current.Shutdown());
             AboutCommand = new RelayCommand(_ => ShowAbout());
             DocumentationCommand = new RelayCommand(_ => { /* TODO: open docs */ });

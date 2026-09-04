@@ -114,6 +114,22 @@ if errorlevel 1 (
 )
 echo.
 
+echo   -- Installing optional Sikuli image-matching dependencies --
+echo   opencv-python        (template matching)
+echo   numpy                (array backend for OpenCV)
+echo   mss                  (cross-platform screen capture)
+echo   pyautogui            (mouse/keyboard input)
+echo   pyperclip            (clipboard-based text entry)
+echo.
+python -m pip install opencv-python numpy mss pyautogui pyperclip
+if errorlevel 1 (
+    echo WARNING: Optional Sikuli packages failed to install.
+    echo   Sikuli image-based recording/playback will not be available.
+    echo   On Windows, also install Tesseract OCR if you want get_text:
+    echo   https://github.com/tesseract-ocr/tesseract
+)
+echo.
+
 REM ------------------------------------------------------------
 REM 5. Verify installation
 REM ------------------------------------------------------------
