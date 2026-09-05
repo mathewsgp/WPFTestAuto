@@ -42,11 +42,11 @@ echo Injection Mode: %INJECTION_MODE%
 echo Run IDE: %RUN_IDE%
 echo ============================================================
 
-set "AGENT_PROJECT=%FW_ROOT%WpfSpyAgent\WpfSpyAgent.csproj"
-set "SAMPLE_APP_PROJECT=%FW_ROOT%SampleWpfApp\SampleWpfApp.csproj"
-set "STARTUP_HOOK_PROJECT=%FW_ROOT%WpfSpyAgent.StartupHook\WpfSpyAgent.StartupHook.csproj"
-set "FRAMEWORK_HOOK_PROJECT=%FW_ROOT%WpfSpyAgent.FrameworkHook\WpfSpyAgent.FrameworkHook.csproj"
-set "IDE_PROJECT=%FW_ROOT%WpfTestIde\WpfTestIde.csproj"
+set "AGENT_PROJECT=%FW_ROOT%src\csharp\WpfSpyAgent\WpfSpyAgent.csproj"
+set "SAMPLE_APP_PROJECT=%FW_ROOT%src\csharp\SampleWpfApp\SampleWpfApp.csproj"
+set "STARTUP_HOOK_PROJECT=%FW_ROOT%src\csharp\WpfSpyAgent\StartupHook\WpfSpyAgent.StartupHook.csproj"
+set "FRAMEWORK_HOOK_PROJECT=%FW_ROOT%src\csharp\WpfSpyAgent\FrameworkHook\WpfSpyAgent.FrameworkHook.csproj"
+set "IDE_PROJECT=%FW_ROOT%src\csharp\WpfTestIde\WpfTestIde.csproj"
 
 echo.
 echo [1/5] Building WpfSpyAgent...
@@ -85,15 +85,15 @@ echo [4/5] Building NativeInject C++ DLL...
 :: Find MSBuild for C++ project and select the correct vcxproj
 :: Note: VS2026 = internal version 18, VS2022 = internal version 17
 set "MSBUILD_VS="
-set "NATIVE_VCPROJ=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2022.vcxproj"
+set "NATIVE_VCPROJ=%FW_ROOT%src\csharp\WpfSpyAgent\NativeInject\WpfSpyAgent.NativeInject.VS2022.vcxproj"
 if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" (
     set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
-    set "NATIVE_VCPROJ=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj"
+    set "NATIVE_VCPROJ=%FW_ROOT%src\csharp\WpfSpyAgent\NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj"
 ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe" (
     set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe"
 ) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" (
     set "MSBUILD_VS=C:\Program Files (x86)\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe"
-    set "NATIVE_VCPROJ=%FW_ROOT%WpfSpyAgent.NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj"
+    set "NATIVE_VCPROJ=%FW_ROOT%src\csharp\WpfSpyAgent\NativeInject\WpfSpyAgent.NativeInject.VS2026.vcxproj"
 ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" (
     set "MSBUILD_VS=C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
 ) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" (
@@ -121,8 +121,8 @@ if /i "%TARGET_FW%"=="net461" (
     copy /Y "%HOOK_DIR%\WpfSpyAgent.StartupHook.dll" "%SAMPLE_APP_DIR%\" >nul
 )
 if defined NATIVE_BUILT (
-    copy /Y "%FW_ROOT%\WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%SAMPLE_APP_DIR%\" >nul
-    copy /Y "%FW_ROOT%\WpfSpyAgent.NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%\bin\%CONFIGURATION%\net9.0-windows\" >nul 2>nul
+    copy /Y "%FW_ROOT%src\csharp\WpfSpyAgent\NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%SAMPLE_APP_DIR%\" >nul
+    copy /Y "%FW_ROOT%src\csharp\WpfSpyAgent\NativeInject\bin\%CONFIGURATION%\x64\WpfSpyAgent.NativeInject.dll" "%FW_ROOT%\bin\%CONFIGURATION%\net9.0-windows\" >nul 2>nul
 )
 
 echo.

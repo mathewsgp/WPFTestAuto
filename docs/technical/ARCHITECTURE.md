@@ -96,7 +96,7 @@ for the design rationale and a live demo test.
 ## Recording & playback
 
 The authoring workflow (Record → Auto-generate → Add Verifications →
-Refactor to Reusable Modules → Finalize) is implemented in `recorder/`.
+Refactor to Reusable Modules → Finalize) is implemented in `src/python/recorder/`.
 See `docs/RECORDER_GUIDE.md`.
 
 ## Mock application vs production

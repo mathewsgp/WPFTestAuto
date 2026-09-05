@@ -116,7 +116,7 @@ python -m api.healing_metadata_store --report
 
 ## Demo
 
-`tests/self_healing_locators_demo.robot` demonstrates the feature:
+`src/python/tests/self_healing_locators_demo.robot` demonstrates the feature:
 
 ```robotframework
 Toggle Order Priority
@@ -127,7 +127,7 @@ Should Be Equal As Strings    ${strategy}    WPFSpy
 Run it:
 
 ```bash
-python3 -m robot tests/self_healing_locators_demo.robot
+python3 -m robot src/python/tests/self_healing_locators_demo.robot
 ```
 
 Expected output:

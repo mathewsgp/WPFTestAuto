@@ -135,9 +135,13 @@ This document consolidates gap analysis, implementation priorities, and UI impro
 
 ```
 📁 WpfTestAuto
-├── 📁 tests/
-│   ├── 📄 login.robot
-│   └── 📄 checkout.robot
+├── 📁 src/
+│   ├── 📁 python/
+│   │   ├── 📁 tests/
+│   │   │   ├── 📄 login.robot
+│   │   │   └── 📄 checkout.robot
+│   │   └── 📁 modules/
+│   └── 📁 csharp/
 ├── 📁 repository/
 │   └── 📄 elements.yaml
 └── 📄 config.yaml

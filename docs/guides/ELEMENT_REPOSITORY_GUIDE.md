@@ -83,12 +83,12 @@ steps:
 
 1. Create `repository/elements/<page>.yaml` with one entry per control.
 2. Add matching entries to `repository/steps/steps.yaml`.
-3. Add Layer 2 keywords in `modules/<page>_module.robot` /
-   `modules/<page>_verifications.robot` that call Layer 3 keywords by
+3. Add Layer 2 keywords in `src/python/modules/<page>_module.robot` /
+   `src/python/modules/<page>_verifications.robot` that call Layer 3 keywords by
    alias.
-4. Write your Layer 1 test in `tests/`.
+4. Write your Layer 1 test in `src/python/tests/`.
 5. Run `./run_tests.sh` — you should never need to touch
-   `api/DriverAgnosticApi.py` or `drivers_rf/` for a routine new page.
+   `src/python/api/DriverAgnosticApi.py` or `src/python/drivers_rf/` for a routine new page.
 
 ## Validating repository files
 

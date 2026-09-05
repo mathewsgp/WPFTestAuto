@@ -13,7 +13,7 @@ Rules:
 
 ## WpfTestIde layout save/restore (add-technical-design-spec branch)
 
-- Layout persists to `%AppData%\WpfTestIde\layout.json` via `WpfTestIde/Helpers/LayoutState.cs`
+- Layout persists to `%AppData%\WpfTestIde\layout.json` via `src/csharp/WpfTestIde/Helpers/LayoutState.cs`
   (`LayoutPersistence.Load/Save`). Loaded in `App.OnStartup` into
   `Application.Current.Properties["LayoutState"]`; applied in `MainWindow.MainWindow_Loaded`,
   snapshotted in `MainWindow.MainWindow_Closing`.

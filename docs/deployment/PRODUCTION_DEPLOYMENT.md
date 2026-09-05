@@ -1,6 +1,6 @@
 # Production Deployment — Swapping the Mock for Real Drivers
 
-Everything in `tests/`, `modules/`, `api/`, and `repository/` is
+Everything in `src/python/tests/`, `src/python/modules/`, `src/python/api/`, and `repository/` is
 production code as-is. Only **Layer 5** (and the small Layer 4 bodies
 that call into it) needs to change to point this framework at a real WPF
 application. Layer 4's method signatures (the "API parity" contract) do

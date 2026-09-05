@@ -44,14 +44,14 @@ The WPF Test Automation Framework is a driver-agnostic, layered automation syste
 
 | Component | Language | Layer | Description |
 |-----------|----------|-------|-------------|
-| `api/DriverAgnosticApi.py` | Python | 3 | Central resolution engine with self-healing |
-| `api/repository_access.py` | Python | 3 | YAML repository loader and cache |
-| `api/config.py` | Python | 3 | Centralized configuration management |
-| `api/exceptions.py` | Python | 3 | Custom exception hierarchy |
-| `api/base_driver.py` | Python | 3 | Abstract base driver interface |
-| `api/circuit_breaker.py` | Python | 3 | Circuit breaker pattern implementation |
-| `api/wait_utils.py` | Python | 3 | Explicit wait utilities |
-| `api/logging_utils.py` | Python | 3 | Structured logging framework |
+| `src/python/api/DriverAgnosticApi.py` | Python | 3 | Central resolution engine with self-healing |
+| `src/python/api/repository_access.py` | Python | 3 | YAML repository loader and cache |
+| `src/python/api/config.py` | Python | 3 | Centralized configuration management |
+| `src/python/api/exceptions.py` | Python | 3 | Custom exception hierarchy |
+| `src/python/api/base_driver.py` | Python | 3 | Abstract base driver interface |
+| `src/python/api/circuit_breaker.py` | Python | 3 | Circuit breaker pattern implementation |
+| `src/python/api/wait_utils.py` | Python | 3 | Explicit wait utilities |
+| `src/python/api/logging_utils.py` | Python | 3 | Structured logging framework |
 | `drivers_rf/flaui_robotframework/` | Python | 4 | FlaUI driver wrapper |
 | `drivers_rf/wpfspy_robotframework/` | Python | 4 | WPFSpy driver wrapper |
 | `drivers_rf/sikuli_robotframework/` | Python | 4 | Sikuli driver wrapper |
@@ -67,7 +67,7 @@ The WPF Test Automation Framework is a driver-agnostic, layered automation syste
 
 ### 3.1 Framework Infrastructure
 
-#### 3.1.1 Configuration Management (`api/config.py`)
+#### 3.1.1 Configuration Management (`src/python/api/config.py`)
 
 ```python
 from api.config import config, FrameworkConfig
@@ -86,7 +86,7 @@ config.CIRCUIT_BREAKER_THRESHOLD  # Failures before circuit opens
 # LOG_LEVEL=DEBUG
 ```
 
-#### 3.1.2 Exception Hierarchy (`api/exceptions.py`)
+#### 3.1.2 Exception Hierarchy (`src/python/api/exceptions.py`)
 
 All framework exceptions inherit from `WpfAutomationError`:
 
@@ -99,7 +99,7 @@ All framework exceptions inherit from `WpfAutomationError`:
 | `WaitTimeoutError` | Wait operation timed out |
 | `RepositoryAliasNotFoundError` | Alias not in repository |
 
-#### 3.1.3 Circuit Breaker (`api/circuit_breaker.py`)
+#### 3.1.3 Circuit Breaker (`src/python/api/circuit_breaker.py`)
 
 Prevents cascading failures from failing drivers:
 
@@ -116,7 +116,7 @@ except CircuitBreakerOpenError:
     pass
 ```
 
-#### 3.1.4 Wait Utilities (`api/wait_utils.py`)
+#### 3.1.4 Wait Utilities (`src/python/api/wait_utils.py`)
 
 Explicit wait utilities for reliable element interaction:
 
@@ -134,7 +134,7 @@ elem_wait.for_actionable(element)
 elem_wait.for_text(element, "expected")
 ```
 
-#### 3.1.5 Structured Logging (`api/logging_utils.py`)
+#### 3.1.5 Structured Logging (`src/python/api/logging_utils.py`)
 
 ```python
 from api.logging_utils import get_logger, execution_logger
@@ -156,7 +156,7 @@ execution_logger.log_strategy_attempt(
 
 ### 3.2 Layer 3: Driver-Agnostic API
 
-**File**: `api/DriverAgnosticApi.py`
+**File**: `src/python/api/DriverAgnosticApi.py`
 
 #### Class: `DriverAgnosticApi`
 
@@ -538,7 +538,7 @@ Attempts: [('WPFSpy', "SUCCESS")]
 3. **Auto-Generate**: Repository entries + script generated live
 4. **Verify**: Add verification steps with pre-filled expected values
 5. **Run**: Execute script, stream output to IDE
-6. **Export**: Save to `repository/elements/` and `tests/`
+6. **Export**: Save to `repository/elements/` and `src/python/tests/`
 
 ---
 
@@ -546,7 +546,7 @@ Attempts: [('WPFSpy', "SUCCESS")]
 
 ### 7.1 Test Layers
 
-**Layer 1** - Test Scripts (`tests/`):
+**Layer 1** - Test Scripts (`src/python/tests/`):
 ```robotframework
 *** Test Cases ***
 My Test
@@ -554,7 +554,7 @@ My Test
     Create New Order    SKU-1001    2
 ```
 
-**Layer 2** - Reusable Modules (`modules/`):
+**Layer 2** - Reusable Modules (`src/python/modules/`):
 ```robotframework
 *** Keywords ***
 Create New Order
@@ -568,13 +568,13 @@ Create New Order
 
 ```bash
 # Full suite
-python3 -m robot --outputdir results tests/
+python3 -m robot --outputdir results src/python/tests/
 
 # By tag
-python3 -m robot -i smoke tests/
+python3 -m robot -i smoke src/python/tests/
 
 # Single test
-python3 -m robot -t "Create And Confirm New Order" tests/
+python3 -m robot -t "Create And Confirm New Order" src/python/tests/
 ```
 
 ---

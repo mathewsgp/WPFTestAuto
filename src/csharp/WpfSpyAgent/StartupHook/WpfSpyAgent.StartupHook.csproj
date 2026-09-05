@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+      <!-- Startup hooks are a .NET Core 3.0+ / .NET 5+ mechanism — this
+           does NOT work against .NET Framework targets. See
+           docs/INJECTION_OPTIONS.md for the .NET Framework equivalent. -->
+	  <TargetFrameworks>net9.0-windows</TargetFrameworks>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>WpfSpyAgent.StartupHook</AssemblyName>
+    <RootNamespace>WpfSpyAgent.StartupHook</RootNamespace>
+    <BaseOutputPath>..\bin</BaseOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Reuses the exact same in-process agent already built and used
+         by SampleWpfApp's cooperative (App.xaml.cs) hosting path — this
+         project only adds a DIFFERENT, zero-source-modification way to
+         get SpyAgentHost.Start() running inside an arbitrary target
+         process's existing CLR. -->
+    <ProjectReference Include="..\WpfSpyAgent.csproj" />
+  </ItemGroup>
+
+</Project>

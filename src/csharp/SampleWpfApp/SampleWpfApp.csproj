@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+      <!-- Multi-targeted so this ONE sample app can stand in as the
+           injection target for EITHER runtime's demo: build/run the
+           net8.0-windows output to exercise WpfSpyAgent.StartupHook, or
+           the net461 output to exercise WpfSpyAgent.FrameworkHook. See
+           docs/INJECTION_OPTIONS.md. -->
+      <TargetFrameworks>net9.0-windows;net461</TargetFrameworks>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>SampleWpfApp</AssemblyName>
+    <RootNamespace>SampleWpfApp</RootNamespace>
+    <BaseOutputPath>..\bin\SampleWPFApp</BaseOutputPath>
+  </PropertyGroup>
+
+  <!-- Deliberately NO reference — of any kind — to WpfSpyAgent or either
+       injection-loader project. This app is meant to be indistinguishable
+       from a genuine third-party WPF app someone else built: it has zero
+       compile-time or run-time knowledge that WpfSpyAgent exists. Every
+       injection mechanism in docs/INJECTION_OPTIONS.md is demonstrated
+       AGAINST this exact, unmodified executable. -->
+
+</Project>

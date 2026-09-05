@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>WpfTestIde</AssemblyName>
+    <RootNamespace>WpfTestIde</RootNamespace>
+    <ApplicationIcon></ApplicationIcon>
+    <BaseOutputPath>..\bin</BaseOutputPath>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- YAML (de)serialization for the Element Repository, matching the
+         Python framework's repository/elements/*.yaml format exactly. -->
+    <PackageReference Include="YamlDotNet" Version="13.7.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- A6+E4: docking system. v5.0.0 dropped all .NET Core TFMs below net9; the
+         project TFM was bumped to net9.0-windows as part of the same change.
+         V5 is the only line that ships Themes.VS, Mvvm, and Serializer.Json as
+         their own packages (v4.x only had Themes.VS2013 + a built-in XML
+         serializer). Pin exact [5.0.0] rather than floating the patch — a v5.x
+         bump must be a deliberate decision per plan risk register #1. -->
+    <PackageReference Include="Dirkster.AvalonDock" Version="5.0.0" />
+    <PackageReference Include="Dirkster.AvalonDock.Themes.VS" Version="5.0.0" />
+    <PackageReference Include="Dirkster.AvalonDock.Serializer.Json" Version="5.0.0" />
+  </ItemGroup>
+
+</Project>

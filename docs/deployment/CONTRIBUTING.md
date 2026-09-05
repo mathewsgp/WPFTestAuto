@@ -5,13 +5,13 @@
 1. Does the page/element already exist in `repository/elements/*.yaml`?
    If not, add it (see `docs/ELEMENT_REPOSITORY_GUIDE.md`).
 2. Does a Layer 2 keyword already do what you need? If not, add one to
-   the appropriate `modules/<page>_module.robot` (actions) or
-   `modules/<page>_verifications.robot` (assertions) file.
-3. Write the Layer 1 test in `tests/`, calling only Layer 2 keywords.
+   the appropriate `src/python/modules/<page>_module.robot` (actions) or
+   `src/python/modules/<page>_verifications.robot` (assertions) file.
+3. Write the Layer 1 test in `src/python/tests/`, calling only Layer 2 keywords.
 4. Run `./run_tests.sh` and confirm `N tests, N passed, 0 failed`.
 
-You should almost never need to touch `api/`, `drivers_rf/`, or
-`drivers/` to add a routine test.
+You should almost never need to touch `src/python/api/`, `src/python/drivers_rf/`, or
+`src/python/drivers/` to add a routine test.
 
 ## Adding a new driver strategy to an existing element
 
@@ -53,7 +53,7 @@ automatically (see `docs/ELEMENT_REPOSITORY_GUIDE.md`).
       Repository entry and a Step Repository entry
 - [ ] New Layer 2 keywords have a `[Documentation]` line
 - [ ] No test reaches below Layer 2 (no direct `Library
-      ../api/DriverAgnosticApi.py` calls from `tests/*.robot` — go through
+      ../api/DriverAgnosticApi.py` calls from `src/python/tests/*.robot` — go through
       a module keyword instead, even a thin one) — this keeps Layer 1
       business-readable
 - [ ] Docs updated if you changed the schema, added a driver, or changed

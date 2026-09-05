@@ -47,7 +47,7 @@ or open `WpfTestFramework.sln` in Visual Studio 2022/2026 and build.
 or directly:
 
 ```bash
-python3 -m robot --outputdir output tests/
+python3 -m robot --outputdir output src/python/tests/
 ```
 
 Windows PowerShell:
@@ -76,8 +76,8 @@ messages printed to the console log).
 ## 3. Run a single test / tag
 
 ```bash
-python3 -m robot --outputdir results -t "Reject Invalid Login" tests/
-python3 -m robot --outputdir results -i self-healing tests/
+python3 -m robot --outputdir results -t "Reject Invalid Login" src/python/tests/
+python3 -m robot --outputdir results -i self-healing src/python/tests/
 ```
 
 ## 4. Write your first test
@@ -108,8 +108,8 @@ just to write a new test.
 ## 5. Try the recorder pipeline
 
 ```bash
-python3 recorder/recorder_engine.py
-python3 recorder/converter.py
+python3 src/python/recorder/recorder_engine.py
+python3 src/python/recorder/converter.py
 ```
 
 This regenerates `recorder/example_draft_output/` — a draft Element
