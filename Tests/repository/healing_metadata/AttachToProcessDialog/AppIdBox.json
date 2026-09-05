@@ -1,0 +1,37 @@
+{
+  "alias": "AttachToProcessDialog.AppIdBox",
+  "baseline": {
+    "alias": "AttachToProcessDialog.AppIdBox",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "sample",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-08-09T17:48:57.368296",
+    "last_verified": "2026-08-09T17:48:57.368304",
+    "verification_count": 8,
+    "driver_used": "WPFSpy",
+    "search_method": "XPath",
+    "search_value": "TextBox[@AutomationId='AppIdBox']"
+  },
+  "healing_history": [],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 8,
+      "failure_count": 0,
+      "total_duration_ms": 84.56301689147949,
+      "last_success": "2026-08-09T17:48:57.361147",
+      "last_failure": null,
+      "avg_duration_ms": 10.570377111434937
+    }
+  },
+  "total_interactions": 16,
+  "first_seen": "2026-08-09T17:03:40.933591",
+  "last_interaction": "2026-08-09T17:48:57.368309",
+  "consecutive_failures": 0,
+  "consecutive_successes": 16
+}

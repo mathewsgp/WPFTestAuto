@@ -1,0 +1,53 @@
+{
+  "alias": "MultiAppDialog.AppsGrid",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T12:26:18.617418",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "DataGrid[@AutomationId='AppsGrid']",
+      "failure_reason": "No element found for XPath: /Window[@AutomationId='MultiAppDialog']/DataGrid[@AutomationId='AppsGrid",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T12:51:02.293218",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "//DataGrid[@AutomationId='AppsGrid']",
+      "failure_reason": "No element found for XPath: //DataGrid[@AutomationId='AppsGrid']",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 0,
+      "failure_count": 4,
+      "total_duration_ms": 13.458013534545898,
+      "last_success": null,
+      "last_failure": "2026-08-09T12:51:02.293225",
+      "avg_duration_ms": 3.3645033836364746
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    }
+  },
+  "total_interactions": 4,
+  "first_seen": "2026-08-09T12:26:18.616497",
+  "last_interaction": "2026-08-09T12:51:02.293228",
+  "consecutive_failures": 4,
+  "consecutive_successes": 0
+}

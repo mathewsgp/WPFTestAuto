@@ -1,0 +1,41 @@
+elements:
+  SampleWpfApp.LoginPage.txtUsername:
+    displayName: txtUsername
+    controlType: TextBox
+    parentAlias: SampleWpfApp.LoginPage
+    defaultTimeout: 10
+    tags:
+    - recorded
+    strategies:
+      FlaUI:
+      - searchBy: XPath
+        value: /Window[@AutomationId='LoginPage']/TextBox[@AutomationId='txtUsername']
+      - searchBy: AutomationId
+        value: txtUsername
+        scope: Descendant
+      WPFSpy:
+      - searchBy: XPath
+        value: /Window[@AutomationId='LoginPage']/TextBox[@AutomationId='txtUsername']
+    driverPriority:
+    - FlaUI
+    - WPFSpy
+  SampleWpfApp.LoginPage.btnSubmit:
+    displayName: btnSubmit
+    controlType: Button
+    parentAlias: SampleWpfApp.LoginPage
+    defaultTimeout: 10
+    tags:
+    - recorded
+    strategies:
+      FlaUI:
+      - searchBy: XPath
+        value: /Window[@AutomationId='LoginPage']/Button[@AutomationId='btnSubmit']
+      - searchBy: AutomationId
+        value: btnSubmit
+        scope: Descendant
+      WPFSpy:
+      - searchBy: XPath
+        value: /Window[@AutomationId='LoginPage']/Button[@AutomationId='btnSubmit']
+    driverPriority:
+    - FlaUI
+    - WPFSpy

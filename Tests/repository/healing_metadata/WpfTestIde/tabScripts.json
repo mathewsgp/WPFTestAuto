@@ -1,0 +1,154 @@
+{
+  "alias": "WpfTestIde.MainWindow.tabScripts",
+  "baseline": {
+    "alias": "WpfTestIde.MainWindow.tabScripts",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "SCRIPTS",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-09-04T23:03:36.685429",
+    "last_verified": "2026-09-04T23:03:36.685439",
+    "verification_count": 275,
+    "driver_used": "FlaUI",
+    "search_method": "Name",
+    "search_value": "SCRIPTS"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T09:30:31.526530",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "TabItem[@AutomationId='tabScripts']",
+      "failure_reason": "WpfSpyAgent: don't know how to invoke element of type 'TabItem'. Standard buttons and controls imple",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T08:28:52.076736",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "tabScripts",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='tabScripts': Element from XPath '//*[@Autom",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T08:29:22.644459",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "tabScripts",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='tabScripts': Element from XPath '//*[@Autom",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T08:29:33.060017",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "tabScripts",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='tabScripts': Element from XPath '//*[@Autom",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T08:29:51.177061",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "tabScripts",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='tabScripts': Element from XPath '//*[@Autom",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T08:30:02.126714",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "tabScripts",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='tabScripts': Element from XPath '//*[@Autom",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T08:31:07.026150",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "tabScripts",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='tabScripts': Element from XPath '//*[@Autom",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 17,
+      "failure_count": 12,
+      "total_duration_ms": 24539.345502853394,
+      "last_success": "2026-08-09T13:03:41.842392",
+      "last_failure": "2026-08-19T08:31:07.026158",
+      "avg_duration_ms": 846.1843276845998,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "WPFSpy:XPath": {
+      "success_count": 139,
+      "failure_count": 5,
+      "total_duration_ms": 33844.68936920166,
+      "last_success": "2026-08-16T00:33:01.177368",
+      "last_failure": "2026-08-19T08:31:07.024796",
+      "avg_duration_ms": 235.03256506390042,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "FlaUI:Name": {
+      "success_count": 119,
+      "failure_count": 0,
+      "total_duration_ms": 88649.67250823975,
+      "last_success": "2026-09-04T23:03:35.237047",
+      "last_failure": null,
+      "avg_duration_ms": 744.9552311616785,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 567,
+  "first_seen": "2026-08-09T01:54:58.163554",
+  "last_interaction": "2026-09-04T23:03:36.685444",
+  "consecutive_failures": 0,
+  "consecutive_successes": 238
+}

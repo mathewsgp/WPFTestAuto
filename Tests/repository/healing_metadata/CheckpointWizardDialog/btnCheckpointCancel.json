@@ -1,0 +1,89 @@
+{
+  "alias": "CheckpointWizardDialog.btnCheckpointCancel",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T13:11:53.435673",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnCheckpointCancel']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='CheckpointWizardDialog']/Button[@Automati",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T13:16:49.597522",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnCheckpointCancel']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='CheckpointWizardDialog']/Button[@Automati",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T21:09:09.803050",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnCheckpointCancel']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='CheckpointWizardDialog']/Button[@Automati",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T21:19:49.752098",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnCheckpointCancel']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='CheckpointWizardDialog']/Button[@Automati",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T21:25:53.734906",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "//Button[@AutomationId='btnCheckpointCancel']",
+      "failure_reason": "WPFSpy: no element found for XPath '//Button[@AutomationId='btnCheckpointCancel']' after 15 attempts",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 0,
+      "failure_count": 10,
+      "total_duration_ms": 35311.7470741272,
+      "last_success": null,
+      "last_failure": "2026-08-09T21:25:53.734916",
+      "avg_duration_ms": 3531.1747074127197
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    }
+  },
+  "total_interactions": 10,
+  "first_seen": "2026-08-09T13:11:53.433591",
+  "last_interaction": "2026-08-09T21:25:53.734919",
+  "consecutive_failures": 10,
+  "consecutive_successes": 0
+}

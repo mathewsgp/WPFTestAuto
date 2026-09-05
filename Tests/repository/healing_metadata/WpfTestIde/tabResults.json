@@ -1,0 +1,59 @@
+{
+  "alias": "WpfTestIde.MainWindow.tabResults",
+  "baseline": {
+    "alias": "WpfTestIde.MainWindow.tabResults",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "RESULTS",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-09-04T22:56:41.775606",
+    "last_verified": "2026-09-04T22:56:41.775616",
+    "verification_count": 89,
+    "driver_used": "FlaUI",
+    "search_method": "Name",
+    "search_value": "RESULTS"
+  },
+  "healing_history": [],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 16,
+      "failure_count": 0,
+      "total_duration_ms": 7240.1885986328125,
+      "last_success": "2026-08-09T13:04:04.730964",
+      "last_failure": null,
+      "avg_duration_ms": 452.5117874145508,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "WPFSpy:XPath": {
+      "success_count": 56,
+      "failure_count": 0,
+      "total_duration_ms": 520.8499431610107,
+      "last_success": "2026-08-16T00:30:28.161618",
+      "last_failure": null,
+      "avg_duration_ms": 9.300891842160906,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "FlaUI:Name": {
+      "success_count": 17,
+      "failure_count": 0,
+      "total_duration_ms": 13002.681732177734,
+      "last_success": "2026-09-04T22:56:40.044385",
+      "last_failure": null,
+      "avg_duration_ms": 764.8636313045727,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 178,
+  "first_seen": "2026-08-09T01:54:59.762345",
+  "last_interaction": "2026-09-04T22:56:41.775622",
+  "consecutive_failures": 0,
+  "consecutive_successes": 178
+}

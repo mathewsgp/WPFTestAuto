@@ -1,0 +1,49 @@
+{
+  "alias": "AttachToProcessDialog.NewProcessRadio",
+  "baseline": {
+    "alias": "AttachToProcessDialog.NewProcessRadio",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Launch New Process",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-09-04T23:06:22.196585",
+    "last_verified": "2026-09-04T23:06:22.196596",
+    "verification_count": 160,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "NewProcessRadio"
+  },
+  "healing_history": [],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 12,
+      "failure_count": 0,
+      "total_duration_ms": 93.56331825256348,
+      "last_success": "2026-08-09T17:48:56.310868",
+      "last_failure": null,
+      "avg_duration_ms": 7.796943187713623,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "FlaUI:AutomationId": {
+      "success_count": 148,
+      "failure_count": 0,
+      "total_duration_ms": 37183.26473236084,
+      "last_success": "2026-09-04T23:06:21.921251",
+      "last_failure": null,
+      "avg_duration_ms": 251.23827521865434,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 320,
+  "first_seen": "2026-08-09T12:06:22.348667",
+  "last_interaction": "2026-09-04T23:06:22.196602",
+  "consecutive_failures": 0,
+  "consecutive_successes": 320
+}

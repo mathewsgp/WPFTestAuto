@@ -21,7 +21,7 @@ repository/attach_log.txt
 repository/repo_lookup.log
 repository/elements/_ide_recorded.yaml
 repository/healing_metadata/
-src/python/tests/ide_generated_test.robot
+Tests/Demo/ide_generated_test.robot
 graphify-out/
 output/
 *.user

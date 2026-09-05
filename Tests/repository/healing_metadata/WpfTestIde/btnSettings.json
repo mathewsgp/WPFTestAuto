@@ -1,0 +1,79 @@
+{
+  "alias": "WpfTestIde.MainWindow.btnSettings",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-09-04T22:15:48.602771",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSettings",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSettings': Element from XPath '//*[@Auto",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-09-04T22:17:31.116192",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSettings",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSettings': Element from XPath '//*[@Auto",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-09-04T22:20:41.994812",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnSettings",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnSettings': Element from XPath '//*[@Auto",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 0,
+      "failure_count": 6,
+      "total_duration_ms": 5612.943410873413,
+      "last_success": null,
+      "last_failure": "2026-09-04T22:20:41.994822",
+      "avg_duration_ms": 935.4905684789022,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "WPFSpy:XPath": {
+      "success_count": 0,
+      "failure_count": 3,
+      "total_duration_ms": 0.7636547088623047,
+      "last_success": null,
+      "last_failure": "2026-09-04T22:20:41.993795",
+      "avg_duration_ms": 0.25455156962076825,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 9,
+  "first_seen": "2026-09-04T22:15:48.598986",
+  "last_interaction": "2026-09-04T22:20:41.994826",
+  "consecutive_failures": 9,
+  "consecutive_successes": 0
+}

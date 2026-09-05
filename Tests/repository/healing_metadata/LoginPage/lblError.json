@@ -1,0 +1,304 @@
+{
+  "alias": "LoginPage.MainWindow.lblError",
+  "baseline": {
+    "alias": "LoginPage.MainWindow.lblError",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Invalid username or password",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-08-19T13:53:43.834014",
+    "last_verified": "2026-08-19T13:53:43.834016",
+    "verification_count": 1,
+    "driver_used": "WPFSpy",
+    "search_method": "XPath",
+    "search_value": "Label[@Name='lblError']"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-08-15T22:38:03.652942",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Label[@AutomationId='lblError']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblErro",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-15T22:56:09.566904",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Label[@AutomationId='lblError']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblErro",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-15T23:09:46.584453",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Label[@AutomationId='lblError']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblErro",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-15T23:18:55.035714",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Label[@AutomationId='lblError']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblErro",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-16T00:28:04.395672",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Label[@AutomationId='lblError']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='MainWindow']/Label[@AutomationId='lblErro",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T08:35:56.928945",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "Name",
+      "primary_search_value": "lblError",
+      "failure_reason": "Element not found: 'FlaUI: no element with Name='lblError': Element from XPath '//*[@Name='lblError'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Label[@Name='lblError']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Invalid username or password",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T08:52:18.721206",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "Name",
+      "primary_search_value": "lblError",
+      "failure_reason": "Element not found: 'FlaUI: no element with Name='lblError': Element from XPath '//*[@Name='lblError'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Label[@Name='lblError']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Invalid username or password",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T08:54:32.556865",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "Name",
+      "primary_search_value": "lblError",
+      "failure_reason": "Element not found: 'FlaUI: no element with Name='lblError': Element from XPath '//*[@Name='lblError'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Label[@Name='lblError']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Invalid username or password",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T08:59:26.703834",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "Name",
+      "primary_search_value": "lblError",
+      "failure_reason": "Element not found: 'FlaUI: no element with Name='lblError': Element from XPath '//*[@Name='lblError'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Label[@Name='lblError']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Invalid username or password",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T09:31:06.487916",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "Name",
+      "primary_search_value": "lblError",
+      "failure_reason": "Element not found: 'FlaUI: no element with Name='lblError': Element from XPath '//*[@Name='lblError'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Label[@Name='lblError']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Invalid username or password",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T11:46:01.174398",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "Name",
+      "primary_search_value": "lblError",
+      "failure_reason": "Element not found: 'FlaUI: no element with Name='lblError': Element from XPath '//*[@Name='lblError'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Label[@Name='lblError']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Invalid username or password",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T11:52:01.365064",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "Name",
+      "primary_search_value": "lblError",
+      "failure_reason": "Element not found: 'FlaUI: no element with Name='lblError': Element from XPath '//*[@Name='lblError'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Label[@Name='lblError']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Invalid username or password",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T13:15:58.395823",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "Name",
+      "primary_search_value": "lblError",
+      "failure_reason": "Element not found: 'FlaUI: no element with Name='lblError': Element from XPath '//*[@Name='lblError'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Label[@Name='lblError']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Invalid username or password",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T13:19:34.966721",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "Name",
+      "primary_search_value": "lblError",
+      "failure_reason": "Element not found: 'FlaUI: no element with Name='lblError': Element from XPath '//*[@Name='lblError'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Label[@Name='lblError']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Invalid username or password",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-08-19T13:53:43.833993",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "Name",
+      "primary_search_value": "lblError",
+      "failure_reason": "Element not found: 'FlaUI: no element with Name='lblError': Element from XPath '//*[@Name='lblError'",
+      "healing_driver": "WPFSpy",
+      "healing_search_method": "XPath",
+      "healing_search_value": "Label[@Name='lblError']",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Invalid username or password",
+        "is_visible": true,
+        "is_enabled": true
+      }
+    }
+  ],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 23,
+      "failure_count": 10,
+      "total_duration_ms": 35748.226165771484,
+      "last_success": "2026-08-19T13:53:43.834023",
+      "last_failure": "2026-08-16T00:28:04.395680",
+      "avg_duration_ms": 1554.2707028596299
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    },
+    "FlaUI:Name": {
+      "success_count": 0,
+      "failure_count": 10,
+      "total_duration_ms": 10167.50955581665,
+      "last_success": null,
+      "last_failure": "2026-08-19T13:53:43.783335",
+      "avg_duration_ms": 1016.750955581665
+    }
+  },
+  "total_interactions": 46,
+  "first_seen": "2026-08-15T22:38:03.651891",
+  "last_interaction": "2026-08-19T13:53:43.834034",
+  "consecutive_failures": 0,
+  "consecutive_successes": 2
+}

@@ -1,0 +1,37 @@
+{
+  "alias": "app_26532.Sample WPF App \u2014 Login.Sample WPF App \u2014 Login.txtUsername",
+  "baseline": {
+    "alias": "app_26532.Sample WPF App \u2014 Login.Sample WPF App \u2014 Login.txtUsername",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "user1",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-09-03T22:23:55.853885",
+    "last_verified": "2026-09-03T22:23:55.853894",
+    "verification_count": 1,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "txtUsername"
+  },
+  "healing_history": [],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 1,
+      "failure_count": 0,
+      "total_duration_ms": 1104.598045349121,
+      "last_success": "2026-09-03T22:23:55.696628",
+      "last_failure": null,
+      "avg_duration_ms": 1104.598045349121
+    }
+  },
+  "total_interactions": 2,
+  "first_seen": "2026-09-03T22:23:55.696618",
+  "last_interaction": "2026-09-03T22:23:55.853900",
+  "consecutive_failures": 0,
+  "consecutive_successes": 2
+}

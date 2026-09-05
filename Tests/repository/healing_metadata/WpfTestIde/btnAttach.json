@@ -1,0 +1,132 @@
+{
+  "alias": "WpfTestIde.MainWindow.btnAttach",
+  "baseline": {
+    "alias": "WpfTestIde.MainWindow.btnAttach",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Attach to Process...",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-09-04T23:08:48.586824",
+    "last_verified": "2026-09-04T23:08:48.586834",
+    "verification_count": 271,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnAttach"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-08-16T01:09:29.871944",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnAttach']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-16T01:21:01.813558",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnAttach']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-16T08:05:40.342996",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnAttach']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T10:14:27.745477",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnAttach",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnAttach': FlaUI: Could not attach to appl",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-09-04T21:58:47.447699",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnAttach",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnAttach': FlaUI: Could not attach to appl",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-09-04T23:09:09.897580",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnAttach",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnAttach': Element from XPath '//*[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 207,
+      "failure_count": 6,
+      "total_duration_ms": 108881.17861747742,
+      "last_success": "2026-09-04T23:08:45.480837",
+      "last_failure": "2026-09-04T23:09:09.897589",
+      "avg_duration_ms": 511.1792423355747,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "WPFSpy:XPath": {
+      "success_count": 64,
+      "failure_count": 9,
+      "total_duration_ms": 43075.10018348694,
+      "last_success": "2026-08-16T00:29:58.964596",
+      "last_failure": "2026-09-04T23:09:09.896472",
+      "avg_duration_ms": 590.0698655272183,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 557,
+  "first_seen": "2026-08-09T01:54:20.915068",
+  "last_interaction": "2026-09-04T23:09:09.897592",
+  "consecutive_failures": 3,
+  "consecutive_successes": 0
+}

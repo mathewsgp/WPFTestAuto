@@ -152,7 +152,7 @@ echo To activate the virtual environment in the future, run:
 echo   .venv\Scripts\activate.bat
 echo.
 echo To run tests:
-echo   robot --outputdir output src/python/tests/
+echo   robot --outputdir output Tests/
 echo   or
 echo   .\run_tests.bat
 echo.

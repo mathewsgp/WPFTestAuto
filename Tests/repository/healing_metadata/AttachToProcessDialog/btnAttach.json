@@ -1,0 +1,39 @@
+{
+  "alias": "AttachToProcessDialog.btnAttach",
+  "baseline": {
+    "alias": "AttachToProcessDialog.btnAttach",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Attach to Process...",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-09-04T23:06:24.235398",
+    "last_verified": "2026-09-04T23:06:24.235408",
+    "verification_count": 147,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnAttach"
+  },
+  "healing_history": [],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 147,
+      "failure_count": 0,
+      "total_duration_ms": 68326.65205001831,
+      "last_success": "2026-09-04T23:06:23.634670",
+      "last_failure": null,
+      "avg_duration_ms": 464.80715680284567,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 294,
+  "first_seen": "2026-09-04T21:27:06.762393",
+  "last_interaction": "2026-09-04T23:06:24.235413",
+  "consecutive_failures": 0,
+  "consecutive_successes": 294
+}

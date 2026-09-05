@@ -1,0 +1,206 @@
+{
+  "alias": "MultiAppDialog.btnMultiAppClose",
+  "baseline": {
+    "alias": "MultiAppDialog.btnMultiAppClose",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Close",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-09-04T23:03:22.093671",
+    "last_verified": "2026-09-04T23:03:22.093680",
+    "verification_count": 6,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnMultiAppClose"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T08:56:02.206975",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnMultiAppClose",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnMultiAppClose': Element from XPath '//*[",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T13:02:20.052811",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnMultiAppClose",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnMultiAppClose': Element from XPath '//*[",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T13:09:00.265542",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnMultiAppClose']",
+      "failure_reason": "No element found for XPath: /Window[@AutomationId='MultiAppDialog']/Button[@AutomationId='btnMultiAp",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T08:28:19.594254",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnMultiAppClose",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnMultiAppClose': Element from XPath '//*[",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-19T09:00:59.941091",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnMultiAppClose",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnMultiAppClose': Element from XPath '//*[",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-09-04T20:35:43.754054",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnMultiAppClose",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnMultiAppClose': Element from XPath '//*[",
+      "healing_driver": "FlaUI",
+      "healing_search_method": "Name",
+      "healing_search_value": "Close",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Close",
+        "is_visible": false,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-09-04T20:41:47.369311",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnMultiAppClose",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnMultiAppClose': Element from XPath '//*[",
+      "healing_driver": "FlaUI",
+      "healing_search_method": "Name",
+      "healing_search_value": "Close",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Close",
+        "is_visible": false,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-09-04T20:43:29.400837",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnMultiAppClose",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnMultiAppClose': Element from XPath '//*[",
+      "healing_driver": "FlaUI",
+      "healing_search_method": "Name",
+      "healing_search_value": "Close",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Close",
+        "is_visible": false,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-09-04T20:53:30.576844",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnMultiAppClose",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnMultiAppClose': Element from XPath '//*[",
+      "healing_driver": "FlaUI",
+      "healing_search_method": "Name",
+      "healing_search_value": "Close",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Close",
+        "is_visible": false,
+        "is_enabled": true
+      }
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 5,
+      "failure_count": 12,
+      "total_duration_ms": 8323.650121688843,
+      "last_success": "2026-09-04T23:03:21.391499",
+      "last_failure": "2026-09-04T20:53:29.367328",
+      "avg_duration_ms": 1664.7300243377686,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "WPFSpy:XPath": {
+      "success_count": 34,
+      "failure_count": 6,
+      "total_duration_ms": 34805.93967437744,
+      "last_success": "2026-08-16T00:30:06.813158",
+      "last_failure": "2026-08-19T09:00:59.939783",
+      "avg_duration_ms": 870.148491859436,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "FlaUI:Name": {
+      "success_count": 8,
+      "failure_count": 0,
+      "total_duration_ms": 3687.1461868286133,
+      "last_success": "2026-09-04T20:53:30.576903",
+      "last_failure": null,
+      "avg_duration_ms": 460.89327335357666,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 104,
+  "first_seen": "2026-08-09T08:55:55.103164",
+  "last_interaction": "2026-09-04T23:03:22.093687",
+  "consecutive_failures": 0,
+  "consecutive_successes": 12
+}

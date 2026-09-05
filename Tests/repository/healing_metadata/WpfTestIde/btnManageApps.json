@@ -1,0 +1,96 @@
+{
+  "alias": "WpfTestIde.MainWindow.btnManageApps",
+  "baseline": {
+    "alias": "WpfTestIde.MainWindow.btnManageApps",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Manage Apps",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-09-04T23:03:16.537422",
+    "last_verified": "2026-09-04T23:03:16.537432",
+    "verification_count": 164,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnManageApps"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-08-16T01:09:44.902421",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnManageApps']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-16T01:21:16.844367",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnManageApps']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-16T08:05:55.375914",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnManageApps']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 65,
+      "failure_count": 1,
+      "total_duration_ms": 26849.655151367188,
+      "last_success": "2026-09-04T23:03:15.586763",
+      "last_failure": "2026-08-19T11:02:04.474916",
+      "avg_duration_ms": 413.07161771334137,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "WPFSpy:XPath": {
+      "success_count": 99,
+      "failure_count": 6,
+      "total_duration_ms": 34066.58983230591,
+      "last_success": "2026-08-16T00:34:08.413094",
+      "last_failure": "2026-08-16T08:05:55.375948",
+      "avg_duration_ms": 324.44371268862767,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 335,
+  "first_seen": "2026-08-09T01:54:28.412630",
+  "last_interaction": "2026-09-04T23:03:16.537438",
+  "consecutive_failures": 0,
+  "consecutive_successes": 64
+}

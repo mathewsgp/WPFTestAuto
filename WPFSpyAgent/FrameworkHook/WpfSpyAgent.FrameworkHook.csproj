@@ -11,7 +11,7 @@
     <AssemblyName>WpfSpyAgent.FrameworkHook</AssemblyName>
     <RootNamespace>WpfSpyAgent.FrameworkHook</RootNamespace>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
-    <BaseOutputPath>..\bin</BaseOutputPath>
+    <BaseOutputPath>..\..\bin</BaseOutputPath>
   </PropertyGroup>
 
    <ItemGroup>

@@ -654,10 +654,10 @@ namespace WpfTestIde.Helpers
         ///   <repo>\bin\Debug\net9.0-windows\WpfSpyAgent.dll (same dir as IDE)
         ///   <repo>\bin\Debug\net8.0-windows\WpfSpyAgent.dll
         ///   <repo>\bin\Debug\net461\WpfSpyAgent.dll (Framework — also in same parent Debug\)
-        ///   <repo>\src\csharp\WpfSpyAgent\bin\Debug\net9.0-windows\WpfSpyAgent.dll (per-project)
-        ///   <repo>\src\csharp\WpfSpyAgent\bin\Debug\net8.0-windows\WpfSpyAgent.dll
-        ///   <repo>\src\csharp\WpfSpyAgent\bin\Debug\net461\WpfSpyAgent.dll
-        ///   <repo>\src\csharp\WpfSpyAgent.FrameworkHook\bin\Debug\net461\WpfSpyAgent.dll
+        ///   <repo>\WPFSpyAgent\bin\Debug\net9.0-windows\WpfSpyAgent.dll (per-project)
+        ///   <repo>\WPFSpyAgent\bin\Debug\net8.0-windows\WpfSpyAgent.dll
+        ///   <repo>\WPFSpyAgent\bin\Debug\net461\WpfSpyAgent.dll
+        ///   <repo>\WPFSpyAgent.FrameworkHook\bin\Debug\net461\WpfSpyAgent.dll
         /// </summary>
         private static string? FindAgentSourceDir()
         {
@@ -697,8 +697,8 @@ namespace WpfTestIde.Helpers
         /// From the IDE's BaseDirectory (bin\Debug\net9.0-windows\), the framework
         /// net461 build lives at one of:
         ///   bin\Debug\net461\ (shared bin folder)
-        ///   WpfSpyAgent\bin\Debug\net461\ (per-project, multi-target)
-        ///   WpfSpyAgent.FrameworkHook\bin\Debug\net461\ (per-project, net461-only)
+        ///   WPFSpyAgent\bin\Debug\net461\ (per-project, multi-target)
+        ///   WPFSpyAgent\FrameworkHook\bin\Debug\net461\ (per-project, net461-only)
         /// </summary>
         private static string? FindFrameworkAgentSourceDir()
         {
@@ -709,12 +709,12 @@ namespace WpfTestIde.Helpers
                 // and uses BaseOutputPath=..\bin, so its net461 build lives next to the IDE's build).
                 Path.Combine(baseDir, "..", "..", "Debug", "net461"),
                 Path.Combine(baseDir, "..", "..", "Release", "net461"),
-                // Per-project WpfSpyAgent multi-target output
-                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Debug", "net461"),
-                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Release", "net461"),
+                // Per-project WPFSpyAgent multi-target output
+                Path.Combine(baseDir, "..", "..", "..", "WPFSpyAgent", "bin", "Debug", "net461"),
+                Path.Combine(baseDir, "..", "..", "..", "WPFSpyAgent", "bin", "Release", "net461"),
                 // FrameworkHook project (net461-only)
-                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent.FrameworkHook", "bin", "Debug", "net461"),
-                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent.FrameworkHook", "bin", "Release", "net461"),
+                Path.Combine(baseDir, "..", "..", "..", "WPFSpyAgent", "FrameworkHook", "bin", "Debug", "net461"),
+                Path.Combine(baseDir, "..", "..", "..", "WPFSpyAgent", "FrameworkHook", "bin", "Release", "net461"),
             };
             foreach (var p in searchPaths)
             {
