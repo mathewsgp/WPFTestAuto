@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 # Add api directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "api"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "TestAutoLayer", "api"))
 
 from healing_metadata_store import (
     HealingMetadataStore,

@@ -94,7 +94,7 @@ _breaker_manager = CircuitBreakerManager(
 
 def _get_sample_wpf_app_path():
     """Returns the path to the SampleWpfApp executable."""
-    base = os.path.join(_THIS_DIR, "..", "SampleWpfApp", "bin", "Debug", "net8.0-windows")
+    base = os.path.join(_THIS_DIR, "..", "..", "Tests", "SampleWpfApp", "bin", "Debug", "net8.0-windows")
     dll = os.path.join(base, "SampleWpfApp.dll")
     if os.path.exists(dll):
         return dll
@@ -1026,7 +1026,7 @@ class DriverAgnosticApi:
             pass
         
         if app_id is None and not _MULTI_APP_CONTEXT.apps:
-            return self._resolve_and_execute_legacy(alias, action_name, *args)
+            return self._resolve_and_execute_legacy(alias, action_name, app_id, *args)
 
         app_context = _MULTI_APP_CONTEXT.get_app(app_id)
         app_drivers = {}
@@ -1273,7 +1273,7 @@ class DriverAgnosticApi:
             details=error_details
         )
 
-    def _resolve_and_execute_legacy(self, alias: str, action_name: str, *args):
+    def _resolve_and_execute_legacy(self, alias: str, action_name: str, app_id: Optional[str] = None, *args):
         """Legacy single-app resolution using global driver pool.
 
         Used when no apps are registered and no app_id is provided,

@@ -18,7 +18,7 @@ from io import BytesIO
 import numpy as np
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(THIS_DIR, "..", "drivers_rf", "sikuli_robotframework"))
+sys.path.insert(0, os.path.join(THIS_DIR, "..", "..", "TestAutoLayer", "drivers_rf", "sikuli_robotframework"))
 
 from SikuliLibrary import SikuliDriver  # noqa: E402
 from image_matcher import StubImageMatcher  # noqa: E402

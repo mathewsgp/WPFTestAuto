@@ -27,7 +27,7 @@ import yaml
 from typing import Dict, List, Optional, Tuple
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-_REPO_ROOT = os.path.join(_THIS_DIR, "..", "repository")
+_REPO_ROOT = os.path.join(_THIS_DIR, "..", "..", "Tests", "repository")
 
 _elements_cache = None
 _steps_cache = None

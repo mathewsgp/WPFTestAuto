@@ -11,7 +11,7 @@ import unittest
 import numpy as np
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(THIS_DIR, "..", "drivers_rf", "sikuli_robotframework"))
+sys.path.insert(0, os.path.join(THIS_DIR, "..", "..", "TestAutoLayer", "drivers_rf", "sikuli_robotframework"))
 
 from image_matcher import StubImageMatcher, OpenCvImageMatcher, MultiScaleImageMatcher  # noqa: E402
 from screen_capture import StubScreenCapture  # noqa: E402
