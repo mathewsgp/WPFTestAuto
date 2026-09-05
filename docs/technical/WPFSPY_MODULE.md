@@ -43,8 +43,7 @@ drivers_rf/wpfspy_robotframework/WPFSpyLibrary.py (Python, Layer 4)
 2. **IPC communication.** The out-of-process test runner (Python, via
    `WPFSpyRealDriver`) talks to the agent over a Named Pipe
    (`WPFSpyAgentPipe`), one JSON command per call, synchronously — see
-   `docs/PROTOCOL.md` for the exact wire format. A gRPC alternative is
-   documented (not wired in) at `WpfSpyAgent.Grpc/README.md`.
+    `docs/PROTOCOL.md` for the exact wire format.
 3. **API parity.** `WPFSpyRealDriver`'s method signatures
    (`find_element`/`invoke`/`set_value`/`get_text`/`is_visible`/`toggle`)
    are identical to `FlaUIDriver`'s and to `WPFSpyMockDriver`'s. Layer 3

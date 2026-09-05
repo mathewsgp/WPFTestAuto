@@ -1,0 +1,32 @@
+# WPFTestAuto Python dependencies
+# Install core first, then optional groups as needed.
+
+# ---- Core (required) ----
+robotframework>=6.0
+pyyaml>=6.0
+pytest>=7.0
+robotframework-requests>=0.9
+pywin32>=305
+
+# ---- Optional: UI drivers ----
+# Required for FlaUI-based automation.
+robotframework-flaui>=0.9
+# Required for Sikuli image-based automation.
+robotframework-SikuliLibrary>=1.0
+
+# ---- Optional: OCR ----
+# Required for checkpoint/OCR verification features.
+pytesseract>=0.3
+Pillow>=9.0
+
+# ---- Optional: Sikuli image matching ----
+# Required for real Sikuli recording/playback (non-mock mode).
+opencv-python>=4.8
+numpy>=1.24
+mss>=9.0
+pyautogui>=0.9
+pyperclip>=1.8
+
+# ---- Optional: .NET integration ----
+# Required for pythonnet-based custom driver implementations.
+pythonnet>=3.0

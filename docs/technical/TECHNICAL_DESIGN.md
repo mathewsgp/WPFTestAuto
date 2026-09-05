@@ -686,7 +686,6 @@ WPFSpy agent returns:
 | FlaUI.Core | UI Automation core |
 | FlaUI.UIA3 | UIA3 automation |
 | YamlDotNet | YAML serialization |
-| Grpc.AspNetCore | gRPC server (optional) |
 
 ---
 

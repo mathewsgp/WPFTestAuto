@@ -84,7 +84,7 @@ See `docs/ELEMENT_REPOSITORY_GUIDE.md` for the full schema reference.
 WPFSpy's distinguishing design point vs FlaUI is that it runs an agent
 **inside** the target application's process (for custom-rendered WPF
 controls that don't expose reliable UI Automation properties), and talks
-to it via a Named Pipes / gRPC channel. See `docs/WPFSPY_MODULE.md`.
+to it via a Named Pipes channel. See `docs/WPFSPY_MODULE.md`.
 
 ## Runtime self-healing locators
 
