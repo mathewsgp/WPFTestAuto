@@ -1,0 +1,62 @@
+{
+  "alias": "SampleWpfApp.LoginPage.txtUsername",
+  "baseline": {
+    "alias": "SampleWpfApp.LoginPage.txtUsername",
+    "automation_id": "txtUsername",
+    "name": "txtUsername",
+    "control_type": "TextBox",
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "user1",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-09-06T23:21:39.017393",
+    "last_verified": "2026-09-06T23:21:39.017401",
+    "verification_count": 17,
+    "driver_used": "WPFSpy",
+    "search_method": "XPath",
+    "search_value": "/Window[@AutomationId='LoginPage']/TextBox[@AutomationId='txtUsername']"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-09-06T22:39:46.339275",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "/Window[@AutomationId='LoginPage']/TextBox[@AutomationId='txtUsername']",
+      "failure_reason": "(2, 'CreateFile', 'The system cannot find the file specified.')",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 17,
+      "failure_count": 2,
+      "total_duration_ms": 10170.109272003174,
+      "last_success": "2026-09-06T23:21:38.927671",
+      "last_failure": "2026-09-06T22:39:46.339288",
+      "avg_duration_ms": 598.2417218825397,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 36,
+  "first_seen": "2026-09-06T22:38:24.365939",
+  "last_interaction": "2026-09-06T23:21:39.017408",
+  "consecutive_failures": 0,
+  "consecutive_successes": 30
+}

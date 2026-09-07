@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Collections.Generic;
 
 namespace WpfTestIde.Models
 {
@@ -11,6 +12,7 @@ namespace WpfTestIde.Models
         private string _appId = "";
         private string _appName = "";
         private string _driver = "FlaUI";
+        private List<string>? _driverList;
         private int _processId;
         private string _pipeName = "WPFSpyAgentPipe";
         private string _appPath = "";
@@ -33,6 +35,12 @@ namespace WpfTestIde.Models
         {
             get => _driver;
             set { _driver = value; OnPropertyChanged(); }
+        }
+
+        public List<string>? DriverList
+        {
+            get => _driverList;
+            set { _driverList = value; OnPropertyChanged(); }
         }
 
         public int ProcessId

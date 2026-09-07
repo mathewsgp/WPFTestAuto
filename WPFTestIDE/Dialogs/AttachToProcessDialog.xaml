@@ -1,7 +1,7 @@
-<Window x:Class="WpfTestIde.Dialogs.AttachToProcessDialog"
+﻿<Window x:Class="WpfTestIde.Dialogs.AttachToProcessDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Attach to Process" Height="600" Width="650"
+        Title="Attach to Process" Height="720" Width="650"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
@@ -25,10 +25,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="130"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Mode Selection -->
@@ -41,7 +37,7 @@
                         Checked="NewProcessRadio_Checked" AutomationProperties.AutomationId="NewProcessRadio"/>
         </StackPanel>
 
-        <!-- Process List (Runtime Attach Mode) -->
+        <!-- Runtime Attach Panel -->
         <Grid Grid.Row="1" x:Name="RuntimeAttachPanel">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -72,62 +68,61 @@
             </StackPanel>
         </Grid>
 
-        <!-- New Process Panel (hidden by default) -->
-        <Grid Grid.Row="1" x:Name="NewProcessPanel" Visibility="Collapsed">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <!-- Launch New Process Panel (scrollable) -->
+        <ScrollViewer Grid.Row="1" x:Name="NewProcessPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,0,8">
+                <TextBlock Text="Application ID (optional):" Margin="0,0,0,4"/>
+                <TextBox x:Name="AppIdBox" Height="28" Margin="0,0,0,8"
+                         AutomationProperties.AutomationId="AppIdBox"
+                         ToolTip="Logical ID for this app, e.g. 'main', 'helper'. Leave empty for auto-generated ID."/>
 
-            <TextBlock Grid.Row="0" Text="Application to launch:" Style="{StaticResource SectionHeader}"/>
-            <Grid Grid.Row="1" Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBox Grid.Column="0" x:Name="ApplicationPathBox" 
-                        Margin="0,0,8,0" AutomationProperties.AutomationId="ApplicationPathBox"/>
-                <Button Grid.Column="1" x:Name="btnBrowseApplication" Content="Browse..." 
-                       Width="80" Click="BrowseApplication_Click" AutomationProperties.AutomationId="btnBrowseApplication"/>
-            </Grid>
+                <TextBlock Text="Path to executable:" Margin="0,0,0,4"/>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" x:Name="ApplicationPathBox" Height="28" Margin="0,0,8,0" AutomationProperties.AutomationId="ApplicationPathBox"/>
+                    <Button Grid.Column="1" x:Name="btnBrowseApplication" Content="Browse..." Width="80" Click="BrowseApplication_Click" AutomationProperties.AutomationId="btnBrowseApplication"/>
+                </Grid>
 
-            <TextBlock Grid.Row="2" Text="Arguments (optional):" Style="{StaticResource SectionHeader}" Margin="0,0,0,4"/>
-            <TextBox Grid.Row="3" x:Name="ArgumentsBox" Margin="0,0,0,8" AutomationProperties.AutomationId="ArgumentsBox"/>
+                <TextBlock Text="Start in (working directory, optional):" Margin="0,0,0,4"/>
+                <TextBox x:Name="StartInBox" Height="28" Margin="0,0,0,8" AutomationProperties.AutomationId="StartInBox"/>
 
-            <Border Grid.Row="4" Background="{DynamicResource InputBackgroundBrush}" Padding="10" CornerRadius="4" Margin="0,8,0,0">
-                <StackPanel>
-                    <TextBlock Text="Environment Variables for Spy Agent Injection:" 
-                              FontWeight="SemiBold" Margin="0,0,0,6"/>
-                    <TextBlock FontFamily="Consolas" FontSize="11">
-                        <Run Text="DOTNET_STARTUP_HOOKS="/>
-                        <Run Text="C:\path\to\WpfSpyAgent.StartupHook.dll" Foreground="{DynamicResource AccentBrush}"/>
-                    </TextBlock>
-                    <TextBlock FontFamily="Consolas" FontSize="11">
-                        <Run Text="WPFSPY_AGENT_ENABLED="/>
-                        <Run Text="1" Foreground="{DynamicResource AccentBrush}"/>
-                    </TextBlock>
+                <TextBlock Text="Command-line arguments (optional):" Margin="0,0,0,4"/>
+                <TextBox x:Name="ArgumentsBox" Height="28" Margin="0,0,0,8" AutomationProperties.AutomationId="ArgumentsBox"/>
+
+                <!-- Driver Selection -->
+                <TextBlock Text="Available Drivers:" Margin="0,0,0,4"/>
+                <ListBox x:Name="AvailableDriversList" Height="60" FontSize="11" Margin="0,0,0,4" AutomationProperties.AutomationId="AvailableDriversList"/>
+
+                <TextBlock Text="Selected Drivers (priority order):" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,4">
+                    <ListBox x:Name="SelectedDriversList" Height="60" FontSize="11" Margin="0,0,4,0" AutomationProperties.AutomationId="SelectedDriversList"/>
+                    <StackPanel Orientation="Vertical" DockPanel.Dock="Right">
+                        <Button x:Name="btnAddDriver" Content="Add &gt;" Padding="6,2" FontSize="10" Margin="0,0,0,1" AutomationProperties.AutomationId="btnAddDriver" Click="btnAddDriver_Click"/>
+                        <Button x:Name="btnRemoveDriver" Content="&lt; Remove" Padding="6,2" FontSize="10" Margin="0,0,0,1" AutomationProperties.AutomationId="btnRemoveDriver" Click="btnRemoveDriver_Click"/>
+                        <Button x:Name="btnDriverUp" Content="Up" Padding="6,2" FontSize="10" Margin="0,0,0,1" AutomationProperties.AutomationId="btnDriverUp" Click="btnDriverUp_Click"/>
+                        <Button x:Name="btnDriverDown" Content="Down" Padding="6,2" FontSize="10" AutomationProperties.AutomationId="btnDriverDown" Click="btnDriverDown_Click"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Enable Spy Agent + conditional pipe name -->
+                <CheckBox x:Name="EnableSpyAgentCheck" Content="Enable Spy Agent" Margin="0,0,0,4" IsChecked="True"
+                          Checked="EnableSpyAgentCheck_Checked" Unchecked="EnableSpyAgentCheck_Checked"
+                          AutomationProperties.AutomationId="EnableSpyAgentCheck"
+                          ToolTip="Enable the in-process Spy Agent for this application."/>
+                <StackPanel x:Name="PipeNamePanel" Margin="0,4,0,0">
+                    <TextBlock Text="Pipe name (optional, for Spy Agent):" Margin="0,0,0,4"/>
+                    <TextBox x:Name="PipeNameBox" Height="28" Text="WPFSpyAgentPipe"
+                             AutomationProperties.AutomationId="PipeNameBox"
+                             ToolTip="Named pipe for Spy Agent communication. Leave empty to use default."/>
                 </StackPanel>
-            </Border>
-        </Grid>
-
-        <!-- Pipe Name & App ID -->
-        <StackPanel Grid.Row="2" Margin="0,10,0,0">
-            <TextBlock Text="Spy Agent Named Pipe name:" Margin="0,0,0,4"/>
-            <TextBox x:Name="PipeNameBox" Text="WPFSpyAgentPipe" AutomationProperties.AutomationId="PipeNameBox"/>
-        </StackPanel>
-
-        <StackPanel Grid.Row="3" Margin="0,6,0,0">
-            <TextBlock Text="Application ID (optional, for multi-app support):" Margin="0,0,0,4"/>
-            <TextBox x:Name="AppIdBox" Text="" ToolTip="Logical ID for this app, e.g. 'main', 'helper'. Leave empty for auto-generated ID." AutomationProperties.AutomationId="AppIdBox"/>
-        </StackPanel>
-
-        <!-- Page Mapping removed: aliases are derived from <appId>.<window>
-             alone. -->
+            </StackPanel>
+        </ScrollViewer>
 
         <!-- Status and Buttons -->
-        <Grid Grid.Row="6" Margin="0,12,0,0">
+        <Grid Grid.Row="2" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>

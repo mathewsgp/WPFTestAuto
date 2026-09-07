@@ -7,6 +7,7 @@ Supports both standard logging and structured (JSON) output.
 
 import logging
 import json
+import os
 import sys
 import time
 from typing import Any, Dict, Optional
@@ -89,6 +90,18 @@ class FrameworkLogger:
             formatter = StructuredFormatter()
             handler.setFormatter(formatter)
             self._root_logger.addHandler(handler)
+        
+        # Persistent file handler if WPFSPY_LOG_FILE is set
+        log_file = os.environ.get("WPFSPY_LOG_FILE")
+        if log_file:
+            try:
+                os.makedirs(os.path.dirname(log_file), exist_ok=True)
+                file_handler = logging.FileHandler(log_file, encoding="utf-8")
+                file_handler.setLevel(logging.DEBUG)
+                file_handler.setFormatter(StructuredFormatter(include_caller=False))
+                self._root_logger.addHandler(file_handler)
+            except Exception:
+                pass
         
         FrameworkLogger._initialized = True
     

@@ -673,9 +673,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             reason = L"DLL_PROCESS_ATTACH";
             DisableThreadLibraryCalls(hModule);
             Log(L"[Inject] Native DLL loaded into target process!");
-            
-            // Try to auto-start the agent using CLR Hosting
-            TryStartSpyAgentCLR(L"WPFSpyAgentPipe");
             break;
         case DLL_THREAD_ATTACH:
             reason = L"DLL_THREAD_ATTACH";

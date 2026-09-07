@@ -16,13 +16,13 @@ def test_app_context_accepts_start_in_and_auto_attach():
         app_name="MyApp.exe",
         app_path="C:\\path\\to\\MyApp.exe",
         start_in="C:\\work",
-        auto_attach=True,
+        attach=True,
     )
     assert ctx.start_in == "C:\\work"
-    assert ctx.auto_attach is True
+    assert ctx.attach is True
     d = ctx.to_dict()
     assert d["start_in"] == "C:\\work"
-    assert d["auto_attach"] is True
+    assert d["attach"] is True
 
 
 def test_terminate_application_requires_at_least_one_identifier():
@@ -106,7 +106,7 @@ def test_launch_application_signature_supports_positional_path_first():
         captured["app_id"] = ctx.app_id
         captured["app_path"] = ctx.app_path
         captured["start_in"] = ctx.start_in
-        captured["auto_attach"] = ctx.auto_attach
+        captured["attach"] = ctx.attach
         captured["launch_args"] = list(ctx.launch_args)
         return _FakeProc(os.getpid())  # safe: we don't actually spawn anything
 
@@ -129,7 +129,7 @@ def test_launch_application_signature_supports_positional_path_first():
     assert captured["app_path"] == "C:\\Windows\\notepad.exe"
     assert captured["app_id"] == "Notepad"
     assert captured["start_in"] == "C:\\Windows"
-    assert captured["auto_attach"] is False
+    assert captured["attach"] is False
     assert captured["launch_args"] == ["1.txt"], f"expected ['1.txt'], got {captured['launch_args']}"
     # Registration should have happened.
     assert "Notepad" in [a["app_id"] for a in api_mod._MULTI_APP_CONTEXT.list_apps()]

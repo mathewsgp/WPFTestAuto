@@ -4,12 +4,15 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using WpfTestIde.Helpers;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -685,7 +688,8 @@ namespace WpfTestIde.ViewModels
             {
                 AppId = appId,
                 AppName = appName,
-                Driver = "WPFSpy",
+                Driver = dialog.DriverList != null && dialog.DriverList.Any() ? dialog.DriverList[0] : "WPFSpy",
+                DriverList = dialog.DriverList,
                 ProcessId = dialog.SelectedProcessId.Value,
                 PipeName = dialog.PipeName,
                 AppPath = dialog.ApplicationPath ?? "",
@@ -711,12 +715,13 @@ namespace WpfTestIde.ViewModels
                 _session.RecordSikuli = RecordSikuli;
             }
             _session.RemoveTarget(appId);
+            var attachMode = dialog.SpyAgentEnabled ? ProbeMode.WPFSpy : ProbeMode.FlaUI;
             _session.AddTarget(new RecordingTarget(
                 appId: appId,
                 pipeName: dialog.PipeName,
                 processId: dialog.SelectedProcessId.Value,
                 exeName: dialog.ApplicationPath,
-                mode: ProbeMode.WPFSpy));
+                mode: attachMode));
 
             string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "repository", "attach_log.txt");
             try
@@ -792,9 +797,9 @@ namespace WpfTestIde.ViewModels
                 string pipeName = step.PipeName ?? $"WPFSpyAgentPipe_{appId}";
 
                 // Use FlaUI driver when spy agent is disabled (e.g. Notepad, Calc),
-                // WPFSpy when the agent is enabled.
+                // WPFSpy when the agent is enabled. Prefer LaunchDriverList if set.
                 string driver = step.SpyAgentEnabled
-                    ? (step.LaunchDriver ?? "WPFSpy")
+                    ? (step.LaunchDriverList != null && step.LaunchDriverList.Any() ? step.LaunchDriverList[0] : (step.LaunchDriver ?? "WPFSpy"))
                     : "FlaUI";
 
                 var appContext = new WpfTestIde.Models.AppContext
@@ -802,6 +807,7 @@ namespace WpfTestIde.ViewModels
                     AppId = appId,
                     AppName = appName,
                     Driver = driver,
+                    DriverList = step.LaunchDriverList,
                     ProcessId = 0, // Will be set after launch
                     PipeName = pipeName,
                     AppPath = step.AppPath,
@@ -845,6 +851,7 @@ namespace WpfTestIde.ViewModels
                 var matchingStep = launchSteps.FirstOrDefault(s =>
                     (s.AppId ?? System.IO.Path.GetFileNameWithoutExtension(s.AppPath ?? "").ToLowerInvariant()) == app.AppId);
                 bool useFlaUI = matchingStep != null && !matchingStep.SpyAgentEnabled;
+                
                 _session.AddTarget(new RecordingTarget(
                     appId: app.AppId,
                     pipeName: app.PipeName,
@@ -861,6 +868,17 @@ namespace WpfTestIde.ViewModels
                 ? $"{wpfCount} WPFSpy + {flaCount} FlaUI"
                 : (flaCount > 0 ? "FlaUI/UIA" : "WPFSpy");
             StatusText = $"Ready to record ({modeLabel} mode). {AttachedApps.Count} application(s) configured. Run the script to launch and attach.";
+        }
+
+        private void LogDiagnostic(string message)
+        {
+            try
+            {
+                var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "repository", "attach_log.txt");
+                Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
+                File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {message}{Environment.NewLine}");
+            }
+            catch { }
         }
 
         public void SetDefaultApplication(string appId)
@@ -1502,7 +1520,20 @@ namespace WpfTestIde.ViewModels
              string testsDir = Path.Combine(FrameworkRoot, "tests");
              Directory.CreateDirectory(testsDir);
              string scriptPath = Path.Combine(testsDir, "ide_generated_test.robot");
-             File.WriteAllText(scriptPath, GeneratedScript);
+             
+             // For .NET Framework apps, the Python Launch Application keyword
+             // cannot inject the spy agent (DOTNET_STARTUP_HOOKS is .NET Core only).
+             // Pre-launch and inject them here, then rewrite the script to use
+             // Attach To Application instead of Launch Application.
+             var fwProcessIds = new List<int>();
+             var scriptContent = GeneratedScript;
+             
+             if (scriptContent.Contains("Launch Application"))
+             {
+                 scriptContent = await PreLaunchFrameworkAppsAsync(scriptContent, fwProcessIds);
+             }
+             
+             File.WriteAllText(scriptPath, scriptContent);
 
              // Write in-memory elements to repository so DriverAgnosticApi
              // can resolve aliases for elements recorded in this session
@@ -1514,12 +1545,19 @@ namespace WpfTestIde.ViewModels
 
              string outputDir = Path.Combine(FrameworkRoot, "results", "ide_run");
 
-             var env = new System.Collections.Generic.Dictionary<string, string>
+              var env = new System.Collections.Generic.Dictionary<string, string>
+              {
+                  ["WPFSPY_MODE"] = "real",
+                  ["WPFSPY_IDE_RUN"] = "1",
+                  ["WPFSPY_RUN_MODES"] = string.Join(",", GetSelectedRunModes()),
+                  ["WPFSPY_LOG_FILE"] = Path.Combine(FrameworkRoot, "results", "ide_run", "framework_persistent_log.txt"),
+              };
+
+             // If we pre-launched any .NET Framework apps, pass their PIDs to the script
+             if (fwProcessIds.Count > 0)
              {
-                 ["WPFSPY_MODE"] = "real",
-                 ["WPFSPY_IDE_RUN"] = "1",
-                 ["WPFSPY_RUN_MODES"] = string.Join(",", GetSelectedRunModes()),
-             };
+                 env["WPFSPY_PROCESS_IDS"] = string.Join(",", fwProcessIds);
+             }
 
              // Register the selected app with the Python framework for multi-app support
              if (SelectedApp != null && !string.IsNullOrEmpty(SelectedApp.AppId))
@@ -1553,13 +1591,211 @@ namespace WpfTestIde.ViewModels
              // the authoritative read for everyone, the toast only mirrors the
              // pass/fail outcome for glancability when the operator is on a
              // different tab.
-             if (summary.Total > 0)
-             {
-                 EnqueueToast(
-                     $"Run finished — {summary.Passed} passed, {summary.Failed} failed",
-                     summary.Success ? ToastKind.Success : ToastKind.Error);
-             }
-         }
+              if (summary.Total > 0)
+              {
+                  EnqueueToast(
+                      $"Run finished — {summary.Passed} passed, {summary.Failed} failed",
+                      summary.Success ? ToastKind.Success : ToastKind.Error);
+              }
+          }
+
+        // ------------------------------------------------------------
+        // Pre-launch / inject .NET Framework apps before script run
+        // ------------------------------------------------------------
+        private async System.Threading.Tasks.Task<string> PreLaunchFrameworkAppsAsync(string scriptContent, List<int> fwProcessIds)
+        {
+            var lines = scriptContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).ToList();
+            var modifiedLines = new List<string>();
+            bool inTestCases = false;
+
+            foreach (var line in lines)
+            {
+                if (line.StartsWith("*** Test Cases ***"))
+                {
+                    inTestCases = true;
+                }
+
+                if (inTestCases && line.StartsWith("    Launch Application"))
+                {
+                    var parts = line.Split(new[] { "    " }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 2)
+                    {
+                        var appPath = parts[1].Trim();
+                        if (IsNetFrameworkApp(appPath))
+                        {
+                            LogDiagnostic($"Pre-launching .NET Framework app: {appPath}");
+                            StatusText = $"Pre-launching {Path.GetFileName(appPath)}...";
+                            
+                            var appId = ExtractRobotArg(parts, "app_id") ?? Path.GetFileNameWithoutExtension(appPath).ToLowerInvariant();
+                            var expectedPipeName = ExtractRobotArg(parts, "pipe_name") ?? $"WPFSpyAgentPipe_{appId}";
+                            
+                            var pid = await LaunchAndInjectFrameworkAppAsync(appPath, expectedPipeName);
+                            if (pid > 0)
+                            {
+                                fwProcessIds.Add(pid);
+                                var attachLine = $"    Attach To Application    {appId}    {pid}    WPFSpy    {expectedPipeName}";
+                                modifiedLines.Add(attachLine);
+                                LogDiagnostic($"Replaced Launch Application with Attach To Application for PID {pid}, pipe={expectedPipeName}");
+                                continue;
+                            }
+                            else
+                            {
+                                LogDiagnostic($"Failed to pre-launch {appPath}, keeping original Launch Application line");
+                            }
+                        }
+                    }
+                }
+
+                modifiedLines.Add(line);
+            }
+
+            return string.Join("\r\n", modifiedLines);
+        }
+
+        private bool IsNetFrameworkApp(string appPath)
+        {
+            try
+            {
+                var normalized = appPath.Replace('/', '\\').ToLowerInvariant();
+                return normalized.Contains("\\net461\\") || 
+                       normalized.Contains("\\net48\\") || 
+                       normalized.Contains("\\net472\\") ||
+                       normalized.Contains("\\net462\\") ||
+                       normalized.EndsWith("\\net461") ||
+                       normalized.EndsWith("\\net48") ||
+                       normalized.EndsWith("\\net472") ||
+                       normalized.EndsWith("\\net462");
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private string? ExtractRobotArg(string[] parts, string argName)
+        {
+            foreach (var part in parts)
+            {
+                var trimmed = part.Trim();
+                if (trimmed.StartsWith($"{argName}=", StringComparison.OrdinalIgnoreCase))
+                {
+                    return trimmed.Substring(argName.Length + 1);
+                }
+            }
+            return null;
+        }
+
+        private async System.Threading.Tasks.Task<int> LaunchAndInjectFrameworkAppAsync(string appPath, string pipeName)
+        {
+            try
+            {
+                var targetDir = Path.GetDirectoryName(appPath);
+                if (string.IsNullOrEmpty(targetDir))
+                {
+                    LogDiagnostic("Cannot resolve target directory");
+                    return -1;
+                }
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = appPath,
+                    Arguments = "",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = false,
+                    WorkingDirectory = targetDir
+                };
+
+                LogDiagnostic($"Launching Framework app: {appPath}");
+                var process = Process.Start(psi);
+                if (process == null)
+                {
+                    LogDiagnostic("Process.Start returned null");
+                    return -1;
+                }
+
+                LogDiagnostic($"Process started: PID={process.Id}");
+                StatusText = $"Launched PID {process.Id}, waiting for initialization...";
+
+                await Task.Delay(2000);
+
+                LogDiagnostic($"Staging agent DLLs for PID {process.Id}");
+                try
+                {
+                    RuntimeInjector.StageAgentDllsForTarget(process.Id);
+                }
+                catch (Exception stageEx)
+                {
+                    LogDiagnostic($"Stage warning: {stageEx.Message}");
+                }
+
+                var nativeInjectDll = RuntimeInjector.FindNativeInjectDll();
+                if (string.IsNullOrEmpty(nativeInjectDll))
+                {
+                    LogDiagnostic("NativeInject DLL not found - cannot inject");
+                    return process.Id;
+                }
+
+                LogDiagnostic($"Injecting NativeInject DLL: {nativeInjectDll}");
+                StatusText = "Injecting Spy Agent...";
+
+                bool injected = await RuntimeInjector.InjectAsync(process.Id, nativeInjectDll, pipeName);
+                LogDiagnostic($"Injection result: {injected}");
+
+                if (injected)
+                {
+                    StatusText = "Waiting for Spy Agent pipe...";
+                    bool pipeReady = await WaitForSpyAgentAsync(pipeName, timeoutSeconds: 15);
+                    if (pipeReady)
+                    {
+                        StatusText = $"Injected successfully, PID {process.Id}";
+                        LogDiagnostic($"Spy Agent ready on pipe {pipeName}");
+                    }
+                    else
+                    {
+                        StatusText = $"Launched PID {process.Id} (agent initializing...)";
+                        LogDiagnostic($"Spy Agent pipe not ready after 15s");
+                    }
+                }
+                else
+                {
+                    StatusText = $"Launched PID {process.Id} (injection failed)";
+                    LogDiagnostic($"Injection failed for PID {process.Id}");
+                }
+
+                return process.Id;
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Launch/inject error: {ex.Message}";
+                LogDiagnostic($"LaunchAndInjectFrameworkAppAsync exception: {ex.GetType().Name}: {ex.Message}");
+                return -1;
+            }
+        }
+
+        private async System.Threading.Tasks.Task<bool> WaitForSpyAgentAsync(string pipeName, int timeoutSeconds = 10)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.Elapsed.TotalSeconds < timeoutSeconds)
+            {
+                try
+                {
+                    using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut);
+                    client.Connect(2000);
+                    if (client.IsConnected)
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // Pipe not ready yet
+                }
+                await System.Threading.Tasks.Task.Delay(500);
+            }
+            return false;
+        }
 
         // ------------------------------------------------------------
         // Export

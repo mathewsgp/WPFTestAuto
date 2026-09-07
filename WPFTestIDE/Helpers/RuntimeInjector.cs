@@ -356,7 +356,7 @@ namespace WpfTestIde.Helpers
             var searchPaths = new[]
             {
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WpfSpyAgent.StartupHook.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.StartupHook.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net9.0-windows", "WpfSpyAgent.StartupHook.dll"),
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net6.0-windows", "WpfSpyAgent.StartupHook.dll"),
             };
 
@@ -369,6 +369,33 @@ namespace WpfTestIde.Helpers
                     return fullPath;
                 }
             }
+            return null;
+        }
+
+        /// <summary>
+        /// Find the native C++ injector DLL path (WpfSpyAgent.NativeInject.dll).
+        /// </summary>
+        public static string? FindNativeInjectDll()
+        {
+            var searchPaths = new[]
+            {
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WpfSpyAgent.NativeInject.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Debug", "x64", "WpfSpyAgent.NativeInject.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Release", "x64", "WpfSpyAgent.NativeInject.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Debug", "WpfSpyAgent.NativeInject.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Release", "WpfSpyAgent.NativeInject.dll"),
+            };
+
+            foreach (var path in searchPaths)
+            {
+                var fullPath = Path.GetFullPath(path);
+                if (File.Exists(fullPath))
+                {
+                    StatusChanged?.Invoke($"Found NativeInject DLL: {fullPath}");
+                    return fullPath;
+                }
+            }
+            StatusChanged?.Invoke("NativeInject DLL not found");
             return null;
         }
 

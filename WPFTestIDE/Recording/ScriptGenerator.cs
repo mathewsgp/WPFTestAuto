@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using WpfTestIde.Models;
 
@@ -31,7 +33,7 @@ namespace WpfTestIde.Recording
             {
                 sb.AppendLine("...              Recording modes: " + string.Join(", ", recordingModes));
             }
-             sb.AppendLine("Library          ../api/DriverAgnosticApi.py");
+             sb.AppendLine("Library          ../TestAutoLayer/api/DriverAgnosticApi.py");
 
              // Combine mode and driver into a single Test Setup
              var setupParts = new List<string>();
@@ -140,19 +142,20 @@ namespace WpfTestIde.Recording
                              la.Add($"start_in={NormalizePathForRobot(step.StartIn)}");
                          if (!string.IsNullOrWhiteSpace(step.Args))
                              la.Add($"args={step.Args}");
-                         la.Add($"attach={(step.AutoAttach ? "Yes" : "No")}");
-                         // Always emit driver=WPFSpy when spy agent is enabled, so the
-                         // Python framework sets DOTNET_STARTUP_HOOKS for the launched app.
-                         if (step.SpyAgentEnabled)
-                             la.Add($"driver=WPFSpy");
-                         else if (!string.IsNullOrWhiteSpace(step.LaunchDriver) && step.LaunchDriver != "WPFSpy")
-                             la.Add($"driver={step.LaunchDriver}");
-                         // Spy Agent options
-                         if (!step.SpyAgentEnabled)
-                             la.Add("spy_agent=No");
-                         if (!string.IsNullOrWhiteSpace(step.PipeName))
-                             la.Add($"pipe_name={step.PipeName}");
-                         sb.AppendLine(string.Join("    ", la));
+                          la.Add($"attach={(step.AutoAttach ? "Yes" : "No")}");
+                          // Emit driver priority list when available; fall back to single driver.
+                          if (step.LaunchDriverList != null && step.LaunchDriverList.Any())
+                          {
+                              la.Add($"drivers={string.Join(",", step.LaunchDriverList)}");
+                          }
+                          else if (!string.IsNullOrWhiteSpace(step.LaunchDriver) && step.LaunchDriver != "WPFSpy")
+                          {
+                              la.Add($"driver={step.LaunchDriver}");
+                          }
+                           // Spy Agent options
+                          if (!step.SpyAgentEnabled)
+                              la.Add("spy_agent=No");
+                          sb.AppendLine(string.Join("    ", la));
                          continue;
                      }
                     case StepKind.TerminateApplication:

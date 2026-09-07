@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace WpfTestIde.Models
 {
@@ -55,6 +56,9 @@ namespace WpfTestIde.Models
 
         /// <summary>Driver to use for the launched process. Default "WPFSpy".</summary>
         public string LaunchDriver { get; set; } = "WPFSpy";
+
+        /// <summary>Ordered driver priority list for the launched process. When set, takes precedence over LaunchDriver.</summary>
+        public List<string>? LaunchDriverList { get; set; }
 
         /// <summary>Whether to enable Spy Agent for the launched process. Default true.</summary>
         public bool SpyAgentEnabled { get; set; } = true;

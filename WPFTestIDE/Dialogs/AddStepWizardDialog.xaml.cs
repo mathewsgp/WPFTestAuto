@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
@@ -12,6 +13,8 @@ namespace WpfTestIde.Dialogs
     {
         private readonly List<ElementEntry> _elements;
         private readonly string _pipeName;
+        private readonly List<string> _allDrivers = new() { "WPFSpy", "FlaUI", "Sikuli" };
+        private List<string> _selectedDrivers = new() { "WPFSpy", "FlaUI" };
 
         public RecordedStep? CreatedStep { get; private set; }
 
@@ -95,6 +98,11 @@ namespace WpfTestIde.Dialogs
                 }
             }
 
+            if (showLaunchAppPanel)
+            {
+                RefreshDriverLists();
+            }
+
             if (text == "Verify Element Text" && AliasCombo.SelectedItem is ElementEntry entry)
             {
                 TryPrefillExpectedValue(entry);
@@ -158,6 +166,54 @@ namespace WpfTestIde.Dialogs
             {
                 UpdatePipeNameSuggestion();
             }
+        }
+
+        private void RefreshDriverLists()
+        {
+            var available = _allDrivers.Except(_selectedDrivers).ToList();
+            AvailableDriversList.ItemsSource = available;
+            SelectedDriversList.ItemsSource = _selectedDrivers.ToList();
+        }
+
+        private void btnAddDriver_Click(object sender, RoutedEventArgs e)
+        {
+            if (AvailableDriversList.SelectedItem is string driver)
+            {
+                _selectedDrivers.Add(driver);
+                RefreshDriverLists();
+                SelectedDriversList.SelectedItem = driver;
+            }
+        }
+
+        private void btnRemoveDriver_Click(object sender, RoutedEventArgs e)
+        {
+            if (SelectedDriversList.SelectedItem is string driver)
+            {
+                _selectedDrivers.Remove(driver);
+                RefreshDriverLists();
+            }
+        }
+
+        private void btnDriverUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedDrivers == null || SelectedDriversList.SelectedIndex < 1) return;
+            int index = SelectedDriversList.SelectedIndex;
+            var item = _selectedDrivers[index];
+            _selectedDrivers.RemoveAt(index);
+            _selectedDrivers.Insert(index - 1, item);
+            RefreshDriverLists();
+            SelectedDriversList.SelectedIndex = index - 1;
+        }
+
+        private void btnDriverDown_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedDrivers == null || SelectedDriversList.SelectedIndex < 0 || SelectedDriversList.SelectedIndex >= _selectedDrivers.Count - 1) return;
+            int index = SelectedDriversList.SelectedIndex;
+            var item = _selectedDrivers[index];
+            _selectedDrivers.RemoveAt(index);
+            _selectedDrivers.Insert(index + 1, item);
+            RefreshDriverLists();
+            SelectedDriversList.SelectedIndex = index + 1;
         }
 
         private void UpdatePipeNameSuggestion()
@@ -347,9 +403,10 @@ namespace WpfTestIde.Dialogs
                              ? null : LaunchStartInBox.Text.Trim();
                          step.Args = string.IsNullOrWhiteSpace(LaunchArgsBox.Text)
                              ? null : LaunchArgsBox.Text.Trim();
-                         step.AutoAttach = LaunchAutoAttachCheck.IsChecked == true;
-                         step.LaunchDriver = "WPFSpy";
-                         step.SpyAgentEnabled = LaunchSpyAgentCheck.IsChecked == true;
+                          step.AutoAttach = LaunchAutoAttachCheck.IsChecked == true;
+                          step.LaunchDriver = "WPFSpy";
+                          step.LaunchDriverList = _selectedDrivers != null && _selectedDrivers.Any() ? new List<string>(_selectedDrivers) : null;
+                          step.SpyAgentEnabled = LaunchSpyAgentCheck.IsChecked == true;
                          step.PipeName = string.IsNullOrWhiteSpace(LaunchPipeNameBox.Text)
                              ? null : LaunchPipeNameBox.Text.Trim();
                          break;

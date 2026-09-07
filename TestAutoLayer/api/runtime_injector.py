@@ -68,14 +68,14 @@ class RuntimeInjector:
     
     def _find_startup_hook(self) -> Optional[str]:
         """Find the StartupHook DLL in common locations."""
-        # Common paths relative to this file
+        repo_root = Path(__file__).parent.parent.parent
         base_paths = [
-            Path(__file__).parent.parent,  # Repository root
-            Path(__file__).parent.parent / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net8.0-windows",
-            Path(__file__).parent.parent / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net9.0-windows",
-            Path(__file__).parent.parent / ".." / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net8.0-windows",
-            Path(__file__).parent.parent / ".." / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net9.0-windows",
-            Path(__file__).parent.parent / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net8.0-windows" / "WpfSpyAgent.StartupHook.dll",
+            repo_root / "bin" / "Debug" / "net9.0-windows",
+            repo_root / "bin" / "Debug" / "net8.0-windows",
+            repo_root / "WPFSpyAgent" / "StartupHook" / "bin" / "Debug" / "net9.0-windows",
+            repo_root / "WPFSpyAgent" / "StartupHook" / "bin" / "Debug" / "net8.0-windows",
+            repo_root / "WPFSpyAgent" / "StartupHook" / "bin" / "Release" / "net9.0-windows",
+            repo_root / "WPFSpyAgent" / "StartupHook" / "bin" / "Release" / "net8.0-windows",
         ]
 
         for base in base_paths:
@@ -83,7 +83,6 @@ class RuntimeInjector:
             if dll_path.exists():
                 return str(dll_path.resolve())
 
-        # Also check environment variable
         env_path = os.environ.get("WPFSPY_STARTUP_HOOK_DLL")
         if env_path and Path(env_path).exists():
             return env_path
@@ -92,10 +91,12 @@ class RuntimeInjector:
 
     def _find_framework_hook(self) -> Optional[str]:
         """Find the FrameworkHook DLL in common locations (for .NET Framework AUTs)."""
+        repo_root = Path(__file__).parent.parent.parent
         base_paths = [
-            Path(__file__).parent.parent,
-            Path(__file__).parent.parent / "WpfSpyAgent.FrameworkHook" / "bin" / "Debug" / "net461",
-            Path(__file__).parent.parent / ".." / "WpfSpyAgent.FrameworkHook" / "bin" / "Debug" / "net461",
+            repo_root / "WPFSpyAgent" / "FrameworkHook" / "bin" / "Debug" / "net461",
+            repo_root / "WPFSpyAgent" / "FrameworkHook" / "bin" / "Release" / "net461",
+            repo_root / "bin" / "Debug" / "net461",
+            repo_root / "bin" / "Release" / "net461",
         ]
         for base in base_paths:
             dll_path = base / "WpfSpyAgent.FrameworkHook.dll"
@@ -202,15 +203,14 @@ class RuntimeInjector:
         Returns the directory itself (not a child path) so the caller can
         decide whether to copy the contents flat or under a net461\ subfolder.
         """
+        repo_root = Path(__file__).parent.parent.parent
         candidates = [
-            Path(__file__).parent.parent / "bin" / "Debug" / "net461",
-            Path(__file__).parent.parent / "bin" / "Release" / "net461",
-            Path(__file__).parent.parent / ".." / "WpfSpyAgent" / "bin" / "Debug" / "net461",
-            Path(__file__).parent.parent / ".." / "WpfSpyAgent" / "bin" / "Release" / "net461",
-            Path(__file__).parent.parent / "WpfSpyAgent" / "bin" / "Debug" / "net461",
-            Path(__file__).parent.parent / "WpfSpyAgent" / "bin" / "Release" / "net461",
-            Path(__file__).parent.parent / ".." / "WpfSpyAgent.FrameworkHook" / "bin" / "Debug" / "net461",
-            Path(__file__).parent.parent / ".." / "WpfSpyAgent.FrameworkHook" / "bin" / "Release" / "net461",
+            repo_root / "bin" / "Debug" / "net461",
+            repo_root / "bin" / "Release" / "net461",
+            repo_root / "WPFSpyAgent" / "bin" / "Debug" / "net461",
+            repo_root / "WPFSpyAgent" / "bin" / "Release" / "net461",
+            repo_root / "WPFSpyAgent" / "FrameworkHook" / "bin" / "Debug" / "net461",
+            repo_root / "WPFSpyAgent" / "FrameworkHook" / "bin" / "Release" / "net461",
         ]
         for c in candidates:
             if c.is_dir() and (c / "WpfSpyAgent.dll").exists():

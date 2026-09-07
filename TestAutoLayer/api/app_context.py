@@ -5,7 +5,7 @@ App Context Management for Multi-Application Automation
 This module provides the core abstractions for automating multiple
 applications simultaneously:
 
-- `AppContext`: per-application state (drivers, process, pipe, element scope)
+- `AppContext`: per-application state (driver priority list, process, pipe)
 - `MultiAppContext`: registry of all apps under automation
 """
 
@@ -14,46 +14,68 @@ from __future__ import annotations
 import os
 import time
 import subprocess
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
 class AppContext:
-    """State for a single application under automation."""
+    """State for a single application under automation.
+
+    The driver list is ordered by priority. The first driver is used for
+    probing/recording. Playback iterates the list as a fallback chain.
+    If ``WPFSpy`` appears anywhere in the list, the spy agent will be
+    injected at launch (unless ``inject_spy_agent`` is explicitly False).
+    """
 
     def __init__(
         self,
         app_id: str,
         app_name: str,
-        driver: str = "FlaUI",
+        driver_list: Optional[List[str]] = None,
         process_id: Optional[int] = None,
         pipe_name: Optional[str] = None,
         app_path: Optional[str] = None,
         launch_args: Optional[List[str]] = None,
         env: Optional[Dict[str, str]] = None,
         start_in: Optional[str] = None,
-        auto_attach: bool = False,
-        spy_agent: bool = True,
+        inject_spy_agent: Optional[bool] = None,
+        attach: bool = False,
     ):
         self.app_id = app_id
         self.app_name = app_name
-        self.driver = driver
+        self.driver_list = driver_list or ["FlaUI"]
         self.process_id = process_id
         self.pipe_name = pipe_name
         self.app_path = app_path
         self.launch_args = launch_args or []
         self.env = env or {}
         self.start_in = start_in
-        self.auto_attach = auto_attach
-        self.spy_agent = spy_agent
+        self.attach = attach
+
+        # Spy-agent injection is implied by WPFSpy presence in driver_list,
+        # but can be overridden explicitly.
+        if inject_spy_agent is None:
+            self.inject_spy_agent = any(d.lower() == "wpfspy" for d in self.driver_list)
+        else:
+            self.inject_spy_agent = inject_spy_agent
+
+        # Derive pipe name from app_id when WPFSpy is enabled and no explicit pipe.
+        if self.inject_spy_agent and not self.pipe_name:
+            self.pipe_name = f"WPFSpyAgentPipe_{app_id}"
 
         self.drivers: Dict[str, Any] = {}
         self.process: Optional[subprocess.Popen] = None
         self.element_scope: Optional[str] = None  # future: per-app repo scope
 
+    @property
+    def driver(self) -> str:
+        """Primary driver = first in priority list."""
+        return self.driver_list[0]
+
     def get_driver(self, driver_name: str) -> Any:
         if driver_name not in self.drivers:
             self.drivers[driver_name] = _create_driver_for_app(driver_name, self)
-        return self.drivers
+        return self.drivers[driver_name]
 
     def close(self):
         try:
@@ -69,14 +91,15 @@ class AppContext:
         return {
             "app_id": self.app_id,
             "app_name": self.app_name,
-            "driver": self.driver,
+            "driver_list": self.driver_list,
             "process_id": self.process_id,
             "pipe_name": self.pipe_name,
             "app_path": self.app_path,
             "launch_args": self.launch_args,
             "env": self.env,
             "start_in": self.start_in,
-            "auto_attach": self.auto_attach,
+            "inject_spy_agent": self.inject_spy_agent,
+            "attach": self.attach,
         }
 
 
@@ -142,11 +165,6 @@ def _create_driver_for_app(driver_name: str, app_context: AppContext) -> Any:
     if driver_name == "WPFSpy":
         if effective_mode == "real":
             if app_context.pipe_name is None:
-                # No pipe name means the app didn't have a WPFSpy agent
-                # injected (e.g. the IDE itself, or a non-WPF target). Fall
-                # back to the mock driver so the multi-driver iteration
-                # doesn't blow up — strategy matching by driver name will
-                # still skip it if it can't resolve.
                 try:
                     from WPFSpyLibrary import WPFSpyMockDriver
                     return WPFSpyMockDriver()
@@ -174,26 +192,135 @@ def _create_driver_for_app(driver_name: str, app_context: AppContext) -> Any:
     raise ValueError(f"Unknown driver: {driver_name}")
 
 
+def _is_net_framework_app(app_path: str) -> bool:
+    """Check if an app path points to a .NET Framework application."""
+    try:
+        normalized = app_path.replace("/", "\\").lower()
+        return (
+            "\\net461\\" in normalized
+            or "\\net48\\" in normalized
+            or "\\net472\\" in normalized
+            or "\\net462\\" in normalized
+            or normalized.endswith("\\net461")
+            or normalized.endswith("\\net48")
+            or normalized.endswith("\\net472")
+            or normalized.endswith("\\net462")
+        )
+    except Exception:
+        return False
+
+
+def _stage_framework_dlls(app_path: str) -> List[str]:
+    """Stage .NET Framework Spy Agent DLLs next to the AUT."""
+    copied = []
+    try:
+        target_dir = Path(app_path).parent
+        # Find the net461 build output directory.
+        # From TestAutoLayer/api/app_context.py, repo root is parent.parent.parent.
+        repo_root = Path(__file__).parent.parent.parent
+        possible_sources = [
+            repo_root / "WPFSpyAgent" / "bin" / "Debug" / "net461",
+            repo_root / "bin" / "Debug" / "net461",
+            repo_root / "WPFSpyAgent" / "bin" / "Release" / "net461",
+            repo_root / "bin" / "Release" / "net461",
+        ]
+        fw_source = None
+        for src in possible_sources:
+            if src.exists() and (src / "WpfSpyAgent.FrameworkHook.dll").exists():
+                fw_source = src
+                break
+
+        if not fw_source:
+            print("[LAUNCH] WARNING: .NET Framework Spy Agent source directory not found")
+            return copied
+
+        fw_dlls = [
+            "WpfSpyAgent.FrameworkHook.dll",
+            "WpfSpyAgent.dll",
+            "Newtonsoft.Json.dll",
+        ]
+        for name in fw_dlls:
+            src = fw_source / name
+            if not src.exists():
+                continue
+            dst = target_dir / name
+            try:
+                if dst.exists() and dst.stat().st_mtime >= src.stat().st_mtime:
+                    continue
+                import shutil
+                shutil.copy2(src, dst)
+                copied.append(name)
+            except OSError:
+                pass
+    except Exception as e:
+        print(f"[LAUNCH] Framework DLL staging error: {e}")
+    return copied
+
+
 def _launch_app_for_context(app_context: AppContext) -> subprocess.Popen:
+    print(f"[LAUNCH] ENTRY: app_id={app_context.app_id}, driver_list={app_context.driver_list}, inject_spy_agent={app_context.inject_spy_agent}, pipe_name={app_context.pipe_name}")
     if not app_context.app_path:
         raise ValueError("app_path is required to launch application")
 
     env = os.environ.copy()
     env.update(app_context.env)
 
-    # Only enable Spy Agent if explicitly requested and driver is WPFSpy
-    if app_context.driver == "WPFSpy" and app_context.spy_agent:
-        from runtime_injector import RuntimeInjector
-        injector = RuntimeInjector()
-        if injector.startup_hook_path:
-            env["DOTNET_STARTUP_HOOKS"] = injector.startup_hook_path
-            env["WPFSPY_AGENT_ENABLED"] = "1"
+    target_dir = Path(app_context.app_path).parent
+    is_framework = _is_net_framework_app(app_context.app_path)
+
+    if app_context.inject_spy_agent:
+        if is_framework:
+            print(f"[LAUNCH] Detected .NET Framework app, using AppDomainManager injection")
+            staged = _stage_framework_dlls(app_context.app_path)
+            print(f"[LAUNCH] staged_framework_dlls={staged}")
+
+            env["APPDOMAIN_MANAGER_ASM"] = "WpfSpyAgent.FrameworkHook"
+            env["APPDOMAIN_MANAGER_TYPE"] = "WpfSpyAgent.FrameworkHook.SpyAppDomainManager"
             env["WPFSPY_PIPE_NAME"] = app_context.pipe_name or "WPFSpyAgentPipe"
+            env["WPFSPY_AGENT_ENABLED"] = "1"
+            print(f"[LAUNCH] Set APPDOMAIN_MANAGER_ASM=WpfSpyAgent.FrameworkHook")
+            print(f"[LAUNCH] Set WPFSPY_PIPE_NAME={env['WPFSPY_PIPE_NAME']}")
+        else:
+            from runtime_injector import RuntimeInjector
+            injector = RuntimeInjector()
+            print(f"[LAUNCH] inject_spy_agent=True, pipe_name={app_context.pipe_name}")
+            print(f"[LAUNCH] startup_hook_path={injector.startup_hook_path}")
+            print(f"[LAUNCH] target_dir={target_dir}")
+            
+            if injector.startup_hook_path:
+                staged = injector.stage_dlls(app_context.app_path)
+                print(f"[LAUNCH] staged_dlls={staged}")
+                
+                if staged:
+                    staged_hook = target_dir / "WpfSpyAgent.StartupHook.dll"
+                    if staged_hook.exists():
+                        env["DOTNET_STARTUP_HOOKS"] = str(staged_hook)
+                        print(f"[LAUNCH] Using staged hook: {staged_hook}")
+                    else:
+                        env["DOTNET_STARTUP_HOOKS"] = injector.startup_hook_path
+                        print(f"[LAUNCH] Staged hook missing, using build output: {injector.startup_hook_path}")
+                else:
+                    staged_hook = target_dir / "WpfSpyAgent.StartupHook.dll"
+                    if staged_hook.exists():
+                        env["DOTNET_STARTUP_HOOKS"] = str(staged_hook)
+                        print(f"[LAUNCH] Using existing staged hook: {staged_hook}")
+                    else:
+                        env["DOTNET_STARTUP_HOOKS"] = injector.startup_hook_path
+                        print(f"[LAUNCH] No staged hook, using build output: {injector.startup_hook_path}")
+                
+                env["WPFSPY_AGENT_ENABLED"] = "1"
+                env["WPFSPY_PIPE_NAME"] = app_context.pipe_name or "WPFSpyAgentPipe"
+                print(f"[LAUNCH] WPFSPY_PIPE_NAME={env['WPFSPY_PIPE_NAME']}")
+            else:
+                print("[LAUNCH] WARNING: startup_hook_path is None - cannot inject spy agent")
 
     cmd = [app_context.app_path] + app_context.launch_args
     if not app_context.app_path.lower().endswith(".exe"):
         cmd = ["dotnet"] + cmd
 
+    print(f"[LAUNCH] cmd={cmd}")
+    print(f"[LAUNCH] cwd={app_context.start_in or target_dir}")
+    
     proc = subprocess.Popen(
         cmd,
         env=env,
@@ -201,5 +328,6 @@ def _launch_app_for_context(app_context: AppContext) -> subprocess.Popen:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+    print(f"[LAUNCH] Launched PID={proc.pid}")
     time.sleep(5)
     return proc

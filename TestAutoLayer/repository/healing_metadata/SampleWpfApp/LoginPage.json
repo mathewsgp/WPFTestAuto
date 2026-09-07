@@ -1,0 +1,57 @@
+{
+  "alias": "SampleWpfApp.LoginPage.LoginPage",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-09-06T23:19:40.447191",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "/Window[@AutomationId='LoginPage']",
+      "failure_reason": "WpfSpyAgent: don't know how to invoke element of type 'MainWindow'. Standard buttons and controls im",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-09-06T23:20:28.702979",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "/Window[@AutomationId='LoginPage']",
+      "failure_reason": "WpfSpyAgent: don't know how to invoke element of type 'MainWindow'. Standard buttons and controls im",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 0,
+      "failure_count": 4,
+      "total_duration_ms": 160.1560115814209,
+      "last_success": null,
+      "last_failure": "2026-09-06T23:20:28.702989",
+      "avg_duration_ms": 40.039002895355225,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 4,
+  "first_seen": "2026-09-06T23:19:40.445736",
+  "last_interaction": "2026-09-06T23:20:28.702992",
+  "consecutive_failures": 4,
+  "consecutive_successes": 0
+}

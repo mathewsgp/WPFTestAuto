@@ -10,8 +10,8 @@ from app_context import AppContext, MultiAppContext
 def test_multi_app_context_registration():
     ctx = MultiAppContext()
     
-    app1 = AppContext(app_id="main", app_name="SampleWpfApp", driver="FlaUI", process_id=1234)
-    app2 = AppContext(app_id="helper", app_name="HelperApp", driver="FlaUI", process_id=5678)
+    app1 = AppContext(app_id="main", app_name="SampleWpfApp", driver_list=["FlaUI"], process_id=1234)
+    app2 = AppContext(app_id="helper", app_name="HelperApp", driver_list=["FlaUI"], process_id=5678)
     
     ctx.register_app(app1)
     ctx.register_app(app2)
@@ -28,7 +28,7 @@ def test_multi_app_context_registration():
 def test_multi_app_context_default():
     ctx = MultiAppContext()
     
-    app1 = AppContext(app_id="main", app_name="Main", driver="FlaUI")
+    app1 = AppContext(app_id="main", app_name="Main", driver_list=["FlaUI"])
     ctx.register_app(app1)
     
     ctx.set_default_app("main")
@@ -41,8 +41,8 @@ def test_multi_app_context_default():
 def test_multi_app_context_unregister():
     ctx = MultiAppContext()
     
-    app1 = AppContext(app_id="main", app_name="Main", driver="FlaUI")
-    app2 = AppContext(app_id="helper", app_name="Helper", driver="FlaUI")
+    app1 = AppContext(app_id="main", app_name="Main", driver_list=["FlaUI"])
+    app2 = AppContext(app_id="helper", app_name="Helper", driver_list=["FlaUI"])
     
     ctx.register_app(app1)
     ctx.register_app(app2)
@@ -59,7 +59,7 @@ def test_app_context_to_dict():
     app = AppContext(
         app_id="test",
         app_name="TestApp",
-        driver="WPFSpy",
+        driver_list=["WPFSpy"],
         process_id=999,
         pipe_name="TestPipe",
         app_path="/path/to/app.exe",
@@ -68,7 +68,7 @@ def test_app_context_to_dict():
     
     d = app.to_dict()
     assert d["app_id"] == "test"
-    assert d["driver"] == "WPFSpy"
+    assert d["driver_list"] == ["WPFSpy"]
     assert d["process_id"] == 999
     assert d["pipe_name"] == "TestPipe"
     print("test_app_context_to_dict: PASS")
@@ -95,8 +95,8 @@ def test_multi_app_context_error_handling():
 def test_multi_app_context_close_all():
     ctx = MultiAppContext()
     
-    app1 = AppContext(app_id="main", app_name="Main", driver="FlaUI")
-    app2 = AppContext(app_id="helper", app_name="Helper", driver="FlaUI")
+    app1 = AppContext(app_id="main", app_name="Main", driver_list=["FlaUI"])
+    app2 = AppContext(app_id="helper", app_name="Helper", driver_list=["FlaUI"])
     
     ctx.register_app(app1)
     ctx.register_app(app2)

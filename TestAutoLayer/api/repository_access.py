@@ -28,6 +28,7 @@ from typing import Dict, List, Optional, Tuple
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.join(_THIS_DIR, "..", "..", "Tests", "repository")
+_REPO_ROOT_FALLBACK = os.path.join(_THIS_DIR, "..", "..", "repository")
 
 _elements_cache = None
 _steps_cache = None
@@ -37,11 +38,21 @@ _element_relative_xpath_cache: Dict[str, str] = {}  # alias -> relativeXPath
 
 def _load_yaml_dir(subfolder, top_key):
     merged = {}
-    pattern = os.path.join(_REPO_ROOT, subfolder, "*.yaml")
-    for path in sorted(glob.glob(pattern)):
+    
+    # Primary: Tests/repository (contains test-specific YAML files)
+    primary_pattern = os.path.join(_REPO_ROOT, subfolder, "*.yaml")
+    for path in sorted(glob.glob(primary_pattern)):
         with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
         merged.update(data.get(top_key, {}))
+    
+    # Fallback: repository at repo root (contains IDE-generated elements)
+    fallback_pattern = os.path.join(_REPO_ROOT_FALLBACK, subfolder, "*.yaml")
+    for path in sorted(glob.glob(fallback_pattern)):
+        with open(path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        merged.update(data.get(top_key, {}))
+    
     return merged
 
 

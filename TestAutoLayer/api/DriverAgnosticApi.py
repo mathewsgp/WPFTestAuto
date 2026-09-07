@@ -429,7 +429,7 @@ class DriverAgnosticApi:
             app_context = AppContext(
                 app_id=app_id,
                 app_name=app_name,
-                driver="FlaUI",
+                driver_list=["FlaUI"],
                 process_id=process_id,
                 pipe_name=pipe_name,
             )
@@ -443,7 +443,7 @@ class DriverAgnosticApi:
         self,
         app_id: str,
         app_name: str,
-        driver: str = "FlaUI",
+        driver_list: Optional[Union[str, List[str]]] = None,
         process_id: Optional[int] = None,
         pipe_name: Optional[str] = None,
         app_path: Optional[str] = None,
@@ -454,26 +454,38 @@ class DriverAgnosticApi:
         Args:
             app_id: Logical ID for this app (e.g. 'main', 'helper').
             app_name: Human-readable name (e.g. 'SampleWpfApp').
-            driver: Primary driver ('FlaUI', 'WPFSpy', 'Sikuli').
+            driver_list: Ordered list of drivers to use for this app.
+                First entry is the primary/probing driver. Default: ["FlaUI"].
+                Example: ["WPFSpy", "FlaUI"] - WPFSpy is used for recording
+                and playback, FlaUI is the fallback.
             process_id: OS process ID if already running.
-            pipe_name: Named pipe for WPFSpy agent.
+            pipe_name: Named pipe for WPFSpy agent. Auto-derived from app_id
+                when WPFSpy is in driver_list and not explicitly provided.
             app_path: Path to executable/DLL for launching.
             launch_args: Additional arguments for launch.
 
         Returns:
             The registered app_id.
         """
+        # Normalize driver_list from Robot Framework named-arg string.
+        if driver_list is None:
+            driver_list = None
+        elif isinstance(driver_list, str):
+            driver_list = [d.strip() for d in driver_list.split(",") if d.strip()]
+        else:
+            driver_list = [str(d).strip() for d in driver_list if str(d).strip()]
+
         app_context = AppContext(
             app_id=app_id,
             app_name=app_name,
-            driver=driver,
+            driver_list=driver_list,
             process_id=process_id,
             pipe_name=pipe_name,
             app_path=app_path,
             launch_args=launch_args or [],
         )
         _MULTI_APP_CONTEXT.register_app(app_context)
-        logger.info("Registered application", app_id=app_id, app_name=app_name, driver=driver)
+        logger.info("Registered application", app_id=app_id, app_name=app_name, driver_list=driver_list)
         return app_id
 
     def switch_application(self, app_id: str):
@@ -490,41 +502,33 @@ class DriverAgnosticApi:
         self,
         app_path: str,
         app_id: Optional[str] = None,
-        driver: Optional[str] = None,
         args: Optional[Union[str, List[str]]] = None,
         start_in: Optional[str] = None,
+        drivers: Optional[Union[str, List[str]]] = None,
         attach: bool = False,
-        pipe_name: Optional[str] = None,
-        spy_agent: Optional[bool] = None,
         timeout: float = 30.0,
     ) -> str:
         """Launch an application and register it.
 
         Args:
-            app_path: Path to executable/DLL. First positional — the natural
+            app_path: Path to executable/DLL. First positional - the natural
                 Robot Framework usage is
                 ``Launch Application    <path>    app_id=<id>    ...``.
             app_id: Logical ID for this app. Optional; when None, a default
                 of ``<exe-name>`` is generated. Use ``app_id=`` from Robot to
                 keep the call argument order clean (positional after named is
                 rejected by Robot).
-            driver: Primary driver. When None (default), auto-detected from
-                the app path/name — ``.dll`` or a name containing ``wpf`` /
-                ``xaml`` selects ``WPFSpy``; otherwise ``FlaUI``.
             args: Command-line arguments. Either a single string (will be
                 split on whitespace respecting simple quotes) or a list of
                 strings.
             start_in: Working directory for the launched process. Optional.
-            attach: If True, automatically register the spawned process with
-                `attach_to_application` so subsequent keywords can drive it
-                without a separate attach step. Defaults to False.
-            pipe_name: Named pipe for WPFSpy. Defaults to a per-app
-                `WPFSpyAgentPipe_<app_id>` when driver=='WPFSpy'.
-            spy_agent: If True, enable the in-process Spy Agent for the
-                launched application (sets DOTNET_STARTUP_HOOKS and
-                WPFSPY_AGENT_ENABLED). When None (default), follows the
-                driver — True for WPFSpy, False for FlaUI. Set explicitly
-                to override.
+            drivers: Ordered list of drivers to enable for this app. First
+                entry is the primary/probing driver. When None (default),
+                auto-detected from the app path - ``.dll`` or a name
+                containing ``wpf`` / ``xaml`` selects ``["WPFSpy"]``;
+                otherwise ``["FlaUI"]``. Example: ``drivers=WPFSpy,FlaUI``.
+            attach: If True, wait for the spy agent to become ready after
+                launch (only applies when WPFSpy is in the driver list).
             timeout: Seconds to wait for the process to become available
                 before returning.
 
@@ -544,6 +548,16 @@ class DriverAgnosticApi:
         else:
             launch_args = list(args)
 
+        # Normalize drivers to a list of strings. Robot Framework may pass
+        # a comma-separated string for list-typed named arguments; accept
+        # both that and an actual list.
+        if drivers is None:
+            drivers = None
+        elif isinstance(drivers, str):
+            drivers = [d.strip() for d in drivers.split(",") if d.strip()]
+        else:
+            drivers = [str(d).strip() for d in drivers if str(d).strip()]
+
         # Default app_id to the executable name (no extension) when the caller
         # didn't supply one. This keeps backward compatibility with the older
         # signature while making the new positional-first form ergonomic.
@@ -552,26 +566,17 @@ class DriverAgnosticApi:
             stem = os.path.splitext(base)[0]
             app_id = (stem or "app").lower()
 
-        effective_pipe = pipe_name
-        if effective_pipe is None and driver == "WPFSpy":
-            effective_pipe = f"WPFSpyAgentPipe_{app_id}"
-
-        # Auto-detect driver and spy_agent when the caller didn't specify them.
+        # Auto-detect drivers when the caller didn't specify them.
         # WPF heuristics: .dll extension or filename containing 'wpf'/'xaml'.
-        norm_for_detect = (app_path or "").replace("/", "\\").lower()
-        base_for_detect = os.path.basename(norm_for_detect)
-        is_likely_wpf = (
-            base_for_detect.endswith(".dll")
-            or "wpf" in base_for_detect
-            or "xaml" in base_for_detect
-        )
-        if driver is None:
-            driver = "WPFSpy" if is_likely_wpf else "FlaUI"
-        if spy_agent is None:
-            spy_agent = driver == "WPFSpy"
-        # Recompute pipe name if driver was previously None and got resolved.
-        if effective_pipe is None and driver == "WPFSpy":
-            effective_pipe = f"WPFSpyAgentPipe_{app_id}"
+        if drivers is None:
+            norm_for_detect = (app_path or "").replace("/", "\\").lower()
+            base_for_detect = os.path.basename(norm_for_detect)
+            is_likely_wpf = (
+                base_for_detect.endswith(".dll")
+                or "wpf" in base_for_detect
+                or "xaml" in base_for_detect
+            )
+            drivers = ["WPFSpy"] if is_likely_wpf else ["FlaUI"]
 
         # Capture process_id before registering so the registration sees the
         # live pid (used by WPFSpy attach for pipe lookups).
@@ -608,13 +613,18 @@ class DriverAgnosticApi:
         app_context = AppContext(
             app_id=app_id,
             app_name=os.path.basename(norm_path),
-            driver=driver,
+            driver_list=drivers,
             app_path=norm_path,
             launch_args=launch_args,
-            pipe_name=effective_pipe,
             start_in=norm_start_in,
-            auto_attach=attach,
-            spy_agent=spy_agent,
+            attach=attach,
+        )
+        logger.info(
+            "launch_application app_context created",
+            app_id=app_id,
+            drivers=drivers,
+            pipe_name=app_context.pipe_name,
+            attach=attach,
         )
         try:
             app_context.process = _launch_app_for_context(app_context)
@@ -633,9 +643,9 @@ class DriverAgnosticApi:
             attach=attach,
         )
 
-        # If the user asked us to auto-attach (e.g. for WPFSpy), make sure the
+        # If the user asked us to auto-attach with spy agent, make sure the
         # WPFSpy agent is reachable via the named pipe before continuing.
-        if attach and driver == "WPFSpy":
+        if attach and app_context.inject_spy_agent:
             try:
                 self.wait_for_application(app_id, timeout=timeout)
             except Exception as e:
@@ -645,14 +655,16 @@ class DriverAgnosticApi:
 
         return app_id
 
-    def attach_to_application(self, app_id: str, process_id: Union[int, str], driver: str = "FlaUI", pipe_name: Optional[str] = None) -> str:
+    def attach_to_application(self, app_id: str, process_id: Union[int, str], driver_list: Optional[Union[str, List[str]]] = None, pipe_name: Optional[str] = None) -> str:
         """Attach to a running application and register it.
 
         Args:
             app_id: Logical ID for this app.
             process_id: OS process ID (int or string).
-            driver: Primary driver.
-            pipe_name: Named pipe for WPFSpy agent.
+            driver_list: Ordered list of drivers for this app. Default: ["FlaUI"].
+                Example: ["WPFSpy", "FlaUI"].
+            pipe_name: Named pipe for WPFSpy agent. Auto-derived from app_id
+                when WPFSpy is in driver_list and not explicitly provided.
 
         Returns:
             The registered app_id.
@@ -663,12 +675,27 @@ class DriverAgnosticApi:
             except (ValueError, TypeError):
                 process_id = None
         
+        # Normalize driver_list from Robot Framework named-arg string.
+        if driver_list is None:
+            driver_list = None
+        elif isinstance(driver_list, str):
+            driver_list = [d.strip() for d in driver_list.split(",") if d.strip()]
+        else:
+            driver_list = [str(d).strip() for d in driver_list if str(d).strip()]
+        
         app_context = AppContext(
             app_id=app_id,
             app_name=f"Process-{process_id}" if process_id else app_id,
-            driver=driver,
+            driver_list=driver_list,
             process_id=process_id,
-            pipe_name=pipe_name or f"WPFSpyAgentPipe_{app_id}",
+            pipe_name=pipe_name,
+        )
+        logger.info(
+            "attach_to_application registered",
+            app_id=app_id,
+            process_id=process_id,
+            driver_list=driver_list,
+            pipe_name=pipe_name,
         )
         _MULTI_APP_CONTEXT.register_app(app_context)
         logger.info("Attached to application", app_id=app_id, process_id=process_id)
@@ -952,9 +979,9 @@ class DriverAgnosticApi:
         driver_used = None
         
         if app_context:
-            for driver_name in _get_run_modes():
+            for driver_name in app_context.driver_list:
                 if driver_name not in app_context.drivers:
-                    continue
+                    app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
                 driver = app_context.drivers[driver_name]
                 try:
                     screenshot_data = driver.capture_screenshot()
@@ -1030,7 +1057,7 @@ class DriverAgnosticApi:
 
         app_context = _MULTI_APP_CONTEXT.get_app(app_id)
         app_drivers = {}
-        for driver_name in _get_run_modes():
+        for driver_name in app_context.driver_list:
             if driver_name not in app_context.drivers:
                 app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
             app_drivers[driver_name] = app_context.drivers[driver_name]
@@ -1044,7 +1071,30 @@ class DriverAgnosticApi:
                 details={"reason": "No strategies configured"}
             )
 
-        driver_order = _get_run_modes()
+        if _ACTIVE_DRIVER is not None:
+            driver_order = [_ACTIVE_DRIVER]
+        else:
+            try:
+                element = repo.get_element(alias)
+                element_priority = element.get("driverPriority")
+                if element_priority and isinstance(element_priority, list):
+                    driver_order = [d for d in element_priority if d in all_strategies and d in app_context.driver_list]
+                    if not driver_order:
+                        driver_order = app_context.driver_list
+                else:
+                    driver_order = app_context.driver_list
+            except Exception:
+                driver_order = app_context.driver_list
+        
+        logger.info(
+            "_resolve_and_execute driver flow",
+            alias=alias,
+            action=action_name,
+            app_id=app_id,
+            pipe_name=getattr(app_context, 'pipe_name', None),
+            driver_order=driver_order,
+            available_strategies=list(all_strategies.keys()),
+        )
         attempts = []
         
         # Track healing info: first failure and subsequent success
@@ -2546,5 +2596,23 @@ class DriverAgnosticApi:
         subprocess.run(cmd, shell=True, check=False, capture_output=True)
         time.sleep(0.3)
         logger.info("Keys sent to window", window_title=window_title, keys=keys)
+
+    def is_pipe_ready(self, pipe_name: str = "WPFSpyAgentPipe") -> bool:
+        """Check if the Spy Agent named pipe is ready for connections.
+
+        Args:
+            pipe_name: Name of the pipe to check. Default: WPFSpyAgentPipe
+
+        Returns:
+            True if pipe is available, False otherwise.
+        """
+        if sys.platform != "win32":
+            return False
+
+        try:
+            from robot_launcher import is_agent_ready
+            return is_agent_ready(pipe_name)
+        except Exception:
+            return False
 
 
