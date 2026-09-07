@@ -18,6 +18,24 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+class Constants:
+    APPDOMAIN_MANAGER_ASM = "WpfSpyAgent.FrameworkHook"
+    APPDOMAIN_MANAGER_TYPE = "WpfSpyAgent.FrameworkHook.SpyAppDomainManager"
+    WPFSPY_PIPE_PREFIX = "WPFSpyAgentPipe_"
+    WPFSPY_PIPE_DEFAULT = "WPFSpyAgentPipe"
+    WPFSPY_AGENT_ENABLED = "WPFSPY_AGENT_ENABLED"
+    WPFSPY_PIPE_NAME = "WPFSPY_PIPE_NAME"
+    DOTNET_STARTUP_HOOKS = "DOTNET_STARTUP_HOOKS"
+    DOTNET_STARTUP_HOOK_DLL = "WpfSpyAgent.StartupHook.dll"
+    FRAMEWORK_HOOK_DLL = "WpfSpyAgent.FrameworkHook.dll"
+    AGENT_DLL = "WpfSpyAgent.dll"
+    NEWTONSOFT_JSON_DLL = "Newtonsoft.Json.dll"
+    DEFAULT_DRIVER = "FlaUI"
+    LAUNCH_POLL_DELAY = 0.2
+    TERMINATE_TIMEOUT = 3
+    KILL_TIMEOUT = 2
+
+
 class AppContext:
     """State for a single application under automation.
 
