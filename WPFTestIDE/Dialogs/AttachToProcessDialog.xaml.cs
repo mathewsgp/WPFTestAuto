@@ -463,10 +463,7 @@ namespace WpfTestIde.Dialogs
             var searchPaths = new[]
             {
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Debug", "x64", "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Release", "x64", "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Debug", "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Release", "WpfSpyAgent.NativeInject.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "x64", "WpfSpyAgent.NativeInject.dll")
             };
 
             foreach (var relPath in searchPaths)
@@ -612,8 +609,19 @@ namespace WpfTestIde.Dialogs
                     LogDiagnostic($"Agent DLL path (IDE base dir): {agentDllPath}, exists: {File.Exists(agentDllPath)}");
                 }
 
+                var newtonsoftDllName = "Newtonsoft.Json.dll";
+                var newtonsoftDllPath = Path.Combine(Path.GetDirectoryName(startupHookPath) ?? "", newtonsoftDllName);
+                LogDiagnostic($"Newtonsoft.Json DLL path (same dir as hook): {newtonsoftDllPath}, exists: {File.Exists(newtonsoftDllPath)}");
+                
+                if (!File.Exists(newtonsoftDllPath))
+                {
+                    newtonsoftDllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, newtonsoftDllName);
+                    LogDiagnostic($"Newtonsoft.Json DLL path (IDE base dir): {newtonsoftDllPath}, exists: {File.Exists(newtonsoftDllPath)}");
+                }
+
                 var stagedHookPath = Path.Combine(targetDir, "WpfSpyAgent.StartupHook.dll");
                 var stagedAgentPath = Path.Combine(targetDir, agentDllName);
+                var stagedNewtonsoftPath = Path.Combine(targetDir, newtonsoftDllName);
 
                 try
                 {
@@ -625,6 +633,15 @@ namespace WpfTestIde.Dialogs
                     else
                     {
                         LogDiagnostic($"Agent DLL not found at: {agentDllPath} - skipping copy");
+                    }
+                    if (File.Exists(newtonsoftDllPath))
+                    {
+                        File.Copy(newtonsoftDllPath, stagedNewtonsoftPath, overwrite: true);
+                        LogDiagnostic($"Copied Newtonsoft.Json DLL to: {stagedNewtonsoftPath}");
+                    }
+                    else
+                    {
+                        LogDiagnostic($"Newtonsoft.Json DLL not found at: {newtonsoftDllPath} - skipping copy");
                     }
                     File.Copy(startupHookPath, stagedHookPath, overwrite: true);
                     LogDiagnostic($"Copied startup hook to: {stagedHookPath}");
@@ -706,15 +723,11 @@ namespace WpfTestIde.Dialogs
                     return false;
 
                 var exeName = Path.GetFileNameWithoutExtension(appPath);
-                
-                var net461Path = Path.Combine(targetDir, "net461", $"{exeName}.exe");
-                if (File.Exists(net461Path))
-                    return true;
 
-                if (Directory.Exists(Path.Combine(targetDir, "net461")))
-                    return true;
-
-                return false;
+                // .NET Core/5+ apps have a runtimeconfig.json alongside the exe.
+                // .NET Framework apps do not.
+                var runtimeConfigPath = Path.Combine(targetDir, $"{exeName}.runtimeconfig.json");
+                return !File.Exists(runtimeConfigPath);
             }
             catch
             {

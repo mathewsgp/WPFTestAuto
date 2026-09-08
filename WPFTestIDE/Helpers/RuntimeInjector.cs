@@ -588,7 +588,6 @@ namespace WpfTestIde.Helpers
         /// when coreclr is not loaded, so the subfolder layout must be preserved.
         /// Layout:
         ///   &lt;AUT&gt;\net461\WpfSpyAgent.dll
-        ///   &lt;AUT&gt;\net461\WpfSpyAgent.FrameworkHook.dll
         ///   &lt;AUT&gt;\net461\Newtonsoft.Json.dll
         /// </summary>
         private static void StageFrameworkOnly(string targetDir, List<string> copied)
@@ -606,10 +605,6 @@ namespace WpfTestIde.Helpers
                 Path.Combine(fwSource, "WpfSpyAgent.dll"),
                 Path.Combine(net461Subdir, "WpfSpyAgent.dll"),
                 Path.Combine("net461", "WpfSpyAgent.dll"), copied);
-            CopyNewerIfMissing(
-                Path.Combine(fwSource, "WpfSpyAgent.FrameworkHook.dll"),
-                Path.Combine(net461Subdir, "WpfSpyAgent.FrameworkHook.dll"),
-                Path.Combine("net461", "WpfSpyAgent.FrameworkHook.dll"), copied);
             // Newtonsoft.Json is only required by the net461 build (see
             // WpfSpyAgent.csproj:24). Include it so the Framework CLR can
             // resolve its dependency once ExecuteInDefaultAppDomain starts.
@@ -761,9 +756,6 @@ namespace WpfTestIde.Helpers
                 // Per-project WPFSpyAgent multi-target output
                 Path.Combine(baseDir, "..", "..", "..", "WPFSpyAgent", "bin", "Debug", "net461"),
                 Path.Combine(baseDir, "..", "..", "..", "WPFSpyAgent", "bin", "Release", "net461"),
-                // FrameworkHook project (net461-only)
-                Path.Combine(baseDir, "..", "..", "..", "WPFSpyAgent", "FrameworkHook", "bin", "Debug", "net461"),
-                Path.Combine(baseDir, "..", "..", "..", "WPFSpyAgent", "FrameworkHook", "bin", "Release", "net461"),
             };
             foreach (var p in searchPaths)
             {

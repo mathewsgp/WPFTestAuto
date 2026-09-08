@@ -1656,15 +1656,13 @@ namespace WpfTestIde.ViewModels
         {
             try
             {
-                var normalized = appPath.Replace('/', '\\').ToLowerInvariant();
-                return normalized.Contains("\\net461\\") || 
-                       normalized.Contains("\\net48\\") || 
-                       normalized.Contains("\\net472\\") ||
-                       normalized.Contains("\\net462\\") ||
-                       normalized.EndsWith("\\net461") ||
-                       normalized.EndsWith("\\net48") ||
-                       normalized.EndsWith("\\net472") ||
-                       normalized.EndsWith("\\net462");
+                var targetDir = Path.GetDirectoryName(appPath);
+                if (string.IsNullOrEmpty(targetDir))
+                    return false;
+
+                var exeName = Path.GetFileNameWithoutExtension(appPath);
+                var runtimeConfigPath = Path.Combine(targetDir, $"{exeName}.runtimeconfig.json");
+                return !File.Exists(runtimeConfigPath);
             }
             catch
             {
