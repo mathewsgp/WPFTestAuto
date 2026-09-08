@@ -199,7 +199,23 @@ namespace WpfTestIde.Dialogs
             AppId = string.IsNullOrWhiteSpace(AppIdBox.Text) ? "" : AppIdBox.Text.Trim();
             DriverList = _selectedDrivers != null && _selectedDrivers.Any() ? new List<string>(_selectedDrivers) : null;
             SpyAgentEnabled = EnableSpyAgentCheck.IsChecked == true;
-            PipeName = string.IsNullOrWhiteSpace(PipeNameBox.Text) ? "WPFSpyAgentPipe" : PipeNameBox.Text.Trim();
+
+            if (!string.IsNullOrWhiteSpace(PipeNameBox.Text))
+            {
+                PipeName = PipeNameBox.Text.Trim();
+            }
+            else if (Mode == AttachMode.RuntimeAttach && ProcessListView.SelectedItem is Process proc)
+            {
+                PipeName = $"WPFSpyAgentPipe_{proc.ProcessName.ToLowerInvariant()}";
+            }
+            else if (Mode != AttachMode.RuntimeAttach && !string.IsNullOrEmpty(AppId))
+            {
+                PipeName = $"WPFSpyAgentPipe_{AppId.ToLowerInvariant()}";
+            }
+            else
+            {
+                PipeName = "WPFSpyAgentPipe";
+            }
 
             if (Mode == AttachMode.RuntimeAttach)
             {
@@ -297,7 +313,7 @@ namespace WpfTestIde.Dialogs
                 else
                 {
                     StatusText.Text = "Launching process with Spy Agent...";
-                    var result = LaunchWithStartupHook(ApplicationPath, Arguments, PipeName);
+                    var result = await LaunchWithStartupHook(ApplicationPath, Arguments, PipeName);
 
                     if (result != null)
                     {
@@ -338,20 +354,79 @@ namespace WpfTestIde.Dialogs
                     StatusText.Text = $"Staging warning: {stageEx.Message}";
                 }
 
-                var dllPath = GetStartupHookDllPath();
+                string dllPath = RuntimeInjector.FindNativeInjectDll() ?? "";
+                if (!string.IsNullOrEmpty(dllPath))
+                {
+                    StatusText.Text = "Spy Agent not found. Attempting native runtime injection...";
+                    LogDiagnostic($"Runtime attach: using NativeInject DLL: {dllPath}");
+                }
+
                 if (string.IsNullOrEmpty(dllPath))
                 {
-                    StatusText.Text = "Startup hook DLL not found. Cannot inject.";
+                    StatusText.Text = "NativeInject DLL not found. Cannot inject into running app.";
+                    LogDiagnostic("Runtime attach: injection aborted - NativeInject DLL not found");
                     return false;
                 }
 
-                return await RuntimeInjector.InjectAsync(processId, dllPath, pipeName);
+                RuntimeInjector.StatusChanged += msg => LogDiagnostic($"[Inject] {msg}");
+                bool injected = await RuntimeInjector.InjectAsync(processId, dllPath, pipeName);
+                RuntimeInjector.StatusChanged -= msg => LogDiagnostic($"[Inject] {msg}");
+                
+                if (injected)
+                {
+                    StatusText.Text = "Waiting for Spy Agent pipe...";
+                    bool pipeReady = await WaitForSpyAgentAsync(pipeName, timeoutSeconds: 15);
+                    if (pipeReady)
+                    {
+                        StatusText.Text = "Spy Agent connected!";
+                        LogDiagnostic($"Spy Agent pipe ready after injection: {pipeName}");
+                    }
+                    else
+                    {
+                        StatusText.Text = "Injected but agent initializing...";
+                        LogDiagnostic($"Spy Agent pipe not ready after 15s: {pipeName}");
+                    }
+                }
+                else
+                {
+                    StatusText.Text = "Failed to inject or start Spy Agent.";
+                    LogDiagnostic($"Runtime injection failed for PID {processId}");
+                }
+                return injected;
             }
             catch (Exception ex)
             {
                 StatusText.Text = $"Injection error: {ex.Message}";
+                LogDiagnostic($"Runtime attach exception: {ex.GetType().Name}: {ex.Message}");
                 return false;
             }
+        }
+
+        private bool IsProcessDotNetFramework(int processId)
+        {
+            try
+            {
+                using var process = Process.GetProcessById(processId);
+                string? exePath = process.MainModule?.FileName;
+                if (!string.IsNullOrEmpty(exePath))
+                {
+                    string dir = Path.GetDirectoryName(exePath)!;
+                    string lowerDir = dir.ToLowerInvariant();
+                    if (lowerDir.Contains("net461") || lowerDir.Contains("net48") || lowerDir.Contains("net472") || lowerDir.Contains("net462"))
+                        return true;
+                }
+
+                foreach (ProcessModule module in process.Modules)
+                {
+                    string name = module.ModuleName.ToLowerInvariant();
+                    if (name == "mscoree.dll")
+                        return true;
+                    if (name == "coreclr.dll")
+                        return false;
+                }
+            }
+            catch { }
+            return false;
         }
 
         private string? GetStartupHookDllPath()
@@ -471,7 +546,9 @@ namespace WpfTestIde.Dialogs
                 LogDiagnostic($"Injecting NativeInject DLL: {nativeInjectDll}");
                 StatusText.Text = "Injecting Spy Agent...";
 
+                RuntimeInjector.StatusChanged += msg => LogDiagnostic($"[Inject] {msg}");
                 bool injected = await RuntimeInjector.InjectAsync(process.Id, nativeInjectDll, pipeName);
+                RuntimeInjector.StatusChanged -= msg => LogDiagnostic($"[Inject] {msg}");
                 LogDiagnostic($"Injection result: {injected}");
 
                 if (injected)
@@ -502,7 +579,7 @@ namespace WpfTestIde.Dialogs
             }
         }
 
-        private Process? LaunchWithStartupHook(string appPath, string? arguments, string pipeName)
+        private async Task<Process?> LaunchWithStartupHook(string appPath, string? arguments, string pipeName)
         {
             try
             {
@@ -582,6 +659,23 @@ namespace WpfTestIde.Dialogs
 
                 var process = Process.Start(psi);
                 LogDiagnostic($"Process started: PID={process?.Id}");
+
+                if (process != null)
+                {
+                    StatusText.Text = $"Launched PID {process.Id}, waiting for Spy Agent...";
+                    bool pipeReady = await WaitForSpyAgentAsync(pipeName, timeoutSeconds: 15);
+                    if (pipeReady)
+                    {
+                        StatusText.Text = $"Launched PID {process.Id}, Spy Agent ready";
+                        LogDiagnostic($"Spy Agent pipe ready: {pipeName}");
+                    }
+                    else
+                    {
+                        StatusText.Text = $"Launched PID {process.Id} (agent initializing...)";
+                        LogDiagnostic($"Spy Agent pipe not ready after 15s: {pipeName}");
+                    }
+                }
+
                 return process;
             }
             catch (Exception ex)

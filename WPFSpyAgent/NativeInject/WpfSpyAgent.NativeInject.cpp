@@ -591,7 +591,7 @@ static bool TryStartSpyAgent(const wchar_t* pipeName) {
 // This is called from RuntimeInjector.InjectAsync()
 // ============================================================
 extern "C" __declspec(dllexport) 
-void __stdcall InjectAndStartAgent(const char* pipeName) {
+void __cdecl InjectAndStartAgent(const char* pipeName) {
     // Convert ANSI pipe name to wide string
     wchar_t widePipe[256];
     MultiByteToWideChar(CP_ACP, 0, pipeName, -1, widePipe, 256);
@@ -673,6 +673,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             reason = L"DLL_PROCESS_ATTACH";
             DisableThreadLibraryCalls(hModule);
             Log(L"[Inject] Native DLL loaded into target process!");
+            
+            // Try to auto-start the agent using CLR Hosting
+            TryStartSpyAgentCLR(L"WPFSpyAgentPipe");
             break;
         case DLL_THREAD_ATTACH:
             reason = L"DLL_THREAD_ATTACH";

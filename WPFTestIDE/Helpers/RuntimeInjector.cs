@@ -233,11 +233,9 @@ namespace WpfTestIde.Helpers
                 }
                 else
                 {
-                    // The DLL is loaded but we couldn't start the agent
-                    // This is OK - the app might work without the agent starting
-                    StatusChanged?.Invoke("DLL injected but agent start function not called.");
-                    StatusChanged?.Invoke("The app may need to be restarted with agent support.");
-                    return true; // Still consider this a partial success
+                    StatusChanged?.Invoke("DLL injected but agent start function failed.");
+                    StatusChanged?.Invoke("The Spy Agent was not started in the target process.");
+                    return false;
                 }
             }
             catch (Exception ex)
@@ -267,16 +265,28 @@ namespace WpfTestIde.Helpers
         {
             try
             {
-                // Get the address of our exported function in the remote process
-                IntPtr funcAddress = GetProcAddress(dllModuleHandle, "InjectAndStartAgent");
+                StatusChanged?.Invoke($"Looking for InjectAndStartAgent in module 0x{dllModuleHandle.ToInt64():X}...");
+                
+                IntPtr funcAddress = IntPtr.Zero;
+                string[] exportNames = { "InjectAndStartAgent", "_InjectAndStartAgent@4" };
+                foreach (var name in exportNames)
+                {
+                    funcAddress = GetProcAddress(dllModuleHandle, name);
+                    if (funcAddress != IntPtr.Zero)
+                    {
+                        StatusChanged?.Invoke($"Found export '{name}' at 0x{funcAddress.ToInt64():X}");
+                        break;
+                    }
+                }
+
                 if (funcAddress == IntPtr.Zero)
                 {
-                    // Function not found - that's OK, the DLL might auto-start
+                    int error = Marshal.GetLastWin32Error();
+                    StatusChanged?.Invoke($"GetProcAddress failed for InjectAndStartAgent, error={error}");
                     StatusChanged?.Invoke("InjectAndStartAgent not found - DLL may auto-initialize.");
                     return false;
                 }
 
-                // Allocate memory for pipe name in remote process
                 byte[] pipeNameBytes = Encoding.ASCII.GetBytes(pipeName + "\0");
                 IntPtr remotePipeName = VirtualAllocEx(
                     processHandle,
@@ -286,11 +296,15 @@ namespace WpfTestIde.Helpers
                     PAGE_READWRITE);
 
                 if (remotePipeName == IntPtr.Zero)
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    StatusChanged?.Invoke($"VirtualAllocEx failed for pipe name, error={error}");
                     return false;
+                }
 
                 WriteProcessMemory(processHandle, remotePipeName, pipeNameBytes, (uint)pipeNameBytes.Length, out _);
 
-                // Create remote thread to call the function
+                StatusChanged?.Invoke($"Creating remote thread at 0x{funcAddress.ToInt64():X}...");
                 IntPtr remoteThread = CreateRemoteThread(
                     processHandle,
                     IntPtr.Zero,
@@ -298,19 +312,27 @@ namespace WpfTestIde.Helpers
                     funcAddress,
                     remotePipeName,
                     0,
-                    out _);
+                    out uint threadId);
 
                 if (remoteThread != IntPtr.Zero)
                 {
+                    StatusChanged?.Invoke($"Remote thread created (TID={threadId}), waiting 5s...");
                     WaitForSingleObject(remoteThread, 5000);
                     CloseHandle(remoteThread);
+                    StatusChanged?.Invoke("Remote thread completed");
+                }
+                else
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    StatusChanged?.Invoke($"CreateRemoteThread failed, error={error}");
                 }
 
                 VirtualFreeEx(processHandle, remotePipeName, 0, MEM_RELEASE);
-                return true;
+                return remoteThread != IntPtr.Zero;
             }
-            catch
+            catch (Exception ex)
             {
+                StatusChanged?.Invoke($"StartAgentInProcessAsync error: {ex.GetType().Name}: {ex.Message}");
                 return false;
             }
         }
