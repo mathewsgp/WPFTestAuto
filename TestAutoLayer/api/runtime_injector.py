@@ -211,7 +211,7 @@ class RuntimeInjector:
         src_dir: Path,
         dll_names: List[str],
     ) -> List[str]:
-        """Copy a set of DLLs from src_dir to target_dir using timestamp comparison.
+        r"""Copy a set of DLLs from src_dir to target_dir using timestamp comparison.
 
         Copies only when source is missing, or strictly newer than the staged copy.
         Returns the list of relative paths (relative to `aut_root`) actually
@@ -245,7 +245,7 @@ class RuntimeInjector:
         return copied
 
     def stage_dlls(self, app_path: str, target_pid: Optional[int] = None) -> List[str]:
-        """Stage Spy Agent DLLs next to the target application.
+        r"""Stage Spy Agent DLLs next to the target application.
 
         TFM-aware: only the build matching the target's runtime is copied.
 
@@ -303,7 +303,7 @@ class RuntimeInjector:
         return copied
 
     def unstage_dlls(self, app_path: str, dll_names: List[str]) -> None:
-        """Remove previously staged DLLs from the target app directory.
+        r"""Remove previously staged DLLs from the target app directory.
 
         Only removes the names that were originally staged by `stage_dlls` —
         caller passes the list returned from `stage_dlls`. We do NOT remove

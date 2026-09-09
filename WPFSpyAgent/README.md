@@ -1,7 +1,7 @@
 # WpfSpyAgent
 
 The in-process Spy Agent: a .NET class library. **Windows-only** (touches
-WPF visual-tree types directly). Multi-targeted (`net6.0-windows` and
+WPF visual-tree types directly). Multi-targeted (`net9.0-windows` and
 `net48`) so the same agent source can be loaded into either a modern .NET
 or a .NET Framework WPF process.
 

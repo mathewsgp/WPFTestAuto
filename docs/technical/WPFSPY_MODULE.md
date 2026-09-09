@@ -59,9 +59,9 @@ See `SampleWpfApp/README.md` for full build/run steps (both the modern
 cd WpfSpyAgent.StartupHook
 dotnet build
 cd ..\SampleWpfApp
-$env:DOTNET_STARTUP_HOOKS = "$(Resolve-Path ..\WpfSpyAgent.StartupHook\bin\Debug\net6.0-windows\WpfSpyAgent.StartupHook.dll)"
+$env:DOTNET_STARTUP_HOOKS = "$(Resolve-Path ..\WpfSpyAgent.StartupHook\bin\Debug\net9.0-windows\WpfSpyAgent.StartupHook.dll)"
 $env:WPFSPY_AGENT_ENABLED = "1"
-dotnet run -f net6.0-windows
+dotnet run -f net9.0-windows
 
 # Terminal 2 — the test suite, talking to the real agent
 $env:WPFSPY_MODE = "real"

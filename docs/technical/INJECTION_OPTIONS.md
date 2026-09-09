@@ -89,9 +89,9 @@ dotnet build
 
 # Launch your app with the hook
 cd ..\SampleWpfApp
-$env:DOTNET_STARTUP_HOOKS = "$(Resolve-Path ..\WpfSpyAgent.StartupHook\bin\Debug\net6.0-windows\WpfSpyAgent.StartupHook.dll)"
+$env:DOTNET_STARTUP_HOOKS = "$(Resolve-Path ..\WpfSpyAgent.StartupHook\bin\Debug\net9.0-windows\WpfSpyAgent.StartupHook.dll)"
 $env:WPFSPY_AGENT_ENABLED = "1"
-dotnet run -f net6.0-windows
+dotnet run -f net9.0-windows
 ```
 
 ### 1b. .NET Framework — custom `AppDomainManager`

@@ -7,7 +7,7 @@ or either injection-loader project.** Nothing in this app's source or
 `.csproj` needs to change to get the Spy Agent running inside it; that's
 the entire point.
 
-Multi-targeted (`net6.0-windows` and `net48`) so it can stand in as the
+Multi-targeted (`net9.0-windows` and `net461`) so it can stand in as the
 target for **either** runtime's injection mechanism from the exact same
 source.
 
@@ -30,19 +30,19 @@ source.
 cd SampleWpfApp
 
 # Modern .NET build
-dotnet build -f net6.0-windows
+dotnet build -f net9.0-windows
 
 # .NET Framework build
-dotnet build -f net48
+dotnet build -f net461
 ```
 
 ## Run it plain (no agent at all)
 
 ```powershell
-dotnet run -f net6.0-windows
+dotnet run -f net9.0-windows
 # or
-dotnet build -f net48 -c Debug
-bin\Debug\net48\SampleWpfApp.exe
+dotnet build -f net461 -c Debug
+bin\Debug\net461\SampleWpfApp.exe
 ```
 
 Log in with `user1` / `Pass@123` to reach the Orders screen where
@@ -53,7 +53,7 @@ completely on its own.
 
 Pick the section matching which build you're running.
 
-### Modern .NET (`net6.0-windows`) — `DOTNET_STARTUP_HOOKS`
+### Modern .NET (`net9.0-windows`) — `DOTNET_STARTUP_HOOKS`
 
 ```powershell
 # One-time: build the loader (also builds WpfSpyAgent as its dependency)
@@ -62,15 +62,15 @@ dotnet build
 
 # Run SampleWpfApp with the agent injected via the startup hook
 cd ..\SampleWpfApp
-$env:DOTNET_STARTUP_HOOKS = "$(Resolve-Path ..\WpfSpyAgent.StartupHook\bin\Debug\net6.0-windows\WpfSpyAgent.StartupHook.dll)"
+$env:DOTNET_STARTUP_HOOKS = "$(Resolve-Path ..\WpfSpyAgent.StartupHook\bin\Debug\net9.0-windows\WpfSpyAgent.StartupHook.dll)"
 $env:WPFSPY_AGENT_ENABLED = "1"
-dotnet run -f net6.0-windows
+dotnet run -f net9.0-windows
 ```
 
-### .NET Framework (`net48`) — custom `AppDomainManager`
+### .NET Framework (`net461`) — custom `AppDomainManager`
 
 ```powershell
-# One-time: build the loader (also builds WpfSpyAgent's net48 output)
+# One-time: build the loader (also builds WpfSpyAgent's net461 output)
 cd ..\WpfSpyAgent.FrameworkHook
 dotnet build
 
@@ -78,14 +78,14 @@ dotnet build
 # (required so the CLR's normal assembly probing can find them — see
 # docs/INJECTION_OPTIONS.md)
 cd ..\SampleWpfApp
-dotnet build -f net48
-Copy-Item ..\WpfSpyAgent.FrameworkHook\bin\Debug\net48\WpfSpyAgent.FrameworkHook.dll bin\Debug\net48\
-Copy-Item ..\WpfSpyAgent.FrameworkHook\bin\Debug\net48\WpfSpyAgent.dll bin\Debug\net48\
+dotnet build -f net461
+Copy-Item ..\WpfSpyAgent.FrameworkHook\bin\Debug\net461\WpfSpyAgent.FrameworkHook.dll bin\Debug\net461\
+Copy-Item ..\WpfSpyAgent.FrameworkHook\bin\Debug\net461\WpfSpyAgent.dll bin\Debug\net461\
 
 $env:COMPLUS_AppDomainManagerAssembly = "WpfSpyAgent.FrameworkHook, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
 $env:COMPLUS_AppDomainManagerType = "WpfSpyAgent.FrameworkHook.SpyAppDomainManager"
 $env:WPFSPY_AGENT_ENABLED = "1"
-bin\Debug\net48\SampleWpfApp.exe
+bin\Debug\net461\SampleWpfApp.exe
 ```
 
 If the environment-variable form doesn't take effect on your exact
