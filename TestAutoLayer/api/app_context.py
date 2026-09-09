@@ -230,32 +230,19 @@ def _is_net_framework_app(app_path: str) -> bool:
 
 def _stage_framework_dlls(app_path: str) -> List[str]:
     """Stage .NET Framework Spy Agent DLLs next to the AUT."""
+    from dll_config import dll_config
     copied = []
     try:
         target_dir = Path(app_path).parent
-        # Find the net461 build output directory.
-        # From TestAutoLayer/api/app_context.py, repo root is parent.parent.parent.
-        repo_root = Path(__file__).parent.parent.parent
-        possible_sources = [
-            repo_root / "WPFSpyAgent" / "bin" / "Debug" / "net461",
-            repo_root / "bin" / "Debug" / "net461",
-            repo_root / "WPFSpyAgent" / "bin" / "Release" / "net461",
-            repo_root / "bin" / "Release" / "net461",
-        ]
-        fw_source = None
-        for src in possible_sources:
-            if src.exists() and (src / "WpfSpyAgent.FrameworkHook.dll").exists():
-                fw_source = src
-                break
-
+        fw_source = dll_config.get_framework_agent_dir()
         if not fw_source:
             print("[LAUNCH] WARNING: .NET Framework Spy Agent source directory not found")
             return copied
 
         fw_dlls = [
-            "WpfSpyAgent.FrameworkHook.dll",
-            "WpfSpyAgent.dll",
-            "Newtonsoft.Json.dll",
+            dll_config.paths.wpf_spy_agent_framework_hook,
+            dll_config.paths.wpf_spy_agent,
+            dll_config.paths.newtonsoft_json,
         ]
         for name in fw_dlls:
             src = fw_source / name

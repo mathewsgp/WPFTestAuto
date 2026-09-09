@@ -68,40 +68,23 @@ class RuntimeInjector:
     
     def _find_startup_hook(self) -> Optional[str]:
         """Find the StartupHook DLL in common locations."""
-        repo_root = Path(__file__).parent.parent.parent
-        base_paths = [
-            repo_root / "bin" / "Debug" / "net9.0-windows",
-            repo_root / "bin" / "Debug" / "net8.0-windows",
-            repo_root / "WPFSpyAgent" / "StartupHook" / "bin" / "Debug" / "net9.0-windows",
-            repo_root / "WPFSpyAgent" / "StartupHook" / "bin" / "Debug" / "net8.0-windows",
-            repo_root / "WPFSpyAgent" / "StartupHook" / "bin" / "Release" / "net9.0-windows",
-            repo_root / "WPFSpyAgent" / "StartupHook" / "bin" / "Release" / "net8.0-windows",
-        ]
-
-        for base in base_paths:
-            dll_path = base / "WpfSpyAgent.StartupHook.dll"
-            if dll_path.exists():
-                return str(dll_path.resolve())
-
+        from dll_config import dll_config
+        dll_name = dll_config.paths.wpf_spy_agent_startup_hook
+        found = dll_config.find_dll(dll_name)
+        if found:
+            return str(found)
         env_path = os.environ.get("WPFSPY_STARTUP_HOOK_DLL")
         if env_path and Path(env_path).exists():
             return env_path
-
         return None
 
     def _find_framework_hook(self) -> Optional[str]:
         """Find the FrameworkHook DLL in common locations (for .NET Framework AUTs)."""
-        repo_root = Path(__file__).parent.parent.parent
-        base_paths = [
-            repo_root / "WPFSpyAgent" / "FrameworkHook" / "bin" / "Debug" / "net461",
-            repo_root / "WPFSpyAgent" / "FrameworkHook" / "bin" / "Release" / "net461",
-            repo_root / "bin" / "Debug" / "net461",
-            repo_root / "bin" / "Release" / "net461",
-        ]
-        for base in base_paths:
-            dll_path = base / "WpfSpyAgent.FrameworkHook.dll"
-            if dll_path.exists():
-                return str(dll_path.resolve())
+        from dll_config import dll_config
+        dll_name = dll_config.paths.wpf_spy_agent_framework_hook
+        found = dll_config.find_dll(dll_name)
+        if found:
+            return str(found)
         env_path = os.environ.get("WPFSPY_FRAMEWORK_HOOK_DLL")
         if env_path and Path(env_path).exists():
             return env_path
@@ -203,35 +186,19 @@ class RuntimeInjector:
         Returns the directory itself (not a child path) so the caller can
         decide whether to copy the contents flat or under a net461\ subfolder.
         """
-        repo_root = Path(__file__).parent.parent.parent
-        candidates = [
-            repo_root / "bin" / "Debug" / "net461",
-            repo_root / "bin" / "Release" / "net461",
-            repo_root / "WPFSpyAgent" / "bin" / "Debug" / "net461",
-            repo_root / "WPFSpyAgent" / "bin" / "Release" / "net461",
-        ]
-        for c in candidates:
-            if c.is_dir() and (c / "WpfSpyAgent.dll").exists():
-                return c
-        return None
+        from dll_config import dll_config
+        return dll_config.get_framework_agent_dir()
 
     def _find_native_inject_dll(self) -> Optional[str]:
         """Find the NativeInject DLL in common locations.
 
         Returns the path to WpfSpyAgent.NativeInject.dll or None.
         """
-        repo_root = Path(__file__).parent.parent.parent
-        search_paths = [
-            repo_root / "bin" / "Debug" / "net9.0-windows" / "WpfSpyAgent.NativeInject.dll",
-            repo_root / "bin" / "Debug" / "net8.0-windows" / "WpfSpyAgent.NativeInject.dll",
-            repo_root / "bin" / "Release" / "net9.0-windows" / "WpfSpyAgent.NativeInject.dll",
-            repo_root / "bin" / "Release" / "net8.0-windows" / "WpfSpyAgent.NativeInject.dll",
-            repo_root / "WPFSpyAgent" / "NativeInject" / "bin" / "Debug" / "x64" / "WpfSpyAgent.NativeInject.dll",
-            repo_root / "WPFSpyAgent" / "NativeInject" / "bin" / "Release" / "x64" / "WpfSpyAgent.NativeInject.dll",
-        ]
-        for p in search_paths:
-            if p.exists():
-                return str(p.resolve())
+        from dll_config import dll_config
+        dll_name = dll_config.paths.wpf_spy_agent_native_inject
+        found = dll_config.find_dll(dll_name)
+        if found:
+            return str(found)
         env_path = os.environ.get("WPFSPY_NATIVE_INJECT_DLL")
         if env_path and Path(env_path).exists():
             return env_path
@@ -300,6 +267,7 @@ class RuntimeInjector:
         Returns the list of relative paths (relative to the AUT folder) that
         were copied/updated. Unstage with `unstage_dlls(app_path, returned_list)`.
         """
+        from dll_config import dll_config
         target_dir = Path(app_path).parent
         target_dir.mkdir(parents=True, exist_ok=True)
         copied: List[str] = []
@@ -316,18 +284,20 @@ class RuntimeInjector:
                 return []
             net461_target = target_dir / "net461"
             net461_target.mkdir(parents=True, exist_ok=True)
+            dll_names = dll_config.get_staged_dlls("framework")
             copied.extend(self._stage_dll_set(
                 aut_root=target_dir, target_dir=net461_target, src_dir=fw_dir,
-                dll_names=["WpfSpyAgent.dll", "WpfSpyAgent.FrameworkHook.dll", "Newtonsoft.Json.dll"],
+                dll_names=dll_names,
             ))
         else:
             # ---- Modern build -> AUT root ----
             if not self.startup_hook_path:
                 return []
             src_dir = Path(self.startup_hook_path).parent
+            dll_names = dll_config.get_staged_dlls("modern")
             copied.extend(self._stage_dll_set(
                 aut_root=target_dir, target_dir=target_dir, src_dir=src_dir,
-                dll_names=["WpfSpyAgent.dll", "WpfSpyAgent.StartupHook.dll"],
+                dll_names=dll_names,
             ))
 
         return copied
