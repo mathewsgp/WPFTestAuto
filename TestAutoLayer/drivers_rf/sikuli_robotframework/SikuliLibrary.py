@@ -29,6 +29,12 @@ from typing import Any, List, Optional, Tuple
 from image_matcher import ImageMatcher, Match, create_matcher
 from ocr import ocr_grid_csv, ocr_text
 from screen_capture import ScreenCapture, create_capture
+# Use absolute import to avoid ambiguity with api/wait_utils
+import sys
+import os
+_sikuli_dir = os.path.dirname(os.path.abspath(__file__))
+if _sikuli_dir not in sys.path:
+    sys.path.insert(0, _sikuli_dir)
 from wait_utils import retry_match, wait_until_stable
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "mock_wpf_app"))
