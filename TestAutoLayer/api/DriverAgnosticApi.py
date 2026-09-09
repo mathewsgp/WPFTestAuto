@@ -93,178 +93,57 @@ _breaker_manager = CircuitBreakerManager(
 )
 
 def _get_sample_wpf_app_path():
-    """Returns the path to the SampleWpfApp executable."""
-    base = os.path.join(_THIS_DIR, "..", "..", "Tests", "SampleWpfApp", "bin", "Debug", "net9.0-windows")
-    dll = os.path.join(base, "SampleWpfApp.dll")
-    if os.path.exists(dll):
-        return dll
-    exe = os.path.join(base, "SampleWpfApp.exe")
-    if os.path.exists(exe):
-        return exe
-    raise FileNotFoundError(f"SampleWpfApp not found in {base}")
+    """Returns the path to the SampleWpfApp executable.
+
+    Kept for backward compatibility; new code should use
+    Tests.helpers.sample_wpf_app_manager.get_sample_wpf_app_path().
+    """
+    from sample_wpf_app_manager import get_sample_wpf_app_path
+    return get_sample_wpf_app_path()
+
 
 def _kill_sample_wpf_app():
-    """Kills any running SampleWpfApp process by matching its window title,
-    so we don't accidentally kill the IDE or other dotnet processes.
-    """
-    global _SAMPLE_WPF_APP_PROCESS
-    proc = _SAMPLE_WPF_APP_PROCESS
-    if proc is not None and proc.poll() is None:
-        try:
-            proc.kill()
-            proc.wait(timeout=5)
-        except Exception:
-            pass
-    _SAMPLE_WPF_APP_PROCESS = None
+    """Kills any running SampleWpfApp process.
 
-    try:
-        subprocess.run(
-            ["taskkill", "/F", "/FI", "WINDOWTITLE eq Sample WPF App*"],
-            capture_output=True, timeout=10, check=False
-        )
-    except Exception:
-        pass
+    Kept for backward compatibility; new code should use
+    Tests.helpers.sample_wpf_app_manager.kill_sample_wpf_app().
+    """
+    from sample_wpf_app_manager import kill_sample_wpf_app
+    kill_sample_wpf_app()
+
 
 def _start_sample_wpf_app():
     """Starts SampleWpfApp with the WPFSpy agent startup hook.
-    
-    Searches for the StartupHook DLL in multiple locations and launches
-    the app with DOTNET_STARTUP_HOOKS set so the agent initializes.
+
+    Kept for backward compatibility; new code should use
+    Tests.helpers.sample_wpf_app_manager.start_sample_wpf_app().
     """
-    global _SAMPLE_WPF_APP_PROCESS
-    
-    app_path = _get_sample_wpf_app_path()
-    
-    # Find the StartupHook DLL in common locations
-    startup_hook = None
-    
-    # 1. Check same directory as the app (copied during build)
-    app_dir = os.path.dirname(app_path)
-    candidate = os.path.join(app_dir, "WpfSpyAgent.StartupHook.dll")
-    if os.path.exists(candidate):
-        startup_hook = candidate
-    
-    # 2. Check solution-level WpfSpyAgent.StartupHook output
-    if not startup_hook:
-        candidate = os.path.join(_THIS_DIR, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net9.0-windows", "WpfSpyAgent.StartupHook.dll")
-        if os.path.exists(candidate):
-            startup_hook = candidate
-    
-    # 3. Check runtime_injector's search paths
-    if not startup_hook:
-        try:
-            from runtime_injector import RuntimeInjector
-            injector = RuntimeInjector()
-            if injector.startup_hook_path:
-                startup_hook = injector.startup_hook_path
-        except (ImportError, Exception):
-            pass
-    
-    env = os.environ.copy()
-    env["WPFSPY_AGENT_ENABLED"] = "1"
-    env["WPFSPY_PIPE_NAME"] = "WPFSpyAgentPipe"
-    if startup_hook:
-        env["DOTNET_STARTUP_HOOKS"] = startup_hook
-        print(f'[DriverAgnosticApi] Using startup hook: {startup_hook}')
-    else:
-        print('[DriverAgnosticApi] WARNING: Startup hook DLL not found, WPFSpy agent will not be injected')
-    
-    cmd = ["dotnet", app_path]
-    _SAMPLE_WPF_APP_PROCESS = subprocess.Popen(
-        cmd,
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    
-    # Wait for the app and agent to initialize (startup hook polls up to 10s)
-    time.sleep(8)
-    
-    # Verify the agent is ready
-    try:
-        import win32file
-        pipe_path = r"\\.\pipe\WPFSpyAgentPipe"
-        for _ in range(10):
-            try:
-                handle = win32file.CreateFile(
-                    pipe_path,
-                    win32file.GENERIC_READ,
-                    0, None,
-                    win32file.OPEN_EXISTING,
-                    0, None,
-                )
-                win32file.CloseHandle(handle)
-                print('[DriverAgnosticApi] WPFSpy agent is ready on pipe')
-                return
-            except Exception:
-                time.sleep(1)
-        print('[DriverAgnosticApi] WARNING: WPFSpy agent did not become ready within timeout')
-    except ImportError:
-        pass  # pywin32 not available, skip readiness check
+    from sample_wpf_app_manager import start_sample_wpf_app
+    return start_sample_wpf_app()
+
 
 def _is_sample_wpf_app_running():
-    """Check if SampleWpfApp is already running by window title."""
-    try:
-        result = subprocess.run(
-            ['tasklist', '/FI', 'WINDOWTITLE eq Sample WPF App*', '/FO', 'CSV', '/NH'],
-            capture_output=True, text=True, timeout=5, check=False
-        )
-        return 'dotnet.exe' in result.stdout or 'SampleWpfApp.exe' in result.stdout
-    except Exception:
-        return False
+    """Check if SampleWpfApp is already running by window title.
+
+    Kept for backward compatibility; new code should use
+    Tests.helpers.sample_wpf_app_manager.is_sample_wpf_app_running().
+    """
+    from sample_wpf_app_manager import is_sample_wpf_app_running
+    return is_sample_wpf_app_running()
+
 
 def _reset_real_app():
     """Resets the real SampleWpfApp state.
-    
-    In IDE mode (WPFSPY_IDE_RUN=1): keeps the app running, uses ResetState.
-    In CLI/CI mode: closes and reopens the app between tests for isolation.
-    Also resets the mock app instance so FlaUI driver state is consistent.
-    """
-    # Always reset the mock app so FlaUI driver starts from a known state
-    try:
-        from mock_app import reset_app
-        reset_app()
-    except Exception:
-        pass
-    
-    ide_mode = os.environ.get('WPFSPY_IDE_RUN') == '1'
-    effective_mode = _ACTIVE_MODE if _ACTIVE_MODE is not None else _WPFSPY_MODE
-    print(f'[DriverAgnosticApi] _reset_real_app called, mode={effective_mode}, ide_mode={ide_mode}')
 
-    if ide_mode:
-        # IDE mode: keep app running, just reset state
-        if effective_mode == 'real' and _SAMPLE_WPF_APP_PROCESS is not None and _SAMPLE_WPF_APP_PROCESS.poll() is None:
-            try:
-                driver = WPFSpyDriver()
-                result = driver._send('ResetState')
-                if not result.get('success'):
-                    raise Exception(f"ResetState failed: {result.get('error')}")
-                print('[DriverAgnosticApi] SampleWpfApp state reset via agent (IDE mode)')
-                time.sleep(1)  # Wait for app to stabilize after reset
-            except Exception as e:
-                print(f'[DriverAgnosticApi] ResetState failed: {e}, app may need manual reset')
-        else:
-            # App not running in IDE mode, start it
-            print('[DriverAgnosticApi] SampleWpfApp not running in IDE mode, starting fresh')
-            _kill_sample_wpf_app()
-            time.sleep(2)
-            _start_sample_wpf_app()
-    else:
-        # CLI/CI mode: always close and reopen app between tests
-        if effective_mode == 'real':
-            print('[DriverAgnosticApi] CLI mode: closing and reopening SampleWpfApp')
-            _kill_sample_wpf_app()
-            time.sleep(2)
-            _start_sample_wpf_app()
-            _reload_drivers()  # Re-attach drivers to the new process
-        else:
-            # Mock mode: reset the mock app
-            print('[DriverAgnosticApi] Mock mode: resetting mock app')
-            try:
-                from mock_app import reset_app
-                reset_app()
-            except Exception:
-                pass
+    Kept for backward compatibility; new code should use
+    Tests.helpers.sample_wpf_app_manager.reset_real_app().
+    """
+    from sample_wpf_app_manager import reset_real_app
+    return reset_real_app(
+        sample_app_process=_SAMPLE_WPF_APP_PROCESS,
+        mode=_ACTIVE_MODE if _ACTIVE_MODE is not None else _WPFSPY_MODE,
+        ide_mode=os.environ.get("WPFSPY_IDE_RUN") == "1",
+    )
 
 # Lazy driver initialization
 _DRIVERS: dict = {}
