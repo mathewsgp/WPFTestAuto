@@ -1889,94 +1889,112 @@ class DriverAgnosticApi:
         if not actual:
             raise AssertionError(f"'{alias}' screenshot capture returned empty data")
 
-    def is_element_visible(self, alias: str, app_id: Optional[str] = None) -> bool:
-        """Check if element is visible without failing."""
-        strategies = repo.get_strategies(alias)
-        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
-        max_retries = 3
-        retry_delay = 0.3
-        for attempt in range(max_retries):
-            for driver_name in _get_run_modes():
-                if driver_name not in strategies:
-                    continue
+    def _try_all_strategies(
+        self,
+        alias: str,
+        app_id: Optional[str],
+        predicate,
+        find_all: bool = False,
+    ) -> bool:
+        """Single pass through all drivers/strategies in priority order.
+
+        Calls ``predicate(driver, element)`` for each element found.
+        Returns True on the first truthy predicate result.
+
+        Uses *sorted* strategies (by priority) and checks circuit breakers.
+        Handles both multi-app and legacy (no-app-registered) modes.
+
+        Args:
+            alias: Element alias from repository.
+            app_id: Optional application context ID.
+            predicate: Callable(driver, element) -> bool.
+            find_all: If True, call ``driver.find_elements`` (plural)
+                      and yield every match; if False, use ``find_element``.
+        """
+        all_strategies = repo.get_all_driver_strategies_sorted(alias, app_id=app_id)
+        if not all_strategies:
+            return False
+
+        # Determine driver source: multi-app context or global pool (legacy)
+        if app_id is not None or _MULTI_APP_CONTEXT.apps:
+            try:
+                app_context = _MULTI_APP_CONTEXT.get_app(app_id)
+            except ValueError:
+                return False
+        else:
+            app_context = None
+
+        for driver_name in _get_run_modes():
+            if driver_name not in all_strategies:
+                continue
+
+            breaker = _breaker_manager.get_breaker(driver_name)
+            if not breaker.allow_request():
+                logger.debug(
+                    f"Circuit breaker open for {driver_name}, skipping",
+                    alias=alias,
+                    driver=driver_name,
+                )
+                continue
+
+            if app_context is not None:
                 if driver_name not in app_context.drivers:
                     app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
                 driver = app_context.drivers[driver_name]
-                driver_strategies = strategies[driver_name]
-                for strategy in driver_strategies:
-                    try:
-                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
+            else:
+                driver = _get_drivers().get(driver_name)
+                if driver is None:
+                    continue
+
+            for strategy in all_strategies[driver_name]:
+                try:
+                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
+                    if find_all:
+                        for element in driver.find_elements(resolved):
+                            breaker.record_success()
+                            if predicate(driver, element):
+                                return True
+                    else:
                         element = driver.find_element(resolved)
-                        if driver.is_visible(element):
+                        breaker.record_success()
+                        if predicate(driver, element):
                             return True
-                    except Exception:
-                        continue
+                except Exception:
+                    breaker.record_failure()
+                    continue
+
+        return False
+
+    def is_element_visible(self, alias: str, app_id: Optional[str] = None) -> bool:
+        """Check if element is visible without failing."""
+        max_retries = 3
+        retry_delay = 0.3
+        for attempt in range(max_retries):
+            if self._try_all_strategies(alias, app_id, lambda d, e: d.is_visible(e)):
+                return True
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
         return False
 
     def is_element_enabled(self, alias: str, app_id: Optional[str] = None) -> bool:
         """Check if element is enabled without failing."""
-        strategies = repo.get_strategies(alias)
-        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
-        for driver_name in _get_run_modes():
-            if driver_name not in strategies:
-                continue
-            if driver_name not in app_context.drivers:
-                app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
-            driver = app_context.drivers[driver_name]
-            driver_strategies = strategies[driver_name]
-            for strategy in driver_strategies:
-                try:
-                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
-                    element = driver.find_element(resolved)
-                    if driver.is_enabled(element):
-                        return True
-                except Exception:
-                    continue
-        return False
+        return self._try_all_strategies(alias, app_id, lambda d, e: d.is_enabled(e))
 
     def find_elements(self, alias: str, app_id: Optional[str] = None) -> List[Any]:
-        """Find all elements matching the alias across all available strategies."""
-        strategies = repo.get_strategies(alias)
-        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
+        """Find all elements matching the alias across all available strategies.
+
+        Uses sorted strategies and circuit breaker checks. Iterates every
+        driver in priority order and collects all matches.
+        """
         results: List[Any] = []
-        for driver_name in _get_run_modes():
-            if driver_name not in strategies:
-                continue
-            if driver_name not in app_context.drivers:
-                app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
-            driver = app_context.drivers[driver_name]
-            driver_strategies = strategies[driver_name]
-            for strategy in driver_strategies:
-                try:
-                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
-                    found = driver.find_elements(resolved)
-                    results.extend(found)
-                except Exception:
-                    continue
+        self._try_all_strategies(
+            alias, app_id, lambda d, e: results.extend([e]) or False, find_all=True
+        )
         return results
 
     def is_element_actionable(self, alias: str, app_id: Optional[str] = None) -> bool:
         """Check if element is both visible and enabled."""
-        strategies = repo.get_strategies(alias)
-        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
-        for driver_name in _get_run_modes():
-            if driver_name not in strategies:
-                continue
-            if driver_name not in app_context.drivers:
-                app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
-            driver = app_context.drivers[driver_name]
-            driver_strategies = strategies[driver_name]
-            for strategy in driver_strategies:
-                try:
-                    resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
-                    element = driver.find_element(resolved)
-                    if driver.is_actionable(element):
-                        return True
-                except Exception:
-                    continue
-        return False
+        return self._try_all_strategies(alias, app_id, lambda d, e: d.is_actionable(e))
 
     def wait_until_element_exists(
         self,
@@ -1989,10 +2007,8 @@ class DriverAgnosticApi:
         from exceptions import WaitTimeoutError, AllStrategiesFailedError
 
         start_time = time.time()
-        strategies = repo.get_strategies(alias)
-        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
 
-        if not strategies:
+        if not repo.get_all_driver_strategies_sorted(alias, app_id=app_id):
             raise AllStrategiesFailedError(
                 alias=alias,
                 attempts=[],
@@ -2000,20 +2016,8 @@ class DriverAgnosticApi:
             )
 
         while time.time() - start_time < timeout:
-            for driver_name in _get_run_modes():
-                if driver_name not in strategies:
-                    continue
-                # Create driver if it doesn't exist (same as _resolve_and_execute)
-                if driver_name not in app_context.drivers:
-                    app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
-                driver = app_context.drivers[driver_name]
-                for strategy in strategies[driver_name]:
-                    try:
-                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
-                        driver.find_element(resolved)
-                        return True
-                    except Exception:
-                        continue
+            if self._try_all_strategies(alias, app_id, lambda d, e: True):
+                return True
 
             remaining = timeout - (time.time() - start_time)
             if remaining > 0:
@@ -2021,58 +2025,39 @@ class DriverAgnosticApi:
 
         raise WaitTimeoutError(
             condition="element exists",
-            timeout=timeout
+            timeout=timeout,
         )
 
     def wait_until_element_visible(
-        self, 
-        alias: str, 
+        self,
+        alias: str,
         timeout: float = 10.0,
         poll_interval: float = 0.5,
         app_id: Optional[str] = None,
     ):
-        """Polls until the element is visible, or raises after `timeout` seconds.
-        
-        Uses exponential backoff on poll interval for better performance.
-        """
-        from exceptions import WaitTimeoutError
-        
+        """Polls until the element is visible, or raises after `timeout` seconds."""
+        from exceptions import WaitTimeoutError, AllStrategiesFailedError
+
         start_time = time.time()
-        strategies = repo.get_strategies(alias)
-        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
-        
-        if not strategies:
+
+        if not repo.get_all_driver_strategies_sorted(alias, app_id=app_id):
             raise AllStrategiesFailedError(
                 alias=alias,
                 attempts=[],
                 details={"reason": "No strategies configured"}
             )
-        
+
         while time.time() - start_time < timeout:
-            for driver_name in _get_run_modes():
-                if driver_name not in strategies:
-                    continue
-                # Create driver if it doesn't exist
-                if driver_name not in app_context.drivers:
-                    app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
-                driver = app_context.drivers[driver_name]
-                for strategy in strategies[driver_name]:
-                    try:
-                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
-                        element = driver.find_element(resolved)
-                        if driver.is_visible(element):
-                            return True
-                    except Exception:
-                        continue
-            
-            # Exponential backoff
+            if self._try_all_strategies(alias, app_id, lambda d, e: d.is_visible(e)):
+                return True
+
             remaining = timeout - (time.time() - start_time)
             if remaining > 0:
                 time.sleep(min(poll_interval, remaining))
-        
+
         raise WaitTimeoutError(
             condition="element visible",
-            timeout=timeout
+            timeout=timeout,
         )
 
     def wait_until_element_enabled(
@@ -2083,13 +2068,11 @@ class DriverAgnosticApi:
         app_id: Optional[str] = None,
     ):
         """Polls until the element is enabled, or raises after `timeout` seconds."""
-        from exceptions import WaitTimeoutError
+        from exceptions import WaitTimeoutError, AllStrategiesFailedError
 
         start_time = time.time()
-        strategies = repo.get_strategies(alias)
-        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
 
-        if not strategies:
+        if not repo.get_all_driver_strategies_sorted(alias, app_id=app_id):
             raise AllStrategiesFailedError(
                 alias=alias,
                 attempts=[],
@@ -2097,21 +2080,8 @@ class DriverAgnosticApi:
             )
 
         while time.time() - start_time < timeout:
-            for driver_name in _get_run_modes():
-                if driver_name not in strategies:
-                    continue
-                # Create driver if it doesn't exist
-                if driver_name not in app_context.drivers:
-                    app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
-                driver = app_context.drivers[driver_name]
-                for strategy in strategies[driver_name]:
-                    try:
-                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
-                        element = driver.find_element(resolved)
-                        if driver.is_enabled(element):
-                            return True
-                    except Exception:
-                        continue
+            if self._try_all_strategies(alias, app_id, lambda d, e: d.is_enabled(e)):
+                return True
 
             remaining = timeout - (time.time() - start_time)
             if remaining > 0:
@@ -2119,7 +2089,7 @@ class DriverAgnosticApi:
 
         raise WaitTimeoutError(
             condition="element enabled",
-            timeout=timeout
+            timeout=timeout,
         )
 
     def wait_until_element_actionable(
@@ -2133,11 +2103,11 @@ class DriverAgnosticApi:
 
         Raises WaitTimeoutError if element is not actionable within timeout.
         """
-        start_time = time.time()
-        strategies = repo.get_strategies(alias)
-        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
+        from exceptions import WaitTimeoutError, AllStrategiesFailedError
 
-        if not strategies:
+        start_time = time.time()
+
+        if not repo.get_all_driver_strategies_sorted(alias, app_id=app_id):
             raise AllStrategiesFailedError(
                 alias=alias,
                 attempts=[],
@@ -2145,21 +2115,8 @@ class DriverAgnosticApi:
             )
 
         while time.time() - start_time < timeout:
-            for driver_name in _get_run_modes():
-                if driver_name not in strategies:
-                    continue
-                # Create driver if it doesn't exist
-                if driver_name not in app_context.drivers:
-                    app_context.drivers[driver_name] = _create_driver_for_app(driver_name, app_context)
-                driver = app_context.drivers[driver_name]
-                for strategy in strategies[driver_name]:
-                    try:
-                        resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
-                        element = driver.find_element(resolved)
-                        if driver.is_actionable(element):
-                            return True
-                    except Exception:
-                        continue
+            if self._try_all_strategies(alias, app_id, lambda d, e: d.is_actionable(e)):
+                return True
 
             remaining = timeout - (time.time() - start_time)
             if remaining > 0:
@@ -2167,7 +2124,7 @@ class DriverAgnosticApi:
 
         raise WaitTimeoutError(
             condition="element actionable",
-            timeout=timeout
+            timeout=timeout,
         )
 
     def wait_until_element_text_contains(
@@ -2178,45 +2135,48 @@ class DriverAgnosticApi:
         case_sensitive: bool = True,
         app_id: Optional[str] = None,
     ):
-        """Wait for element's text to contain the expected value."""
-        from exceptions import WaitTimeoutError
-        
+        """Wait for element's text to contain the expected value.
+
+        Iterates strategies individually (not as a batch list) and applies
+        parent-chain XPath resolution, circuit breaker checks, and proper
+        driver creation. Supports both multi-app and legacy modes.
+        """
+        from exceptions import WaitTimeoutError, AllStrategiesFailedError
+
         start_time = time.time()
-        strategies = repo.get_strategies(alias)
-        app_context = _MULTI_APP_CONTEXT.get_app(app_id)
-        
-        if not strategies:
+
+        if not repo.get_all_driver_strategies_sorted(alias, app_id=app_id):
             raise AllStrategiesFailedError(
                 alias=alias,
                 attempts=[],
                 details={"reason": "No strategies configured"}
             )
-        
+
         while time.time() - start_time < timeout:
-            for driver_name in _get_run_modes():
-                if driver_name not in strategies:
-                    continue
-                driver = app_context.drivers.get(driver_name)
-                if driver is None:
-                    continue
-                try:
-                    element = driver.find_element(strategies[driver_name])
-                    text = driver.get_text(element)
-                    if case_sensitive:
-                        if expected in text:
-                            return True
-                    else:
-                        if expected.lower() in text.lower():
-                            return True
-                except Exception:
-                    continue
-            
-            time.sleep(0.5)
-        
+            if self._try_all_strategies(
+                alias,
+                app_id,
+                lambda d, e: self._text_matches(
+                    d.get_text(e), expected, case_sensitive
+                ),
+            ):
+                return True
+
+            remaining = timeout - (time.time() - start_time)
+            if remaining > 0:
+                time.sleep(min(0.5, remaining))
+
         raise WaitTimeoutError(
             condition=f"text contains '{expected}'",
-            timeout=timeout
+            timeout=timeout,
         )
+
+    @staticmethod
+    def _text_matches(text: str, expected: str, case_sensitive: bool) -> bool:
+        """Check whether *text* contains *expected*."""
+        if case_sensitive:
+            return expected in text
+        return expected.lower() in text.lower()
 
     def reset_application(self):
         """Test-isolation keyword — restarts the application at the

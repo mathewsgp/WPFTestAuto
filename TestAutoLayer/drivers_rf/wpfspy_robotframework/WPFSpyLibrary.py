@@ -174,30 +174,47 @@ class WPFSpyRealDriver:
         except ElementNotFoundError:
             return []
 
+    def _get_element_key(self, element):
+        """Return (param_name, value) for action commands.
+
+        Element handles from find_element can carry one of:
+        - 'xpath'        (XPath search)
+        - 'automationId' (AutomationId search)
+        - 'name'         (Name search)
+
+        The agent's action commands accept 'xpath' or 'name' parameters.
+        For automationId handles, we pass it as 'name' so the agent can
+        re-locate the element; the C# agent should be extended to accept
+        'automationId' directly in a future update.
+        """
+        if isinstance(element, str):
+            return ("xpath", element)
+        if "xpath" in element:
+            return ("xpath", element["xpath"])
+        if "automationId" in element:
+            return ("name", element["automationId"])
+        if "name" in element:
+            return ("name", element["name"])
+        raise ElementNotFoundError("element handle has no xpath/automationId/name")
+
     def invoke(self, element):
         """Click/invoke an element."""
-        if "xpath" in element:
-            response = self._send("Invoke", xpath=element["xpath"])
-        else:
-            response = self._send("Invoke", name=element["name"])
+        key, val = self._get_element_key(element)
+        response = self._send("Invoke", **{key: val})
         if not response.get("success"):
             raise ElementNotInteractableError(response.get("error"))
 
     def set_value(self, element, value: str):
         """Set text value on an input element."""
-        if "xpath" in element:
-            response = self._send("SetValue", xpath=element["xpath"], value=value)
-        else:
-            response = self._send("SetValue", name=element["name"], value=value)
+        key, val = self._get_element_key(element)
+        response = self._send("SetValue", **{key: val}, value=value)
         if not response.get("success"):
             raise ElementNotInteractableError(response.get("error"))
 
     def get_text(self, element) -> str:
         """Get the text content of an element."""
-        if "xpath" in element:
-            response = self._send("GetText", xpath=element["xpath"])
-        else:
-            response = self._send("GetText", name=element["name"])
+        key, val = self._get_element_key(element)
+        response = self._send("GetText", **{key: val})
         if not response.get("success"):
             raise ElementNotInteractableError(response.get("error"))
         return response.get("data", "")
@@ -206,11 +223,9 @@ class WPFSpyRealDriver:
         """Check if an element is visible."""
         max_retries = 3
         retry_delay = 0.2
+        key, val = self._get_element_key(element)
         for attempt in range(max_retries):
-            if "xpath" in element:
-                response = self._send("IsVisible", xpath=element["xpath"])
-            else:
-                response = self._send("IsVisible", name=element["name"])
+            response = self._send("IsVisible", **{key: val})
             if response.get("success"):
                 return response.get("data") == "true"
             if attempt < max_retries - 1:
@@ -219,18 +234,16 @@ class WPFSpyRealDriver:
 
     def is_enabled(self, element) -> bool:
         """Check if an element is enabled.
-        
+
         Note: This requires the C# agent to implement IsEnabled command.
         Falls back to using IsVisible if IsEnabled is not supported.
         """
-        if "xpath" in element:
-            response = self._send("IsEnabled", xpath=element["xpath"])
-        else:
-            response = self._send("IsEnabled", name=element["name"])
-        
+        key, val = self._get_element_key(element)
+        response = self._send("IsEnabled", **{key: val})
+
         if response.get("success"):
             return response.get("data") == "true"
-        
+
         # Fallback: assume enabled if we can find it
         return True
 
@@ -240,28 +253,24 @@ class WPFSpyRealDriver:
 
     def get_attribute(self, element, attribute_name: str) -> Optional[str]:
         """Get a specific attribute value from an element.
-        
+
         Note: This requires the C# agent to implement GetAttribute command.
         """
-        if "xpath" in element:
-            response = self._send("GetAttribute", xpath=element["xpath"], attributeName=attribute_name)
-        else:
-            response = self._send("GetAttribute", name=element["name"], attributeName=attribute_name)
+        key, val = self._get_element_key(element)
+        response = self._send("GetAttribute", **{key: val}, attributeName=attribute_name)
         if response.get("success"):
             return response.get("data")
         return None
 
     def capture_screenshot(self, element=None) -> bytes:
         """Capture a screenshot of an element.
-        
+
         Note: This requires the C# agent to implement CaptureScreenshot command.
         """
         if element is None:
             return b""
-        if "xpath" in element:
-            response = self._send("CaptureScreenshot", xpath=element["xpath"])
-        else:
-            response = self._send("CaptureScreenshot", name=element["name"])
+        key, val = self._get_element_key(element)
+        response = self._send("CaptureScreenshot", **{key: val})
         if response.get("success") and response.get("data"):
             import base64
             return base64.b64decode(response["data"])
@@ -269,84 +278,68 @@ class WPFSpyRealDriver:
 
     def double_click(self, element):
         """Double-click an element."""
-        if "xpath" in element:
-            response = self._send("DoubleClick", xpath=element["xpath"])
-        else:
-            response = self._send("DoubleClick", name=element["name"])
+        key, val = self._get_element_key(element)
+        response = self._send("DoubleClick", **{key: val})
         if not response.get("success"):
             raise ElementNotInteractableError(response.get("error"))
 
     def right_click(self, element):
         """Right-click an element."""
-        if "xpath" in element:
-            response = self._send("RightClick", xpath=element["xpath"])
-        else:
-            response = self._send("RightClick", name=element["name"])
+        key, val = self._get_element_key(element)
+        response = self._send("RightClick", **{key: val})
         if not response.get("success"):
             raise ElementNotInteractableError(response.get("error"))
 
     def press_keys(self, element, keys: str):
         """Press keys into an element."""
-        if "xpath" in element:
-            response = self._send("PressKeys", xpath=element["xpath"], value=keys)
-        else:
-            response = self._send("PressKeys", name=element["name"], value=keys)
+        key, val = self._get_element_key(element)
+        response = self._send("PressKeys", **{key: val}, value=keys)
         if not response.get("success"):
             raise ElementNotInteractableError(response.get("error"))
 
     def drag_drop(self, element, target_element):
         """Drag an element and drop it on a target."""
-        target_xpath = target_element.get("xpath") if isinstance(target_element, dict) else None
-        target_name = target_element.get("name") if isinstance(target_element, dict) else getattr(target_element, "name", None)
-        
-        params = {}
-        if "xpath" in element:
-            params["xpath"] = element["xpath"]
-        else:
-            params["name"] = element["name"]
-        if target_xpath:
-            params["targetXPath"] = target_xpath
-        if target_name:
-            params["targetName"] = target_name
-        
+        key, val = self._get_element_key(element)
+        params = {key: val}
+
+        # Resolve target element key similarly
+        if isinstance(target_element, dict):
+            t_key, t_val = self._get_element_key(target_element)
+            if t_key == "xpath":
+                params["targetXPath"] = t_val
+            else:
+                params["targetName"] = t_val
+
         response = self._send("DragDrop", **params)
         if not response.get("success"):
             raise ElementNotInteractableError(response.get("error"))
 
     def hover(self, element):
         """Hover over an element."""
-        if "xpath" in element:
-            response = self._send("Hover", xpath=element["xpath"])
-        else:
-            response = self._send("Hover", name=element["name"])
+        key, val = self._get_element_key(element)
+        response = self._send("Hover", **{key: val})
         if not response.get("success"):
             raise ElementNotInteractableError(response.get("error"))
 
     def scroll(self, element, direction: str):
         """Scroll an element in a direction."""
-        if "xpath" in element:
-            response = self._send("Scroll", xpath=element["xpath"], value=direction)
-        else:
-            response = self._send("Scroll", name=element["name"], value=direction)
+        key, val = self._get_element_key(element)
+        response = self._send("Scroll", **{key: val}, value=direction)
         if not response.get("success"):
             raise ElementNotInteractableError(response.get("error"))
 
     def toggle(self, element, state: bool = None):
         """Toggle a checkbox or toggle button."""
-        if "xpath" in element:
-            response = self._send("Toggle", xpath=element["xpath"])
-        else:
-            response = self._send("Toggle", name=element["name"])
+        key, val = self._get_element_key(element)
+        response = self._send("Toggle", **{key: val})
         if not response.get("success"):
             raise ElementNotInteractableError(response.get("error"))
 
     def get_data_grid_content_ocr(self, element) -> str:
         """Captures a screenshot of the DataGrid element and
         runs OCR on it to extract cell content as CSV text."""
-        if "xpath" in element:
-            response = self._send("GetDataGridContentOcr", xpath=element["xpath"])
-        else:
-            response = self._send("GetDataGridContentOcr", name=element["name"])
+        key, val = self._get_element_key(element)
+        response = self._send("GetDataGridContentOcr", **{key: val})
         if not response.get("success"):
             raise ElementNotInteractableError(response.get("error"))
         base64_image = response.get("data", "")
