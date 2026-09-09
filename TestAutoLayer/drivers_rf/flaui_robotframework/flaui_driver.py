@@ -9,12 +9,17 @@ This module provides:
 
 import sys
 import os
+import time
 from typing import List, Optional
 
 # Add parent directories to path for mock app fallback
 _base_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(_base_dir, "..", "..", "mock_wpf_app"))
 sys.path.insert(0, os.path.join(_base_dir, "..", ".."))
+
+# Import base driver interface
+sys.path.insert(0, os.path.join(_base_dir, "..", "..", "api"))
+from base_driver import BaseDriver, ElementHandle
 
 # WPF control type -> UIA control type mapping
 # UI Automation maps WPF controls to different UIA control types
@@ -69,7 +74,7 @@ def _translate_wpf_to_uia_xpath(xpath: str) -> str:
     return result
 
 
-class FlaUIDriver:
+class FlaUIDriver(BaseDriver):
     """Real FlaUI driver — locates and interacts with elements in the
     running SampleWpfApp using the robotframework-flaui package.
     
@@ -83,7 +88,9 @@ class FlaUIDriver:
     3. XPath (fallback)
     """
 
-    name = "FlaUI"
+    @property
+    def name(self) -> str:
+        return "FlaUI"
 
     def __init__(self, app_pid: Optional[int] = None):
         """Initialize the FlaUI driver.
@@ -147,26 +154,28 @@ class FlaUIDriver:
         """
         if isinstance(element, str):
             return element
+        if isinstance(element, ElementHandle):
+            return element.locator.get("value", "")
         # If we ever get an AutomationElement, we can't convert it back to XPath
         # This should not happen with the current implementation
         raise TypeError(f"FlaUIDriver expects XPath string handles, got {type(element)}")
 
-    def find_element(self, strategy: dict):
+    def find_element(self, locator: dict) -> ElementHandle:
         """Locates an element using FlaUI strategy.
         
         Args:
-            strategy: Dict with searchBy and value keys.
+            locator: Dict with searchBy and value keys.
                       
         Returns:
-            XPath string identifying the found element.
+            ElementHandle identifying the found element.
             
         Raises:
             ElementNotFoundError: If no matching element is found.
         """
         from mock_app import ElementNotFoundError, ElementNotInteractableError
         
-        search_by = strategy.get("searchBy", "AutomationId")
-        value = strategy.get("value")
+        search_by = locator.get("searchBy", "AutomationId")
+        value = locator.get("value")
 
         self._ensure_attached()
 
@@ -174,7 +183,7 @@ class FlaUIDriver:
             xpath = f"//*[@AutomationId='{value}']"
             try:
                 self._lib.find_one_element(xpath)
-                return xpath
+                return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
             except Exception as e:
                 raise ElementNotFoundError(f"FlaUI: no element with AutomationId='{value}': {e}")
 
@@ -182,7 +191,7 @@ class FlaUIDriver:
             xpath = f"//*[@Name='{value}']"
             try:
                 self._lib.find_one_element(xpath)
-                return xpath
+                return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
             except Exception as e:
                 raise ElementNotFoundError(f"FlaUI: no element with Name='{value}': {e}")
 
@@ -190,39 +199,39 @@ class FlaUIDriver:
             uia_xpath = _translate_wpf_to_uia_xpath(value)
             try:
                 self._lib.find_one_element(uia_xpath)
-                return uia_xpath
+                return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
             except Exception as e:
                 raise ElementNotFoundError(f"FlaUI: no element found for XPath '{value}' (translated: '{uia_xpath}'): {e}")
 
         else:
             raise ElementNotFoundError(f"Unsupported FlaUI searchBy: {search_by}")
 
-    def find_elements(self, strategy: dict) -> List:
+    def find_elements(self, locator: dict) -> List[ElementHandle]:
         """Locates all elements matching the FlaUI strategy.
         
         Args:
-            strategy: Dict with searchBy and value keys.
+            locator: Dict with searchBy and value keys.
                       
         Returns:
-            List of XPath strings for all matching elements (may be empty).
+            List of ElementHandles for all matching elements (may be empty).
         """
-        search_by = strategy.get("searchBy", "AutomationId")
-        value = strategy.get("value")
+        search_by = locator.get("searchBy", "AutomationId")
+        value = locator.get("value")
 
         self._ensure_attached()
         try:
             if search_by == "AutomationId":
                 xpath = f"//*[@AutomationId='{value}']"
                 self._lib.find_all_elements(xpath)
-                return [xpath]
+                return [ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())]
             elif search_by == "Name":
                 xpath = f"//*[@Name='{value}']"
                 self._lib.find_all_elements(xpath)
-                return [xpath]
+                return [ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())]
             elif search_by == "XPath":
                 uia_xpath = _translate_wpf_to_uia_xpath(value)
                 self._lib.find_all_elements(uia_xpath)
-                return [uia_xpath]
+                return [ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())]
             else:
                 return []
         except Exception:
@@ -345,10 +354,10 @@ class FlaUIDriver:
         self._ensure_attached()
         self._lib.press_keys(keys, xpath)
 
-    def drag_drop(self, element, target_element):
+    def drag_drop(self, element: ElementHandle, target_element: ElementHandle):
         """Drag an element and drop it on a target."""
         source_xpath = self._to_xpath(element)
-        target_xpath = target_element if isinstance(target_element, str) else target_element.get("xpath", "")
+        target_xpath = self._to_xpath(target_element)
         self._ensure_attached()
         self._lib.drag_and_drop(source_xpath, target_xpath)
 

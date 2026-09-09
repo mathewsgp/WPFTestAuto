@@ -237,6 +237,77 @@ class BaseDriver(ABC):
         """
         pass
     
+    # Extended interaction methods (implemented by all current drivers)
+    
+    @abstractmethod
+    def double_click(self, element: ElementHandle) -> None:
+        """Double-click an element.
+        
+        Args:
+            element: The element handle from find_element.
+        """
+        pass
+    
+    @abstractmethod
+    def right_click(self, element: ElementHandle) -> None:
+        """Right-click an element.
+        
+        Args:
+            element: The element handle from find_element.
+        """
+        pass
+    
+    @abstractmethod
+    def press_keys(self, element: ElementHandle, keys: str) -> None:
+        """Press keys into an element.
+        
+        Args:
+            element: The element handle from find_element.
+            keys: Keys to press (e.g., "^v" for Ctrl+V).
+        """
+        pass
+    
+    @abstractmethod
+    def drag_drop(self, element: ElementHandle, target_element: ElementHandle) -> None:
+        """Drag an element and drop it on a target.
+        
+        Args:
+            element: The source element handle.
+            target_element: The target element handle.
+        """
+        pass
+    
+    @abstractmethod
+    def hover(self, element: ElementHandle) -> None:
+        """Hover over an element.
+        
+        Args:
+            element: The element handle from find_element.
+        """
+        pass
+    
+    @abstractmethod
+    def scroll(self, element: ElementHandle, direction: str) -> None:
+        """Scroll an element in a direction.
+        
+        Args:
+            element: The element handle from find_element.
+            direction: One of "up", "down", "pageup", "pagedown".
+        """
+        pass
+    
+    @abstractmethod
+    def get_data_grid_content_ocr(self, element: ElementHandle) -> str:
+        """Extract DataGrid content as CSV text using OCR.
+        
+        Args:
+            element: The DataGrid element handle.
+        
+        Returns:
+            str: CSV-formatted grid content.
+        """
+        pass
+    
     def close(self) -> None:
         """Clean up driver resources.
         

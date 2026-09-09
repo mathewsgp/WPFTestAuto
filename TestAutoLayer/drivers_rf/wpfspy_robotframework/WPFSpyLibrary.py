@@ -40,13 +40,18 @@ sys.path.insert(0, os.path.join(_THIS_DIR, "..", "..", "mock_wpf_app"))
 from mock_app import APP_INSTANCE, ElementNotFoundError, ElementNotInteractableError  # noqa: E402
 
 
+# Import base driver interface
+sys.path.insert(0, os.path.join(_THIS_DIR, "..", "..", "api"))
+from base_driver import BaseDriver, ElementHandle
+
+
 PIPE_NAME = os.environ.get("WPFSPY_PIPE_NAME", "WPFSpyAgentPipe")
 
 
 # ---------------------------------------------------------------------------
 # REAL driver — Named Pipe client talking to the actual injected Spy Agent
 # ---------------------------------------------------------------------------
-class WPFSpyRealDriver:
+class WPFSpyRealDriver(BaseDriver):
     """Real WPFSpy driver: sends line-delimited JSON commands over a
     Windows Named Pipe to the in-process Spy Agent hosted by
     SampleWpfApp (see WpfSpyAgent/SpyAgentHost.cs). Requires pywin32 and
@@ -59,7 +64,9 @@ class WPFSpyRealDriver:
     stale-element issues across page/window navigation.
     """
 
-    name = "WPFSpy"
+    @property
+    def name(self) -> str:
+        return "WPFSpy"
 
     def __init__(self, pipe_name: str = PIPE_NAME):
         self.pipe_name = pipe_name
@@ -104,7 +111,7 @@ class WPFSpyRealDriver:
         finally:
             win32file.CloseHandle(handle)
 
-    def find_element(self, locator: dict):
+    def find_element(self, locator: dict) -> ElementHandle:
         """Locates a single element using WPFSpy strategy.
         
         Args:
@@ -128,15 +135,15 @@ class WPFSpyRealDriver:
             if search_by == "XPath":
                 response = self._send("FindByXPath", xpath=value)
                 if response.get("success"):
-                    return {"xpath": value}
+                    return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
             elif search_by == "AutomationId":
                 response = self._send("FindByAutomationId", automationId=value)
                 if response.get("success"):
-                    return {"automationId": value}
+                    return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
             else:
                 response = self._send("Find", name=value)
                 if response.get("success"):
-                    return {"name": value}
+                    return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
             
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
@@ -154,7 +161,7 @@ class WPFSpyRealDriver:
             f"WPFSpy: no element with Name='{value}' after {max_retries} attempts"
         )
 
-    def find_elements(self, locator: dict) -> List[dict]:
+    def find_elements(self, locator: dict) -> List[ElementHandle]:
         """Locates all elements matching the WPFSpy strategy.
         
         Note: The real WPFSpy agent doesn't support find_elements natively.
@@ -174,27 +181,22 @@ class WPFSpyRealDriver:
         except ElementNotFoundError:
             return []
 
-    def _get_element_key(self, element):
+    def _get_element_key(self, element: ElementHandle):
         """Return (param_name, value) for action commands.
 
-        Element handles from find_element can carry one of:
-        - 'xpath'        (XPath search)
-        - 'automationId' (AutomationId search)
-        - 'name'         (Name search)
-
+        Element handles from find_element carry the locator used to find them.
         The agent's action commands accept 'xpath' or 'name' parameters.
-        For automationId handles, we pass it as 'name' so the agent can
-        re-locate the element; the C# agent should be extended to accept
-        'automationId' directly in a future update.
         """
-        if isinstance(element, str):
-            return ("xpath", element)
-        if "xpath" in element:
-            return ("xpath", element["xpath"])
-        if "automationId" in element:
-            return ("name", element["automationId"])
-        if "name" in element:
-            return ("name", element["name"])
+        locator = element.locator
+        search_by = locator.get("searchBy", "XPath")
+        value = locator.get("value")
+        
+        if search_by == "XPath":
+            return ("xpath", value)
+        elif search_by == "AutomationId":
+            return ("name", value)  # Pass as name for agent to re-locate
+        else:
+            return ("name", value)
         raise ElementNotFoundError("element handle has no xpath/automationId/name")
 
     def invoke(self, element):
@@ -447,23 +449,25 @@ class WPFSpyRealDriver:
 # ---------------------------------------------------------------------------
 # MOCK driver — talks to the in-repo Python mock app (default, cross-platform)
 # ---------------------------------------------------------------------------
-class WPFSpyMockDriver:
+class WPFSpyMockDriver(BaseDriver):
     """Cross-platform stand-in used when WPFSPY_MODE is not 'real'. Talks
     directly to drivers/mock_wpf_app/ instead of a real IPC channel, but
     logs each call as `[WPFSpy IPC]` so the round trip is visible in test
     output the same way the real driver's Named Pipe traffic would be.
     """
 
-    name = "WPFSpy"
+    @property
+    def name(self) -> str:
+        return "WPFSpy"
 
     def _log_ipc(self, command: str, **payload):
         print(f"[WPFSpy IPC] -> {command}({payload})")
 
-    def find_element(self, strategy: dict):
+    def find_element(self, locator: dict) -> ElementHandle:
         """Locates a single element using WPFSpy strategy.
         
         Args:
-            strategy: Dict with searchBy and value keys.
+            locator: Dict with searchBy and value keys.
                     Supports: XPath, AutomationId, Name, TypeAndIndex
                     
         Returns:
@@ -472,29 +476,29 @@ class WPFSpyMockDriver:
         Raises:
             ElementNotFoundError: If no matching element is found.
         """
-        search_by = strategy.get("searchBy", "XPath")
-        value = strategy.get("value")
+        search_by = locator.get("searchBy", "XPath")
+        value = locator.get("value")
         
         if search_by == "XPath":
             self._log_ipc("FindByXPath", xpath=value)
             ctrl = APP_INSTANCE.find_by_xpath(value)
             if ctrl is None:
                 raise ElementNotFoundError(f"WPFSpy: no element found for XPath '{value}'")
-            return ctrl
+            return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
         
         elif search_by == "Name":
             self._log_ipc("Find", name=value)
             ctrl = APP_INSTANCE.find_by_name(value)
             if ctrl is None:
                 raise ElementNotFoundError(f"WPFSpy: no element with Name='{value}'")
-            return ctrl
+            return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
         
         elif search_by == "AutomationId":
             self._log_ipc("FindByAutomationId", automationId=value)
             ctrl = APP_INSTANCE.find_by_automation_id(value)
             if ctrl is None:
                 raise ElementNotFoundError(f"WPFSpy: no element with AutomationId='{value}'")
-            return ctrl
+            return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
         
         elif search_by == "TypeAndIndex":
             # Parse "ControlType[index]" format
@@ -507,40 +511,44 @@ class WPFSpyMockDriver:
                 ctrl = APP_INSTANCE.find_by_control_type_and_index(ctrl_type, index)
                 if ctrl is None:
                     raise ElementNotFoundError(f"WPFSpy: no element {ctrl_type}[{index}]")
-                return ctrl
+                return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
             raise ElementNotFoundError(f"Invalid TypeAndIndex format: {value}")
         
         else:
             raise ElementNotFoundError(f"Unsupported WPFSpy searchBy: {search_by}")
 
-    def find_elements(self, strategy: dict) -> List:
+    def find_elements(self, locator: dict) -> List[ElementHandle]:
         """Locates all elements matching the WPFSpy strategy.
         
         Args:
-            strategy: Dict with searchBy and value keys.
+            locator: Dict with searchBy and value keys.
                     Supports: XPath, Name, Type, AutomationId
                     
         Returns:
             List of ElementHandles for all matching elements.
         """
-        search_by = strategy.get("searchBy", "XPath")
-        value = strategy.get("value")
+        search_by = locator.get("searchBy", "XPath")
+        value = locator.get("value")
         
         if search_by == "XPath":
             self._log_ipc("FindAllByXPath", xpath=value)
-            return APP_INSTANCE.find_all_by_xpath(value)
+            elements = APP_INSTANCE.find_all_by_xpath(value)
+            return [ElementHandle(locator=locator, driver_name=self.name, found_at=time.time()) for _ in elements]
         
         elif search_by == "Name":
             self._log_ipc("FindAll", name=value)
-            return APP_INSTANCE.find_all_by_name(value)
+            elements = APP_INSTANCE.find_all_by_name(value)
+            return [ElementHandle(locator=locator, driver_name=self.name, found_at=time.time()) for _ in elements]
         
         elif search_by == "AutomationId":
             self._log_ipc("FindAllByAutomationId", automationId=value)
-            return APP_INSTANCE.find_all_by_automation_id(value)
+            elements = APP_INSTANCE.find_all_by_automation_id(value)
+            return [ElementHandle(locator=locator, driver_name=self.name, found_at=time.time()) for _ in elements]
         
         elif search_by == "Type":
             self._log_ipc("FindAllByType", type=value)
-            return APP_INSTANCE.find_all_by_control_type(value)
+            elements = APP_INSTANCE.find_all_by_control_type(value)
+            return [ElementHandle(locator=locator, driver_name=self.name, found_at=time.time()) for _ in elements]
         
         else:
             return []
