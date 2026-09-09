@@ -163,7 +163,7 @@ class FlaUIDriver:
         Raises:
             ElementNotFoundError: If no matching element is found.
         """
-        from api.exceptions import ElementNotFoundError
+        from mock_app import ElementNotFoundError, ElementNotInteractableError
         
         search_by = strategy.get("searchBy", "AutomationId")
         value = strategy.get("value")
@@ -241,12 +241,14 @@ class FlaUIDriver:
         self._ensure_attached()
         try:
             self._lib.set_text_to_textbox(xpath, value)
+            return
         except Exception:
             pass
         try:
             self._lib.select_combobox_item_by_name(xpath, value)
-        except Exception:
-            raise ElementNotInteractableError(f"FlaUI: cannot set value on element: {xpath}")
+            return
+        except Exception as e:
+            raise ElementNotInteractableError(f"FlaUI: cannot set value on element '{xpath}': {e}")
 
     def get_text(self, element) -> str:
         """Get the text content of an element."""

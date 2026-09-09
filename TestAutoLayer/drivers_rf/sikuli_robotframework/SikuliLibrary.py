@@ -23,6 +23,7 @@ from __future__ import annotations
 import os
 import sys
 import time
+import logging
 from typing import Any, List, Optional, Tuple
 
 from image_matcher import ImageMatcher, Match, create_matcher
@@ -32,6 +33,9 @@ from wait_utils import retry_match, wait_until_stable
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "mock_wpf_app"))
 from mock_app import APP_INSTANCE, ElementNotFoundError, ElementNotInteractableError  # noqa: E402
+
+
+_logger = logging.getLogger(__name__)
 
 
 def _resolve_template_path(value: str, image_path: Optional[str]) -> str:
@@ -180,8 +184,7 @@ class SikuliDriver:
             alias = getattr(element, "alias", "") or ""
             sink(img, alias, ok, action)
         except Exception:
-            # Sinks must never break the driver.
-            pass
+            _logger.debug("Sikuli screenshot sink failed", exc_info=True)
 
     # ---------- mock-app helpers ----------
     def _use_real(self) -> bool:

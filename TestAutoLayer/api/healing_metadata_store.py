@@ -394,25 +394,7 @@ class HealingMetadataStore:
         )
         
         metadata.healing_history.append(attempt)
-        
-        # Update baseline with healed properties if successful
-        if healing_successful and new_properties:
-            metadata.baseline = ElementBaseline(
-                alias=alias,
-                automation_id=new_properties.get("automation_id"),
-                name=new_properties.get("name"),
-                control_type=new_properties.get("control_type"),
-                xpath=new_properties.get("xpath"),
-                parent_xpath=new_properties.get("parent_xpath"),
-                text=new_properties.get("text"),
-                position=new_properties.get("position"),
-                is_visible=new_properties.get("is_visible", True),
-                is_enabled=new_properties.get("is_enabled", True),
-                driver_used=healing_driver,
-                search_method=healing_search_method,
-                search_value=healing_search_value
-            )
-        
+
         # Update strategy stats
         primary_key = f"{primary_driver}:{primary_search_method}"
         healing_key = f"{healing_driver}:{healing_search_method}"

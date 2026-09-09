@@ -176,9 +176,9 @@ class TestHealingTracking:
         assert len(metadata.healing_history) == 1
         assert metadata.healing_history[0].healing_successful is False
     
-    def test_healing_updates_baseline(self, store):
-        """Test that successful healing updates the baseline."""
-        # Initial baseline
+    def test_healing_does_not_overwrite_primary_baseline(self, store):
+        """Test that successful healing does NOT overwrite the primary baseline."""
+        # Initial baseline from primary driver
         store.capture_baseline(
             alias="Page.element",
             properties={"automation_id": "oldId"},
@@ -202,8 +202,10 @@ class TestHealingTracking:
         )
         
         metadata = store._metadata["Page.element"]
-        # Baseline should be updated with new properties
-        assert metadata.baseline.xpath == "//NewElement"
+        # Baseline should NOT be overwritten — primary driver's baseline preserved
+        assert metadata.baseline.automation_id == "oldId"
+        # Healed properties are captured in the healing history record
+        assert metadata.healing_history[-1].new_properties == {"automation_id": None, "xpath": "//NewElement"}
 
 
 class TestStrategyStatistics:

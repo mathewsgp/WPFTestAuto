@@ -738,7 +738,14 @@ class WPFSpyMockDriver:
 def _make_driver():
     mode = os.environ.get("WPFSPY_MODE", "mock").lower()
     if mode == "real":
-        return WPFSpyRealDriver()
+        pipe_env = os.environ.get("WPFSPY_PIPE_NAME")
+        if not pipe_env:
+            raise RuntimeError(
+                "WPFSPY_MODE=real requires the WPFSPY_PIPE_NAME environment "
+                "variable to be set to the named pipe created by the injected "
+                "Spy Agent. Set WPFSPY_PIPE_NAME before enabling real mode."
+            )
+        return WPFSpyRealDriver(pipe_name=pipe_env)
     return WPFSpyMockDriver()
 
 
