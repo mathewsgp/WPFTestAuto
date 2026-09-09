@@ -674,8 +674,43 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             DisableThreadLibraryCalls(hModule);
             Log(L"[Inject] Native DLL loaded into target process!");
             
-            // Try to auto-start the agent using CLR Hosting
-            TryStartSpyAgentCLR(L"WPFSpyAgentPipe");
+            // Read config file written by SetupAgentEnvironmentAsync and auto-start
+            {
+                DWORD pid = GetCurrentProcessId();
+                wchar_t configPath[512];
+                swprintf(configPath, 512, L"%s\\WpfSpyAgent\\config_%d.txt",
+                    _wgetenv(L"LOCALAPPDATA") ? _wgetenv(L"LOCALAPPDATA") : L"C:\\Users\\Public",
+                    pid);
+                
+                wchar_t pipeName[256] = L"WPFSpyAgentPipe";
+                if (GetFileAttributes(configPath) != INVALID_FILE_ATTRIBUTES) {
+                    HANDLE hFile = CreateFile(configPath, GENERIC_READ, FILE_SHARE_READ,
+                        NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+                    if (hFile != INVALID_HANDLE_VALUE) {
+                        DWORD fileSize = GetFileSize(hFile, NULL);
+                        if (fileSize > 0 && fileSize < 4096) {
+                            char* buffer = new char[fileSize + 1];
+                            DWORD bytesRead = 0;
+                            if (ReadFile(hFile, buffer, fileSize, &bytesRead, NULL) && bytesRead > 0) {
+                                buffer[bytesRead] = '\0';
+                                char* pipeLine = strstr(buffer, "PIPE_NAME=");
+                                if (pipeLine) {
+                                    pipeLine += strlen("PIPE_NAME=");
+                                    char* end = strpbrk(pipeLine, "\r\n");
+                                    if (end) *end = '\0';
+                                    MultiByteToWideChar(CP_ACP, 0, pipeLine, -1, pipeName, 256);
+                                    delete[] buffer;
+                                }
+                            }
+                        }
+                        CloseHandle(hFile);
+                    }
+                }
+                
+                swprintf(msg, 256, L"[Inject] DllMain auto-starting Spy Agent with pipe: %s", pipeName);
+                Log(msg);
+                TryStartSpyAgentCLR(pipeName);
+            }
             break;
         case DLL_THREAD_ATTACH:
             reason = L"DLL_THREAD_ATTACH";

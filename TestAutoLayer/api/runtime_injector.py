@@ -209,12 +209,32 @@ class RuntimeInjector:
             repo_root / "bin" / "Release" / "net461",
             repo_root / "WPFSpyAgent" / "bin" / "Debug" / "net461",
             repo_root / "WPFSpyAgent" / "bin" / "Release" / "net461",
-            repo_root / "WPFSpyAgent" / "FrameworkHook" / "bin" / "Debug" / "net461",
-            repo_root / "WPFSpyAgent" / "FrameworkHook" / "bin" / "Release" / "net461",
         ]
         for c in candidates:
             if c.is_dir() and (c / "WpfSpyAgent.dll").exists():
                 return c
+        return None
+
+    def _find_native_inject_dll(self) -> Optional[str]:
+        """Find the NativeInject DLL in common locations.
+
+        Returns the path to WpfSpyAgent.NativeInject.dll or None.
+        """
+        repo_root = Path(__file__).parent.parent.parent
+        search_paths = [
+            repo_root / "bin" / "Debug" / "net9.0-windows" / "WpfSpyAgent.NativeInject.dll",
+            repo_root / "bin" / "Debug" / "net8.0-windows" / "WpfSpyAgent.NativeInject.dll",
+            repo_root / "bin" / "Release" / "net9.0-windows" / "WpfSpyAgent.NativeInject.dll",
+            repo_root / "bin" / "Release" / "net8.0-windows" / "WpfSpyAgent.NativeInject.dll",
+            repo_root / "WPFSpyAgent" / "NativeInject" / "bin" / "Debug" / "x64" / "WpfSpyAgent.NativeInject.dll",
+            repo_root / "WPFSpyAgent" / "NativeInject" / "bin" / "Release" / "x64" / "WpfSpyAgent.NativeInject.dll",
+        ]
+        for p in search_paths:
+            if p.exists():
+                return str(p.resolve())
+        env_path = os.environ.get("WPFSPY_NATIVE_INJECT_DLL")
+        if env_path and Path(env_path).exists():
+            return env_path
         return None
 
     def _stage_dll_set(

@@ -458,32 +458,6 @@ namespace WpfTestIde.Dialogs
             return null;
         }
 
-        private string? GetNativeInjectDllPath()
-        {
-            var searchPaths = new[]
-            {
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "x64", "WpfSpyAgent.NativeInject.dll")
-            };
-
-            foreach (var relPath in searchPaths)
-            {
-                try
-                {
-                    var fullPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relPath));
-                    if (File.Exists(fullPath))
-                    {
-                        LogDiagnostic($"Found NativeInject DLL: {fullPath}");
-                        return fullPath;
-                    }
-                }
-                catch { }
-            }
-
-            LogDiagnostic("NativeInject DLL not found in any search path");
-            return null;
-        }
-
         private async Task<Process?> LaunchFrameworkAppWithInjection(string appPath, string? arguments, string? startIn, string pipeName)
         {
             try
@@ -532,7 +506,7 @@ namespace WpfTestIde.Dialogs
                     LogDiagnostic($"Stage warning: {stageEx.Message}");
                 }
 
-                var nativeInjectDll = GetNativeInjectDllPath();
+                var nativeInjectDll = RuntimeInjector.FindNativeInjectDll();
                 if (string.IsNullOrEmpty(nativeInjectDll))
                 {
                     StatusText.Text = "NativeInject DLL not found. Cannot inject.";

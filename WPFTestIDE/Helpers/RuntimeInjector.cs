@@ -124,7 +124,11 @@ namespace WpfTestIde.Helpers
                     return false;
                 }
 
-                // Step 2: Allocate memory in target process for DLL path
+                // Step 2: Set up agent environment (config file) BEFORE DLL injection
+                StatusChanged?.Invoke("Setting up agent environment...");
+                await SetupAgentEnvironmentAsync(targetProcessId, agentPipeName);
+
+                // Step 3: Allocate memory in target process for DLL path
                 byte[] dllPathBytes = Encoding.ASCII.GetBytes(startupHookDllPath + "\0");
                 uint bytesToAllocate = (uint)dllPathBytes.Length;
 
@@ -215,28 +219,10 @@ namespace WpfTestIde.Helpers
 
                 StatusChanged?.Invoke($"DLL loaded successfully! Module handle: 0x{exitCode:X}");
 
-                // Step 7: Set environment variables for the agent (via temp file)
-                StatusChanged?.Invoke("Setting up agent environment...");
-                await SetupAgentEnvironmentAsync(targetProcessId, agentPipeName);
-
-                // Step 8: Try to start the agent by calling the exported function
-                bool agentStarted = await StartAgentInProcessAsync(
-                    processHandle, 
-                    (IntPtr)(long)exitCode, 
-                    agentPipeName,
-                    cancellationToken);
-
-                if (agentStarted)
-                {
-                    StatusChanged?.Invoke("Spy Agent started successfully!");
-                    return true;
-                }
-                else
-                {
-                    StatusChanged?.Invoke("DLL injected but agent start function failed.");
-                    StatusChanged?.Invoke("The Spy Agent was not started in the target process.");
-                    return false;
-                }
+                // DllMain reads the config file written by SetupAgentEnvironmentAsync
+                // and auto-starts the Spy Agent with the correct pipe name.
+                StatusChanged?.Invoke("DLL injected; DllMain auto-starting Spy Agent...");
+                return true;
             }
             catch (Exception ex)
             {
@@ -250,90 +236,6 @@ namespace WpfTestIde.Helpers
                     CloseHandle(remoteThreadHandle);
                 if (processHandle != IntPtr.Zero)
                     CloseHandle(processHandle);
-            }
-        }
-
-        /// <summary>
-        /// Try to call the exported InjectAndStartAgent function in the injected DLL.
-        /// This is optional - the DLL might auto-start on load.
-        /// </summary>
-        private static async Task<bool> StartAgentInProcessAsync(
-            IntPtr processHandle,
-            IntPtr dllModuleHandle,
-            string pipeName,
-            CancellationToken cancellationToken)
-        {
-            try
-            {
-                StatusChanged?.Invoke($"Looking for InjectAndStartAgent in module 0x{dllModuleHandle.ToInt64():X}...");
-                
-                IntPtr funcAddress = IntPtr.Zero;
-                string[] exportNames = { "InjectAndStartAgent", "_InjectAndStartAgent@4" };
-                foreach (var name in exportNames)
-                {
-                    funcAddress = GetProcAddress(dllModuleHandle, name);
-                    if (funcAddress != IntPtr.Zero)
-                    {
-                        StatusChanged?.Invoke($"Found export '{name}' at 0x{funcAddress.ToInt64():X}");
-                        break;
-                    }
-                }
-
-                if (funcAddress == IntPtr.Zero)
-                {
-                    int error = Marshal.GetLastWin32Error();
-                    StatusChanged?.Invoke($"GetProcAddress failed for InjectAndStartAgent, error={error}");
-                    StatusChanged?.Invoke("InjectAndStartAgent not found - DLL may auto-initialize.");
-                    return false;
-                }
-
-                byte[] pipeNameBytes = Encoding.ASCII.GetBytes(pipeName + "\0");
-                IntPtr remotePipeName = VirtualAllocEx(
-                    processHandle,
-                    IntPtr.Zero,
-                    (uint)pipeNameBytes.Length,
-                    MEM_COMMIT | MEM_RESERVE,
-                    PAGE_READWRITE);
-
-                if (remotePipeName == IntPtr.Zero)
-                {
-                    int error = Marshal.GetLastWin32Error();
-                    StatusChanged?.Invoke($"VirtualAllocEx failed for pipe name, error={error}");
-                    return false;
-                }
-
-                WriteProcessMemory(processHandle, remotePipeName, pipeNameBytes, (uint)pipeNameBytes.Length, out _);
-
-                StatusChanged?.Invoke($"Creating remote thread at 0x{funcAddress.ToInt64():X}...");
-                IntPtr remoteThread = CreateRemoteThread(
-                    processHandle,
-                    IntPtr.Zero,
-                    0,
-                    funcAddress,
-                    remotePipeName,
-                    0,
-                    out uint threadId);
-
-                if (remoteThread != IntPtr.Zero)
-                {
-                    StatusChanged?.Invoke($"Remote thread created (TID={threadId}), waiting 5s...");
-                    WaitForSingleObject(remoteThread, 5000);
-                    CloseHandle(remoteThread);
-                    StatusChanged?.Invoke("Remote thread completed");
-                }
-                else
-                {
-                    int error = Marshal.GetLastWin32Error();
-                    StatusChanged?.Invoke($"CreateRemoteThread failed, error={error}");
-                }
-
-                VirtualFreeEx(processHandle, remotePipeName, 0, MEM_RELEASE);
-                return remoteThread != IntPtr.Zero;
-            }
-            catch (Exception ex)
-            {
-                StatusChanged?.Invoke($"StartAgentInProcessAsync error: {ex.GetType().Name}: {ex.Message}");
-                return false;
             }
         }
 
@@ -402,21 +304,23 @@ namespace WpfTestIde.Helpers
             var searchPaths = new[]
             {
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Debug", "x64", "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Release", "x64", "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Debug", "WpfSpyAgent.NativeInject.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.NativeInject", "bin", "Release", "WpfSpyAgent.NativeInject.dll"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "x64", "WpfSpyAgent.NativeInject.dll")
             };
 
-            foreach (var path in searchPaths)
+            foreach (var relPath in searchPaths)
             {
-                var fullPath = Path.GetFullPath(path);
-                if (File.Exists(fullPath))
+                try
                 {
-                    StatusChanged?.Invoke($"Found NativeInject DLL: {fullPath}");
-                    return fullPath;
+                    var fullPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relPath));
+                    if (File.Exists(fullPath))
+                    {
+                        StatusChanged?.Invoke($"Found NativeInject DLL: {fullPath}");
+                        return fullPath;
+                    }
                 }
+                catch { }
             }
+
             StatusChanged?.Invoke("NativeInject DLL not found");
             return null;
         }
