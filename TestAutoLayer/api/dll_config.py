@@ -24,7 +24,9 @@ class DllPaths:
 
     # Source directories (relative to repo root)
     bin_debug_net9: str = "bin/Debug/net9.0-windows"
+    bin_debug_net461: str = "bin/Debug/net461"
     bin_release_net9: str = "bin/Release/net9.0-windows"
+    bin_release_net461: str = "bin/Release/net461"
 
     # Per-project source directories
     startup_hook_debug: str = "WPFSpyAgent/StartupHook/bin/Debug/net9.0-windows"
