@@ -5,8 +5,8 @@ Documentation    Test launch/attach combinations for SampleWpfApp.
 Library           ../../TestAutoLayer/api/DriverAgnosticApi.py
 
 *** Variables ***
-${NET_CORE_APP}    C:/Users/mathe/source/repos/WPFTestAuto/bin/SampleWPFApp/Debug/net9.0-windows/SampleWpfApp.exe
-${NET_FW_APP}      C:/Users/mathe/source/repos/WPFTestAuto/bin/SampleWPFApp/Debug/net461/SampleWpfApp.exe
+${NET_CORE_APP}    C:/Users/mathe/source/repos/WPFTestAuto/Tests/bin/SampleWPFApp/Debug/net9.0-windows/SampleWpfApp.exe
+${NET_FW_APP}      C:/Users/mathe/source/repos/WPFTestAuto/Tests/bin/SampleWPFApp/Debug/net461/SampleWpfApp.exe
 ${WAIT_TIMEOUT}    30s
 ${PIPE_WAIT_RETRIES}    10
 ${PIPE_WAIT_DELAY}      2s
