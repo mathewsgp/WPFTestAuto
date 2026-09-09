@@ -33,7 +33,6 @@ def _find_startup_hook():
 
     base_paths = [
         Path(__file__).parent.parent,
-        Path(__file__).parent.parent / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net6.0-windows",
         Path(__file__).parent.parent / "WpfSpyAgent.StartupHook" / "bin" / "Debug" / "net9.0-windows",
     ]
 
