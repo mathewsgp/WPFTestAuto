@@ -167,34 +167,33 @@ class FlaUIDriver:
         
         search_by = strategy.get("searchBy", "AutomationId")
         value = strategy.get("value")
-        
+
+        self._ensure_attached()
+
         if search_by == "AutomationId":
             xpath = f"//*[@AutomationId='{value}']"
             try:
-                self._ensure_attached()
                 self._lib.find_one_element(xpath)
                 return xpath
             except Exception as e:
                 raise ElementNotFoundError(f"FlaUI: no element with AutomationId='{value}': {e}")
-        
+
         elif search_by == "Name":
             xpath = f"//*[@Name='{value}']"
             try:
-                self._ensure_attached()
                 self._lib.find_one_element(xpath)
                 return xpath
             except Exception as e:
                 raise ElementNotFoundError(f"FlaUI: no element with Name='{value}': {e}")
-        
+
         elif search_by == "XPath":
             uia_xpath = _translate_wpf_to_uia_xpath(value)
             try:
-                self._ensure_attached()
                 self._lib.find_one_element(uia_xpath)
                 return uia_xpath
             except Exception as e:
                 raise ElementNotFoundError(f"FlaUI: no element found for XPath '{value}' (translated: '{uia_xpath}'): {e}")
-        
+
         else:
             raise ElementNotFoundError(f"Unsupported FlaUI searchBy: {search_by}")
 
@@ -209,9 +208,9 @@ class FlaUIDriver:
         """
         search_by = strategy.get("searchBy", "AutomationId")
         value = strategy.get("value")
-        
+
+        self._ensure_attached()
         try:
-            self._ensure_attached()
             if search_by == "AutomationId":
                 xpath = f"//*[@AutomationId='{value}']"
                 self._lib.find_all_elements(xpath)
