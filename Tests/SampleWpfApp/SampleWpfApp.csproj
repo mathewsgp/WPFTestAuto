@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-      <!-- Multi-targeted so this ONE sample app can stand in as the
-           injection target for EITHER runtime's demo: build/run the
-           net8.0-windows output to exercise WpfSpyAgent.StartupHook, or
-           the net461 output to exercise WpfSpyAgent.FrameworkHook. See
-           docs/INJECTION_OPTIONS.md. -->
+<!-- Multi-targeted so this ONE sample app can stand in as the
+             injection target for EITHER runtime's demo: build/run the
+             net9.0-windows output to exercise WpfSpyAgent.StartupHook, or
+             the net461 output to exercise WpfSpyAgent.FrameworkHook. See
+             docs/INJECTION_OPTIONS.md. -->
       <TargetFrameworks>net9.0-windows;net461</TargetFrameworks>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>

@@ -10,8 +10,8 @@ echo ============================================================
 echo.
 
 :: Build all projects with dotnet
-echo [1/4] Building WpfSpyAgent (.NET 8)...
-dotnet build "%ROOT%\WPFSpyAgent\WpfSpyAgent.csproj" -c Debug -f net8.0-windows
+echo [1/4] Building WpfSpyAgent (.NET 9)...
+dotnet build "%ROOT%\WPFSpyAgent\WpfSpyAgent.csproj" -c Debug -f net9.0-windows
 if errorlevel 1 (
     echo ERROR: Failed to build WpfSpyAgent
     pause

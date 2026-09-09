@@ -179,11 +179,11 @@ namespace WpfSpyAgent.InjectorTests
         public void SampleWpfApp_DotNetExists()
         {
             var root = GetRepoRoot();
-            var dllPath = Path.Combine(root, "SampleWpfApp", "bin", "Debug", "net8.0-windows", "SampleWpfApp.dll");
+            var dllPath = Path.Combine(root, "SampleWpfApp", "bin", "Debug", "net9.0-windows", "SampleWpfApp.dll");
             
             Assert.True(File.Exists(dllPath), 
-                $"SampleWpfApp (.NET 8) not found. Run: dotnet build from {root}");
-            Console.WriteLine($"[PASS] SampleWpfApp (.NET 8) found at: {dllPath}");
+                $"SampleWpfApp (.NET 9) not found. Run: dotnet build from {root}");
+            Console.WriteLine($"[PASS] SampleWpfApp (.NET 9) found at: {dllPath}");
         }
 
         [Fact]
@@ -201,7 +201,7 @@ namespace WpfSpyAgent.InjectorTests
         public void WpfSpyAgent_DllExists()
         {
             var root = GetRepoRoot();
-            var dllPath = Path.Combine(root, "WpfSpyAgent", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.dll");
+            var dllPath = Path.Combine(root, "WpfSpyAgent", "bin", "Debug", "net9.0-windows", "WpfSpyAgent.dll");
             
             Assert.True(File.Exists(dllPath), 
                 $"WpfSpyAgent.dll not found. Build WpfSpyAgent project first.");
@@ -310,12 +310,12 @@ namespace WpfSpyAgent.InjectorTests
             Console.WriteLine("  [OK] NativeInject DLL exists");
             
             // Step 2: Spy Agent DLL exists
-            var agentDll = Path.Combine(root, "WpfSpyAgent", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.dll");
+            var agentDll = Path.Combine(root, "WpfSpyAgent", "bin", "Debug", "net9.0-windows", "WpfSpyAgent.dll");
             Assert.True(File.Exists(agentDll), "WpfSpyAgent DLL missing");
             Console.WriteLine("  [OK] WpfSpyAgent DLL exists");
             
             // Step 3: SampleWpfApp exists
-            var appDll = Path.Combine(root, "SampleWpfApp", "bin", "Debug", "net8.0-windows", "SampleWpfApp.dll");
+            var appDll = Path.Combine(root, "SampleWpfApp", "bin", "Debug", "net9.0-windows", "SampleWpfApp.dll");
             Assert.True(File.Exists(appDll), "SampleWpfApp DLL missing");
             Console.WriteLine("  [OK] SampleWpfApp exists");
             
@@ -323,7 +323,7 @@ namespace WpfSpyAgent.InjectorTests
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows required for CLR Hosting");
             Console.WriteLine("  [OK] Windows platform confirmed");
             
-            Console.WriteLine("[PASS] .NET 8 injection pipeline verified");
+            Console.WriteLine("[PASS] .NET 9 injection pipeline verified");
         }
 
         [Fact]

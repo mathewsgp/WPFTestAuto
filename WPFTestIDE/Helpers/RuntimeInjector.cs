@@ -600,10 +600,8 @@ namespace WpfTestIde.Helpers
         /// <repo>\bin\Debug\net9.0-windows\ (per WpfTestIde.csproj's
         /// BaseOutputPath=..\bin). The framework's other builds live at:
         ///   <repo>\bin\Debug\net9.0-windows\WpfSpyAgent.dll (same dir as IDE)
-        ///   <repo>\bin\Debug\net8.0-windows\WpfSpyAgent.dll
         ///   <repo>\bin\Debug\net461\WpfSpyAgent.dll (Framework — also in same parent Debug\)
         ///   <repo>\WPFSpyAgent\bin\Debug\net9.0-windows\WpfSpyAgent.dll (per-project)
-        ///   <repo>\WPFSpyAgent\bin\Debug\net8.0-windows\WpfSpyAgent.dll
         ///   <repo>\WPFSpyAgent\bin\Debug\net461\WpfSpyAgent.dll
         ///   <repo>\WPFSpyAgent.FrameworkHook\bin\Debug\net461\WpfSpyAgent.dll
         /// </summary>
@@ -616,13 +614,10 @@ namespace WpfTestIde.Helpers
                 Path.Combine(baseDir, "WpfSpyAgent.dll"),
                 // Sibling builds in the same shared <repo>\bin\Debug\ folder
                 Path.Combine(baseDir, "..", "..", "Debug", "net9.0-windows", "WpfSpyAgent.dll"),
-                Path.Combine(baseDir, "..", "..", "Debug", "net8.0-windows", "WpfSpyAgent.dll"),
                 Path.Combine(baseDir, "..", "..", "Debug", "net6.0-windows", "WpfSpyAgent.dll"),
                 // Per-project build outputs (3 levels up to repo root)
                 Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Debug", "net9.0-windows", "WpfSpyAgent.dll"),
-                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.dll"),
                 Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Release", "net9.0-windows", "WpfSpyAgent.dll"),
-                Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Release", "net8.0-windows", "WpfSpyAgent.dll"),
             };
             foreach (var p in searchPaths)
             {

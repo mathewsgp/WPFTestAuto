@@ -94,7 +94,7 @@ _breaker_manager = CircuitBreakerManager(
 
 def _get_sample_wpf_app_path():
     """Returns the path to the SampleWpfApp executable."""
-    base = os.path.join(_THIS_DIR, "..", "..", "Tests", "SampleWpfApp", "bin", "Debug", "net8.0-windows")
+    base = os.path.join(_THIS_DIR, "..", "..", "Tests", "SampleWpfApp", "bin", "Debug", "net9.0-windows")
     dll = os.path.join(base, "SampleWpfApp.dll")
     if os.path.exists(dll):
         return dll
@@ -146,7 +146,7 @@ def _start_sample_wpf_app():
     
     # 2. Check solution-level WpfSpyAgent.StartupHook output
     if not startup_hook:
-        candidate = os.path.join(_THIS_DIR, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net8.0-windows", "WpfSpyAgent.StartupHook.dll")
+        candidate = os.path.join(_THIS_DIR, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net9.0-windows", "WpfSpyAgent.StartupHook.dll")
         if os.path.exists(candidate):
             startup_hook = candidate
     

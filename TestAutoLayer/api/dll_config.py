@@ -24,11 +24,7 @@ class DllPaths:
 
     # Source directories (relative to repo root)
     bin_debug_net9: str = "bin/Debug/net9.0-windows"
-    bin_debug_net8: str = "bin/Debug/net8.0-windows"
-    bin_debug_net461: str = "bin/Debug/net461"
     bin_release_net9: str = "bin/Release/net9.0-windows"
-    bin_release_net8: str = "bin/Release/net8.0-windows"
-    bin_release_net461: str = "bin/Release/net461"
 
     # Per-project source directories
     startup_hook_debug: str = "WPFSpyAgent/StartupHook/bin/Debug/net9.0-windows"
@@ -104,11 +100,9 @@ class DllConfig:
         if dll_name == p.wpf_spy_agent_startup_hook:
             search_paths = [
                 repo / p.bin_debug_net9,
-                repo / p.bin_debug_net8,
                 repo / p.startup_hook_debug,
                 repo / p.startup_hook_release,
                 repo / p.bin_release_net9,
-                repo / p.bin_release_net8,
             ]
         elif dll_name == p.wpf_spy_agent_framework_hook:
             search_paths = [
@@ -120,19 +114,15 @@ class DllConfig:
         elif dll_name == p.wpf_spy_agent_native_inject:
             search_paths = [
                 repo / p.bin_debug_net9,
-                repo / p.bin_debug_net8,
                 repo / p.bin_release_net9,
-                repo / p.bin_release_net8,
                 repo / p.native_inject_debug,
                 repo / p.native_inject_release,
             ]
         elif dll_name == p.wpf_spy_agent:
             search_paths = [
                 repo / p.bin_debug_net9,
-                repo / p.bin_debug_net8,
                 repo / p.bin_debug_net461,
                 repo / p.bin_release_net9,
-                repo / p.bin_release_net8,
                 repo / p.bin_release_net461,
             ]
         elif dll_name == p.newtonsoft_json:
