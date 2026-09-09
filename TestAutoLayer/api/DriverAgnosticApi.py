@@ -483,7 +483,13 @@ class DriverAgnosticApi:
             )
         if not norm_path:
             raise ValueError("app_path is required and cannot be empty")
+        # Resolve relative paths against the current working directory so they
+        # remain valid when the launched process runs with a different cwd.
+        if not os.path.isabs(norm_path):
+            norm_path = os.path.abspath(os.path.join(os.getcwd(), norm_path))
         norm_start_in = (start_in or "").replace("/", "\\").strip() or None
+        if norm_start_in and not os.path.isabs(norm_start_in):
+            norm_start_in = os.path.abspath(os.path.join(os.getcwd(), norm_start_in))
         if norm_start_in and ("\n" in norm_start_in or "\r" in norm_start_in):
             raise ValueError(
                 f"start_in contains a newline character: {norm_start_in!r}"

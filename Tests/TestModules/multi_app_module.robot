@@ -20,7 +20,7 @@ Launch Sample Wpf App With Spy Agent
     ...    The app is attached and ready for automation via the named pipe.
     ${app_id}=    Launch Application    ${SAMPLE_WPF_APP_PATH}
     ...    app_id=${SAMPLE_WPF_APP_ID}
-    ...    driver=WPFSpy
+    ...    drivers=WPFSpy
     ...    attach=True
     Set Default Application    ${SAMPLE_WPF_APP_ID}
     Set Driver    WPFSpy
@@ -32,7 +32,7 @@ Launch Notepad Without Spy Agent
     ...    Notepad is a standard Win32 app, so FlaUI is the appropriate driver.
     ${app_id}=    Launch Application    C:\\Windows\\System32\\notepad.exe
     ...    app_id=${NOTEPAD_APP_ID}
-    ...    driver=FlaUI
+    ...    drivers=FlaUI
     Sleep    2s
     Activate Window    app_id=${NOTEPAD_APP_ID}    window_title=Untitled - Notepad
 

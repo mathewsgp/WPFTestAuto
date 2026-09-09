@@ -5,14 +5,14 @@ Library          ../../TestAutoLayer/api/DriverAgnosticApi.py
 Library          OperatingSystem
 
 *** Variables ***
-${IDE_APP_PATH}    WpfTestIde/bin/Debug/net9.0-windows/WpfTestIde.exe
-${SAMPLE_APP_PATH}    SampleWpfApp/bin/Debug/net9.0-windows/SampleWpfApp.exe
+${IDE_APP_PATH}    bin/Debug/net9.0-windows/WpfTestIde.exe
+${SAMPLE_APP_PATH}    Tests/bin/SampleWpfApp/Debug/net9.0-windows/SampleWpfApp.exe
 ${TIMEOUT}    10s
 
 *** Test Cases ***
 UC-001 Application Launch
     [Documentation]    Verify that WPF Test IDE launches successfully and displays the main interface.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Wait Until Element Visible    WpfTestIde.MainWindow    timeout=15
@@ -21,7 +21,7 @@ UC-001 Application Launch
 
 UC-002 Open Attach To Process Dialog
     [Documentation]    Verify that the Attach to Process dialog can be opened and closed.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -35,7 +35,7 @@ UC-002 Open Attach To Process Dialog
 
 UC-003 Open Manage Apps Dialog
     [Documentation]    Verify that the Manage Apps button is accessible.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Wait Until Element Exists    WpfTestIde.MainWindow.btnManageApps    timeout=15
@@ -44,7 +44,7 @@ UC-003 Open Manage Apps Dialog
 
 UC-004 Open Checkpoint Wizard
     [Documentation]    Verify Checkpoint Wizard button is accessible from toolbar.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     # Launch and attach sample app so toolbar actions are enabled.
@@ -65,7 +65,7 @@ UC-004 Open Checkpoint Wizard
 
 UC-005 Open Spy Tool
     [Documentation]    Verify Spy Tool button is accessible from toolbar.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -82,7 +82,7 @@ UC-005 Open Spy Tool
 
 UC-006 Open Visual Test Builder
     [Documentation]    Verify Visual Test Builder button is accessible from toolbar.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -99,7 +99,7 @@ UC-006 Open Visual Test Builder
 
 UC-007 Switch Tabs And Interact
     [Documentation]    Verify tab switching and basic interaction on Elements tab.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -120,7 +120,7 @@ UC-007 Switch Tabs And Interact
 
 UC-008 Toggle Record Button
     [Documentation]    Verify that the Record button can be clicked.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -139,7 +139,7 @@ UC-008 Toggle Record Button
 
 UC-009 Check Driver Settings Checkboxes
     [Documentation]    Verify driver setting checkboxes are accessible and toggleable.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -162,7 +162,7 @@ UC-009 Check Driver Settings Checkboxes
 
 UC-010 Export Repository Button Accessible
     [Documentation]    Verify export repository button is accessible from the SCRIPTS tab toolbar (A7: moved off the global toolbar).
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -180,7 +180,7 @@ UC-010 Export Repository Button Accessible
 
 UC-011 Load Sample And Verify Steps Populated
     [Documentation]    Verify Load Sample populates demo steps and status message updates.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -203,7 +203,7 @@ UC-011 Load Sample And Verify Steps Populated
 
 UC-012 Checkpoint Wizard Open And Configure
     [Documentation]    Verify Checkpoint Wizard can be opened from toolbar.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -222,7 +222,7 @@ UC-012 Checkpoint Wizard Open And Configure
 
 UC-013 Script Generation And Content Verification
     [Documentation]    Verify generated script contains expected Robot Framework keywords and element aliases.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -246,7 +246,7 @@ UC-013 Script Generation And Content Verification
 
 UC-014 Run Generated Script And Check Results
     [Documentation]    Verify script execution produces output in Results tab.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -269,7 +269,7 @@ UC-014 Run Generated Script And Check Results
 
 UC-015 Multi-App Dialog Operations
     [Documentation]    Verify Manage Apps button is accessible after attach.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -287,7 +287,7 @@ UC-015 Multi-App Dialog Operations
 
 UC-016 Element Tree Operations
     [Documentation]    Verify element tree buttons are accessible on Elements tab.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -305,7 +305,7 @@ UC-016 Element Tree Operations
 
 UC-017 Driver Settings Toggle
     [Documentation]    Verify driver setting checkboxes can be toggled without errors.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -328,7 +328,7 @@ UC-017 Driver Settings Toggle
 
 UC-018 Spy Tool Open And Close
     [Documentation]    Verify Spy Tool dialog can be opened.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -345,7 +345,7 @@ UC-018 Spy Tool Open And Close
 
 UC-019 Visual Test Builder Open And Close
     [Documentation]    Verify Visual Test Builder dialog can be opened.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -362,7 +362,7 @@ UC-019 Visual Test Builder Open And Close
 
 REG-001 Load Sample Add Verification And Run Script
     [Documentation]    Regression: load sample steps, verify steps populated, run script, verify output directory.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -394,7 +394,7 @@ REG-001 Load Sample Add Verification And Run Script
 
 REG-002 Multi-App Dialog UI Verification
     [Documentation]    Regression: open Manage Apps dialog, verify all UI controls are accessible.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -417,7 +417,7 @@ REG-002 Multi-App Dialog UI Verification
 
 REG-003 Checkpoint Wizard Full Interaction
     [Documentation]    Regression: open Checkpoint Wizard, verify dialog is accessible.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -436,7 +436,7 @@ REG-003 Checkpoint Wizard Full Interaction
 
 REG-004 Element Tree Buttons Accessible
     [Documentation]    Regression: verify element tree buttons are accessible on Elements tab.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -454,7 +454,7 @@ REG-004 Element Tree Buttons Accessible
 
 REG-005 Driver Settings Toggle All Modes
     [Documentation]    Regression: toggle all driver checkboxes in both Record and Run sections.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -485,7 +485,7 @@ REG-005 Driver Settings Toggle All Modes
 
 REG-006 Reset Clears Loaded Sample Steps
     [Documentation]    Regression: load sample then reset, verify steps are cleared.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -508,7 +508,7 @@ REG-006 Reset Clears Loaded Sample Steps
 
 REG-007 Check Pipe Button When Not Attached
     [Documentation]    Regression: click Check Pipe button when not attached, verify graceful handling.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnCheckPipe
@@ -518,7 +518,7 @@ REG-007 Check Pipe Button When Not Attached
 
 REG-008 Expand All Button Accessible
     [Documentation]    Regression: verify Expand All button is accessible from Elements tab toolbar.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -536,7 +536,7 @@ REG-008 Expand All Button Accessible
 
 REG-009 Spy Tool And Visual Builder Sequential Open
     [Documentation]    Regression: open Spy Tool then Visual Test Builder sequentially, verify both dialogs accessible.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -556,7 +556,7 @@ REG-009 Spy Tool And Visual Builder Sequential Open
 
 REG-010 Spy Tool Refresh Tree Works
     [Documentation]    Regression: open Spy Tool and verify it loads the target app visual tree.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -573,7 +573,7 @@ REG-010 Spy Tool Refresh Tree Works
 
 Sikuli-001 Toggle Record Sikuli Checkbox
     [Documentation]    Verify the RecordSikuli checkbox can be toggled without errors.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -590,7 +590,7 @@ Sikuli-001 Toggle Record Sikuli Checkbox
 
 Sikuli-002 Open Sikuli Settings Dialog
     [Documentation]    Verify the Sikuli settings dialog can be opened from the Settings button.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach
@@ -606,7 +606,7 @@ Sikuli-002 Open Sikuli Settings Dialog
 
 REG-011 Multi-App With Sikuli Recording Toggle
     [Documentation]    Regression: verify Sikuli checkbox is accessible in multi-app context.
-    Launch Application    ${IDE_APP_PATH}    app_id=ide    driver=FlaUI
+    Launch Application    ${IDE_APP_PATH}    app_id=ide    drivers=FlaUI
     Wait For Application    ide    timeout=30
     Switch Application    ide
     Click Element    WpfTestIde.MainWindow.btnAttach

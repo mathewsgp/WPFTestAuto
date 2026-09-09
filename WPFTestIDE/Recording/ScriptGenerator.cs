@@ -125,7 +125,7 @@ namespace WpfTestIde.Recording
                         continue;
                      case StepKind.LaunchApplication:
                      {
-                         // Layout: Launch Application    <app_path>    [app_id=<id>]    [start_in=...]    [args=...]    [attach=Yes/No]    [driver=...]    [spy_agent=Yes/No]    [pipe_name=...]
+                         // Layout: Launch Application    <app_path>    [app_id=<id>]    [start_in=...]    [args=...]    [attach=Yes/No]    [drivers=...]    [spy_agent=Yes/No]    [pipe_name=...]
                          // The path is positional (must come first), then all named args.
                          // This avoids Robot Framework's "positional after named" error.
                          //
