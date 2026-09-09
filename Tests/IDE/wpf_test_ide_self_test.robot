@@ -6,7 +6,7 @@ Documentation    Self-test for WPFTestAuto framework using SampleWpfApp and WpfT
 Library          ../../TestAutoLayer/api/DriverAgnosticApi.py
 
 *** Variables ***
-${SAMPLE_APP_PATH}    SampleWpfApp/bin/Debug/net8.0-windows/SampleWpfApp.exe
+${SAMPLE_APP_PATH}    SampleWpfApp/bin/Debug/net9.0-windows/SampleWpfApp.exe
 ${IDE_APP_PATH}       WpfTestIde/bin/Debug/net9.0-windows/WpfTestIde.exe
 
 *** Test Cases ***

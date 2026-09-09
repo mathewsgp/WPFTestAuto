@@ -9,7 +9,7 @@ Test Setup       Reset Multi App State
 Test Teardown    Terminate All Applications
 
 *** Variables ***
-${SAMPLE_WPF_APP_PATH}    ${CURDIR}${/}..${/}SampleWpfApp${/}bin${/}Debug${/}net8.0-windows${/}SampleWpfApp.dll
+${SAMPLE_WPF_APP_PATH}    ${CURDIR}${/}..${/}SampleWpfApp${/}bin${/}Debug${/}net9.0-windows${/}SampleWpfApp.dll
 ${INVALID_USERNAME}       invalid_user_123
 ${INVALID_PASSWORD}       wrong_password
 

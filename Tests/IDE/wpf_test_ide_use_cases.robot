@@ -6,7 +6,7 @@ Library          OperatingSystem
 
 *** Variables ***
 ${IDE_APP_PATH}    WpfTestIde/bin/Debug/net9.0-windows/WpfTestIde.exe
-${SAMPLE_APP_PATH}    SampleWpfApp/bin/Debug/net8.0-windows/SampleWpfApp.exe
+${SAMPLE_APP_PATH}    SampleWpfApp/bin/Debug/net9.0-windows/SampleWpfApp.exe
 ${TIMEOUT}    10s
 
 *** Test Cases ***

@@ -14,7 +14,7 @@ Library          OperatingSystem
 
 *** Variables ***
 ${SAMPLE_APP_DIR}    ${CURDIR}${/}..${/}SampleWpfApp${/}bin${/}Debug
-${APP_DOTNET}        ${SAMPLE_APP_DIR}${/}net8.0-windows${/}SampleWpfApp.dll
+${APP_DOTNET}        ${SAMPLE_APP_DIR}${/}net9.0-windows${/}SampleWpfApp.dll
 ${APP_FW}            ${SAMPLE_APP_DIR}${/}net461${/}SampleWpfApp.exe
 ${NATIVE_DLL_DIR}    ${CURDIR}${/}..${/}..${/}WPFSpyAgent${/}NativeInject${/}bin${/}Debug${/}x64
 ${NATIVE_DLL}        ${NATIVE_DLL_DIR}${/}WpfSpyAgent.NativeInject.dll
@@ -60,7 +60,7 @@ Test NativeInject DLL Exists
 Test WpfSpyAgent Dll Exists
     [Documentation]    Verify WpfSpyAgent.dll exists for injection
     [Tags]    setup
-    ${spy_agent}=    Evaluate    os.path.exists(r"""${WPFSPY_ROOT}${/}WpfSpyAgent${/}bin${/}Debug${/}net8.0-windows${/}WpfSpyAgent.dll""")
+    ${spy_agent}=    Evaluate    os.path.exists(r"""${WPFSPY_ROOT}${/}WpfSpyAgent${/}bin${/}Debug${/}net9.0-windows${/}WpfSpyAgent.dll""")
     Run Keyword If    not ${spy_agent}
     ...    Log    WARNING: WpfSpyAgent.dll not found. Build WpfSpyAgent project first.
     ...    ELSE    Log    WpfSpyAgent.dll found

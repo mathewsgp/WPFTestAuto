@@ -281,7 +281,6 @@ namespace WpfTestIde.Helpers
             {
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WpfSpyAgent.StartupHook.dll"),
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net9.0-windows", "WpfSpyAgent.StartupHook.dll"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "WpfSpyAgent.StartupHook", "bin", "Debug", "net6.0-windows", "WpfSpyAgent.StartupHook.dll"),
             };
 
             foreach (var path in searchPaths)
@@ -614,7 +613,6 @@ namespace WpfTestIde.Helpers
                 Path.Combine(baseDir, "WpfSpyAgent.dll"),
                 // Sibling builds in the same shared <repo>\bin\Debug\ folder
                 Path.Combine(baseDir, "..", "..", "Debug", "net9.0-windows", "WpfSpyAgent.dll"),
-                Path.Combine(baseDir, "..", "..", "Debug", "net6.0-windows", "WpfSpyAgent.dll"),
                 // Per-project build outputs (3 levels up to repo root)
                 Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Debug", "net9.0-windows", "WpfSpyAgent.dll"),
                 Path.Combine(baseDir, "..", "..", "..", "WpfSpyAgent", "bin", "Release", "net9.0-windows", "WpfSpyAgent.dll"),
