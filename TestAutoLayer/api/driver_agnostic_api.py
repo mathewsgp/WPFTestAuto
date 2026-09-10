@@ -340,7 +340,15 @@ class DriverAgnosticApi:
     
     def _strategy_provider(self, alias: str, app_id: Optional[str]) -> dict:
         """Provider function for element strategies."""
-        return repo.get_all_driver_strategies_sorted(alias, app_id=app_id)
+        # Get element_repo_path from app context if available
+        element_repo_path = None
+        if app_id:
+            try:
+                app_ctx = get_multi_app_context().get_app(app_id)
+                element_repo_path = app_ctx.element_repo_path
+            except ValueError:
+                pass
+        return repo.get_all_driver_strategies_sorted(alias, app_id=app_id, element_repo_path=element_repo_path)
     
     # ------------------------------------------------------------------
     # Delegate to keyword groups

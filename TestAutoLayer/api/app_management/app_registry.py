@@ -106,6 +106,7 @@ class AppContext:
         start_in: Optional[str] = None,
         inject_spy_agent: Optional[bool] = None,
         attach: bool = False,
+        element_repo_path: Optional[str] = None,
     ):
         self.app_id = app_id
         self.app_name = app_name
@@ -117,6 +118,7 @@ class AppContext:
         self.env = env or {}
         self.start_in = start_in
         self.attach = attach
+        self.element_repo_path = element_repo_path
 
         # Spy-agent injection is implied by WPFSpy presence in driver_list,
         # but can be overridden explicitly.
@@ -166,6 +168,7 @@ class AppContext:
             "start_in": self.start_in,
             "inject_spy_agent": self.inject_spy_agent,
             "attach": self.attach,
+            "element_repo_path": self.element_repo_path,
         }
 
 
@@ -211,6 +214,47 @@ class MultiAppContext:
             app.close()
         self.apps.clear()
         self.default_app_id = None
+
+    def save(self, file_path: str):
+        """Save the multi-app context to a JSON file."""
+        import json
+        data = {
+            "default_app_id": self.default_app_id,
+            "apps": [app.to_dict() for app in self.apps.values()],
+        }
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+    @classmethod
+    def load(cls, file_path: str) -> 'MultiAppContext':
+        """Load a multi-app context from a JSON file."""
+        import json
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        context = cls()
+        context.default_app_id = data.get("default_app_id")
+        
+        for app_data in data.get("apps", []):
+            app = AppContext(
+                app_id=app_data["app_id"],
+                app_name=app_data["app_name"],
+                driver_list=app_data.get("driver_list"),
+                process_id=app_data.get("process_id"),
+                pipe_name=app_data.get("pipe_name"),
+                app_path=app_data.get("app_path"),
+                launch_args=app_data.get("launch_args"),
+                env=app_data.get("env"),
+                start_in=app_data.get("start_in"),
+                attach=app_data.get("attach", False),
+                element_repo_path=app_data.get("element_repo_path"),
+            )
+            # Don't set inject_spy_agent from saved data - recalculate from driver_list
+            context.apps[app.app_id] = app
+            if context.default_app_id is None:
+                context.default_app_id = app.app_id
+        
+        return context
 
 
 # Global instance for backward compatibility

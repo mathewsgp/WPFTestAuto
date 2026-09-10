@@ -58,7 +58,8 @@ class HealingTracker:
         search_method: str,
         success: bool,
         duration_ms: float = 0,
-        image_match_score: Optional[float] = None
+        image_match_score: Optional[float] = None,
+        app_id: Optional[str] = None
     ):
         """Record a strategy attempt for statistics tracking."""
         if not self._config.enabled or not self._config.record_attempts:
@@ -68,9 +69,12 @@ class HealingTracker:
         if store is None:
             return
         
+        # Use app-scoped key if app_id provided
+        store_alias = f"{app_id}:{alias}" if app_id else alias
+        
         try:
             store.record_strategy_attempt(
-                alias=alias,
+                alias=store_alias,
                 driver=driver,
                 search_method=search_method,
                 success=success,
@@ -80,6 +84,7 @@ class HealingTracker:
             logger.debug(
                 f"Recorded strategy attempt",
                 alias=alias,
+                app_id=app_id,
                 driver=driver,
                 search_method=search_method,
                 success=success
@@ -98,7 +103,8 @@ class HealingTracker:
         healing_search_method: str,
         healing_search_value: str,
         healing_successful: bool,
-        new_properties: Optional[Dict[str, Any]] = None
+        new_properties: Optional[Dict[str, Any]] = None,
+        app_id: Optional[str] = None
     ):
         """Record a healing attempt when primary strategy fails but fallback succeeds."""
         if not self._config.enabled or not self._config.record_healing:
@@ -108,9 +114,12 @@ class HealingTracker:
         if store is None:
             return
         
+        # Use app-scoped key if app_id provided
+        store_alias = f"{app_id}:{alias}" if app_id else alias
+        
         try:
             store.record_healing(
-                alias=alias,
+                alias=store_alias,
                 primary_driver=primary_driver,
                 primary_search_method=primary_search_method,
                 primary_search_value=primary_search_value,
@@ -124,6 +133,7 @@ class HealingTracker:
             logger.info(
                 f"Recorded healing",
                 alias=alias,
+                app_id=app_id,
                 primary=primary_driver,
                 healing=healing_driver,
                 successful=healing_successful
@@ -137,7 +147,8 @@ class HealingTracker:
         properties: Dict[str, Any],
         driver: str,
         search_method: str,
-        search_value: str
+        search_value: str,
+        app_id: Optional[str] = None
     ):
         """Capture baseline properties for an element during successful interaction."""
         if not self._config.enabled or not self._config.capture_baseline:
@@ -147,9 +158,12 @@ class HealingTracker:
         if store is None:
             return
         
+        # Use app-scoped key if app_id provided
+        store_alias = f"{app_id}:{alias}" if app_id else alias
+        
         try:
             store.capture_baseline(
-                alias=alias,
+                alias=store_alias,
                 properties=properties,
                 driver=driver,
                 search_method=search_method,
@@ -158,6 +172,7 @@ class HealingTracker:
             logger.debug(
                 f"Captured baseline",
                 alias=alias,
+                app_id=app_id,
                 driver=driver,
                 search_method=search_method
             )

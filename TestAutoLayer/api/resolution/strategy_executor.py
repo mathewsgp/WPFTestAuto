@@ -47,6 +47,7 @@ class StrategyExecutor:
         strategy_provider: Callable[[str, Optional[str]], Dict[str, List[Dict]]],
         healing_tracker: Optional['HealingTracker'] = None,
         circuit_breaker_manager: Optional[CircuitBreakerManager] = None,
+        element_resolver: Optional['ElementResolver'] = None,
     ):
         self._driver_provider = driver_provider
         self._strategy_provider = strategy_provider
@@ -55,6 +56,7 @@ class StrategyExecutor:
             threshold=config.CIRCUIT_BREAKER_THRESHOLD,
             timeout=config.CIRCUIT_BREAKER_TIMEOUT
         )
+        self._element_resolver = element_resolver
         self.last_strategy_used: Optional[str] = None
         self.attempt_log: List[Tuple[str, str]] = []
     
@@ -268,7 +270,8 @@ class StrategyExecutor:
                     search_method=search_by,
                     success=True,
                     duration_ms=duration_ms,
-                    image_match_score=image_score
+                    image_match_score=image_score,
+                    app_id=app_id
                 )
                 
                 if healing_info.attempted:
@@ -284,11 +287,13 @@ class StrategyExecutor:
                         healing_search_method=search_by,
                         healing_search_value=strategy_value,
                         healing_successful=True,
-                        new_properties=new_properties
+                        new_properties=new_properties,
+                        app_id=app_id
                     )
                     logger.info(
                         f"[Healing] Element healed via {driver_name}:{search_by}",
                         alias=alias,
+                        app_id=app_id,
                         primary=healing_info.primary_driver,
                         healing=driver_name
                     )
@@ -300,7 +305,8 @@ class StrategyExecutor:
                         properties=props,
                         driver=driver_name,
                         search_method=search_by,
-                        search_value=strategy_value
+                        search_value=strategy_value,
+                        app_id=app_id
                     )
             
             return ExecutionResult(
@@ -324,7 +330,8 @@ class StrategyExecutor:
                     driver=driver_name,
                     search_method=search_by,
                     success=False,
-                    duration_ms=duration_ms
+                    duration_ms=duration_ms,
+                    app_id=app_id
                 )
             
             # Record first failure for healing tracking
@@ -464,8 +471,10 @@ class StrategyExecutor:
     
     def _resolve_strategy_with_parent(self, strategy: Dict, alias: str, app_id: Optional[str], driver_name: Optional[str]) -> Dict:
         """Resolve strategy by building full XPath from parent chain."""
+        if self._element_resolver is not None:
+            return self._element_resolver.resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
+        # Fallback for tests without element_resolver
         from DriverAgnosticApi import DriverAgnosticApi
-        # Delegate to the existing implementation for now
         api = DriverAgnosticApi()
         return api._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
 

@@ -30,10 +30,14 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.join(_THIS_DIR, "..", "..", "Tests", "repository")
 _REPO_ROOT_FALLBACK = os.path.join(_THIS_DIR, "..", "..", "repository")
 
+# Global cache
 _elements_cache = None
 _steps_cache = None
 _element_parent_cache: Dict[str, str] = {}  # alias -> parentAlias
 _element_relative_xpath_cache: Dict[str, str] = {}  # alias -> relativeXPath
+
+# Per-app element cache: app_id -> elements dict
+_app_elements_cache: Dict[str, Dict] = {}
 
 
 def _load_yaml_dir(subfolder, top_key):
@@ -82,8 +86,34 @@ def _build_element_caches():
                     break
 
 
-def load_elements(force_reload=False):
-    global _elements_cache
+def _load_app_elements(app_id: str, element_repo_path: str) -> Dict:
+    """Load elements from an app-specific repository path."""
+    merged = {}
+    if element_repo_path and os.path.exists(element_repo_path):
+        # Load from app-specific directory
+        pattern = os.path.join(element_repo_path, "elements", "*.yaml")
+        for path in sorted(glob.glob(pattern)):
+            with open(path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            merged.update(data.get("elements", {}))
+    return merged
+
+
+def load_elements(force_reload=False, app_id: str = None, element_repo_path: str = None):
+    global _elements_cache, _app_elements_cache
+    if app_id:
+        cache_key = f"{app_id}:{element_repo_path}"
+        if cache_key not in _app_elements_cache or force_reload:
+            # Start with global elements
+            global_elements = load_elements(force_reload=force_reload)
+            # Override with app-specific elements
+            app_elements = _load_app_elements(app_id, element_repo_path) if element_repo_path else {}
+            # Merge: app-specific elements take precedence
+            merged = {**global_elements, **app_elements}
+            _app_elements_cache[cache_key] = merged
+        return _app_elements_cache[cache_key]
+    
+    # Global (no app_id)
     if _elements_cache is None or force_reload:
         _elements_cache = _load_yaml_dir("elements", "elements")
         _build_element_caches()  # Rebuild caches when elements reload
@@ -97,8 +127,8 @@ def load_steps(force_reload=False):
     return _steps_cache
 
 
-def get_element(alias: str, app_id: str = None) -> dict:
-    elements = load_elements()
+def get_element(alias: str, app_id: str = None, element_repo_path: str = None) -> dict:
+    elements = load_elements(app_id=app_id, element_repo_path=element_repo_path)
     if alias not in elements:
         raise KeyError(f"Element Repository: no entry for alias '{alias}'")
     element = elements[alias]
@@ -118,43 +148,44 @@ def get_step(alias: str) -> dict:
     return steps[alias]
 
 
-def get_parent_alias(alias: str, app_id: str = None) -> Optional[str]:
+def get_parent_alias(alias: str, app_id: str = None, element_repo_path: str = None) -> Optional[str]:
     """Get the parentAlias for an element.
     
     Returns None if element has no parent (is root/Window).
     """
     cache_key = f"{app_id or 'global'}:{alias}"
     if cache_key not in _element_parent_cache:
-        element = get_element(alias, app_id=app_id)
+        element = get_element(alias, app_id=app_id, element_repo_path=element_repo_path)
         _element_parent_cache[cache_key] = element.get("parentAlias")
     return _element_parent_cache.get(cache_key)
 
 
-def get_relative_xpath(alias: str, app_id: str = None) -> Optional[str]:
+def get_relative_xpath(alias: str, app_id: str = None, element_repo_path: str = None) -> Optional[str]:
     """Get the relative XPath for an element.
     
     Returns None if element doesn't have a relativeXPath defined.
     """
     cache_key = f"{app_id or 'global'}:{alias}"
     if cache_key not in _element_relative_xpath_cache:
-        element = get_element(alias, app_id=app_id)
+        element = get_element(alias, app_id=app_id, element_repo_path=element_repo_path)
         _element_relative_xpath_cache[cache_key] = element.get("relativeXPath")
     return _element_relative_xpath_cache.get(cache_key)
 
 
-def resolve_full_path(alias: str, app_id: str = None, driver_name: str = None) -> Tuple[str, str]:
+def resolve_full_path(alias: str, app_id: str = None, element_repo_path: str = None, driver_name: str = None) -> Tuple[str, str]:
     """Resolve the full XPath for an element by walking up the parent chain.
     
     Args:
         alias: Element alias
         app_id: Optional app context ID to filter elements.
+        element_repo_path: Optional app-specific element repository path.
         driver_name: Optional driver name (FlaUI uses Name for Window, others use AutomationId).
     
     Returns:
         Tuple of (full_path, parent_alias)
     """
     path_parts = []
-    parent_alias = get_parent_alias(alias, app_id=app_id)
+    parent_alias = get_parent_alias(alias, app_id=app_id, element_repo_path=element_repo_path)
     current_alias = parent_alias
     visited = set()
     
@@ -163,8 +194,8 @@ def resolve_full_path(alias: str, app_id: str = None, driver_name: str = None) -
             raise ValueError(f"Circular parent reference detected for alias: {current_alias}")
         visited.add(current_alias)
         
-        element = get_element(current_alias, app_id=app_id)
-        parent_alias = get_parent_alias(current_alias, app_id=app_id)
+        element = get_element(current_alias, app_id=app_id, element_repo_path=element_repo_path)
+        parent_alias = get_parent_alias(current_alias, app_id=app_id, element_repo_path=element_repo_path)
         
         control_type = element.get("controlType", "")
         window_id = element.get("windowAutomationId") or element.get("windowId", "MainWindow")
@@ -191,39 +222,41 @@ def resolve_full_path(alias: str, app_id: str = None, driver_name: str = None) -
         current_alias = parent_alias
     
     full_path = "/" + "/".join(path_parts)
-    parent_alias = get_parent_alias(alias, app_id=app_id)
+    parent_alias = get_parent_alias(alias, app_id=app_id, element_repo_path=element_repo_path)
     
     return full_path, parent_alias
 
 
-def build_absolute_xpath(alias: str, app_id: str = None, driver_name: str = None) -> str:
+def build_absolute_xpath(alias: str, app_id: str = None, element_repo_path: str = None, driver_name: str = None) -> str:
     """Build the complete absolute XPath for an element.
     
     Args:
         alias: Element alias
         app_id: Optional app context ID to filter elements.
+        element_repo_path: Optional app-specific element repository path.
         driver_name: Optional driver name for driver-specific Window prefix.
     """
-    full_path, parent_alias = resolve_full_path(alias, app_id=app_id, driver_name=driver_name)
-    relative_xpath = get_relative_xpath(alias, app_id=app_id)
+    full_path, parent_alias = resolve_full_path(alias, app_id=app_id, element_repo_path=element_repo_path, driver_name=driver_name)
+    relative_xpath = get_relative_xpath(alias, app_id=app_id, element_repo_path=element_repo_path)
     
     if relative_xpath:
         return f"{full_path}/{relative_xpath}"
     return full_path
 
 
-def get_strategies(alias: str, driver: str = None, app_id: str = None) -> dict:
+def get_strategies(alias: str, driver: str = None, app_id: str = None, element_repo_path: str = None) -> dict:
     """Returns strategies for a specific driver or all strategies.
     
     Args:
         alias: Element alias in repository
         driver: Driver name (FlaUI, WPFSpy, Sikuli). If None, returns all.
         app_id: Optional app context ID to filter elements.
+        element_repo_path: Optional app-specific element repository path.
     
     Returns:
         Dict of strategies. Each strategy has multiple search methods with priority.
     """
-    element = get_element(alias, app_id=app_id)
+    element = get_element(alias, app_id=app_id, element_repo_path=element_repo_path)
     all_strategies = element.get("strategies", {})
     
     if driver:
@@ -234,17 +267,19 @@ def get_strategies(alias: str, driver: str = None, app_id: str = None) -> dict:
     return all_strategies
 
 
-def get_driver_strategies_sorted(alias: str, driver: str) -> list:
+def get_driver_strategies_sorted(alias: str, driver: str, app_id: str = None, element_repo_path: str = None) -> list:
     """Returns driver strategies sorted by priority.
     
     Args:
         alias: Element alias in repository
         driver: Driver name (FlaUI, WPFSpy, Sikuli)
+        app_id: Optional app context ID to filter elements.
+        element_repo_path: Optional app-specific element repository path.
     
     Returns:
         List of strategy dicts sorted by priority (lowest first).
     """
-    strategies = get_strategies(alias, driver)
+    strategies = get_strategies(alias, driver, app_id=app_id, element_repo_path=element_repo_path)
     if driver not in strategies:
         return []
     
@@ -253,33 +288,34 @@ def get_driver_strategies_sorted(alias: str, driver: str) -> list:
     return sorted(strategy_list, key=lambda s: s.get("priority", 99))
 
 
-def get_all_driver_strategies_sorted(alias: str, app_id: str = None) -> dict:
+def get_all_driver_strategies_sorted(alias: str, app_id: str = None, element_repo_path: str = None) -> dict:
     """Returns all driver strategies sorted by priority.
     
     Args:
         alias: Element alias in repository
         app_id: Optional app context ID to filter elements.
+        element_repo_path: Optional app-specific element repository path.
     
     Returns:
         Dict mapping driver name -> sorted list of strategies.
     """
-    all_strategies = get_strategies(alias, app_id=app_id)
+    all_strategies = get_strategies(alias, app_id=app_id, element_repo_path=element_repo_path)
     result = {}
     for driver, strategy_list in all_strategies.items():
         result[driver] = sorted(strategy_list, key=lambda s: s.get("priority", 99))
     return result
 
 
-def has_automation_id(alias: str) -> bool:
+def has_automation_id(alias: str, app_id: str = None, element_repo_path: str = None) -> bool:
     """Check if element has an AutomationId strategy.
     
     Returns False for controls that don't expose AutomationId (custom controls).
     """
-    element = get_element(alias)
+    element = get_element(alias, app_id=app_id, element_repo_path=element_repo_path)
     if element.get("hasAutomationId", True) is False:
         return False
     
-    strategies = get_strategies(alias, "FlaUI")
+    strategies = get_strategies(alias, "FlaUI", app_id=app_id, element_repo_path=element_repo_path)
     if not strategies:
         return False
     
@@ -313,7 +349,7 @@ SUPPORTED_SEARCH_METHODS = {
 }
 
 
-def expand_strategies(alias: str) -> dict:
+def expand_strategies(alias: str, app_id: str = None, element_repo_path: str = None) -> dict:
     """Expand element strategies to include all available search methods.
     
     This function analyzes an element's properties and generates additional
@@ -321,14 +357,16 @@ def expand_strategies(alias: str) -> dict:
     
     Args:
         alias: Element alias in repository
+        app_id: Optional app context ID to filter elements.
+        element_repo_path: Optional app-specific element repository path.
     
     Returns:
         Dict mapping driver name -> list of strategies
     """
-    element = get_element(alias)
+    element = get_element(alias, app_id=app_id, element_repo_path=element_repo_path)
     
     # Get existing strategies
-    existing_strategies = get_all_driver_strategies_sorted(alias)
+    existing_strategies = get_all_driver_strategies_sorted(alias, app_id=app_id, element_repo_path=element_repo_path)
     
     # Extract element properties that can be used for strategies
     automation_id = element.get("automationId") or element.get("AutomationId")
@@ -406,18 +444,20 @@ def expand_strategies(alias: str) -> dict:
     return expanded
 
 
-def add_index_strategies(alias: str, parent_xpath: str, sibling_count: int) -> list:
+def add_index_strategies(alias: str, parent_xpath: str, sibling_count: int, app_id: str = None, element_repo_path: str = None) -> list:
     """Generate Index-based strategies for elements with many siblings.
     
     Args:
         alias: Element alias
         parent_xpath: XPath of parent element
         sibling_count: Number of siblings of the same type
+        app_id: Optional app context ID to filter elements.
+        element_repo_path: Optional app-specific element repository path.
     
     Returns:
         List of index-based strategies
     """
-    element = get_element(alias)
+    element = get_element(alias, app_id=app_id, element_repo_path=element_repo_path)
     control_type = element.get("controlType", "Unknown")
     
     strategies = []
@@ -437,19 +477,21 @@ def add_index_strategies(alias: str, parent_xpath: str, sibling_count: int) -> l
     return strategies
 
 
-def suggest_additional_strategies(alias: str) -> dict:
+def suggest_additional_strategies(alias: str, app_id: str = None, element_repo_path: str = None) -> dict:
     """Suggest additional strategies that could be added to an element.
     
     Useful for repository maintenance and improving element stability.
     
     Args:
         alias: Element alias in repository
+        app_id: Optional app context ID to filter elements.
+        element_repo_path: Optional app-specific element repository path.
     
     Returns:
         Dict mapping driver -> list of suggested strategies
     """
-    element = get_element(alias)
-    current_strategies = get_strategies(alias)
+    element = get_element(alias, app_id=app_id, element_repo_path=element_repo_path)
+    current_strategies = get_strategies(alias, app_id=app_id, element_repo_path=element_repo_path)
     
     suggestions = {}
     
