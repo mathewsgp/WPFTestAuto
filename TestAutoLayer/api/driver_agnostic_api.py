@@ -198,50 +198,6 @@ def set_driver_priority(priority: Optional[list]):
     _RUN_MODES = priority
 
 
-# Test-only helpers (kept for backward-compatibility with DriverAgnosticApi.py wrapper)
-# These belong in Tests/helpers/sample_wpf_app_manager.py, not in the framework layer.
-# New code should use Tests.helpers.sample_wpf_app_manager directly.
-
-def _get_sample_wpf_app_path():
-    """Returns the path to the SampleWpfApp executable.
-    
-    Kept for backward compatibility; new code should use
-    Tests.helpers.sample_wpf_app_manager.get_sample_wpf_app_path().
-    """
-    from sample_wpf_app_manager import get_sample_wpf_app_path
-    return get_sample_wpf_app_path()
-
-
-def _kill_sample_wpf_app():
-    """Kills any running SampleWpfApp process.
-    
-    Kept for backward compatibility; new code should use
-    Tests.helpers.sample_wpf_app_manager.kill_sample_wpf_app().
-    """
-    from sample_wpf_app_manager import kill_sample_wpf_app
-    kill_sample_wpf_app()
-
-
-def _start_sample_wpf_app():
-    """Starts SampleWpfApp with the WPFSpy agent startup hook.
-    
-    Kept for backward compatibility; new code should use
-    Tests.helpers.sample_wpf_app_manager.start_sample_wpf_app().
-    """
-    from sample_wpf_app_manager import start_sample_wpf_app
-    return start_sample_wpf_app()
-
-
-def _is_sample_wpf_app_running():
-    """Check if SampleWpfApp is already running by window title.
-    
-    Kept for backward compatibility; new code should use
-    Tests.helpers.sample_wpf_app_manager.is_sample_wpf_app_running().
-    """
-    from sample_wpf_app_manager import is_sample_wpf_app_running
-    return is_sample_wpf_app_running()
-
-
 def _reset_real_app():
     """Resets the real SampleWpfApp state.
     
