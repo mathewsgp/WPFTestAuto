@@ -11,9 +11,9 @@ from typing import Callable, Any, Optional
 from functools import wraps
 
 try:
-    from exceptions import CircuitBreakerOpenError
+    from TestAutoLayer.api.exceptions import CircuitBreakerOpenError
 except ImportError:
-    from exceptions import CircuitBreakerOpenError
+    from TestAutoLayer.api.exceptions import CircuitBreakerOpenError
 
 
 class CircuitState(Enum):

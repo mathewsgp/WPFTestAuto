@@ -198,6 +198,10 @@ def set_driver_priority(priority: Optional[list]):
     _RUN_MODES = priority
 
 
+# Test-only helpers (kept for backward-compatibility with DriverAgnosticApi.py wrapper)
+# These belong in Tests/helpers/sample_wpf_app_manager.py, not in the framework layer.
+# New code should use Tests.helpers.sample_wpf_app_manager directly.
+
 def _get_sample_wpf_app_path():
     """Returns the path to the SampleWpfApp executable.
     
