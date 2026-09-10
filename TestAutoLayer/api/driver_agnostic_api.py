@@ -58,11 +58,14 @@ logger = get_api_logger()
 
 # Global state (backward compatibility)
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Add driver directories to path for driver module imports
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "flaui_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "wpfspy_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "sikuli_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "mock_wpf_app"))
 
+# Driver imports (need path for relative imports within driver modules)
 from flaui_driver import FlaUIDriver          # noqa: E402
 from WPFSpyLibrary import WPFSpyDriver        # noqa: E402
 from SikuliLibrary import SikuliDriver        # noqa: E402
@@ -72,8 +75,14 @@ from mock_app import (                        # noqa: E402
     reset_app,
 )
 
+def _kill_pid(pid: int, force: bool = False) -> bool:
+    """Module-level alias for backward compatibility."""
+    return DriverAgnosticApi._kill_pid(pid, force=force)
+
+
 # Re-export app management globals for backward compatibility
-from app_management.app_registry import (
+# Use full package path to avoid double-import issues from sys.path manipulation above
+from TestAutoLayer.api.app_management.app_registry import (
     _MULTI_APP_CONTEXT,
     MultiAppContext,
     AppContext,
@@ -222,6 +231,16 @@ class DriverAgnosticApi:
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
 
+    @staticmethod
+    def _kill_pid(pid: int, force: bool = False) -> bool:
+        """Kill a single PID. Returns True on success.
+        
+        Static method for backward compatibility with tests.
+        Delegates to app_management.app_terminator.kill_pid.
+        """
+        from TestAutoLayer.api.app_management.app_terminator import kill_pid
+        return kill_pid(pid, force=force)
+    
     def __init__(self, default_app_id: Optional[str] = None):
         # Initialize resolution services
         self._element_resolver = ElementResolver()
@@ -232,6 +251,7 @@ class DriverAgnosticApi:
             driver_provider=self._driver_provider,
             strategy_provider=self._strategy_provider,
             healing_tracker=self._healing_tracker,
+            element_resolver=self._element_resolver,
         )
         
         # Initialize keyword groups

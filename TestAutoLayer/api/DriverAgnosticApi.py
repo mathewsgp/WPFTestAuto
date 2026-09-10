@@ -39,6 +39,7 @@ from driver_agnostic_api import (
     set_run_modes,
     set_driver_priority,
     _reset_real_app,
+    _kill_pid,
 )
 
 # Also expose the app context classes
@@ -72,6 +73,7 @@ __all__ = [
     "set_run_modes",
     "set_driver_priority",
     "_reset_real_app",
+    "_kill_pid",
     "AppContext",
     "MultiAppContext",
     "get_multi_app_context",

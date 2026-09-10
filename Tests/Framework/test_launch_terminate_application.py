@@ -6,7 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "TestAutoLayer", "api"))
 
-from app_context import AppContext
+from TestAutoLayer.api.app_management.app_registry import AppContext, get_multi_app_context
+from TestAutoLayer.api.app_management.app_launcher import launch_app_for_context
 from DriverAgnosticApi import DriverAgnosticApi
 
 
@@ -51,7 +52,7 @@ def test_terminate_application_by_process_name_kills_matching_pids():
 def test_terminate_application_by_app_id_unregisters():
     """When a registered app is found, terminate_application should unregister it."""
     from DriverAgnosticApi import _MULTI_APP_CONTEXT
-    from app_context import AppContext
+    from TestAutoLayer.api.app_management.app_registry import AppContext
 
     api = DriverAgnosticApi()
     # Register a fake app context (no real process — we set process_id to a
@@ -94,7 +95,6 @@ def test_launch_application_signature_supports_positional_path_first():
     the call signature is correct.
     """
     import DriverAgnosticApi as api_mod
-    import app_context as appctx
     api = api_mod.DriverAgnosticApi()
     captured = {}
 
@@ -110,10 +110,10 @@ def test_launch_application_signature_supports_positional_path_first():
         captured["launch_args"] = list(ctx.launch_args)
         return _FakeProc(os.getpid())  # safe: we don't actually spawn anything
 
-    # launch_application re-imports `_launch_app_for_context` inside the
-    # function body, so the only effective patch point is `app_context` itself.
-    original = appctx._launch_app_for_context
-    appctx._launch_app_for_context = stub_launch
+    # Patch the new app_launcher module
+    import TestAutoLayer.api.app_management.app_launcher as app_launcher_mod
+    original = app_launcher_mod.launch_app_for_context
+    app_launcher_mod.launch_app_for_context = stub_launch
     try:
         result = api.launch_application(
             "C:\\Windows\\notepad.exe",
@@ -123,7 +123,7 @@ def test_launch_application_signature_supports_positional_path_first():
             attach=False,
         )
     finally:
-        appctx._launch_app_for_context = original
+        app_launcher_mod.launch_app_for_context = original
 
     assert result == "Notepad", f"expected app_id 'Notepad', got {result!r}"
     assert captured["app_path"] == "C:\\Windows\\notepad.exe"
@@ -139,7 +139,6 @@ def test_launch_application_defaults_app_id_from_exe_name():
     """When the caller omits app_id, the keyword should derive it from the
     executable file name (lowercased, no extension)."""
     import DriverAgnosticApi as api_mod
-    import app_context as appctx
     api = api_mod.DriverAgnosticApi()
     captured = {}
 
@@ -151,14 +150,15 @@ def test_launch_application_defaults_app_id_from_exe_name():
         captured["app_id"] = ctx.app_id
         return _FakeProc(os.getpid())
 
-    original = appctx._launch_app_for_context
-    appctx._launch_app_for_context = stub_launch
+    import TestAutoLayer.api.app_management.app_launcher as app_launcher_mod
+    original = app_launcher_mod.launch_app_for_context
+    app_launcher_mod.launch_app_for_context = stub_launch
     try:
         result = api.launch_application("C:\\Path\\To\\Notepad.exe")
     finally:
-        appctx._launch_app_for_context = original
+        app_launcher_mod.launch_app_for_context = original
 
-    assert result == "notepad", f"expected default app_id 'notepad', got {result!r}"
+    assert result == "notepad", f"expected app_id 'notepad', got {result!r}"
     assert captured["app_id"] == "notepad"
 
 
@@ -167,7 +167,6 @@ def test_launch_application_normalizes_forward_slash_paths():
     for Robot-Framework safety) must be accepted and normalized to
     backslashes for Popen."""
     import DriverAgnosticApi as api_mod
-    import app_context as appctx
     api = api_mod.DriverAgnosticApi()
     captured = {}
 
@@ -180,12 +179,13 @@ def test_launch_application_normalizes_forward_slash_paths():
         captured["start_in"] = ctx.start_in
         return _FakeProc(os.getpid())
 
-    original = appctx._launch_app_for_context
-    appctx._launch_app_for_context = stub_launch
+    import TestAutoLayer.api.app_management.app_launcher as app_launcher_mod
+    original = app_launcher_mod.launch_app_for_context
+    app_launcher_mod.launch_app_for_context = stub_launch
     try:
         api.launch_application("C:/Windows/notepad.exe", start_in="C:/Windows")
     finally:
-        appctx._launch_app_for_context = original
+        app_launcher_mod.launch_app_for_context = original
 
     assert captured["app_path"] == "C:\\Windows\\notepad.exe", \
         f"forward slash not normalized: {captured['app_path']!r}"

@@ -4,7 +4,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "TestAutoLayer", "api"))
 
-from app_context import AppContext, MultiAppContext
+from TestAutoLayer.api.app_management.app_registry import AppContext, MultiAppContext
 
 
 def test_multi_app_context_registration():
