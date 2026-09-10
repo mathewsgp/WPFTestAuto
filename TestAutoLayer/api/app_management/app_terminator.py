@@ -12,6 +12,7 @@ from typing import List, Optional
 
 from TestAutoLayer.api.logging_utils import get_api_logger
 from .app_registry import get_multi_app_context
+from ._shared import PIDHolderCTypes
 
 logger = get_api_logger()
 
@@ -102,10 +103,7 @@ def kill_pid(pid: int, force: bool = False) -> bool:
                 EnumWindowsProc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
                 GetWindowThreadProcessId = user32.GetWindowThreadProcessId
 
-                class PIDHolder(ctypes.Structure):
-                    _fields_ = [("pid", wintypes.DWORD), ("hwnd", wintypes.HWND)]
-
-                holder = PIDHolder(pid, 0)
+                holder = PIDHolderCTypes(pid, 0)
 
                 def callback(hwnd, lparam):
                     owner_pid = wintypes.DWORD()
