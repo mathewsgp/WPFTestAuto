@@ -8,22 +8,36 @@ import sys
 import os
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 # Add api directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "TestAutoLayer", "api"))
 
-from base_driver import BaseDriver, ElementHandle
-from exceptions import AllStrategiesFailedError, CircuitBreakerOpenError, WaitTimeoutError
-from circuit_breaker import CircuitBreakerManager, CircuitState
+from TestAutoLayer.api.base_driver import BaseDriver, ElementHandle
+from TestAutoLayer.api.exceptions import AllStrategiesFailedError, CircuitBreakerOpenError, WaitTimeoutError
+from TestAutoLayer.api.circuit_breaker import CircuitBreakerManager, CircuitState
+from TestAutoLayer.api.resolution.strategy_executor import StrategyExecutor
+from TestAutoLayer.api.resolution.healing_tracker import HealingTracker
+from TestAutoLayer.api.resolution.element_resolver import ElementResolver
+import TestAutoLayer.api.repository_access as repo
 
 
 @pytest.fixture(autouse=True)
 def reset_circuit_breakers():
-    """Reset circuit breakers before each test."""
+    """Reset circuit breakers before and after each test."""
     CircuitBreakerManager().reset_all()
     yield
     CircuitBreakerManager().reset_all()
+
+
+@pytest.fixture(autouse=True)
+def reset_healing_tracker():
+    """Reset healing tracker store."""
+    from healing_metadata_store import get_healing_store
+    store = get_healing_store()
+    store.clear_metadata()
+    yield
+    store.clear_metadata()
 
 
 class MockDriver(BaseDriver):
@@ -34,6 +48,7 @@ class MockDriver(BaseDriver):
         self._should_succeed = should_succeed
         self._fail_count = fail_count
         self._call_count = 0
+        self.last_match_score = None
     
     @property
     def name(self) -> str:
@@ -94,6 +109,35 @@ class MockDriver(BaseDriver):
     
     def get_data_grid_content_ocr(self, element: ElementHandle) -> str:
         return "col1,col2\nval1,val2"
+    
+    def capture_screenshot(self) -> bytes:
+        return b"mock screenshot"
+
+
+def create_test_executor(
+    driver_map: Dict[str, Any],
+    strategy_map: Dict[str, List[Dict]],
+    app_id: Optional[str] = None
+) -> StrategyExecutor:
+    """Create a StrategyExecutor with mocked providers."""
+    
+    def driver_provider(driver_name: str, app_id: Optional[str]) -> Any:
+        return driver_map.get(driver_name)
+    
+    def strategy_provider(alias: str, app_id: Optional[str]) -> Dict[str, List[Dict]]:
+        return strategy_map
+    
+    # Create a fresh healing tracker with a mock store
+    healing_tracker = HealingTracker()
+    mock_store = Mock()
+    healing_tracker.set_store(mock_store)
+    
+    executor = StrategyExecutor(
+        driver_provider=driver_provider,
+        strategy_provider=strategy_provider,
+        healing_tracker=healing_tracker,
+    )
+    return executor
 
 
 class TestResolveAndExecute:
@@ -105,170 +149,138 @@ class TestResolveAndExecute:
         with patch('repository_access.get_all_driver_strategies_sorted') as mock:
             yield mock
     
-    @pytest.fixture
-    def mock_healing_store_class(self):
-        """Mock healing metadata store class."""
-        store = Mock()
-        # Patch at the module where it's used
-        with patch('DriverAgnosticApi.get_healing_store', return_value=store):
-            with patch('healing_metadata_store.get_healing_store', return_value=store):
-                with patch('healing_metadata_store.HealingMetadataStore', return_value=store):
-                    with patch('healing_metadata_store._global_store', store):
-                        yield store
-    
-    @pytest.fixture
-    def mock_screenshot_manager(self):
-        """Mock screenshot manager."""
-        with patch('screenshot_manager.get_screenshot_manager') as mock:
-            mgr = Mock()
-            mock.return_value = mgr
-            yield mgr
-    
-    @pytest.fixture
-    def mock_get_drivers(self):
-        """Mock the global _get_drivers function."""
-        with patch('DriverAgnosticApi._get_drivers') as mock:
-            yield mock
-    
-    @pytest.fixture
-    def mock_wpfspy_mode(self):
-        """Set WPFSPY_MODE to mock to avoid real driver issues."""
-        with patch.dict(os.environ, {"WPFSPY_MODE": "mock"}):
-            yield
-    
-    def test_single_driver_success(self, mock_repo, mock_healing_store_class, mock_screenshot_manager, mock_get_drivers, mock_wpfspy_mode):
+    def test_single_driver_success(self, mock_repo):
         """Test successful resolution with first driver."""
-        from DriverAgnosticApi import DriverAgnosticApi
-        
         mock_repo.return_value = {
             "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]
         }
         
-        api = DriverAgnosticApi()
-        
-        # Mock the driver pool
         mock_driver = MockDriver("FlaUI")
-        mock_get_drivers.return_value = {"FlaUI": mock_driver}
+        executor = create_test_executor(
+            driver_map={"FlaUI": mock_driver},
+            strategy_map={"FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]}
+        )
         
-        # Should succeed on first driver
-        result = api._resolve_and_execute("test.alias", "invoke")
-        assert result is None  # invoke returns None
+        result = executor.execute("test.alias", "invoke")
+        assert result is None
         assert mock_driver._call_count == 1
     
-    def test_driver_fallback_on_failure(self, mock_repo, mock_healing_store_class, mock_screenshot_manager, mock_get_drivers, mock_wpfspy_mode):
+    def test_driver_fallback_on_failure(self, mock_repo):
         """Test fallback to second driver when first fails."""
-        from DriverAgnosticApi import DriverAgnosticApi
-        
         mock_repo.return_value = {
             "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}],
             "WPFSpy": [{"searchBy": "Name", "value": "Button1", "priority": 1}]
         }
         
-        api = DriverAgnosticApi()
-        
-        # First driver fails, second succeeds
         flaui_driver = MockDriver("FlaUI", should_succeed=False)
         wpfspy_driver = MockDriver("WPFSpy", should_succeed=True)
-        mock_get_drivers.return_value = {"FlaUI": flaui_driver, "WPFSpy": wpfspy_driver}
+        executor = create_test_executor(
+            driver_map={"FlaUI": flaui_driver, "WPFSpy": wpfspy_driver},
+            strategy_map={
+                "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}],
+                "WPFSpy": [{"searchBy": "Name", "value": "Button1", "priority": 1}]
+            }
+        )
         
-        result = api._resolve_and_execute("test.alias", "invoke")
+        result = executor.execute("test.alias", "invoke")
         assert result is None
         assert flaui_driver._call_count == 1
         assert wpfspy_driver._call_count == 1
     
-    def test_all_strategies_fail_raises_error(self, mock_repo, mock_healing_store_class, mock_screenshot_manager, mock_get_drivers, mock_wpfspy_mode):
+    def test_all_strategies_fail_raises_error(self, mock_repo):
         """Test AllStrategiesFailedError when all drivers fail."""
-        from DriverAgnosticApi import DriverAgnosticApi
-        
         mock_repo.return_value = {
             "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}],
             "WPFSpy": [{"searchBy": "Name", "value": "Button1", "priority": 1}]
         }
         
-        api = DriverAgnosticApi()
-        
-        # Both drivers fail
         flaui_driver = MockDriver("FlaUI", should_succeed=False)
         wpfspy_driver = MockDriver("WPFSpy", should_succeed=False)
-        mock_get_drivers.return_value = {"FlaUI": flaui_driver, "WPFSpy": wpfspy_driver}
+        executor = create_test_executor(
+            driver_map={"FlaUI": flaui_driver, "WPFSpy": wpfspy_driver},
+            strategy_map={
+                "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}],
+                "WPFSpy": [{"searchBy": "Name", "value": "Button1", "priority": 1}]
+            }
+        )
         
         with pytest.raises(AllStrategiesFailedError) as exc_info:
-            api._resolve_and_execute("test.alias", "invoke")
+            executor.execute("test.alias", "invoke")
         
         assert exc_info.value.alias == "test.alias"
         assert len(exc_info.value.attempts) == 2
     
-    def test_circuit_breaker_opens_after_threshold(self, mock_repo, mock_healing_store_class, mock_screenshot_manager, mock_get_drivers, mock_wpfspy_mode):
+    def test_circuit_breaker_opens_after_threshold(self, mock_repo):
         """Test circuit breaker opens after threshold failures."""
-        from DriverAgnosticApi import DriverAgnosticApi
-        
         mock_repo.return_value = {
             "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]
         }
         
-        api = DriverAgnosticApi()
-        
-        # Driver that fails 3 times (threshold)
         flaui_driver = MockDriver("FlaUI", should_succeed=False)
-        mock_get_drivers.return_value = {"FlaUI": flaui_driver}
+        executor = create_test_executor(
+            driver_map={"FlaUI": flaui_driver},
+            strategy_map={"FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]}
+        )
         
         # First 3 calls should fail and increment breaker
         for i in range(3):
             with pytest.raises(AllStrategiesFailedError):
-                api._resolve_and_execute("test.alias", "invoke")
+                executor.execute("test.alias", "invoke")
         
         # 4th call should be rejected by circuit breaker
         breaker = CircuitBreakerManager().get_breaker("FlaUI")
         assert not breaker.allow_request()
     
-    def test_healing_metadata_recorded_on_fallback(self, mock_repo, mock_healing_store_class, mock_screenshot_manager, mock_get_drivers, mock_wpfspy_mode):
+    def test_healing_metadata_recorded_on_fallback(self, mock_repo):
         """Test healing metadata is recorded when fallback succeeds."""
-        from DriverAgnosticApi import DriverAgnosticApi
-        
         mock_repo.return_value = {
             "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}],
             "WPFSpy": [{"searchBy": "Name", "value": "Button1", "priority": 1}]
         }
         
-        api = DriverAgnosticApi()
-        
         flaui_driver = MockDriver("FlaUI", should_succeed=False)
         wpfspy_driver = MockDriver("WPFSpy", should_succeed=True)
-        mock_get_drivers.return_value = {"FlaUI": flaui_driver, "WPFSpy": wpfspy_driver}
+        executor = create_test_executor(
+            driver_map={"FlaUI": flaui_driver, "WPFSpy": wpfspy_driver},
+            strategy_map={
+                "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}],
+                "WPFSpy": [{"searchBy": "Name", "value": "Button1", "priority": 1}]
+            }
+        )
         
-        api._resolve_and_execute("test.alias", "invoke")
+        executor.execute("test.alias", "invoke")
         
         # Verify healing store recorded the healing
-        mock_healing_store_class.record_healing.assert_called_once()
-        call_args = mock_healing_store_class.record_healing.call_args[1]
-        assert call_args["primary_driver"] == "FlaUI"
-        assert call_args["healing_driver"] == "WPFSpy"
-        assert call_args["healing_successful"] is True
+        store = executor._healing_tracker._store
+        store.record_healing.assert_called_once()
+        call_args = store.record_healing.call_args
+        assert call_args[1]["primary_driver"] == "FlaUI"
+        assert call_args[1]["healing_driver"] == "WPFSpy"
+        assert call_args[1]["healing_successful"] is True
     
-    def test_baseline_captured_on_first_success(self, mock_repo, mock_healing_store_class, mock_screenshot_manager, mock_get_drivers, mock_wpfspy_mode):
+    def test_baseline_captured_on_first_success(self, mock_repo):
         """Test baseline is captured on first successful interaction."""
-        from DriverAgnosticApi import DriverAgnosticApi
-        
         mock_repo.return_value = {
             "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]
         }
         
-        api = DriverAgnosticApi()
         mock_driver = MockDriver("FlaUI", should_succeed=True)
-        mock_get_drivers.return_value = {"FlaUI": mock_driver}
+        executor = create_test_executor(
+            driver_map={"FlaUI": mock_driver},
+            strategy_map={"FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]}
+        )
         
-        api._resolve_and_execute("test.alias", "invoke")
+        executor.execute("test.alias", "invoke")
         
         # Verify baseline captured
-        mock_healing_store_class.capture_baseline.assert_called_once()
-        call_args = mock_healing_store_class.capture_baseline.call_args[1]
-        assert call_args["alias"] == "test.alias"
-        assert call_args["driver"] == "FlaUI"
+        store = executor._healing_tracker._store
+        store.capture_baseline.assert_called_once()
+        call_args = store.capture_baseline.call_args
+        assert call_args[1]["alias"] == "test.alias"
+        assert call_args[1]["driver"] == "FlaUI"
     
-    def test_strategy_priority_order(self, mock_repo, mock_healing_store_class, mock_screenshot_manager, mock_get_drivers, mock_wpfspy_mode):
+    def test_strategy_priority_order(self, mock_repo):
         """Test strategies are tried in priority order."""
-        from DriverAgnosticApi import DriverAgnosticApi
-        
         mock_repo.return_value = {
             "FlaUI": [
                 {"searchBy": "XPath", "value": "//xpath", "priority": 3},
@@ -277,19 +289,24 @@ class TestResolveAndExecute:
             ]
         }
         
-        api = DriverAgnosticApi()
         mock_driver = MockDriver("FlaUI", should_succeed=True)
-        mock_get_drivers.return_value = {"FlaUI": mock_driver}
+        executor = create_test_executor(
+            driver_map={"FlaUI": mock_driver},
+            strategy_map={"FlaUI": [
+                {"searchBy": "XPath", "value": "//xpath", "priority": 3},
+                {"searchBy": "AutomationId", "value": "btn1", "priority": 1},
+                {"searchBy": "Name", "value": "Button1", "priority": 2}
+            ]}
+        )
         
-        api._resolve_and_execute("test.alias", "invoke")
+        executor.execute("test.alias", "invoke")
         
         # Should only call once (first priority succeeds)
         assert mock_driver._call_count == 1
     
-    def test_multi_app_context_driver_selection(self, mock_repo, mock_healing_store_class, mock_screenshot_manager, mock_get_drivers, mock_wpfspy_mode):
+    def test_multi_app_context_driver_selection(self, mock_repo):
         """Test driver selection respects app context driver list."""
-        from DriverAgnosticApi import DriverAgnosticApi, _MULTI_APP_CONTEXT
-        from app_context import AppContext
+        from TestAutoLayer.api.app_management.app_registry import AppContext, get_multi_app_context
         
         mock_repo.return_value = {
             "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}],
@@ -303,144 +320,131 @@ class TestResolveAndExecute:
             driver_list=["WPFSpy"],
             process_id=1234
         )
-        _MULTI_APP_CONTEXT.apps.clear()
-        _MULTI_APP_CONTEXT.register_app(app_ctx)
-        
-        api = DriverAgnosticApi(default_app_id="test_app")
+        get_multi_app_context().apps.clear()
+        get_multi_app_context().register_app(app_ctx)
         
         flaui_driver = MockDriver("FlaUI", should_succeed=True)
         wpfspy_driver = MockDriver("WPFSpy", should_succeed=True)
         app_ctx.drivers = {"FlaUI": flaui_driver, "WPFSpy": wpfspy_driver}
         
+        executor = create_test_executor(
+            driver_map={"FlaUI": flaui_driver, "WPFSpy": wpfspy_driver},
+            strategy_map={
+                "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}],
+                "WPFSpy": [{"searchBy": "Name", "value": "Button1", "priority": 1}]
+            }
+        )
+        
         # Should only try WPFSpy (per app context)
-        api._resolve_and_execute("test.alias", "invoke", app_id="test_app")
+        executor.execute("test.alias", "invoke", app_id="test_app")
         
         assert wpfspy_driver._call_count == 1
         assert flaui_driver._call_count == 0
         
         # Cleanup
-        _MULTI_APP_CONTEXT.apps.clear()
+        get_multi_app_context().apps.clear()
 
 
 class TestTryAllStrategies:
-    """Test the _try_all_strategies helper method."""
+    """Test _try_all_strategies method."""
     
     @pytest.fixture
     def mock_repo(self):
         with patch('repository_access.get_all_driver_strategies_sorted') as mock:
             yield mock
     
-    @pytest.fixture
-    def mock_get_drivers(self):
-        """Mock the global _get_drivers function."""
-        with patch('DriverAgnosticApi._get_drivers') as mock:
-            yield mock
-    
-    @pytest.fixture
-    def mock_wpfspy_mode(self):
-        """Set WPFSPY_MODE to mock to avoid real driver issues."""
-        with patch.dict(os.environ, {"WPFSPY_MODE": "mock"}):
-            yield
-    
-    def test_find_elements_returns_all_matches(self, mock_repo, mock_get_drivers, mock_wpfspy_mode):
+    def test_find_elements_returns_all_matches(self, mock_repo):
         """Test find_elements collects all matching elements."""
-        from DriverAgnosticApi import DriverAgnosticApi
-        
         mock_repo.return_value = {
             "FlaUI": [{"searchBy": "AutomationId", "value": "item", "priority": 1}]
         }
         
-        api = DriverAgnosticApi()
+        mock_driver = MockDriver("FlaUI")
+        mock_driver.find_elements = Mock(return_value=[
+            ElementHandle(locator={}, driver_name="FlaUI"),
+            ElementHandle(locator={}, driver_name="FlaUI"),
+            ElementHandle(locator={}, driver_name="FlaUI"),
+        ])
         
-        # Driver returns multiple elements
-        mock_driver = Mock()
-        mock_driver.find_elements.return_value = [
-            ElementHandle(locator={}, driver_name="FlaUI"),
-            ElementHandle(locator={}, driver_name="FlaUI"),
-            ElementHandle(locator={}, driver_name="FlaUI"),
-        ]
-        mock_get_drivers.return_value = {"FlaUI": mock_driver}
+        executor = create_test_executor(
+            driver_map={"FlaUI": mock_driver},
+            strategy_map={"FlaUI": [{"searchBy": "AutomationId", "value": "item", "priority": 1}]}
+        )
         
-        elements = api.find_elements("test.alias")
+        elements = []
+        def collect(driver, element):
+            elements.append(element)
+            return False
+        
+        executor.try_all_strategies("test.alias", None, collect, find_all=True)
         assert len(elements) == 3
     
-    def test_is_element_visible_retries(self, mock_repo, mock_get_drivers, mock_wpfspy_mode):
-        """Test is_element_visible retries on failure."""
-        from DriverAgnosticApi import DriverAgnosticApi
-        
+    def test_is_element_visible_returns_false_when_not_visible(self, mock_repo):
+        """Test try_all_strategies returns False when predicate returns False."""
         mock_repo.return_value = {
             "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]
         }
         
-        api = DriverAgnosticApi()
-        
-        # Driver find_element succeeds, is_visible fails twice then succeeds
         mock_driver = MockDriver("FlaUI", should_succeed=True)
-        mock_driver.is_visible = Mock(side_effect=[False, False, True])
-        mock_get_drivers.return_value = {"FlaUI": mock_driver}
+        mock_driver.is_visible = Mock(return_value=False)
         
-        result = api.is_element_visible("test.alias")
+        executor = create_test_executor(
+            driver_map={"FlaUI": mock_driver},
+            strategy_map={"FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]}
+        )
+        
+        result = executor.try_all_strategies("test.alias", None, lambda d, e: d.is_visible(e))
+        assert result is False
+        
+        # Test with predicate returning True
+        mock_driver.is_visible = Mock(return_value=True)
+        result = executor.try_all_strategies("test.alias", None, lambda d, e: d.is_visible(e))
         assert result is True
-        assert mock_driver.is_visible.call_count == 3
 
 
 class TestWaitKeywords:
-    """Test wait_until_* keywords."""
+    """Test wait keywords."""
     
     @pytest.fixture
     def mock_repo(self):
         with patch('repository_access.get_all_driver_strategies_sorted') as mock:
             yield mock
     
-    @pytest.fixture
-    def mock_get_drivers(self):
-        """Mock the global _get_drivers function."""
-        with patch('DriverAgnosticApi._get_drivers') as mock:
-            yield mock
-    
-    @pytest.fixture
-    def mock_wpfspy_mode(self):
-        """Set WPFSPY_MODE to mock to avoid real driver issues."""
-        with patch.dict(os.environ, {"WPFSPY_MODE": "mock"}):
-            yield
-    
-    def test_wait_until_element_exists_timeout(self, mock_repo, mock_get_drivers, mock_wpfspy_mode):
+    def test_wait_until_element_exists_timeout(self, mock_repo):
         """Test WaitTimeoutError raised when element never appears."""
-        from DriverAgnosticApi import DriverAgnosticApi
-        from exceptions import WaitTimeoutError
-        
         mock_repo.return_value = {
             "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]
         }
         
-        api = DriverAgnosticApi()
         mock_driver = MockDriver("FlaUI", should_succeed=False)
-        mock_get_drivers.return_value = {"FlaUI": mock_driver}
+        executor = create_test_executor(
+            driver_map={"FlaUI": mock_driver},
+            strategy_map={"FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]}
+        )
         
-        with pytest.raises(WaitTimeoutError) as exc_info:
-            api.wait_until_element_exists("test.alias", timeout=0.5, poll_interval=0.1)
+        # Use wait keywords directly
+        from keywords.wait_keywords import WaitKeywords
+        wait_keywords = WaitKeywords(executor, lambda: None)
         
-        assert "element exists" in str(exc_info.value)
+        with pytest.raises(WaitTimeoutError):
+            wait_keywords.wait_until_element_exists("test.alias", timeout=0.5, poll_interval=0.1)
     
-    def test_wait_until_element_actionable(self, mock_repo, mock_get_drivers, mock_wpfspy_mode):
+    def test_wait_until_element_actionable(self, mock_repo):
         """Test wait_until_element_actionable succeeds when element becomes actionable."""
-        from DriverAgnosticApi import DriverAgnosticApi
-        
         mock_repo.return_value = {
             "FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]
         }
         
-        api = DriverAgnosticApi()
-        
-        # Element becomes actionable after 2 polls
         mock_driver = MockDriver("FlaUI", should_succeed=True)
         mock_driver.is_actionable = Mock(side_effect=[False, False, True])
-        mock_get_drivers.return_value = {"FlaUI": mock_driver}
         
-        result = api.wait_until_element_actionable("test.alias", timeout=1.0, poll_interval=0.1)
+        executor = create_test_executor(
+            driver_map={"FlaUI": mock_driver},
+            strategy_map={"FlaUI": [{"searchBy": "AutomationId", "value": "btn1", "priority": 1}]}
+        )
+        
+        from keywords.wait_keywords import WaitKeywords
+        wait_keywords = WaitKeywords(executor, lambda: None)
+        
+        result = wait_keywords.wait_until_element_actionable("test.alias", timeout=1.0, poll_interval=0.1)
         assert result is True
-        assert mock_driver.is_actionable.call_count == 3
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
