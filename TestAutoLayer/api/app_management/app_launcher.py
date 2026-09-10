@@ -22,56 +22,6 @@ from TestAutoLayer.api.logging_utils import get_api_logger
 logger = get_api_logger()
 
 
-def create_driver_for_app(driver_name: str, app_context: AppContext) -> Any:
-    """Create a driver instance for a specific app context.
-    
-    This function replaces the old _create_driver_for_app and handles
-    the current mode (real/mock) for WPFSpy.
-    """
-    # Import _ACTIVE_MODE lazily to avoid circular imports
-    try:
-        from DriverAgnosticApi import _ACTIVE_MODE
-        effective_mode = _ACTIVE_MODE if _ACTIVE_MODE is not None else os.environ.get("WPFSPY_MODE", "mock").lower()
-    except ImportError:
-        effective_mode = os.environ.get("WPFSPY_MODE", "mock").lower()
-
-    if driver_name == "FlaUI":
-        try:
-            from flaui_driver import FlaUIDriver
-            return FlaUIDriver(app_pid=app_context.process_id)
-        except ImportError:
-            raise ImportError("FlaUI driver not available. Install: pip install robotframework-flaui")
-
-    if driver_name == "WPFSpy":
-        if effective_mode == "real":
-            if app_context.pipe_name is None:
-                try:
-                    from WPFSpyLibrary import WPFSpyMockDriver
-                    return WPFSpyMockDriver()
-                except ImportError:
-                    raise ImportError("WPFSpy mock driver not available")
-            try:
-                from WPFSpyLibrary import WPFSpyRealDriver
-                return WPFSpyRealDriver(pipe_name=app_context.pipe_name)
-            except ImportError:
-                raise ImportError("WPFSpy driver not available")
-        else:
-            try:
-                from WPFSpyLibrary import WPFSpyMockDriver
-                return WPFSpyMockDriver()
-            except ImportError:
-                raise ImportError("WPFSpy mock driver not available")
-
-    if driver_name == "Sikuli":
-        try:
-            from SikuliLibrary import SikuliDriver
-            return SikuliDriver()
-        except ImportError:
-            raise ImportError("Sikuli driver not available. Install: pip install robotframework-sikuli")
-
-    raise ValueError(f"Unknown driver: {driver_name}")
-
-
 def launch_app_for_context(app_context: AppContext) -> subprocess.Popen:
     """Launch an application with the appropriate environment for WPFSpy injection."""
     print(f"[LAUNCH] ENTRY: app_id={app_context.app_id}, driver_list={app_context.driver_list}, inject_spy_agent={app_context.inject_spy_agent}, pipe_name={app_context.pipe_name}")

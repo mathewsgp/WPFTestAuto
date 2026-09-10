@@ -21,7 +21,6 @@ from .app_launcher import (
     attach_to_application,
     wait_for_application,
     close_application,
-    create_driver_for_app,
     launch_app_for_context,
 )
 
@@ -46,7 +45,6 @@ __all__ = [
     "attach_to_application",
     "wait_for_application",
     "close_application",
-    "create_driver_for_app",
     "launch_app_for_context",
     # Window Activator
     "activate_window",
