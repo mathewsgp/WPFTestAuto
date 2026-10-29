@@ -10,6 +10,7 @@ This module provides:
 import sys
 import os
 import time
+import random
 from typing import List, Optional
 
 # Add parent directories to path for mock app fallback
@@ -20,6 +21,7 @@ sys.path.insert(0, os.path.join(_base_dir, "..", ".."))
 # Import base driver interface
 sys.path.insert(0, os.path.join(_base_dir, "..", "..", "api"))
 from base_driver import BaseDriver, ElementHandle
+from retry_policy import retry_with_backoff, default_retry_policy
 
 # WPF control type -> UIA control type mapping
 # UI Automation maps WPF controls to different UIA control types
@@ -119,31 +121,34 @@ class FlaUIDriver(BaseDriver):
         if self._connected and self._lib is not None:
             return
 
-        if self._lib is None:
-            self._init_library()
+        def _attach():
+            if self._lib is None:
+                self._init_library()
 
-        # Try to attach by PID first if we have one
-        if self._app_pid:
-            try:
-                self._lib.attach_application_by_pid(self._app_pid)
-                self._connected = True
-                return
-            except Exception:
-                pass
+            # Try to attach by PID first if we have one
+            if self._app_pid:
+                try:
+                    self._lib.attach_application_by_pid(self._app_pid)
+                    self._connected = True
+                    return
+                except Exception:
+                    pass
 
-        # Fallback: attach by name
-        try:
-            self._lib.attach_application_by_name("SampleWpfApp")
-            self._connected = True
-        except Exception:
+            # Fallback: attach by name
             try:
-                self._lib.attach_application_by_name("dotnet")
+                self._lib.attach_application_by_name("SampleWpfApp")
                 self._connected = True
             except Exception:
-                pass
+                try:
+                    self._lib.attach_application_by_name("dotnet")
+                    self._connected = True
+                except Exception:
+                    pass
 
-        if not self._connected:
-            raise ConnectionError("FlaUI: Could not attach to application. Ensure the app is running.")
+            if not self._connected:
+                raise ConnectionError("FlaUI: Could not attach to application. Ensure the app is running.")
+
+        retry_with_backoff(_attach, default_retry_policy())
 
     def _to_xpath(self, element) -> str:
         """Convert element handle to XPath string for FlaUI keywords.
@@ -189,10 +194,16 @@ class FlaUIDriver(BaseDriver):
 
         self._ensure_attached()
 
+        def _find_one(xpath: str):
+            """Retry-wrapped find_one_element with exponential backoff."""
+            def _call():
+                return self._lib.find_one_element(xpath)
+            return retry_with_backoff(_call, default_retry_policy())
+
         if search_by == "AutomationId":
             xpath = f"//*[@AutomationId='{value}']"
             try:
-                self._lib.find_one_element(xpath)
+                _find_one(xpath)
                 return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
             except Exception as e:
                 raise ElementNotFoundError(f"FlaUI: no element with AutomationId='{value}': {e}")
@@ -200,7 +211,7 @@ class FlaUIDriver(BaseDriver):
         elif search_by == "Name":
             xpath = f"//*[@Name='{value}']"
             try:
-                self._lib.find_one_element(xpath)
+                _find_one(xpath)
                 return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
             except Exception as e:
                 raise ElementNotFoundError(f"FlaUI: no element with Name='{value}': {e}")
@@ -208,7 +219,7 @@ class FlaUIDriver(BaseDriver):
         elif search_by == "XPath":
             uia_xpath = _translate_wpf_to_uia_xpath(value)
             try:
-                self._lib.find_one_element(uia_xpath)
+                _find_one(uia_xpath)
                 return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
             except Exception as e:
                 raise ElementNotFoundError(f"FlaUI: no element found for XPath '{value}' (translated: '{uia_xpath}'): {e}")
@@ -249,12 +260,14 @@ class FlaUIDriver(BaseDriver):
 
     def invoke(self, element):
         """Click/invoke an element."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         self._lib.click(xpath)
 
     def set_value(self, element, value: str):
         """Set text value on an input element."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         try:
@@ -270,6 +283,7 @@ class FlaUIDriver(BaseDriver):
 
     def get_text(self, element) -> str:
         """Get the text content of an element."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         try:
@@ -301,6 +315,7 @@ class FlaUIDriver(BaseDriver):
 
     def is_visible(self, element) -> bool:
         """Check if an element is visible."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         try:
@@ -313,6 +328,7 @@ class FlaUIDriver(BaseDriver):
 
     def is_enabled(self, element) -> bool:
         """Check if an element is enabled."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         try:
@@ -326,6 +342,7 @@ class FlaUIDriver(BaseDriver):
 
     def get_attribute(self, element, attribute_name: str) -> Optional[str]:
         """Get a specific attribute value from an element."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         try:
@@ -342,6 +359,7 @@ class FlaUIDriver(BaseDriver):
 
     def toggle(self, element, state: bool = None):
         """Toggle a checkbox or toggle button."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         if state is None:
@@ -351,24 +369,29 @@ class FlaUIDriver(BaseDriver):
 
     def double_click(self, element):
         """Double-click an element."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         self._lib.double_click(xpath)
 
     def right_click(self, element):
         """Right-click an element."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         self._lib.right_click(xpath)
 
     def press_keys(self, element, keys: str):
         """Press keys into an element."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         self._lib.press_keys(keys, xpath)
 
     def drag_drop(self, element: ElementHandle, target_element: ElementHandle):
         """Drag an element and drop it on a target."""
+        element = self.ensure_fresh(element)
+        target_element = self.ensure_fresh(target_element)
         source_xpath = self._to_xpath(element)
         target_xpath = self._to_xpath(target_element)
         self._ensure_attached()
@@ -376,12 +399,14 @@ class FlaUIDriver(BaseDriver):
 
     def hover(self, element):
         """Hover over an element."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         self._lib.move_to(xpath)
 
     def scroll(self, element, direction: str):
         """Scroll an element in a direction."""
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         if direction.lower() in ("down", "pagedown"):
@@ -396,6 +421,7 @@ class FlaUIDriver(BaseDriver):
         
         Returns grid text in CSV format: SKU,Qty
         """
+        element = self.ensure_fresh(element)
         xpath = self._to_xpath(element)
         self._ensure_attached()
         try:

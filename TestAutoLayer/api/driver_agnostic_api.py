@@ -64,6 +64,8 @@ sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "flaui_robotframe
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "wpfspy_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "sikuli_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "mock_wpf_app"))
+# Add TestAutoLayer root so that `from TestAutoLayer.api.xxx` imports resolve
+sys.path.insert(0, os.path.join(_THIS_DIR, ".."))
 
 # Driver imports (need path for relative imports within driver modules)
 from flaui_driver import FlaUIDriver          # noqa: E402

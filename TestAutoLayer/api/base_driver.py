@@ -35,6 +35,17 @@ class ElementHandle:
         """Check if the element handle is potentially stale."""
         return (time.time() - self.found_at) > max_age
 
+    def refresh(self, driver: 'BaseDriver') -> 'ElementHandle':
+        """Re-resolve this element through the driver, returning a fresh handle.
+        
+        Args:
+            driver: The driver to re-resolve with.
+            
+        Returns:
+            A new ElementHandle with updated found_at timestamp.
+        """
+        return driver.find_element(self.locator)
+
 
 class BaseDriver(ABC):
     """Abstract base class for all automation drivers.
@@ -191,7 +202,7 @@ class BaseDriver(ABC):
             element: The element handle from find_element.
             timeout: Maximum time to wait in seconds.
             poll_interval: Time between checks in seconds.
-        
+            
         Returns:
             bool: True if became actionable, False if timed out.
         """
@@ -204,6 +215,23 @@ class BaseDriver(ABC):
                 return True
             time.sleep(poll_interval)
         return False
+
+    def ensure_fresh(self, element: ElementHandle, max_age: float = 60.0) -> ElementHandle:
+        """Ensure an element handle is not stale, re-resolving if necessary.
+        
+        Default implementation checks staleness via ElementHandle.is_stale()
+        and calls refresh(self) to re-resolve through the driver.
+        
+        Args:
+            element: The element handle to check.
+            max_age: Maximum age in seconds before considered stale.
+            
+        Returns:
+            A fresh ElementHandle (re-resolved if stale, otherwise the same).
+        """
+        if element.is_stale(max_age=max_age):
+            return element.refresh(self)
+        return element
     
     def capture_screenshot(self, element: Optional[ElementHandle] = None) -> bytes:
         """Capture a screenshot.

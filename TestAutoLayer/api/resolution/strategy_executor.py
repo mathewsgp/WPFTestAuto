@@ -271,7 +271,6 @@ class StrategyExecutor:
                     success=True,
                     duration_ms=duration_ms,
                     image_match_score=image_score,
-                    app_id=app_id
                 )
                 
                 if healing_info.attempted:
@@ -288,7 +287,6 @@ class StrategyExecutor:
                         healing_search_value=strategy_value,
                         healing_successful=True,
                         new_properties=new_properties,
-                        app_id=app_id
                     )
                     logger.info(
                         f"[Healing] Element healed via {driver_name}:{search_by}",
@@ -306,7 +304,6 @@ class StrategyExecutor:
                         driver=driver_name,
                         search_method=search_by,
                         search_value=strategy_value,
-                        app_id=app_id
                     )
             
             return ExecutionResult(
@@ -331,7 +328,6 @@ class StrategyExecutor:
                     search_method=search_by,
                     success=False,
                     duration_ms=duration_ms,
-                    app_id=app_id
                 )
             
             # Record first failure for healing tracking
@@ -428,7 +424,13 @@ class StrategyExecutor:
         predicate: Callable[[Any, ElementHandle], bool],
         find_all: bool = False,
     ) -> bool:
-        """Single pass through all drivers/strategies in priority order."""
+        """Single pass through all drivers/strategies in priority order.
+        
+        Per-strategy circuit breaker check: each strategy attempt verifies
+        `breaker.allow_request()` before execution. On failure, the breaker
+        records the failure; on success, it records success. This prevents
+        polling loops from repeatedly hammering an open-breaker driver.
+        """
         all_strategies = self._strategy_provider(alias, app_id=app_id)
         if not all_strategies:
             return False
@@ -452,19 +454,21 @@ class StrategyExecutor:
                 continue
             
             breaker = self._breaker_manager.get_breaker(driver_name)
-            if not breaker.allow_request():
-                logger.debug(
-                    f"Circuit breaker open for {driver_name}, skipping",
-                    alias=alias,
-                    driver=driver_name,
-                )
-                continue
-            
             driver = self._driver_provider(driver_name, app_id)
             if driver is None:
                 continue
             
             for strategy in all_strategies[driver_name]:
+                # Per-strategy circuit breaker check
+                if not breaker.allow_request():
+                    logger.debug(
+                        f"Circuit breaker open for {driver_name}, skipping strategy",
+                        alias=alias,
+                        driver=driver_name,
+                        strategy=strategy.get("searchBy", ""),
+                    )
+                    continue
+                
                 try:
                     resolved = self._resolve_strategy_with_parent(strategy, alias, app_id, driver_name)
                     if find_all:
@@ -478,6 +482,7 @@ class StrategyExecutor:
                         if predicate(driver, element):
                             return True
                 except Exception:
+                    breaker.record_failure()
                     continue
         
         return False
