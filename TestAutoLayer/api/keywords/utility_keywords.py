@@ -372,15 +372,11 @@ class UtilityKeywords:
     def reset_application(self):
         """Test-isolation keyword — restarts the application at the
         Login page. In mock mode, resets the in-memory mock app.
-        In real mode, restarts the actual SampleWpfApp process.
         """
         from TestAutoLayer.api.DriverAgnosticApi import _ACTIVE_MODE, _WPFSPY_MODE, _breaker_manager
         effective_mode = _ACTIVE_MODE if _ACTIVE_MODE is not None else _WPFSPY_MODE
-        if effective_mode == "real":
-            from TestAutoLayer.api.sample_wpf_app_manager import reset_real_app
-            reset_real_app()
-        else:
-            from TestAutoLayer.api.mock_app import reset_app
+        if effective_mode == "mock":
+            from TestAutoLayer.mock_wpf_app.mock_app import reset_app
             reset_app()
         
         # Reset circuit breakers

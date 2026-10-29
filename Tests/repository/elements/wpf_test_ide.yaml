@@ -790,9 +790,12 @@ elements:
     relativeXPath: "TextBlock[@AutomationId='StatusText']"
     strategies:
       FlaUI:
+        - searchBy: "AutomationId"
+          value: "StatusText"
+          priority: 1
         - searchBy: "XPath"
           value: "TextBlock[@AutomationId='StatusText']"
-          priority: 1
+          priority: 2
       WPFSpy:
         - searchBy: "XPath"
           value: "TextBlock[@AutomationId='StatusText']"
@@ -807,11 +810,11 @@ elements:
     relativeXPath: "Button[@AutomationId='btnAttachCancel']"
     strategies:
       FlaUI:
-        - searchBy: "AutomationId"
-          value: "btnAttachCancel"
-          priority: 1
         - searchBy: "Name"
           value: "Cancel"
+          priority: 1
+        - searchBy: "AutomationId"
+          value: "btnAttachCancel"
           priority: 2
       WPFSpy:
         - searchBy: "XPath"

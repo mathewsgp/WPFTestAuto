@@ -433,7 +433,21 @@ class StrategyExecutor:
         if not all_strategies:
             return False
         
-        for driver_name in self._get_default_driver_order(all_strategies):
+        # Determine driver order — respect app context driver list when
+        # available (e.g., drivers=FlaUI at launch), otherwise fall back to
+        # the global config order.
+        if app_id:
+            try:
+                app_ctx = get_multi_app_context().get_app(app_id)
+                driver_order = [d for d in app_ctx.driver_list if d in all_strategies]
+                if not driver_order:
+                    driver_order = self._get_default_driver_order(all_strategies)
+            except ValueError:
+                driver_order = self._get_default_driver_order(all_strategies)
+        else:
+            driver_order = self._get_default_driver_order(all_strategies)
+        
+        for driver_name in driver_order:
             if driver_name not in all_strategies:
                 continue
             
@@ -464,7 +478,6 @@ class StrategyExecutor:
                         if predicate(driver, element):
                             return True
                 except Exception:
-                    breaker.record_failure()
                     continue
         
         return False

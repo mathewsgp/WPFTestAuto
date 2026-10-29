@@ -207,20 +207,6 @@ def set_driver_priority(priority: Optional[list]):
     _RUN_MODES = priority
 
 
-def _reset_real_app():
-    """Resets the real SampleWpfApp state.
-    
-    Kept for backward compatibility; new code should use
-    Tests.helpers.sample_wpf_app_manager.reset_real_app().
-    """
-    from sample_wpf_app_manager import reset_real_app
-    return reset_real_app(
-        sample_app_process=_SAMPLE_WPF_APP_PROCESS,
-        mode=_ACTIVE_MODE if _ACTIVE_MODE is not None else _WPFSPY_MODE,
-        ide_mode=os.environ.get("WPFSPY_IDE_RUN") == "1",
-    )
-
-
 class DriverAgnosticApi:
     """Robot Framework library — Layer 3 keywords.
     

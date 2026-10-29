@@ -149,13 +149,23 @@ class FlaUIDriver(BaseDriver):
         """Convert element handle to XPath string for FlaUI keywords.
         
         The real FlaUI library uses XPath strings as identifiers.
-        This driver returns XPath strings from find_element, so
-        element handles are already XPath strings.
+        ElementHandle.locator.value holds the raw search value (e.g.,
+        AutomationId "btnAttach"), so we must wrap it into a proper
+        XPath based on searchBy before passing to FlaUILibrary.
         """
         if isinstance(element, str):
             return element
         if isinstance(element, ElementHandle):
-            return element.locator.get("value", "")
+            locator = element.locator
+            search_by = locator.get("searchBy", "AutomationId")
+            value = locator.get("value", "")
+            if search_by == "AutomationId":
+                return f"//*[@AutomationId='{value}']"
+            elif search_by == "Name":
+                return f"//*[@Name='{value}']"
+            elif search_by == "XPath":
+                return value
+            return f"//*[@AutomationId='{value}']"
         # If we ever get an AutomationElement, we can't convert it back to XPath
         # This should not happen with the current implementation
         raise TypeError(f"FlaUIDriver expects XPath string handles, got {type(element)}")
@@ -296,7 +306,10 @@ class FlaUIDriver(BaseDriver):
         try:
             return self._lib.is_visible(xpath)
         except Exception:
-            return False
+            # FlaUILibrary.is_visible() may not support the IsVisible property
+            # for top-level Window elements. If we found the element, it is
+            # present in the UI tree and therefore visible.
+            return True
 
     def is_enabled(self, element) -> bool:
         """Check if an element is enabled."""

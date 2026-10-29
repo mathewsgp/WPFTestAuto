@@ -38,7 +38,6 @@ from driver_agnostic_api import (
     set_active_mode,
     set_run_modes,
     set_driver_priority,
-    _reset_real_app,
     _kill_pid,
 )
 
@@ -72,7 +71,6 @@ __all__ = [
     "set_active_mode",
     "set_run_modes",
     "set_driver_priority",
-    "_reset_real_app",
     "_kill_pid",
     "AppContext",
     "MultiAppContext",
