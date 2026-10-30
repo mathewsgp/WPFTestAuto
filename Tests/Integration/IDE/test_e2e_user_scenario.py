@@ -196,20 +196,28 @@ def get_add_step_dialog(ide_app, timeout=15):
     """
     from pywinauto import Desktop
     end_time = time.time() + timeout
-    while time.time() < end_time:
+    found = None
+    while time.time() < end_time and found is None:
         try:
             desktop = Desktop(backend="uia")
             for w in desktop.windows():
                 try:
                     aid = w.element_info.automation_id
                     if aid == "AddStepWizardDialog":
-                        w.wait("visible", timeout=5)
-                        return w
+                        found = w
+                        break
                 except Exception:
                     continue
         except Exception:
             pass
-        time.sleep(0.5)
+        if found is None:
+            time.sleep(0.5)
+    if found is not None:
+        try:
+            found.wait("visible", timeout=5)
+        except Exception:
+            pass
+        return found
     raise PywinautoTimeout("Add Step wizard dialog not found")
 
 
@@ -387,6 +395,15 @@ class TestE2EUserScenario:
         except Exception:
             pass
 
+        # Click lblConfirmation to register it as a probed element so it
+        # appears in the Add Step dialog's element list. It appears after
+        # btnCreateOrder with text "Order confirmed: SKU-1001 x2".
+        try:
+            click_by_auto_id(orders_window, "lblConfirmation")
+            time.sleep(0.5)
+        except Exception:
+            pass
+
         # Stop recording
         click_by_auto_id(ide_window, "btnRecord")
         time.sleep(1)
@@ -405,21 +422,17 @@ class TestE2EUserScenario:
             try:
                 step_type_combo = _find_by_auto_id(add_step_dlg, "StepTypeCombo", "ComboBox")
                 if step_type_combo:
-                    step_type_combo[0].click_input()
-                    time.sleep(0.5)
-                    # Click the "Verify Element Text" ComboBoxItem directly
-                    picked = False
-                    for item in step_type_combo[0].descendants(control_type="ComboBoxItem"):
-                        try:
-                            txt = item.window_text()
-                            if txt == "Verify Element Text":
-                                item.click_input()
-                                picked = True
-                                break
-                        except Exception:
-                            continue
-                    if not picked:
-                        step_type_combo[0].type_keys("{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}")
+                    combo = step_type_combo[0]
+                    try:
+                        combo.select("Verify Element Text")
+                    except Exception:
+                        combo.click_input()
+                        time.sleep(0.5)
+                        from pywinauto import keyboard
+                        keyboard.send_keys(
+                            "{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}"
+                            "{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}"
+                        )
                     time.sleep(0.5)
             except Exception:
                 pass
@@ -428,22 +441,16 @@ class TestE2EUserScenario:
             try:
                 alias_combo = _find_by_auto_id(add_step_dlg, "AliasCombo", "ComboBox")
                 if alias_combo:
-                    alias_combo[0].click_input()
-                    time.sleep(0.5)
-                    picked = False
-                    for item in alias_combo[0].descendants(control_type="ComboBoxItem"):
-                        try:
-                            txt = item.window_text()
-                            if "lblConfirmation" in txt:
-                                item.click_input()
-                                picked = True
-                                break
-                        except Exception:
-                            continue
-                    if not picked:
-                        alias_combo[0].type_keys("{HOME}")
-                        time.sleep(0.2)
-                        alias_combo[0].type_keys("{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}")
+                    combo = alias_combo[0]
+                    try:
+                        combo.select("lblConfirmation")
+                    except Exception:
+                        combo.click_input()
+                        time.sleep(0.5)
+                        from pywinauto import keyboard
+                        keyboard.send_keys(
+                            "{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}"
+                        )
                     time.sleep(0.5)
             except Exception:
                 pass
