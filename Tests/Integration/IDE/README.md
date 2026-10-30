@@ -42,16 +42,39 @@ Launches `WpfTestIde.exe` directly and drives it via **pywinauto UI Automation**
 | `TestDebugPaths` | `test_ide_app_path_exists` | IDE app running |
 | `TestAppSmoke` | `test_app_remains_responsive_after_multiple_interactions` | Smoke test |
 
+## E2E User Scenario Test
+
+**Location:** `Tests/Integration/IDE/test_e2e_user_scenario.py`
+
+End-to-end test covering the complete user workflow:
+
+| Test class | Test method | What it verifies |
+|------------|-------------|-----------------|
+| `TestE2EUserScenario` | `test_full_user_scenario` | Launch both apps, attach, record, verify, save, load, run |
+| `TestE2EAttachOnly` | `test_attach_to_sample_app` | Attach flow in isolation |
+| `TestE2ERecordOnly` | `test_record_sample_app_interactions` | Record flow in isolation |
+
+### Scenario steps
+
+1. Launch `WpfTestIde.exe` and `SampleWpfApp.exe`
+2. Attach to SampleWpfApp using IDE (btnAttach → RuntimeAttachRadio → btnAttach)
+3. Record interactions (btnRecord → enter username/password → login → select SKU → create order → btnRecord)
+4. Add verification steps (Switch to Scripts tab → btnAddVerification)
+5. Save script (File > Save Script)
+6. Load script (File > Open Script)
+7. Run script (btnRunScript)
+
 ## How to run
 
 ```powershell
 # From repo root
-python -m pytest Tests/Integration/IDE/test_ide_features.py -v
+python -m pytest Tests/Integration/IDE/test_ide_features.py Tests/Integration/IDE/test_e2e_user_scenario.py -v
 ```
 
 Requires:
 - `pywinauto` (already installed)
 - `WPFTestIDE\bin\Debug\net9.0-windows\WpfTestIde.exe` built
+- `Tests/bin/SampleWpfApp/Debug/net9.0-windows/SampleWpfApp.exe` built
 
 ## Why no Robot IDE tests here?
 
