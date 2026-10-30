@@ -1,8 +1,9 @@
 *** Settings ***
-Documentation    WPFSpy real-mode use case tests for WpfTestIde.
+Documentation    WPFSpy use case tests for WpfTestIde.
 ...              These tests exercise the WPFSpy driver path instead of FlaUI.
-...              Requires WPFSPY_MODE=real and SampleWpfApp with spy agent injected.
-...              Run with: WPFSPY_MODE=real python -m robot Tests/IDE/wpf_test_ide_wpfspy_use_cases.robot
+...              Set WPFSPY_MODE=real to test against the live WPFSpy pipe;
+...              otherwise the mock driver is used.
+...              Run with: python -m robot Tests/IDE/wpf_test_ide_wpfspy_use_cases.robot
 Library          ../../TestAutoLayer/api/DriverAgnosticApi.py
 Library          OperatingSystem
 
