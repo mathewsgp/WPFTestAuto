@@ -47,29 +47,45 @@ def _find_by_auto_id(window, automation_id, control_type=None):
 
 def click_by_auto_id(window, automation_id, timeout=10, control_type=None):
     """Click any control by its AutomationId (searches all descendants).
-    
-    Uses invoke() first (triggers WPF Command binding), falls back to
-    click_input() if invoke() fails (e.g., button state changed).
+
+    Focuses the window then uses click_input() first (generates a real
+    mouse click that the IDE's global mouse hook recorder can capture),
+    falls back to invoke() if click_input() fails (e.g., control obscured
+    by an overlapping window such as VS Code).
     """
     matched = _find_by_auto_id(window, automation_id, control_type)
     if not matched:
         raise PywinautoTimeout(f"Control '{automation_id}' not found")
     ctrl = matched[0]
     try:
-        ctrl.invoke()
-    except Exception:
+        try:
+            window.set_focus()
+        except Exception:
+            pass
+        time.sleep(0.2)
         ctrl.click_input()
+    except Exception:
+        ctrl.invoke()
     return ctrl
 
 
 def set_text_by_auto_id(window, automation_id, text, timeout=10):
-    """Set text on an Edit/TextBox control by AutomationId."""
+    """Set text on an Edit/TextBox control by AutomationId.
+
+    Clicks the control first so the IDE's global mouse hook registers it
+    as pending focused input; the typed value is committed as a SetValue
+    step on the next click (blur model used by RecordingSession).
+    """
     matched = _find_by_auto_id(window, automation_id, "Edit")
     if not matched:
         matched = _find_by_auto_id(window, automation_id)
     if not matched:
         raise PywinautoTimeout(f"Edit control '{automation_id}' not found")
     ctrl = matched[0]
+    try:
+        ctrl.click_input()
+    except Exception:
+        pass
     ctrl.set_edit_text(text)
     return ctrl
 
@@ -237,6 +253,12 @@ class TestE2EUserScenario:
         ide_window = get_main_window(ide_app)
         sample_window = get_sample_window(sample_app)
 
+        # Bring both windows to foreground so click_input() lands on the
+        # right window (not an overlapping VS/Explorer window).
+        ide_window.set_focus()
+        sample_window.set_focus()
+        time.sleep(0.5)
+
         # --- Step 1: Both apps launched ---
         assert ide_window.exists(), "IDE should be running"
         assert sample_window.exists(), "SampleWpfApp should be running"
@@ -356,6 +378,13 @@ class TestE2EUserScenario:
             orders_window.wait("visible", timeout=10)
         except Exception:
             orders_window = sample_window
+
+        if orders_window is not None:
+            try:
+                orders_window.set_focus()
+                time.sleep(0.5)
+            except Exception:
+                pass
 
         # Interact with OrdersWindow
         try:
