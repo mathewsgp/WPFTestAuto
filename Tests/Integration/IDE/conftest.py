@@ -1,12 +1,10 @@
-"""Standalone IDE tests — no TestAutoLayer dependency.
+"""Pytest fixtures for standalone IDE tests.
 
-These tests launch WpfTestIde.exe directly and interact with it via
-pywinauto UI Automation. They verify WPFTestIDE features independently
-of the TestAutoLayer framework, so framework changes cannot break them.
+Launches WpfTestIde.exe directly via pywinauto UI Automation.
+Zero dependency on TestAutoLayer framework.
 """
 
 import os
-import subprocess
 import time
 
 import pytest
@@ -38,7 +36,6 @@ def ide_app():
 
 def get_main_window(app):
     """Return the main window handle, waiting for it to appear."""
-    # Wait for the window to exist
     win = app.window(title_re=".*WPF Test IDE.*")
     win.wait("visible", timeout=30)
     return win

@@ -16,7 +16,7 @@ Verifies TestAutoLayer framework internals without launching any WPF application
 python -m pytest Tests/Framework/ Tests/contract/ -v
 ```
 
-**92 tests pass** (3 pre-existing SikuliDriver parameter-name failures unrelated).
+**104 tests pass** (3 pre-existing SikuliDriver parameter-name failures unrelated).
 
 ---
 
@@ -38,29 +38,20 @@ robot --outputdir output Tests/SampleWpfApp/
 
 **Location:** `Tests/Integration/IDE/`
 
-Verifies WPFTestIDE features end-to-end. Two sub-layers:
+Verifies WPFTestIDE features end-to-end **without using TestAutoLayer directly**. Uses pywinauto UI Automation (AutomationId-based). Zero imports from TestAutoLayer.
 
-### 3a — Standalone pywinauto tests (truly independent, zero TestAutoLayer imports)
 ```powershell
 python -m pytest Tests/Integration/IDE/test_ide_features.py -v
 ```
 
-**9 tests pass.** Cannot be broken by framework changes.
-
-### 3b — Robot IDE tests (uses TestAutoLayer as library)
-```powershell
-robot --outputdir output Tests/Integration/IDE/*.robot
-```
-
-**32/32 UC tests pass.** Depends on framework loading correctly.
+**29 tests pass.** Cannot be broken by framework changes.
 
 ---
 
 ## Recommended CI Pipeline Order
 
 1. **Category 1** (fast, hermetic) — `pytest Tests/Framework/ Tests/contract/`
-2. **Category 3a** (standalone IDE, no framework dep) — `pytest Tests/Integration/IDE/test_ide_features.py`
+2. **Category 3** (standalone IDE, no framework dep) — `pytest Tests/Integration/IDE/test_ide_features.py`
 3. **Category 2** (framework + SampleWpfApp) — `robot Tests/SampleWpfApp/`
-4. **Category 3b** (Robot IDE, needs working framework) — `robot Tests/Integration/IDE/*.robot`
 
 If Category 1 fails, stop — don't waste time on Categories 2/3.
