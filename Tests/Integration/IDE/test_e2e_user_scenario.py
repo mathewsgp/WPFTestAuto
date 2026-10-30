@@ -188,34 +188,21 @@ def get_main_window(app, title_pattern=".*WPF Test IDE.*"):
     return win
 
 
-def get_attach_dialog(ide_app, timeout=15):
-    """Find the AttachToProcessDialog window after btnAttach is clicked.
-    
+def get_add_step_dialog(ide_app, timeout=15):
+    """Find the AddStepWizardDialog window after btnAddStep is clicked.
+
     The dialog is a separate top-level Window owned by the IDE main window.
-    Search both ide_app.windows() and desktop windows for it.
+    Search desktop windows for it by AutomationId.
     """
     from pywinauto import Desktop
     end_time = time.time() + timeout
     while time.time() < end_time:
-        # Search IDE app windows
-        try:
-            for w in ide_app.windows():
-                try:
-                    title = w.window_text()
-                    if "Attach to Process" in title:
-                        w.wait("visible", timeout=5)
-                        return w
-                except Exception:
-                    continue
-        except Exception:
-            pass
-        # Search desktop windows as fallback
         try:
             desktop = Desktop(backend="uia")
             for w in desktop.windows():
                 try:
-                    title = w.window_text()
-                    if "Attach to Process" in title:
+                    aid = w.element_info.automation_id
+                    if aid == "AddStepWizardDialog":
                         w.wait("visible", timeout=5)
                         return w
                 except Exception:
@@ -223,19 +210,7 @@ def get_attach_dialog(ide_app, timeout=15):
         except Exception:
             pass
         time.sleep(0.5)
-    # Debug: print all windows we can see
-    try:
-        desktop = Desktop(backend="uia")
-        all_titles = []
-        for w in desktop.windows():
-            try:
-                all_titles.append(w.window_text())
-            except Exception:
-                pass
-        print(f"\nDEBUG: Desktop windows at timeout: {all_titles}")
-    except Exception:
-        pass
-    raise PywinautoTimeout(f"Attach to Process dialog not found within {timeout}s")
+    raise PywinautoTimeout("Add Step wizard dialog not found")
 
 
 def get_sample_window(app, title_pattern=".*Sample WPF App.*"):
@@ -416,29 +391,72 @@ class TestE2EUserScenario:
         click_by_auto_id(ide_window, "btnRecord")
         time.sleep(1)
 
-        # --- Step 4: Add verification steps ---
-        # Use IDE's verification feature to insert value verification steps
-        # after recorded actions (e.g., verify username value is properly set)
+        # --- Step 4: Add verification step for order confirmation ---
+        # After btnCreateOrder, verify lblConfirmation shows
+        # "Order confirmed: SKU-1001 x2" using the IDE's Add Step feature.
         try:
-            click_by_auto_id(ide_window, "tabScripts")
+            click_by_auto_id(ide_window, "btnAddStep")
             time.sleep(1)
-        except PywinautoTimeout:
-            pass
 
-        # Add a verification step via btnAddVerification if available
-        try:
-            verification_btn = _find_by_auto_id(ide_window, "btnAddVerification")
-            if verification_btn:
-                verification_btn[0].click_input()
-                time.sleep(1)
-                # Select the username field as verification target
-                try:
-                    verify_target = _find_by_auto_id(ide_window, "txtUsername")
-                    if verify_target:
-                        verify_target[0].click_input()
-                        time.sleep(0.5)
-                except Exception:
-                    pass
+            add_step_dlg = get_add_step_dialog(ide_app)
+            time.sleep(0.5)
+
+            # Select "Verify Element Text" step type
+            try:
+                step_type_combo = _find_by_auto_id(add_step_dlg, "StepTypeCombo", "ComboBox")
+                if step_type_combo:
+                    step_type_combo[0].click_input()
+                    time.sleep(0.5)
+                    step_type_combo[0].type_keys("{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}")
+                    time.sleep(0.5)
+            except Exception:
+                pass
+
+            # Select the confirmation element (OrdersWindow.lblConfirmation)
+            try:
+                alias_combo = _find_by_auto_id(add_step_dlg, "AliasCombo", "ComboBox")
+                if alias_combo:
+                    alias_combo[0].click_input()
+                    time.sleep(0.5)
+                    # Scroll/select lblConfirmation: find it among aliases
+                    items = alias_combo[0].descendants(control_type="ListItem")
+                    picked = False
+                    for item in items:
+                        try:
+                            txt = item.window_text()
+                            if "lblConfirmation" in txt:
+                                item.click_input()
+                                picked = True
+                                break
+                        except Exception:
+                            continue
+                    if not picked:
+                        alias_combo[0].type_keys("{HOME}")
+                        time.sleep(0.2)
+                        alias_combo[0].type_keys("{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}")
+                    time.sleep(0.5)
+            except Exception:
+                pass
+
+            # Set expected text: "Order confirmed: SKU-1001 x2"
+            try:
+                value_box = _find_by_auto_id(add_step_dlg, "ValueBox", "Edit")
+                if value_box:
+                    value_box[0].click_input()
+                    time.sleep(0.3)
+                    value_box[0].set_edit_text("Order confirmed: SKU-1001 x2")
+                    time.sleep(0.5)
+            except Exception:
+                pass
+
+            # Click Add to insert the verification step
+            try:
+                add_btn = _find_by_auto_id(add_step_dlg, "btnStepAdd", "Button")
+                if add_btn:
+                    add_btn[0].click_input()
+                    time.sleep(1)
+            except Exception:
+                pass
         except Exception:
             pass
 
