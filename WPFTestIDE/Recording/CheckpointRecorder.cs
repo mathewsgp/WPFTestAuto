@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Automation;
 using WpfTestIde.Models;
@@ -241,57 +242,34 @@ namespace WpfTestIde.Recording
         }
 
         /// <summary>
-        /// Exports checkpoints to a YAML file.
+        /// Exports checkpoints to a JSON file.
         /// </summary>
         public void Export(string? filePath = null)
         {
-            filePath ??= Path.Combine(_checkpointDir, $"checkpoints_{DateTime.Now:yyyyMMdd_HHmmss}.yaml");
+            filePath ??= Path.Combine(_checkpointDir, $"checkpoints_{DateTime.Now:yyyyMMdd_HHmmss}.json");
             
-            var lines = new List<string>
-            {
-                "# Checkpoint Definitions",
-                $"# Generated: {DateTime.Now:o}",
-                "# Add these to your test repository",
-                "",
-                "checkpoints:"
-            };
-
+            var checkpointsArray = new List<Dictionary<string, object>>();
             foreach (var cp in _checkpoints)
             {
-                lines.Add($"  - id: {cp.Id}");
-                lines.Add($"    type: {cp.Type}");
-                if (!string.IsNullOrEmpty(cp.ElementAlias))
-                    lines.Add($"    elementAlias: {cp.ElementAlias}");
-                lines.Add($"    propertyName: {cp.PropertyName}");
-                lines.Add($"    expectedValue: \"{cp.ExpectedValue}\"");
-                if (!string.IsNullOrEmpty(cp.Description))
-                    lines.Add($"    description: \"{cp.Description}\"");
-                
-                if (cp.X.HasValue)
-                    lines.Add($"    x: {cp.X.Value}");
-                if (cp.Y.HasValue)
-                    lines.Add($"    y: {cp.Y.Value}");
-                if (cp.Width.HasValue)
-                    lines.Add($"    width: {cp.Width.Value}");
-                if (cp.Height.HasValue)
-                    lines.Add($"    height: {cp.Height.Value}");
-                
-                if (!string.IsNullOrEmpty(cp.BaselineImagePath))
-                    lines.Add($"    baselineImagePath: {cp.BaselineImagePath}");
-                
-                lines.Add("");
+                checkpointsArray.Add(cp.ToDictionary());
             }
 
-            File.WriteAllLines(filePath, lines);
+            var root = new Dictionary<string, object>
+            {
+                ["checkpoints"] = checkpointsArray
+            };
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            File.WriteAllText(filePath, JsonSerializer.Serialize(root, options));
             Log($"[CheckpointRecorder] Exported {_checkpoints.Count} checkpoints to {filePath}");
         }
 
         /// <summary>
-        /// Imports checkpoints from a YAML file.
+        /// Imports checkpoints from a JSON file.
         /// </summary>
         public void Import(string filePath)
         {
-            // TODO: Implement YAML parsing
+            // TODO: Implement JSON parsing
             Log($"[CheckpointRecorder] Import not yet implemented for {filePath}");
         }
 

@@ -1,23 +1,19 @@
-"""Schema-level smoke tests for the Sikuli repository YAML shape.
+"""Schema-level smoke tests for the Sikuli repository JSON shape.
 
 Phase 2 self-test: when the recorder captures a template PNG it
-should appear in the emitted YAML as a `Sikuli` strategy with both
+should appear in the emitted JSON as a `Sikuli` strategy with both
 `value` and `imagePath` set, and a sensible `similarity` default.
 
 We mirror the C# RepositoryWriter shape in pure Python so the test
-runs without dotnet / a desktop, then validate the rendered YAML
+runs without dotnet / a desktop, then validate the rendered JSON
 matches the expected schema.
 """
 
 import os
 import sys
 import tempfile
+import json
 import unittest
-
-try:
-    import yaml  # type: ignore
-except ImportError:
-    yaml = None  # type: ignore
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -49,10 +45,7 @@ class TestSikuliStrategySchema(unittest.TestCase):
         self.assertEqual(s["imagePath"], "sikuli/SampleWpfApp.LoginPage.txtUsername.png")
         self.assertEqual(s["similarity"], 0.85)
 
-    def test_full_yaml_round_trip(self):
-        if yaml is None:
-            self.skipTest("pyyaml not installed")
-
+    def test_full_json_round_trip(self):
         strategy = _render_sikuli_strategy(image_path="sikuli/SampleWpfApp.btnSubmit.png")
         element = {
             "displayName": "Submit Button",
@@ -67,11 +60,11 @@ class TestSikuliStrategySchema(unittest.TestCase):
             },
         }
         with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "element.yaml")
+            path = os.path.join(tmp, "element.json")
             with open(path, "w") as f:
-                yaml.safe_dump({"elements": {"SampleWpfApp.LoginPage.btnSubmit": element}}, f, sort_keys=False)
+                json.dump({"elements": {"SampleWpfApp.LoginPage.btnSubmit": element}}, f, sort_keys=False)
             with open(path) as f:
-                loaded = yaml.safe_load(f)
+                loaded = json.load(f)
         sik = loaded["elements"]["SampleWpfApp.LoginPage.btnSubmit"]["strategies"]["Sikuli"][0]
         self.assertEqual(sik["searchBy"], "Image")
         self.assertEqual(sik["imagePath"], "sikuli/SampleWpfApp.btnSubmit.png")

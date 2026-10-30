@@ -59,7 +59,7 @@ The Checkpoint Wizard enables non-programmers to create test verifications throu
 
 ```bash
 # Export checkpoints from a recording session
-python3 -m api.healing_cli --export-checkpoints output.yaml
+python3 -m api.healing_cli --export-checkpoints output.json
 ```
 
 ### Programmatically
@@ -86,7 +86,7 @@ Library    modules.CheckpointLibrary
 
 *** Test Cases ***
 Verify Login Page
-    Load Checkpoints    ${CURDIR}/checkpoints/login_checkpoints.yaml
+    Load Checkpoints    ${CURDIR}/checkpoints/login_checkpoints.json
     Verify All Checkpoints
     Log Verification Summary
 ```
@@ -115,37 +115,46 @@ Direct Verification
     Should Be True    ${passed}
 ```
 
-## Checkpoint YAML Format
+## Checkpoint JSON Format
 
-Checkpoints are stored in YAML format:
+Checkpoints are stored in JSON format:
 
-```yaml
-checkpoints:
-  - id: prop_001
-    type: Property
-    elementAlias: LoginPage.txtUsername
-    propertyName: Text
-    expectedValue: "admin"
-    description: "Verify username field"
-
-  - id: area_001
-    type: Area
-    x: 100
-    y: 200
-    width: 300
-    height: 50
-    expectedValue: "Welcome to the app"
-    description: "Verify welcome message"
-
-  - id: img_001
-    type: Image
-    x: 0
-    y: 0
-    width: 1920
-    height: 1080
-    baselineImagePath: "checkpoints/baseline/homepage.png"
-    parameters:
-      threshold: "95"
+```json
+{
+  "checkpoints": [
+    {
+      "id": "prop_001",
+      "type": "Property",
+      "elementAlias": "LoginPage.txtUsername",
+      "propertyName": "Text",
+      "expectedValue": "admin",
+      "description": "Verify username field"
+    },
+    {
+      "id": "area_001",
+      "type": "Area",
+      "x": 100,
+      "y": 200,
+      "width": 300,
+      "height": 50,
+      "expectedValue": "Welcome to the app",
+      "description": "Verify welcome message"
+    },
+    {
+      "id": "img_001",
+      "type": "Image",
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "baselineImagePath": "checkpoints/baseline/homepage.png",
+      "description": "Verify homepage appearance",
+      "parameters": {
+        "threshold": "95"
+      }
+    }
+  ]
+}
 ```
 
 ## Checkpoint Properties
@@ -185,7 +194,7 @@ from api.checkpoint_verifier import CheckpointVerifier
 
 # Load and verify
 verifier = CheckpointVerifier(driver_api)
-verifier.load_checkpoints("checkpoints/test.yaml")
+verifier.load_checkpoints("checkpoints/test.json")
 results = verifier.verify_all()
 
 # Create dynamically
@@ -202,7 +211,7 @@ cp = create_checkpoint(
 
 | Keyword | Description |
 |---------|-------------|
-| `Load Checkpoints` | Load from YAML file |
+| `Load Checkpoints` | Load from JSON file |
 | `Load Checkpoints From Json` | Load from JSON string |
 | `Verify All Checkpoints` | Verify all loaded checkpoints |
 | `Verify Checkpoint` | Verify single checkpoint by ID |
@@ -210,7 +219,7 @@ cp = create_checkpoint(
 | `Create Property Checkpoint` | Create property checkpoint |
 | `Create Area Checkpoint` | Create area checkpoint |
 | `Create Image Checkpoint` | Create image checkpoint |
-| `Get Checkpoint Template` | Get YAML template |
+| `Get Checkpoint Template` | Get JSON template |
 | `Verify Element Property` | Direct property verification |
 
 ## Best Practices

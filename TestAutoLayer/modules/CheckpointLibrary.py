@@ -18,7 +18,7 @@ Usage:
 
     *** Test Cases ***
     Verify Login Page
-        Load Checkpoints    ${CURDIR}/checkpoints/login_checkpoints.yaml
+        Load Checkpoints    ${CURDIR}/checkpoints/login_checkpoints.json
         Verify All Checkpoints
         Verify Checkpoint    prop_001
         Log Verification Summary
@@ -46,7 +46,7 @@ class CheckpointLibrary:
     Example:
         *** Test Cases ***
         Example Test
-            Load Checkpoints    checkpoints/my_test.yaml
+            Load Checkpoints    checkpoints/my_test.json
             Verify All Checkpoints
     """
     
@@ -58,16 +58,16 @@ class CheckpointLibrary:
     
     def load_checkpoints(self, file_path: str) -> int:
         """
-        Load checkpoints from a YAML file.
+        Load checkpoints from a JSON file.
         
         Args:
-            file_path: Path to checkpoints YAML file
+            file_path: Path to checkpoints JSON file
             
         Returns:
             Number of checkpoints loaded
             
         Example:
-            Load Checkpoints    ${CURDIR}/../checkpoints/login.yaml
+            Load Checkpoints    ${CURDIR}/../checkpoints/login.json
         """
         from api.DriverAgnosticApi import DriverAgnosticApi
         driver_api = DriverAgnosticApi()
@@ -314,14 +314,14 @@ class CheckpointLibrary:
     
     def export_checkpoints(self, file_path: str):
         """
-        Export loaded checkpoints to a YAML file.
+        Export loaded checkpoints to a JSON file.
         
         Args:
             file_path: Output file path
             
         Example:
             Create Some Checkpoints
-            Export Checkpoints    ${CURDIR}/../checkpoints/exported.yaml
+            Export Checkpoints    ${CURDIR}/../checkpoints/exported.json
         """
         if not self._verifier or not self._verifier.checkpoints:
             print("[CheckpointLibrary] No checkpoints to export")
@@ -333,14 +333,14 @@ class CheckpointLibrary:
     
     def get_checkpoint_template(self) -> str:
         """
-        Get the checkpoint YAML template.
+        Get the checkpoint JSON template.
         
         Returns:
             Template string for creating checkpoint files
             
         Example:
             ${template}=    Get Checkpoint Template
-            Create File    checkpoints/new.yaml    ${template}
+            Create File    checkpoints/new.json    ${template}
         """
         return CHECKPOINT_TEMPLATE
     
