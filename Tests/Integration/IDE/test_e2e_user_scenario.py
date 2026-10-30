@@ -85,21 +85,39 @@ def get_text_by_auto_id(window, automation_id, timeout=10):
 
 
 def click_menu_item(window, menu_path, timeout=10):
-    """Click a menu item by path, e.g. 'File > Open Script...'."""
+    """Click a menu item by path, e.g. 'File > Save Script'.
+    
+    Falls back to keyboard shortcuts (Ctrl+S for save, Ctrl+R for run,
+    Ctrl+O for open) since the IDE uses keyboard bindings as primary
+    activation and pywinauto menu_select may not work with WPF Menu.
+    """
     parts = [p.strip() for p in menu_path.split(">")]
+    top = parts[0]
+    sub = parts[1] if len(parts) > 1 else None
+
+    # Try pywinauto menu_select first
     try:
-        ctrl = window.menu_select(parts[0], timeout=timeout)
+        window.menu_select(top, timeout=timeout)
+        if sub:
+            # menu_select with full path
+            full_path = " -> ".join(parts)
+            window.menu_select(full_path, timeout=timeout)
+        return
     except Exception:
-        return None
-    for part in parts[1:]:
-        try:
-            ctrl = ctrl.child_window(title=part, control_type="MenuItem")
-            ctrl.wait("visible", timeout=timeout)
-            ctrl.click_input()
-            time.sleep(0.5)
-        except Exception:
-            return None
-    return ctrl
+        pass
+
+    # Fall back to keyboard shortcuts (defined in IDE InputBindings)
+    shortcut_map = {
+        ("File", "Save Script"): "^s",      # Ctrl+S
+        ("File", "Open Script"): "^o",      # Ctrl+O
+        ("Run", "Run Script"): "^r",        # Ctrl+R
+    }
+    key = (top, sub)
+    if key in shortcut_map:
+        window.type_keys(shortcut_map[key])
+        return
+
+    raise PywinautoTimeout(f"Menu '{menu_path}' not found and no keyboard shortcut available")
 
 
 @pytest.fixture(scope="function")
@@ -165,6 +183,8 @@ class TestE2EUserScenario:
         # --- Step 1: Both apps launched ---
         assert ide_window.exists(), "IDE should be running"
         assert sample_window.exists(), "SampleWpfApp should be running"
+        assert "WPF Test IDE" in ide_window.window_text()
+        assert "Sample WPF App" in sample_window.window_text()
 
         # --- Step 2: Attach to SampleWpfApp using IDE ---
         click_by_auto_id(ide_window, "btnAttach")
@@ -174,35 +194,24 @@ class TestE2EUserScenario:
         try:
             toggle_by_auto_id(ide_window, "RuntimeAttachRadio")
         except PywinautoTimeout:
+            # Radio button may not be visible; try without it
             pass
         time.sleep(1)
 
         # Click Attach button in dialog
-        try:
-            click_by_auto_id(ide_window, "btnAttach", timeout=5)
-        except PywinautoTimeout:
-            pass
+        click_by_auto_id(ide_window, "btnAttach", timeout=10)
         time.sleep(2)
 
         # --- Step 3: Record scenarios in SampleWpfApp using IDE ---
         click_by_auto_id(ide_window, "btnRecord")
         time.sleep(1)
 
-        # Interact with SampleWpfApp Login page
-        try:
-            set_text_by_auto_id(sample_window, "txtUsername", "e2e_user")
-        except Exception:
-            pass
+        # Interact with SampleWpfApp Login page — these are CRITICAL
+        set_text_by_auto_id(sample_window, "txtUsername", "e2e_user")
         time.sleep(0.5)
-        try:
-            set_text_by_auto_id(sample_window, "txtPassword", "e2e_pass")
-        except Exception:
-            pass
+        set_text_by_auto_id(sample_window, "txtPassword", "e2e_pass")
         time.sleep(0.5)
-        try:
-            click_by_auto_id(sample_window, "btnSubmit")
-        except Exception:
-            pass
+        click_by_auto_id(sample_window, "btnSubmit")
         time.sleep(2)
 
         # Wait for OrdersWindow to appear after login
@@ -265,7 +274,6 @@ class TestE2EUserScenario:
                 time.sleep(1)
                 # Select the username field as verification target
                 try:
-                    # Look for a verification target selector or use StatusText
                     verify_target = _find_by_auto_id(ide_window, "txtUsername")
                     if verify_target:
                         verify_target[0].click_input()
@@ -295,41 +303,20 @@ class TestE2EUserScenario:
             pass
 
         # --- Step 5: Save the modified script ---
-        try:
-            click_menu_item(ide_window, "File > Save Script")
-            time.sleep(1)
-            try:
-                set_text_by_auto_id(ide_window, "txtFileName", SCRIPT_NAME)
-                click_by_auto_id(ide_window, "btnSave")
-            except Exception:
-                pass
-            time.sleep(1)
-        except Exception:
-            pass
+        click_menu_item(ide_window, "File > Save Script")
+        time.sleep(1)
 
         # --- Step 6: Load the modified script ---
-        try:
-            click_menu_item(ide_window, "File > Open Script")
-            time.sleep(1)
-            try:
-                set_text_by_auto_id(ide_window, "txtFileName", SCRIPT_NAME)
-                click_by_auto_id(ide_window, "btnOpen")
-            except Exception:
-                pass
-            time.sleep(1)
-        except Exception:
-            pass
+        click_menu_item(ide_window, "File > Open Script")
+        time.sleep(1)
 
         # --- Step 7: Run the script ---
-        try:
-            click_by_auto_id(ide_window, "btnRunScript")
-            time.sleep(5)
-        except Exception:
-            pass
+        click_menu_item(ide_window, "Run > Run Script")
+        time.sleep(5)
 
         # Verify both apps still running
-        assert ide_window.exists()
-        assert sample_window.exists()
+        assert ide_window.exists(), "IDE should still be running after scenario"
+        assert sample_window.exists(), "SampleWpfApp should still be running after scenario"
 
 
 class TestE2EAttachOnly:
@@ -340,8 +327,8 @@ class TestE2EAttachOnly:
         ide_window = get_main_window(ide_app)
         sample_window = get_sample_window(sample_app)
 
-        assert ide_window.exists()
-        assert sample_window.exists()
+        assert ide_window.exists(), "IDE should be running"
+        assert sample_window.exists(), "SampleWpfApp should be running"
 
         click_by_auto_id(ide_window, "btnAttach")
         time.sleep(2)
@@ -349,23 +336,17 @@ class TestE2EAttachOnly:
         try:
             toggle_by_auto_id(ide_window, "RuntimeAttachRadio")
             time.sleep(1)
-        except Exception:
+        except PywinautoTimeout:
             pass
 
         try:
             click_by_auto_id(ide_window, "btnAttach", timeout=5)
             time.sleep(2)
-        except Exception:
+        except PywinautoTimeout:
             pass
 
-        try:
-            status = get_text_by_auto_id(ide_window, "StatusText")
-            assert status != ""
-        except Exception:
-            pass
-
-        assert ide_window.exists()
-        assert sample_window.exists()
+        assert ide_window.exists(), "IDE should still be running after attach attempt"
+        assert sample_window.exists(), "SampleWpfApp should still be running after attach attempt"
 
 
 class TestE2ERecordOnly:
@@ -376,30 +357,30 @@ class TestE2ERecordOnly:
         ide_window = get_main_window(ide_app)
         sample_window = get_sample_window(sample_app)
 
-        assert ide_window.exists()
-        assert sample_window.exists()
+        assert ide_window.exists(), "IDE should be running"
+        assert sample_window.exists(), "SampleWpfApp should be running"
 
         click_by_auto_id(ide_window, "btnRecord")
         time.sleep(1)
 
         try:
             set_text_by_auto_id(sample_window, "txtUsername", "e2e_user")
-        except Exception:
+        except PywinautoTimeout:
             pass
         time.sleep(0.5)
         try:
             set_text_by_auto_id(sample_window, "txtPassword", "e2e_pass")
-        except Exception:
+        except PywinautoTimeout:
             pass
         time.sleep(0.5)
         try:
             click_by_auto_id(sample_window, "btnSubmit")
-        except Exception:
+        except PywinautoTimeout:
             pass
         time.sleep(2)
 
         click_by_auto_id(ide_window, "btnRecord")
         time.sleep(1)
 
-        assert ide_window.exists()
-        assert sample_window.exists()
+        assert ide_window.exists(), "IDE should still be running after recording"
+        assert sample_window.exists(), "SampleWpfApp should still be running after recording"
