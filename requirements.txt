@@ -11,6 +11,8 @@ pywin32>=305
 # ---- Optional: UI drivers ----
 # Required for FlaUI-based automation.
 robotframework-flaui>=0.9
+# Required for flaui-uiautomation-wrapper Python UI Automation driver.
+flaui-uiautomation-wrapper>=1.0.0b1
 # Required for Sikuli image-based automation.
 robotframework-SikuliLibrary>=1.0
 

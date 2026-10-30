@@ -2,11 +2,11 @@
 
 These tests verify **WPFTestIDE features end-to-end without using TestAutoLayer directly**.
 
-## Standalone pywinauto tests (truly independent)
+## Standalone flaui-uiautomation-wrapper tests (truly independent)
 
 **Location:** `Tests/Integration/IDE/test_ide_features.py`
 
-Launches `WpfTestIde.exe` directly and drives it via **pywinauto UI Automation** (AutomationId-based). **Zero imports from TestAutoLayer**, so framework changes cannot break these tests.
+Launches `WpfTestIde.exe` directly and drives it via **flaui-uiautomation-wrapper UI Automation** (AutomationId-based). **Zero imports from TestAutoLayer**, so framework changes cannot break these tests.
 
 ### What's tested
 
@@ -72,7 +72,7 @@ python -m pytest Tests/Integration/IDE/test_ide_features.py Tests/Integration/ID
 ```
 
 Requires:
-- `pywinauto` (already installed)
+- `flaui-uiautomation-wrapper` (already installed via setup_env.bat)
 - `WPFTestIDE\bin\Debug\net9.0-windows\WpfTestIde.exe` built
 - `Tests/bin/SampleWpfApp/Debug/net9.0-windows/SampleWpfApp.exe` built
 
@@ -83,5 +83,5 @@ The previous Robot IDE suites (`wpf_test_ide_use_cases.robot`, etc.) loaded
 (import error, API change, config issue), **all** those Robot tests error out
 — none runnable.
 
-These standalone pywinauto tests have **zero TestAutoLayer dependency**, so they
+These standalone flaui tests have **zero TestAutoLayer dependency**, so they
 provide IDE regression coverage independent of framework health.

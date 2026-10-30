@@ -93,9 +93,10 @@ echo.
 
 echo   -- Installing optional UI driver dependencies --
 echo   robotframework-flaui      (FlaUI UI Automation wrapper)
+echo   flaui-uiautomation-wrapper (FlaUI Python wrapper for UI Automation)
 echo   robotframework-SikuliLibrary (Sikuli image-based driver)
 echo.
-python -m pip install robotframework-flaui robotframework-SikuliLibrary
+python -m pip install robotframework-flaui flaui-uiautomation-wrapper robotframework-SikuliLibrary
 if errorlevel 1 (
     echo WARNING: Optional UI driver packages failed to install.
     echo   FlaUI/Sikuli drivers will not be available until these are installed.

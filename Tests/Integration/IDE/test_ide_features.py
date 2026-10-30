@@ -1,4 +1,4 @@
-"""Standalone IDE feature tests using pywinauto UI Automation.
+"""Standalone IDE feature tests using flaui-uiautomation-wrapper UI Automation.
 
 These tests verify WPFTestIDE features end-to-end **without using
 TestAutoLayer**. They launch ``WpfTestIde.exe`` directly and interact
@@ -10,11 +10,23 @@ Run:
     python -m pytest Tests/Integration/IDE/test_ide_features.py -v
 """
 
+import os
+import sys
 import time
 
 import pytest
-from pywinauto import Application
-from pywinauto.timings import TimeoutError as PywinautoTimeout
+
+# Make TestAutoLayer/api importable for the flaui adapter
+sys.path.insert(
+    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "TestAutoLayer", "api")
+)
+from flaui_adapter import (  # noqa: E402
+    Application,
+    PywinautoTimeout,
+    click_by_auto_id,
+    get_text_by_auto_id,
+    toggle_by_auto_id,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -23,77 +35,16 @@ from pywinauto.timings import TimeoutError as PywinautoTimeout
 
 def _find_by_auto_id(window, automation_id, control_type=None):
     """Find all descendants matching AutomationId (searches all levels)."""
-    kwargs = {}
-    if control_type:
-        kwargs["control_type"] = control_type
-    candidates = window.descendants(**kwargs) if kwargs else window.descendants()
-    matched = []
-    for c in candidates:
-        try:
-            aid = c.element_info.automation_id
-        except Exception:
-            try:
-                aid = c.automation_id()
-            except Exception:
-                aid = None
-        if aid == automation_id:
-            matched.append(c)
-    return matched
+    from flaui_adapter import _find_by_auto_id as _ffi  # noqa: E402
 
-
-def click_by_auto_id(window, automation_id, timeout=10, control_type=None):
-    """Click any control by its AutomationId (searches all descendants)."""
-    matched = _find_by_auto_id(window, automation_id, control_type)
-    if not matched:
-        raise PywinautoTimeout(f"Control '{automation_id}' not found")
-    ctrl = matched[0]
-    ctrl.click_input()
-    return ctrl
-
-
-def toggle_by_auto_id(window, automation_id, timeout=10):
-    """Toggle a CheckBox by its AutomationId (searches all descendants)."""
-    matched = _find_by_auto_id(window, automation_id, "CheckBox")
-    if not matched:
-        raise PywinautoTimeout(f"CheckBox '{automation_id}' not found")
-    ctrl = matched[0]
-    ctrl.toggle()
-    return ctrl
-
-
-def get_text_by_auto_id(window, automation_id, timeout=10):
-    """Get the text of a control by AutomationId (searches all descendants)."""
-    matched = _find_by_auto_id(window, automation_id)
-    if not matched:
-        raise PywinautoTimeout(f"Control '{automation_id}' not found")
-    ctrl = matched[0]
-    return ctrl.window_text()
-
-
-def wait_for_auto_id(window, automation_id, timeout=10, control_type=None):
-    """Wait for a control by AutomationId to be visible (searches all descendants)."""
-    matched = _find_by_auto_id(window, automation_id, control_type)
-    if not matched:
-        raise PywinautoTimeout(f"Control '{automation_id}' not found")
-    return matched[0]
+    return _ffi(window, automation_id, control_type)
 
 
 def click_menu_item(window, menu_path, timeout=10):
     """Click a menu item by path, e.g. 'File > Open Script...'."""
-    parts = [p.strip() for p in menu_path.split(">")]
-    try:
-        ctrl = window.menu_select(parts[0], timeout=timeout)
-    except Exception:
-        return None
-    for part in parts[1:]:
-        try:
-            ctrl = ctrl.child_window(title=part, control_type="MenuItem")
-            ctrl.wait("visible", timeout=timeout)
-            ctrl.click_input()
-            time.sleep(0.5)
-        except Exception:
-            return None
-    return ctrl
+    from flaui_adapter import click_menu_item as _cmi  # noqa: E402
+
+    return _cmi(window, menu_path, timeout)
 
 
 # ---------------------------------------------------------------------------
@@ -553,6 +504,7 @@ class TestREG005DriverSettingsAllModes:
             "chkRecordFlaUI",
             "chkRecordWPFSpy",
             "chkRunFlaUI",
+            "chkRunWPFSpy",
         ]:
             try:
                 toggle_by_auto_id(main_window, cb_id)

@@ -9,15 +9,29 @@ Scenario:
 6. User loads the modified script
 7. User runs the script
 
-Independent of TestAutoLayer — uses pywinauto UI Automation directly.
+Independent of TestAutoLayer — uses flaui-uiautomation-wrapper UI Automation directly.
 """
 
 import os
+import sys
 import time
 
 import pytest
-from pywinauto import Application
-from pywinauto.timings import TimeoutError as PywinautoTimeout
+
+# Make TestAutoLayer/api importable for the flaui adapter
+sys.path.insert(
+    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "TestAutoLayer", "api")
+)
+from flaui_adapter import (  # noqa: E402
+    Application,
+    Desktop,
+    PywinautoTimeout,
+    click_by_auto_id,
+    get_text_by_auto_id,
+    keyboard,
+    set_text_by_auto_id,
+    toggle_by_auto_id,
+)
 
 IDE_EXE = r"bin\Debug\net9.0-windows\WpfTestIde.exe"
 SAMPLE_APP_EXE = r"Tests/bin/SampleWpfApp/Debug/net9.0-windows/SampleWpfApp.exe"
@@ -27,120 +41,21 @@ SCRIPT_NAME = "e2e_user_scenario_script"
 
 def _find_by_auto_id(window, automation_id, control_type=None):
     """Find all descendants matching AutomationId (searches all levels)."""
-    kwargs = {}
-    if control_type:
-        kwargs["control_type"] = control_type
-    candidates = window.descendants(**kwargs) if kwargs else window.descendants()
-    matched = []
-    for c in candidates:
-        try:
-            aid = c.element_info.automation_id
-        except Exception:
-            try:
-                aid = c.automation_id()
-            except Exception:
-                aid = None
-        if aid == automation_id:
-            matched.append(c)
-    return matched
+    from flaui_adapter import _find_by_auto_id as _ffi  # noqa: E402
 
-
-def click_by_auto_id(window, automation_id, timeout=10, control_type=None):
-    """Click any control by its AutomationId (searches all descendants).
-
-    Focuses the window then uses click_input() first (generates a real
-    mouse click that the IDE's global mouse hook recorder can capture),
-    falls back to invoke() if click_input() fails (e.g., control obscured
-    by an overlapping window such as VS Code).
-    """
-    matched = _find_by_auto_id(window, automation_id, control_type)
-    if not matched:
-        raise PywinautoTimeout(f"Control '{automation_id}' not found")
-    ctrl = matched[0]
-    try:
-        try:
-            window.set_focus()
-        except Exception:
-            pass
-        time.sleep(0.2)
-        ctrl.click_input()
-    except Exception:
-        ctrl.invoke()
-    return ctrl
-
-
-def set_text_by_auto_id(window, automation_id, text, timeout=10):
-    """Set text on an Edit/TextBox control by AutomationId.
-
-    Clicks the control first so the IDE's global mouse hook registers it
-    as pending focused input; the typed value is committed as a SetValue
-    step on the next click (blur model used by RecordingSession).
-    """
-    matched = _find_by_auto_id(window, automation_id, "Edit")
-    if not matched:
-        matched = _find_by_auto_id(window, automation_id)
-    if not matched:
-        raise PywinautoTimeout(f"Edit control '{automation_id}' not found")
-    ctrl = matched[0]
-    try:
-        ctrl.click_input()
-    except Exception:
-        pass
-    ctrl.set_edit_text(text)
-    return ctrl
-
-
-def toggle_by_auto_id(window, automation_id, timeout=10):
-    """Toggle a CheckBox by its AutomationId (searches all descendants)."""
-    matched = _find_by_auto_id(window, automation_id, "CheckBox")
-    if not matched:
-        raise PywinautoTimeout(f"CheckBox '{automation_id}' not found")
-    matched[0].toggle()
-    return matched[0]
-
-
-def get_text_by_auto_id(window, automation_id, timeout=10):
-    """Get the text of a control by AutomationId (searches all descendants)."""
-    matched = _find_by_auto_id(window, automation_id)
-    if not matched:
-        raise PywinautoTimeout(f"Control '{automation_id}' not found")
-    return matched[0].window_text()
+    return _ffi(window, automation_id, control_type)
 
 
 def click_menu_item(window, menu_path, timeout=10):
     """Click a menu item by path, e.g. 'File > Save Script'.
-    
+
     Falls back to keyboard shortcuts (Ctrl+S for save, Ctrl+R for run,
     Ctrl+O for open) since the IDE uses keyboard bindings as primary
-    activation and pywinauto menu_select may not work with WPF Menu.
+    activation and flaui menu_select may not work with WPF Menu.
     """
-    parts = [p.strip() for p in menu_path.split(">")]
-    top = parts[0]
-    sub = parts[1] if len(parts) > 1 else None
+    from flaui_adapter import click_menu_item as _cmi  # noqa: E402
 
-    # Try pywinauto menu_select first
-    try:
-        window.menu_select(top, timeout=timeout)
-        if sub:
-            # menu_select with full path
-            full_path = " -> ".join(parts)
-            window.menu_select(full_path, timeout=timeout)
-        return
-    except Exception:
-        pass
-
-    # Fall back to keyboard shortcuts (defined in IDE InputBindings)
-    shortcut_map = {
-        ("File", "Save Script"): "^s",      # Ctrl+S
-        ("File", "Open Script"): "^o",      # Ctrl+O
-        ("Run", "Run Script"): "^r",        # Ctrl+R
-    }
-    key = (top, sub)
-    if key in shortcut_map:
-        window.type_keys(shortcut_map[key])
-        return
-
-    raise PywinautoTimeout(f"Menu '{menu_path}' not found and no keyboard shortcut available")
+    return _cmi(window, menu_path, timeout)
 
 
 @pytest.fixture(scope="function")
@@ -194,7 +109,6 @@ def get_add_step_dialog(ide_app, timeout=15):
     The dialog is a separate top-level Window owned by the IDE main window.
     Search desktop windows for it by AutomationId.
     """
-    from pywinauto import Desktop
     end_time = time.time() + timeout
     found = None
     while time.time() < end_time and found is None:
@@ -254,7 +168,6 @@ class TestE2EUserScenario:
 
         # Find the AttachToProcessDialog window (separate top-level window)
         # Use Desktop to find it since it's a separate Window
-        from pywinauto import Desktop
         attach_dialog = None
         end_time = time.time() + 15
         while time.time() < end_time:
@@ -428,7 +341,6 @@ class TestE2EUserScenario:
                     except Exception:
                         combo.click_input()
                         time.sleep(0.5)
-                        from pywinauto import keyboard
                         keyboard.send_keys(
                             "{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}"
                             "{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}"
@@ -447,7 +359,6 @@ class TestE2EUserScenario:
                     except Exception:
                         combo.click_input()
                         time.sleep(0.5)
-                        from pywinauto import keyboard
                         keyboard.send_keys(
                             "{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}"
                         )
@@ -528,7 +439,6 @@ class TestE2EAttachOnly:
         time.sleep(1)
 
         # Find the AttachToProcessDialog window
-        from pywinauto import Desktop
         attach_dialog = None
         end_time = time.time() + 15
         while time.time() < end_time:

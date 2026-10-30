@@ -1,14 +1,20 @@
 """Pytest fixtures for standalone IDE tests.
 
-Launches WpfTestIde.exe directly via pywinauto UI Automation.
+Launches WpfTestIde.exe directly via flaui-uiautomation-wrapper UI Automation.
 Zero dependency on TestAutoLayer framework.
 """
 
 import os
+import sys
 import time
 
 import pytest
-from pywinauto import Application
+
+# Make TestAutoLayer/api importable for the flaui adapter
+sys.path.insert(
+    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "TestAutoLayer", "api")
+)
+from flaui_adapter import Application  # noqa: E402
 
 
 IDE_EXE = r"bin\Debug\net9.0-windows\WpfTestIde.exe"

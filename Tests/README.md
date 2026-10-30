@@ -38,7 +38,7 @@ robot --outputdir output Tests/SampleWpfApp/
 
 **Location:** `Tests/Integration/IDE/`
 
-Verifies WPFTestIDE features end-to-end **without using TestAutoLayer directly**. Uses pywinauto UI Automation (AutomationId-based). Zero imports from TestAutoLayer.
+Verifies WPFTestIDE features end-to-end **without using TestAutoLayer directly**. Uses flaui-uiautomation-wrapper UI Automation (AutomationId-based). Zero imports from TestAutoLayer.
 
 ```powershell
 python -m pytest Tests/Integration/IDE/test_ide_features.py -v
