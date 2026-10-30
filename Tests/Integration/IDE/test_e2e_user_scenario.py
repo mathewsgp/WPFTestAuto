@@ -293,45 +293,44 @@ class TestE2EUserScenario:
         time.sleep(1)
 
         # Select SampleWpfApp from the ProcessListView
-        try:
-            process_list = _find_by_auto_id(attach_dialog, "ProcessListView", "ListView")
-            if process_list:
-                list_view = process_list[0]
-                list_items = list_view.descendants(control_type="ListItem")
-                selected = False
-                for item in list_items:
+        process_list = _find_by_auto_id(attach_dialog, "ProcessListView")
+        if not process_list:
+            raise PywinautoTimeout("ProcessListView not found in Attach to Process dialog")
+
+        list_view = process_list[0]
+
+        # Find any element containing "SampleWpfApp" text in the dialog
+        list_item = None
+        end_time = time.time() + 15
+        while time.time() < end_time:
+            try:
+                all_desc = attach_dialog.descendants()
+                for d in all_desc:
                     try:
-                        item_text = item.window_text()
-                        if "SampleWpfApp" in item_text or "Sample WPF App" in item_text:
-                            item.click_input()
-                            selected = True
+                        txt = d.window_text()
+                        if "SampleWpfApp" in txt:
+                            d.click_input()
                             time.sleep(0.5)
+                            list_item = d
                             break
                     except Exception:
                         continue
-                if not selected and list_items:
-                    list_items[0].click_input()
-                    time.sleep(0.5)
-        except Exception:
-            pass
+                if list_item:
+                    break
+            except Exception:
+                pass
+            time.sleep(0.5)
+
+        if not list_item:
+            raise PywinautoTimeout("SampleWpfApp not found in ProcessListView")
 
         # Click Attach button INSIDE the dialog
-        try:
-            click_by_auto_id(attach_dialog, "btnAttach", timeout=10)
-        except PywinautoTimeout:
-            attach_btns = _find_by_auto_id(attach_dialog, "btnAttach", "Button")
-            if len(attach_btns) > 1:
-                attach_btns[1].click_input()
-            else:
-                raise
+        click_by_auto_id(attach_dialog, "btnAttach", timeout=10)
         time.sleep(2)
 
         # Verify attachment succeeded - StatusText should update
-        try:
-            status_text = get_text_by_auto_id(ide_window, "StatusText")
-            assert status_text != "", "StatusText should not be empty after attach"
-        except PywinautoTimeout:
-            pass
+        status_text = get_text_by_auto_id(ide_window, "StatusText")
+        assert status_text != "", "StatusText should not be empty after attach"
 
         # --- Step 3: Record scenarios in SampleWpfApp using IDE ---
         click_by_auto_id(ide_window, "btnRecord")
