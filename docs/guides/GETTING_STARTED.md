@@ -100,7 +100,7 @@ My New Test
 ```
 
 If the element/page you need doesn't exist yet in
-`repository/elements/*.yaml`, add it there first (see
+`repository/elements/*.json`, add it there first (see
 `docs/ELEMENT_REPOSITORY_GUIDE.md`) — you should almost never need to
 touch `api/DriverAgnosticApi.py` or anything in `drivers_rf/`/`drivers/`
 just to write a new test.

@@ -1,0 +1,181 @@
+{
+  "elements": {
+    "LoginPage.MainWindow": {
+      "displayName": "Main Window",
+      "controlType": "Window",
+      "windowAutomationId": "MainWindow",
+      "name": "WPF Test IDE",
+      "parentAlias": null,
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "Name",
+            "value": "WPF Test IDE",
+            "priority": 1
+          }
+        ]
+      }
+    },
+    "LoginPage.MainWindow.txtUsername": {
+      "displayName": "Username Text Box",
+      "controlType": "TextBox",
+      "automationId": "txtUsername",
+      "parentAlias": "LoginPage.MainWindow",
+      "relativeXPath": "TextBox[@AutomationId='txtUsername']",
+      "defaultTimeout": 10,
+      "tags": [
+        "login",
+        "critical"
+      ],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "txtUsername",
+            "priority": 1
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "AutomationId",
+            "value": "txtUsername",
+            "priority": 1
+          },
+          {
+            "searchBy": "XPath",
+            "value": "TextBox[@AutomationId='txtUsername']",
+            "priority": 2
+          }
+        ],
+        "Sikuli": [
+          {
+            "searchBy": "Image",
+            "value": "username_box.png",
+            "priority": 2
+          }
+        ]
+      }
+    },
+    "LoginPage.MainWindow.txtPassword": {
+      "displayName": "Password Text Box",
+      "controlType": "PasswordBox",
+      "automationId": "txtPassword",
+      "name": "txtPassword",
+      "parentAlias": "LoginPage.MainWindow",
+      "relativeXPath": "PasswordBox[@AutomationId='txtPassword']",
+      "defaultTimeout": 10,
+      "tags": [
+        "login",
+        "critical"
+      ],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "txtPassword",
+            "priority": 1
+          },
+          {
+            "searchBy": "Name",
+            "value": "txtPassword",
+            "priority": 2
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "AutomationId",
+            "value": "txtPassword",
+            "priority": 1
+          },
+          {
+            "searchBy": "XPath",
+            "value": "PasswordBox[@AutomationId='txtPassword']",
+            "priority": 2
+          }
+        ],
+        "Sikuli": [
+          {
+            "searchBy": "Image",
+            "value": "password_box.png",
+            "priority": 2
+          }
+        ]
+      }
+    },
+    "LoginPage.MainWindow.btnSubmit": {
+      "displayName": "Submit Button",
+      "controlType": "Button",
+      "automationId": "btnSubmit",
+      "parentAlias": "LoginPage.MainWindow",
+      "relativeXPath": "Button[@AutomationId='btnSubmit']",
+      "defaultTimeout": 10,
+      "tags": [
+        "login",
+        "critical"
+      ],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "btnSubmit",
+            "priority": 1
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "AutomationId",
+            "value": "btnSubmit",
+            "priority": 1
+          },
+          {
+            "searchBy": "XPath",
+            "value": "Button[@AutomationId='btnSubmit']",
+            "priority": 2
+          }
+        ],
+        "Sikuli": [
+          {
+            "searchBy": "Image",
+            "value": "login_button.png",
+            "priority": 2
+          }
+        ]
+      }
+    },
+    "LoginPage.MainWindow.lblError": {
+      "displayName": "Error Label",
+      "controlType": "Label",
+      "name": "lblError",
+      "parentAlias": "LoginPage.MainWindow",
+      "relativeXPath": "Label[@Name='lblError']",
+      "defaultTimeout": 5,
+      "tags": [
+        "login",
+        "verification"
+      ],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "Name",
+            "value": "lblError",
+            "priority": 1
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "XPath",
+            "value": "Label[@Name='lblError']",
+            "priority": 1
+          }
+        ],
+        "Sikuli": [
+          {
+            "searchBy": "Image",
+            "value": "error_label.png",
+            "priority": 2
+          }
+        ]
+      }
+    }
+  }
+}

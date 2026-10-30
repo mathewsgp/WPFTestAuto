@@ -13,11 +13,8 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Text.Json;
-using WpfTestIde.Helpers;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 using WpfTestIde.Execution;
+using WpfTestIde.Helpers;
 using WpfTestIde.Models;
 using WpfTestIde.Recording;
 using WpfTestIde.Themes;
@@ -219,8 +216,8 @@ namespace WpfTestIde.ViewModels
         private string _generatedScript = "";
         public string GeneratedScript { get => _generatedScript; set { _generatedScript = value; OnPropertyChanged(); } }
 
-        private string _repositoryYaml = "elements: {}\n";
-        public string RepositoryYaml { get => _repositoryYaml; set { _repositoryYaml = value; OnPropertyChanged(); } }
+        private string _repositoryJson = "{ \"elements\": {} }";
+        public string RepositoryJson { get => _repositoryJson; set { _repositoryJson = value; OnPropertyChanged(); } }
 
         private bool _isRecording;
         public bool IsRecording { get => _isRecording; set { _isRecording = value; OnPropertyChanged(); OnPropertyChanged(nameof(RecordButtonLabel)); } }
@@ -1504,7 +1501,7 @@ namespace WpfTestIde.ViewModels
                 OnPropertyChanged(nameof(EditingElement));
             }
         }
-         private void RegenerateRepository() => RepositoryYaml = RepositoryWriter.GenerateYaml(Elements, GetSelectedRecordingModes());
+         private void RegenerateRepository() => RepositoryJson = RepositoryWriter.GenerateJson(Elements, GetSelectedRecordingModes());
 
         // ------------------------------------------------------------
         // Run
@@ -1541,8 +1538,8 @@ namespace WpfTestIde.ViewModels
              // that may not yet exist in the static YAML files.
              string elementsDir = Path.Combine(FrameworkRoot, "repository", "elements");
              Directory.CreateDirectory(elementsDir);
-             string ideElementsPath = Path.Combine(elementsDir, "_ide_recorded.yaml");
-             File.WriteAllText(ideElementsPath, RepositoryYaml);
+             string ideElementsPath = Path.Combine(elementsDir, "_ide_recorded.json");
+             File.WriteAllText(ideElementsPath, RepositoryJson);
 
              string outputDir = Path.Combine(FrameworkRoot, "results", "ide_run");
 
@@ -1803,13 +1800,13 @@ namespace WpfTestIde.ViewModels
         {
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
-                FileName = "recorded_draft_elements.yaml",
-                Filter = "YAML files (*.yaml)|*.yaml",
+                FileName = "recorded_draft_elements.json",
+                Filter = "JSON files (*.json)|*.json",
                 InitialDirectory = Path.Combine(FrameworkRoot, "repository", "elements"),
             };
             if (dialog.ShowDialog() == true)
             {
-                File.WriteAllText(dialog.FileName, RepositoryYaml);
+                File.WriteAllText(dialog.FileName, RepositoryJson);
             }
         }
 
@@ -1853,45 +1850,37 @@ namespace WpfTestIde.ViewModels
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "YAML files (*.yaml)|*.yaml",
+                Filter = "JSON files (*.json)|*.json",
                 InitialDirectory = Path.Combine(FrameworkRoot, "repository", "elements"),
                 Multiselect = false
             };
             if (dialog.ShowDialog() != true) return;
 
-            var deserializer = new DeserializerBuilder()
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                .Build();
-
             try
             {
-                string yaml = File.ReadAllText(dialog.FileName);
-                var root = deserializer.Deserialize<Dictionary<object, object>>(yaml);
-                if (root == null || !root.TryGetValue("elements", out var elementsObj)) return;
+                string json = File.ReadAllText(dialog.FileName);
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                var rootElement = doc.RootElement;
 
-                var elementsDict = ConvertToDictionary(elementsObj);
-                if (elementsDict == null) return;
+                if (!rootElement.TryGetProperty("elements", out var elementsObj)) return;
 
                 int imported = 0;
-                foreach (var kv in elementsDict)
+                foreach (var kv in elementsObj.EnumerateObject())
                 {
-                    string alias = kv.Key?.ToString() ?? "";
+                    string alias = kv.Name;
                     if (string.IsNullOrEmpty(alias)) continue;
 
                     if (Elements.Any(e => e.Alias == alias)) continue;
 
-                    var entry = ConvertToDictionary(kv.Value);
-                    if (entry == null) continue;
-
+                    var entry = kv.Value;
                     var element = new ElementEntry
                     {
                         Alias = alias,
-                        DisplayName = entry.ContainsKey("displayName") ? (entry["displayName"] as string ?? "") : "",
-                        ControlType = entry.ContainsKey("controlType") ? (entry["controlType"] as string ?? "") : "",
-                        AutomationId = entry.ContainsKey("automationId") ? (entry["automationId"] as string ?? null) : null,
-                        Name = entry.ContainsKey("name") ? (entry["name"] as string ?? "") : "",
-                        XPath = entry.ContainsKey("relativeXPath") ? (entry["relativeXPath"] as string ?? null) : null,
-                        DriverPriority = entry.ContainsKey("driverPriority") ? (entry["driverPriority"] as List<object> ?? new List<object>()).Cast<string>().ToList() : null,
+                        DisplayName = entry.TryGetProperty("displayName", out var dnProp) ? dnProp.GetString() ?? "" : "",
+                        ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
+                        AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
+                        Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
+                        XPath = entry.TryGetProperty("relativeXPath", out var xpProp) ? xpProp.GetString() : null,
                     };
 
                     Elements.Add(element);
@@ -2026,48 +2015,40 @@ namespace WpfTestIde.ViewModels
         {
             Reset();
 
-            string loginPath = Path.Combine(FrameworkRoot, "repository", "elements", "login_page.yaml");
-            string ordersPath = Path.Combine(FrameworkRoot, "repository", "elements", "orders_page.yaml");
-
-            var deserializer = new DeserializerBuilder()
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                .Build();
+            string loginPath = Path.Combine(FrameworkRoot, "repository", "elements", "login_page.json");
+            string ordersPath = Path.Combine(FrameworkRoot, "repository", "elements", "orders_page.json");
 
             var loadedAliases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             try
             {
-                foreach (string yamlPath in new[] { loginPath, ordersPath })
+                foreach (string jsonPath in new[] { loginPath, ordersPath })
                 {
-                    if (!File.Exists(yamlPath)) continue;
+                    if (!File.Exists(jsonPath)) continue;
 
-                    string yaml = File.ReadAllText(yamlPath);
-                    var root = deserializer.Deserialize<Dictionary<object, object>>(yaml);
-                    if (root == null || !root.TryGetValue("elements", out var elementsObj)) continue;
+                    string json = File.ReadAllText(jsonPath);
+                    using var doc = System.Text.Json.JsonDocument.Parse(json);
+                    var rootElement = doc.RootElement;
 
-                    var elementsDict = ConvertToDictionary(elementsObj);
-                    if (elementsDict == null) continue;
+                    if (!rootElement.TryGetProperty("elements", out var elementsObj)) continue;
 
-                    foreach (var kv in elementsDict)
+                    foreach (var kv in elementsObj.EnumerateObject())
                     {
-                        string alias = kv.Key?.ToString() ?? "";
+                        string alias = kv.Name;
                         if (string.IsNullOrEmpty(alias)) continue;
 
-                        var entry = ConvertToDictionary(kv.Value);
-                        if (entry == null) continue;
-
-                        loadedAliases.Add(alias);
-
+                        var entry = kv.Value;
                         var element = new ElementEntry
                         {
                             Alias = alias,
-                            DisplayName = entry.ContainsKey("displayName") ? (entry["displayName"] as string ?? "") : "",
-                            ControlType = entry.ContainsKey("controlType") ? (entry["controlType"] as string ?? "") : "",
-                            AutomationId = entry.ContainsKey("automationId") ? (entry["automationId"] as string ?? null) : null,
-                            Name = entry.ContainsKey("name") ? (entry["name"] as string ?? "") : "",
+                            DisplayName = entry.TryGetProperty("displayName", out var dnProp) ? dnProp.GetString() ?? "" : "",
+                            ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
+                            AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
+                            Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
                             DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" }
                         };
 
+                        loadedAliases.Add(alias);
                         Elements.Add(element);
                     }
                 }
@@ -2078,7 +2059,7 @@ namespace WpfTestIde.ViewModels
 
             BuildSampleSteps(loadedAliases);
 
-            StatusText = "Loaded sample recording from repository YAML.";
+            StatusText = "Loaded sample recording from repository JSON.";
         }
 
         private void BuildSampleSteps(HashSet<string> loadedAliases)
@@ -2128,57 +2109,6 @@ namespace WpfTestIde.ViewModels
 
             if (logoutAlias != null)
                 Steps.Add(new RecordedStep { Kind = StepKind.Action, Alias = logoutAlias, Action = ActionKind.Invoke });
-        }
-
-        private static System.Collections.Generic.IDictionary<string, object>? ConvertToDictionary(object obj)
-        {
-            if (obj is System.Collections.Generic.IDictionary<string, object> dict)
-                return dict;
-
-            if (obj is System.Collections.Generic.IDictionary<object, object> objDict)
-            {
-                var result = new System.Collections.Generic.Dictionary<string, object>(System.StringComparer.OrdinalIgnoreCase);
-                foreach (var kv in objDict)
-                {
-                    string key = kv.Key?.ToString() ?? "";
-                    if (!string.IsNullOrEmpty(key))
-                    {
-                        result[key] = ConvertValue(kv.Value);
-                    }
-                }
-                return result;
-            }
-
-            return null;
-        }
-
-        private static object ConvertValue(object value)
-        {
-            if (value is System.Collections.Generic.IDictionary<object, object> dict)
-            {
-                var result = new System.Collections.Generic.Dictionary<string, object>(System.StringComparer.OrdinalIgnoreCase);
-                foreach (var kv in dict)
-                {
-                    string key = kv.Key?.ToString() ?? "";
-                    if (!string.IsNullOrEmpty(key))
-                    {
-                        result[key] = ConvertValue(kv.Value);
-                    }
-                }
-                return result;
-            }
-
-            if (value is System.Collections.Generic.IList<object> list)
-            {
-                var result = new System.Collections.Generic.List<object>();
-                foreach (var item in list)
-                {
-                    result.Add(ConvertValue(item));
-                }
-                return result;
-            }
-
-            return value;
         }
 
         private void Reset()

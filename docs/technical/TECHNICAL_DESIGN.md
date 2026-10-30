@@ -642,8 +642,8 @@ public class SpyResponse
 ### 9.2 Repository Configuration
 
 Element and step repositories are loaded at suite setup from:
-- `repository/elements/*.yaml` (merged into single element map)
-- `repository/steps/*.yaml` (merged into single step map)
+- `repository/elements/*.json` (merged into single element map)
+- `repository/steps/*.json` (merged into single step map)
 
 ---
 

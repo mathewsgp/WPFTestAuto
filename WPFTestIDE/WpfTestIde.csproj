@@ -14,8 +14,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- YAML (de)serialization for the Element Repository, matching the
-         Python framework's repository/elements/*.yaml format exactly. -->
+    <!-- JSON (de)serialization for the Element Repository, matching the
+         Python framework's repository/elements/*.json format exactly. -->
     <PackageReference Include="YamlDotNet" Version="13.7.1" />
   </ItemGroup>
 

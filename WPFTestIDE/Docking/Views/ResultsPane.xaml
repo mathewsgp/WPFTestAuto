@@ -12,7 +12,7 @@
                          btnSaveScript). Cross-tab AutomationId reuse would be unsafe:
                          WPF TabControls (no virtualization here) keep every TabItem's
                          content in the visual tree, so a reused AutomationId would
-                         resolve ambiguously when repository/elements/wpf_test_ide.yaml
+                          resolve ambiguously when repository/elements/wpf_test_ide.json
                          searches by relativeXPath="Button[@AutomationId='...']".
                          The commands themselves (RunCommand / ExportScriptCommand /
                          ResetCommand) are intentionally bound to multiple buttons -
@@ -72,7 +72,7 @@
                     <!-- D4: structured ListView replaces the txtRunOutput TextBox.
                          The TextBox + its AutomationId='txtRunOutput' are kept on
                          this ListView (AutomationProperties.AutomationId) so
-                         existing repository/elements/wpf_test_ide.yaml +
+                          existing repository/elements/wpf_test_ide.json +
                          Robot test locators still resolve —
                          "//ListView[@AutomationId='txtRunOutput']" (data file
                          updated in the same D4 change). Time/Level/Message

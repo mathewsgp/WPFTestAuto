@@ -1,0 +1,142 @@
+elements:
+  SampleWpfApp.LoginPage.txtUsername:
+    displayName: txtUsername
+    controlType: TextBox
+    parentAlias: SampleWpfApp.LoginPage
+    defaultTimeout: 10
+    tags:
+    - recorded
+    strategies:
+      FlaUI:
+      - searchBy: XPath
+        value: /Window[@AutomationId='LoginPage']/TextBox[@AutomationId='txtUsername']
+      - searchBy: AutomationId
+        value: txtUsername
+        scope: Descendant
+      WPFSpy:
+      - searchBy: XPath
+        value: /Window[@AutomationId='LoginPage']/TextBox[@AutomationId='txtUsername']
+    driverPriority:
+    - FlaUI
+    - WPFSpy
+  SampleWpfApp.LoginPage.txtPassword:
+    displayName: txtPassword
+    controlType: PasswordBox
+    parentAlias: SampleWpfApp.LoginPage
+    defaultTimeout: 10
+    tags:
+    - recorded
+    strategies:
+      FlaUI:
+      - searchBy: XPath
+        value: /Window[@AutomationId='LoginPage']/PasswordBox[@AutomationId='txtPassword']
+      - searchBy: AutomationId
+        value: txtPassword
+        scope: Descendant
+      WPFSpy:
+      - searchBy: XPath
+        value: /Window[@AutomationId='LoginPage']/PasswordBox[@AutomationId='txtPassword']
+    driverPriority:
+    - FlaUI
+    - WPFSpy
+  SampleWpfApp.OrdersWindow.OrdersWindow:
+    displayName: ''
+    controlType: OrdersWindow
+    parentAlias: SampleWpfApp.OrdersWindow
+    defaultTimeout: 10
+    tags:
+    - recorded
+    strategies:
+      FlaUI:
+      - searchBy: XPath
+        value: /Window[@AutomationId='OrdersWindow']
+      - searchBy: AutomationId
+        value: OrdersWindow
+        scope: Descendant
+      WPFSpy:
+      - searchBy: XPath
+        value: /Window[@AutomationId='OrdersWindow']
+    driverPriority:
+    - FlaUI
+    - WPFSpy
+  SampleWpfApp.OrdersWindow.PART_EditableTextBox:
+    displayName: PART_EditableTextBox
+    controlType: TextBox
+    parentAlias: SampleWpfApp.OrdersWindow
+    defaultTimeout: 10
+    tags:
+    - recorded
+    - self-healing-demo
+    strategies:
+      FlaUI:
+      - searchBy: XPath
+        value: /Window[@AutomationId='OrdersWindow']/ComboBox[@AutomationId='cmbSku']/TextBox
+      - searchBy: Name
+        value: PART_EditableTextBox
+        scope: Descendant
+      WPFSpy:
+      - searchBy: XPath
+        value: /Window[@AutomationId='OrdersWindow']/ComboBox[@AutomationId='cmbSku']/TextBox
+    driverPriority:
+    - FlaUI
+    - WPFSpy
+  SampleWpfApp.OrdersWindow.txtQty:
+    displayName: txtQty
+    controlType: TextBox
+    parentAlias: SampleWpfApp.OrdersWindow
+    defaultTimeout: 10
+    tags:
+    - recorded
+    strategies:
+      FlaUI:
+      - searchBy: XPath
+        value: /Window[@AutomationId='OrdersWindow']/TextBox[@AutomationId='txtQty']
+      - searchBy: AutomationId
+        value: txtQty
+        scope: Descendant
+      WPFSpy:
+      - searchBy: XPath
+        value: /Window[@AutomationId='OrdersWindow']/TextBox[@AutomationId='txtQty']
+    driverPriority:
+    - FlaUI
+    - WPFSpy
+  SampleWpfApp.OrdersWindow.btnCreateOrder:
+    displayName: btnCreateOrder
+    controlType: Button
+    parentAlias: SampleWpfApp.OrdersWindow
+    defaultTimeout: 10
+    tags:
+    - recorded
+    strategies:
+      FlaUI:
+      - searchBy: XPath
+        value: /Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnCreateOrder']
+      - searchBy: AutomationId
+        value: btnCreateOrder
+        scope: Descendant
+      WPFSpy:
+      - searchBy: XPath
+        value: /Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnCreateOrder']
+    driverPriority:
+    - FlaUI
+    - WPFSpy
+  SampleWpfApp.OrdersWindow.lblConfirmation:
+    displayName: lblConfirmation
+    controlType: Label
+    parentAlias: SampleWpfApp.OrdersWindow
+    defaultTimeout: 10
+    tags:
+    - recorded
+    strategies:
+      FlaUI:
+      - searchBy: XPath
+        value: /Window[@AutomationId='OrdersWindow']/Label[@AutomationId='lblConfirmation']
+      - searchBy: AutomationId
+        value: lblConfirmation
+        scope: Descendant
+      WPFSpy:
+      - searchBy: XPath
+        value: /Window[@AutomationId='OrdersWindow']/Label[@AutomationId='lblConfirmation']
+    driverPriority:
+    - FlaUI
+    - WPFSpy

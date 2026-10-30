@@ -12,7 +12,7 @@ repository/
     └── steps.json              <- add entries here for every new alias
 ```
 
-All `.yaml` files under `repository/elements/` are merged into one alias
+All `.json` files under `repository/elements/` are merged into one alias
 → element map at load time; same for `repository/steps/`. Split files by
 page for readability — the loader doesn't care how many files there are.
 
@@ -48,7 +48,7 @@ elements:
 **Only add the strategies that make sense.** A well-behaved standard WPF
 control usually only needs `FlaUI`. A custom-rendered control that UIA
 can't see needs `WPFSpy` and/or `Sikuli` instead — see
-`OrdersPage.PriorityCheckbox` in `repository/elements/orders_page.yaml`
+`OrdersPage.PriorityCheckbox` in `repository/elements/orders_page.json`
 for a worked example (FlaUI deliberately absent/broken; WPFSpy + Sikuli
 present).
 
@@ -81,7 +81,7 @@ steps:
 
 ## Adding a new page
 
-1. Create `repository/elements/<page>.yaml` with one entry per control.
+1. Create `repository/elements/<page>.json` with one entry per control.
 2. Add matching entries to `repository/steps/steps.json`.
 3. Add Layer 2 keywords in `src/python/modules/<page>_module.robot` /
    `src/python/modules/<page>_verifications.robot` that call Layer 3 keywords by

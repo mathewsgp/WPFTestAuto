@@ -113,7 +113,7 @@ controls via the opt-in `ISpyInteractable` interface, never via
 ## Reliability payoff
 
 Because `OrdersPage.PriorityCheckbox`'s `FlaUI` strategy in
-`repository/elements/orders_page.yaml` is intentionally pointed at an
+`repository/elements/orders_page.json` is intentionally pointed at an
 AutomationId the app doesn't expose (simulating a real custom control gap),
 runtime self-healing (`docs/SELF_HEALING.md`) automatically falls
 back to WPFSpy for that one element — in both mock mode (proven by the

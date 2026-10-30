@@ -8,7 +8,7 @@ A real WPF desktop application that implements the full authoring loop as a GUI 
 |---|---|
 | **Attach** | Pick a running process by window title; configure the Spy Agent's pipe name and a window-title → page-alias map |
 | **Record** | A global mouse hook detects clicks on the attached app; each click is resolved to an element via the **same FlaUI-first, WPFSpy-fallback logic used at test-execution time** |
-| **Auto-generate Element Repository** | Every newly-seen element becomes a `repository/elements/*.yaml`-shaped entry, live, in the "Element Repository" tab |
+| **Auto-generate Element Repository** | Every newly-seen element becomes a `repository/elements/*.json`-shaped entry, live, in the "Element Repository" tab |
 | **Auto-generate Script** | Every recorded step becomes a line in a Layer 1 `.robot` script, live, in the "Generated Script" tab |
 | **Add verification steps** | Click "+ verify after" on any recorded step; pick an element, and the expected value is pre-filled from that element's **current on-screen value** |
 | **Run scripts** | Shells out to `python -m robot`, streaming console output and a PASS/FAIL summary |
@@ -16,8 +16,8 @@ A real WPF desktop application that implements the full authoring loop as a GUI 
 | **Checkpoint Wizard** | Point-and-click creation of verification points |
 | **Visual Test Builder** | Drag-and-drop test creation with Robot code generation |
 | **Element Tree View** | Hierarchical view of all elements with search and filtering |
-| **Import Elements** | Import element entries from existing `repository/elements/*.yaml` files |
-| **Export Steps / Import Steps** | Save recorded steps to YAML or load them back into the IDE |
+| **Import Elements** | Import element entries from existing `repository/elements/*.json` files |
+| **Export Steps / Import Steps** | Save recorded steps to JSON or load them back into the IDE |
 | **Reset Layout** | Restore the IDE layout to its default state via **View → Reset Layout** |
 
 ## Recording uses the framework's own self-healing philosophy

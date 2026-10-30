@@ -8,7 +8,7 @@ class Program
 {
     static void Main()
     {
-        string yamlPath = @"D:\testpgms\WPFTestAutoClaudeNew\WpfTestFramework\repository\elements\login_page.yaml";
+        string yamlPath = @"D:\testpgms\WPFTestAutoClaudeNew\WpfTestFramework\repository\elements\login_page.json";
         string yaml = File.ReadAllText(yamlPath);
         
         var deserializer = new DeserializerBuilder().Build();

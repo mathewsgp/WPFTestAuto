@@ -95,7 +95,7 @@ def cmd_expand(dry_run: bool = True):
             
             # Find which file contains this element
             repo_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "repository", "elements")
-            for yaml_file in glob.glob(os.path.join(repo_root, "*.yaml")):
+            for yaml_file in glob.glob(os.path.join(repo_root, "*.json")):
                 with open(yaml_file, "r") as f:
                     content = f.read()
                     if alias in content:
@@ -194,8 +194,7 @@ def cmd_export(output_file: str = None):
         
         repository["elements"][alias] = element
     
-    import yaml
-    output = yaml.dump(repository, default_flow_style=False, sort_keys=False)
+    output = json.dumps(repository, indent=2)
     
     if output_file:
         with open(output_file, "w") as f:
@@ -213,7 +212,7 @@ def cmd_add_strategy(alias: str, driver: str, method: str, value: str, priority:
     repo_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "repository", "elements")
     yaml_file = None
     
-    for f in glob.glob(os.path.join(repo_root, "*.yaml")):
+    for f in glob.glob(os.path.join(repo_root, "*.json")):
         with open(f, "r") as file:
             content = file.read()
             if alias in content:
@@ -224,9 +223,8 @@ def cmd_add_strategy(alias: str, driver: str, method: str, value: str, priority:
         print(f"Element '{alias}' not found in repository")
         return
     
-    import yaml
     with open(yaml_file, "r") as f:
-        data = yaml.safe_load(f)
+        data = json.load(f)
     
     if "elements" not in data:
         data = {"elements": {}}
@@ -264,7 +262,7 @@ def cmd_add_strategy(alias: str, driver: str, method: str, value: str, priority:
     
     # Write back
     with open(yaml_file, "w") as f:
-        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+        json.dump(data, f, indent=2)
     
     print(f"Added {driver}:{method}='{value}' (priority {priority})")
     print(f"Updated file: {yaml_file}")
@@ -280,7 +278,7 @@ Examples:
   %(prog)s --expand                    # Preview expansion
   %(prog)s --expand --no-dry-run      # Apply expansion
   %(prog)s --element LoginPage.btnSubmit # Show element suggestions
-  %(prog)s --export expanded.yaml      # Export to YAML
+  %(prog)s --export expanded.json      # Export to JSON
   %(prog)s --add LoginPage.btnSubmit --driver FlaUI --method Name --value Submit
         """
     )

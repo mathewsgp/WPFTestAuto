@@ -2,7 +2,7 @@
 
 ## Adding a new test (the common case)
 
-1. Does the page/element already exist in `repository/elements/*.yaml`?
+1. Does the page/element already exist in `repository/elements/*.json`?
    If not, add it (see `docs/ELEMENT_REPOSITORY_GUIDE.md`).
 2. Does a Layer 2 keyword already do what you need? If not, add one to
    the appropriate `src/python/modules/<page>_module.robot` (actions) or
@@ -16,7 +16,7 @@ You should almost never need to touch `src/python/api/`, `src/python/drivers_rf/
 ## Adding a new driver strategy to an existing element
 
 Add the strategy block to the element's entry in
-`repository/elements/<page>.yaml` — that's it. Layer 3 picks it up
+`repository/elements/<page>.json` — that's it. Layer 3 picks it up
 automatically (see `docs/ELEMENT_REPOSITORY_GUIDE.md`).
 
 ## Adding a new step type (e.g. RangeValueStep for sliders)

@@ -589,22 +589,22 @@ class HealingMetadataStore:
         for file_path, changes in changes_by_file.items():
             try:
                 # Read current element file
-                element_file = file_path.with_name(file_path.name.replace(".json", ".yaml"))
+                element_file = file_path.with_name(file_path.name)
                 
                 if element_file.exists():
                     if backup and not dry_run:
-                        backup_path = file_path.with_name(f"{file_path.stem}_backup_{int(time.time())}.yaml")
+                        backup_path = file_path.with_name(f"{file_path.stem}_backup_{int(time.time())}.json")
                         import shutil
                         shutil.copy2(element_file, backup_path)
                         results["backups"].append(str(backup_path))
                     
                     if not dry_run:
-                        # Apply changes to YAML
-                        self._apply_changes_to_yaml(element_file, changes, results)
+                        # Apply changes to JSON
+                        self._apply_changes_to_json(element_file, changes, results)
                 else:
                     # Create new element file with healing data
                     if not dry_run:
-                        self._create_element_from_healing(file_path.with_suffix(".yaml"), changes[0])
+                        self._create_element_from_healing(file_path, changes[0])
                     
                     results["applied"].append({
                         "file": str(element_file),
@@ -619,14 +619,14 @@ class HealingMetadataStore:
         
         return results
     
-    def _apply_changes_to_yaml(self, yaml_file: Path, changes: List[Dict], results: Dict):
-        """Apply changes to a YAML element file."""
-        import yaml
+    def _apply_changes_to_json(self, json_file: Path, changes: List[Dict], results: Dict):
+        """Apply changes to a JSON element file."""
+        import json
         import shutil
         
-        # Read existing YAML
-        with open(yaml_file, "r") as f:
-            data = yaml.safe_load(f)
+        # Read existing JSON
+        with open(json_file, "r") as f:
+            data = json.load(f)
         
         elements = data.get("elements", {})
         
@@ -658,18 +658,18 @@ class HealingMetadataStore:
                     })
                     
                     results["applied"].append({
-                        "file": str(yaml_file),
+                        "file": str(json_file),
                         "alias": alias,
                         "change": f"Added {driver} strategy: {suggestion['searchBy']}={suggestion['value']}"
                     })
         
-        # Write updated YAML
-        with open(yaml_file, "w") as f:
-            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+        # Write updated JSON
+        with open(json_file, "w") as f:
+            json.dump(data, f, indent=2)
     
-    def _create_element_from_healing(self, yaml_file: Path, suggestion: Dict):
+    def _create_element_from_healing(self, json_file: Path, suggestion: Dict):
         """Create a new element file from healing suggestion."""
-        import yaml
+        import json
         
         alias = suggestion["alias"]
         sug = suggestion["suggestion"]
@@ -690,8 +690,8 @@ class HealingMetadataStore:
             }
         }
         
-        with open(yaml_file, "w") as f:
-            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+        with open(json_file, "w") as f:
+            json.dump(data, f, indent=2)
     
     def get_element_health(self, alias: str) -> Dict[str, Any]:
         """Get health metrics for an element.

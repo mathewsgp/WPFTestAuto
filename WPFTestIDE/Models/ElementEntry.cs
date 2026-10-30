@@ -4,8 +4,8 @@ namespace WpfTestIde.Models
 {
     /// <summary>
     /// One Element Repository entry, discovered automatically during
-    /// recording. Mirrors repository/elements/*.yaml's schema in the
-    /// Python framework (see RepositoryWriter for the exact YAML shape).
+    /// recording. Mirrors repository/elements/*.json's schema in the
+    /// Python framework (see RepositoryWriter for the exact JSON shape).
     /// </summary>
     public class ElementEntry
     {

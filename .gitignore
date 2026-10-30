@@ -19,7 +19,7 @@ obj/
 .kilo/
 repository/attach_log.txt
 repository/repo_lookup.log
-repository/elements/_ide_recorded.yaml
+repository/elements/_ide_recorded.json
 repository/healing_metadata/
 Tests/Demo/ide_generated_test.robot
 graphify-out/

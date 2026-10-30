@@ -15,7 +15,7 @@ namespace SampleWpfApp.CustomControls
     /// It implements <see cref="ISpyInteractable"/> instead, which is all
     /// that's needed for the in-process Spy Agent to drive it directly —
     /// no AutomationPeer required. See
-    /// repository/elements/orders_page.yaml's OrdersPage.chkPriority
+    /// repository/elements/orders_page.json's OrdersPage.chkPriority
     /// entry and docs/SELF_HEALING_LOCATORS.md for how this drives the
     /// WPFSpy runtime fallback demo.
     /// </summary>

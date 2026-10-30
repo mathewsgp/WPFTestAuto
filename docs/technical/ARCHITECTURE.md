@@ -65,15 +65,15 @@ Test Script (Layer 1)
 
 Two YAML-backed repositories, joined by a shared `alias`:
 
-- **Element Repository** (`repository/elements/*.yaml`) — one entry per
+- **Element Repository** (`repository/elements/*.json`) — one entry per
   alias, with a `strategies` block containing one sub-block per driver
   that can locate it (`FlaUI`, `WPFSpy`, `Sikuli`), plus shared metadata
   (`controlType`, `parentAlias`, `defaultTimeout`, `tags`).
-- **Step Repository** (`repository/steps/*.yaml`) — one entry per alias,
+- **Step Repository** (`repository/steps/*.json`) — one entry per alias,
   naming the interaction pattern (`InvokeStep`, `ValueStep`, `ToggleStep`,
   `TextStep`, ...) and its parameters.
 
-`api/repository_access.py` loads and merges every YAML file under each
+`api/repository_access.py` loads and merges every JSON file under each
 directory at first use and caches the result; `api/DriverAgnosticApi.py`
 is the only consumer.
 

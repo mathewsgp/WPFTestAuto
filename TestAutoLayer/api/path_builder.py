@@ -380,9 +380,9 @@ def record_element(
         image_path: Path to reference image for Sikuli
     
     Returns:
-        YAML-formatted repository entry
+        JSON-formatted repository entry
     """
-    import yaml
+    import json
     
     locator = PathBuilder.generate_locator_record(
         control_type=control_type,
@@ -392,8 +392,8 @@ def record_element(
         image_path=image_path
     )
     
-    # Convert to YAML format
-    return yaml.dump({"elements": locator}, default_flow_style=False, sort_keys=False)
+    # Convert to JSON format
+    return json.dumps({"elements": locator}, indent=2)
 
 
 # CLI tool for recording elements

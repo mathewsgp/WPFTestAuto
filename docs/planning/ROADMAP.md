@@ -143,7 +143,7 @@ This document consolidates gap analysis, implementation priorities, and UI impro
 │   │   └── 📁 modules/
 │   └── 📁 csharp/
 ├── 📁 repository/
-│   └── 📄 elements.yaml
+│   └── 📄 elements.json
 └── 📄 config.yaml
 ```
 

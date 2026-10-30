@@ -2,13 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
+using System.Text.Json;
 
 namespace WpfTestIde.Recording
 {
     /// <summary>
-    /// Loads the Python framework's Element Repository YAML files and
+    /// Loads the Python framework's Element Repository JSON files and
     /// builds a lookup so the IDE can map a probed element's
     /// AutomationId / Name to the canonical repository alias.
     /// This is what makes recorded scripts play back correctly against
@@ -34,44 +33,31 @@ namespace WpfTestIde.Recording
             catch { }
             if (!Directory.Exists(repoDir)) return;
 
-            foreach (string yamlPath in Directory.EnumerateFiles(repoDir, "*.yaml"))
+            foreach (string jsonPath in Directory.EnumerateFiles(repoDir, "*.json"))
             {
                 try
                 {
-                    string yaml = File.ReadAllText(yamlPath);
-                    var deserializer = new DeserializerBuilder().Build();
-                    
-                    var root = deserializer.Deserialize<Dictionary<object, object>>(yaml);
-                    if (root == null) continue;
+                    string json = File.ReadAllText(jsonPath);
+                    using var doc = JsonDocument.Parse(json);
+                    var rootElement = doc.RootElement;
 
-                    try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Loaded YAML: {yamlPath}, keys: {string.Join(", ", root.Keys)}{Environment.NewLine}"); } catch { }
+                    try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Loaded JSON: {jsonPath}{Environment.NewLine}"); } catch { }
 
-                    if (!root.TryGetValue("elements", out var elementsObj)) continue;
+                    if (!rootElement.TryGetProperty("elements", out var elementsObj)) continue;
 
-                    var elementsDict = ConvertToDictionary(elementsObj);
-                    if (elementsDict == null) 
+                    try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] elements count: {elementsObj.EnumerateObject().Count()}{Environment.NewLine}"); } catch { }
+
+                    foreach (var kv in elementsObj.EnumerateObject())
                     {
-                        try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] elementsObj conversion returned null, type={elementsObj.GetType().FullName}{Environment.NewLine}"); } catch { }
-                        continue;
-                    }
-
-                    try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] elements count: {elementsDict.Count}{Environment.NewLine}"); } catch { }
-
-                    foreach (var kv in elementsDict)
-                    {
-                        string alias = kv.Key?.ToString() ?? "";
+                        string alias = kv.Name;
                         if (string.IsNullOrEmpty(alias)) continue;
 
-                        var entry = ConvertToDictionary(kv.Value);
-                        if (entry == null) 
-                        {
-                            try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] entry conversion returned null for alias={alias}{Environment.NewLine}"); } catch { }
-                            continue;
-                        }
+                        var entry = kv.Value;
 
                         // Multi-app: check if element is scoped to a different app
-                        if (appId != null && entry.TryGetValue("appId", out var elementAppIdObj) && elementAppIdObj is string elementAppId)
+                        if (appId != null && entry.TryGetProperty("appId", out var elementAppIdProp) && elementAppIdProp.ValueKind == JsonValueKind.String)
                         {
+                            string elementAppId = elementAppIdProp.GetString()!;
                             if (!string.Equals(elementAppId, appId, StringComparison.OrdinalIgnoreCase))
                             {
                                 try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Skipping alias={alias} (appId={elementAppId} != {appId}){Environment.NewLine}"); } catch { }
@@ -79,39 +65,52 @@ namespace WpfTestIde.Recording
                             }
                         }
 
-                        try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Processing alias={alias}, entry keys={string.Join(",", entry.Keys)}{Environment.NewLine}"); } catch { }
+                        try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Processing alias={alias}{Environment.NewLine}"); } catch { }
 
                         // Extract AutomationId from FlaUI strategy
-                        if (entry.TryGetValue("strategies", out var strategiesObj) &&
-                            strategiesObj is System.Collections.Generic.IDictionary<string, object> strategies)
+                        if (entry.TryGetProperty("strategies", out var strategiesObj) && strategiesObj.ValueKind == JsonValueKind.Object)
                         {
-                            try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}]   Found strategies: {string.Join(",", strategies.Keys)}{Environment.NewLine}"); } catch { }
-                            
+                            try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}]   Found strategies{Environment.NewLine}"); } catch { }
+
                             string? automationId = null;
                             string? name = null;
-                            
-                            if (strategies.TryGetValue("FlaUI", out var flaObj) &&
-                                flaObj is System.Collections.Generic.IDictionary<string, object> fla &&
-                                fla.TryGetValue("value", out var flaValue) &&
-                                flaValue is string flaStr &&
-                                !string.IsNullOrEmpty(flaStr))
+
+                            if (strategiesObj.TryGetProperty("FlaUI", out var flaObj) && flaObj.ValueKind == JsonValueKind.Array)
                             {
-                                automationId = flaStr;
-                                _byAutomationId[flaStr] = alias;
-                                try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}]   Added AutomationId mapping: {flaStr} -> {alias}{Environment.NewLine}"); } catch { }
+                                foreach (var strategy in flaObj.EnumerateArray())
+                                {
+                                    if (strategy.TryGetProperty("searchBy", out var sbProp) && sbProp.GetString() == "AutomationId"
+                                        && strategy.TryGetProperty("value", out var valProp) && valProp.ValueKind == JsonValueKind.String)
+                                    {
+                                        automationId = valProp.GetString();
+                                        if (!string.IsNullOrEmpty(automationId))
+                                        {
+                                            _byAutomationId[automationId] = alias;
+                                            try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}]   Added AutomationId mapping: {automationId} -> {alias}{Environment.NewLine}"); } catch { }
+                                        }
+                                        break;
+                                    }
+                                }
                             }
 
-                            if (strategies.TryGetValue("WPFSpy", out var wpfObj) &&
-                                wpfObj is System.Collections.Generic.IDictionary<string, object> wpf &&
-                                wpf.TryGetValue("value", out var wpfValue) &&
-                                wpfValue is string wpfStr &&
-                                !string.IsNullOrEmpty(wpfStr))
+                            if (strategiesObj.TryGetProperty("WPFSpy", out var wpfObj) && wpfObj.ValueKind == JsonValueKind.Array)
                             {
-                                name = wpfStr;
-                                _byName[wpfStr] = alias;
-                                try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}]   Added Name mapping: {wpfStr} -> {alias}{Environment.NewLine}"); } catch { }
+                                foreach (var strategy in wpfObj.EnumerateArray())
+                                {
+                                    if (strategy.TryGetProperty("searchBy", out var sbProp) && sbProp.GetString() == "XPath"
+                                        && strategy.TryGetProperty("value", out var valProp) && valProp.ValueKind == JsonValueKind.String)
+                                    {
+                                        name = valProp.GetString();
+                                        if (!string.IsNullOrEmpty(name))
+                                        {
+                                            _byName[name] = alias;
+                                            try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}]   Added Name mapping: {name} -> {alias}{Environment.NewLine}"); } catch { }
+                                        }
+                                        break;
+                                    }
+                                }
                             }
-                            
+
                             if (automationId != null || name != null)
                             {
                                 _allEntries[alias] = (automationId ?? "", name ?? "", alias);
@@ -127,7 +126,7 @@ namespace WpfTestIde.Recording
                 {
                     try
                     {
-                        File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] ERROR loading {yamlPath}: {ex.GetType().Name}: {ex.Message}{Environment.NewLine}");
+                        File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] ERROR loading {jsonPath}: {ex.GetType().Name}: {ex.Message}{Environment.NewLine}");
                     }
                     catch { }
                 }
@@ -139,61 +138,6 @@ namespace WpfTestIde.Recording
                 File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Loaded {_byAutomationId.Count} AutomationId mappings, {_byName.Count} Name mappings{Environment.NewLine}");
             }
             catch { }
-        }
-
-        private static System.Collections.Generic.IDictionary<string, object>? ConvertToDictionary(object obj)
-        {
-            if (obj is System.Collections.Generic.IDictionary<string, object> dict)
-                return dict;
-            
-            // Handle Dictionary<object, object> from YamlDotNet
-            if (obj is System.Collections.Generic.IDictionary<object, object> objDict)
-            {
-                var result = new System.Collections.Generic.Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-                foreach (var kv in objDict)
-                {
-                    string key = kv.Key?.ToString() ?? "";
-                    if (!string.IsNullOrEmpty(key))
-                    {
-                        result[key] = ConvertValue(kv.Value);
-                    }
-                }
-                return result;
-            }
-            
-            return null;
-        }
-        
-        private static object ConvertValue(object value)
-        {
-            if (value is System.Collections.Generic.IDictionary<string, object> dict)
-                return dict;
-            
-            if (value is System.Collections.Generic.IDictionary<object, object> objDict)
-            {
-                var result = new System.Collections.Generic.Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-                foreach (var kv in objDict)
-                {
-                    string key = kv.Key?.ToString() ?? "";
-                    if (!string.IsNullOrEmpty(key))
-                    {
-                        result[key] = ConvertValue(kv.Value);
-                    }
-                }
-                return result;
-            }
-            
-            if (value is System.Collections.Generic.IList<object> list)
-            {
-                var result = new System.Collections.Generic.List<object>();
-                foreach (var item in list)
-                {
-                    result.Add(ConvertValue(item));
-                }
-                return result;
-            }
-            
-            return value;
         }
 
         /// <summary>

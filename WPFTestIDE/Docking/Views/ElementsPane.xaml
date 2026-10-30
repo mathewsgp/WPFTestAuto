@@ -35,11 +35,11 @@
         <!-- ================= Raw JSON / Repository (A4: collapsible bottom panel) =================
              Previously an inner TabControl+TabItem locked at Height=200 inside the
              ELEMENTS tab. Now a bottom-docked Expander collapsed by default so the
-             tree+properties above get all the vertical space. The user expands to
-             inspect the live-generated YAML. AutomationId tabRawJson is preserved
-             (now on the Expander, see repository/elements/wpf_test_ide.yaml which
-             has been updated to controlType=Expander + Expander XPath); the YAML
-             TextBox AutomationId txtRepositoryYaml is unchanged. -->
+              tree+properties above get all the vertical space. The user expands to
+              inspect the live-generated JSON. AutomationId tabRawJson is preserved
+              (now on the Expander, see repository/elements/wpf_test_ide.json which
+              has been updated to controlType=Expander + Expander XPath); the YAML
+              TextBox AutomationId txtRepositoryYaml is unchanged. -->
         <Expander DockPanel.Dock="Bottom"
                   IsExpanded="{Binding RepositoryPanelExpanded, Mode=TwoWay}"
                   Padding="8,4"

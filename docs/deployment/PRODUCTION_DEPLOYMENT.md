@@ -85,7 +85,7 @@ Either way:
 3. Make sure any custom-rendered controls you need WPFSpy to reach
    implement `ISpyInteractable` (see
    `SampleWpfApp/CustomControls/PriorityToggleControl.cs`).
-4. Update `repository/elements/*.yaml` with your real controls' `Name`
+4. Update `repository/elements/*.json` with your real controls' `Name`
    values for the `WPFSpy` strategy.
 
 See `docs/WPFSPY_MODULE.md`, `docs/PROTOCOL.md`, and
@@ -108,7 +108,7 @@ doc's "Option 3" for the honest tradeoffs, and ask if you need it built.
 
 Real image-based matching needs: (1) actual reference screenshots saved
 under an `images/` folder (referenced by `imagePath` in
-`repository/elements/*.yaml`, replacing the semantic tags used by the
+`repository/elements/*.json`, replacing the semantic tags used by the
 mock), and (2) either the SikuliX Java jar + `robotframework-SikuliLibrary`,
 or an OpenCV-based Python template-matching implementation exposing the
 same `find_element`/`invoke`/etc. signatures.
@@ -129,7 +129,7 @@ generation) needs no changes.
 - [ ] Layer 4 wrapper bodies replaced (FlaUI, WPFSpy, Sikuli as needed)
 - [ ] Real reference images captured for any Sikuli-strategy elements
 - [ ] Spy Agent injection wired into the real WPF app's test-mode startup
-- [ ] `repository/elements/*.yaml` reviewed — mock-only entries
+- [ ] `repository/elements/*.json` reviewed — mock-only entries
       (`OrdersPage.PriorityCheckbox`'s deliberately-broken FlaUI value)
       replaced with real, working locators
 - [ ] Full suite green against the real application:

@@ -89,7 +89,7 @@ See `src/python/recorder/example_draft_output/` for checked-in examples.
 
 The converter creates:
 
-- `recorded_draft_elements.yaml` — Element repository entries with **FlaUI
+- `recorded_draft_elements.json` — Element repository entries with **FlaUI
   strategy only**. Add `WPFSpy`/`Sikuli` strategies later if needed.
 - `recorded_draft_steps.json` — Step definitions inferred from actions.
 - `draft_recorded_test.robot` — Layer 1 script calling Layer 3 keywords
@@ -138,7 +138,7 @@ Login To Application    user1    Pass@123
 rm -f src/python/recorder/example_draft_output/*.yaml src/python/recorder/example_draft_output/*.robot
 python3 src/python/recorder/recorder_engine.py
 python3 src/python/recorder/converter.py
-mv repository/elements/recorded_draft_elements.yaml src/python/recorder/example_draft_output/
+mv repository/elements/recorded_draft_elements.json src/python/recorder/example_draft_output/
 mv repository/steps/recorded_draft_steps.json src/python/recorder/example_draft_output/
 mv src/python/tests/draft_recorded_test.robot src/python/recorder/example_draft_output/
 ```

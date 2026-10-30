@@ -1,10 +1,10 @@
 """
 Repository Access — loads the Element & Step Repositories at Suite
 Setup and caches them as plain dictionaries, keyed by alias. Elements
-are loaded from YAML (*.yaml); steps are loaded from JSON (*.json).
+and steps are both loaded from JSON (*.json).
 This is the single place that knows how repository files are laid out
 on disk; Layer 3 (DriverAgnosticApi) only ever asks it for "the locator
-+ step for this alias" and never touches YAML/JSON directly.
++ step for this alias" and never touches JSON directly.
 
 Hierarchical Element Support with parentAlias:
 - Each element specifies its parent via parentAlias
@@ -25,7 +25,6 @@ Example:
 import glob
 import json
 import os
-import yaml
 from typing import Dict, List, Optional, Tuple
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -42,36 +41,18 @@ _element_relative_xpath_cache: Dict[str, str] = {}  # alias -> relativeXPath
 _app_elements_cache: Dict[str, Dict] = {}
 
 
-def _load_yaml_dir(subfolder, top_key):
-    merged = {}
-    
-    # Primary: Tests/repository (contains test-specific YAML files)
-    primary_pattern = os.path.join(_REPO_ROOT, subfolder, "*.yaml")
-    for path in sorted(glob.glob(primary_pattern)):
-        with open(path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-        merged.update(data.get(top_key, {}))
-    
-    # Fallback: repository at repo root (contains IDE-generated elements)
-    fallback_pattern = os.path.join(_REPO_ROOT_FALLBACK, subfolder, "*.yaml")
-    for path in sorted(glob.glob(fallback_pattern)):
-        with open(path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-        merged.update(data.get(top_key, {}))
-    
-    return merged
-
-
 def _load_json_dir(subfolder, top_key):
     """Load JSON files from a directory, merging top_key dicts into one dict."""
     merged = {}
     
+    # Primary: Tests/repository (contains test-specific JSON files)
     primary_pattern = os.path.join(_REPO_ROOT, subfolder, "*.json")
     for path in sorted(glob.glob(primary_pattern)):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f) or {}
         merged.update(data.get(top_key, {}))
     
+    # Fallback: repository at repo root (contains IDE-generated elements)
     fallback_pattern = os.path.join(_REPO_ROOT_FALLBACK, subfolder, "*.json")
     for path in sorted(glob.glob(fallback_pattern)):
         with open(path, "r", encoding="utf-8") as f:
@@ -112,10 +93,10 @@ def _load_app_elements(app_id: str, element_repo_path: str) -> Dict:
     merged = {}
     if element_repo_path and os.path.exists(element_repo_path):
         # Load from app-specific directory
-        pattern = os.path.join(element_repo_path, "elements", "*.yaml")
+        pattern = os.path.join(element_repo_path, "elements", "*.json")
         for path in sorted(glob.glob(pattern)):
             with open(path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f) or {}
+                data = json.load(f) or {}
             merged.update(data.get("elements", {}))
     return merged
 
@@ -136,7 +117,7 @@ def load_elements(force_reload=False, app_id: str = None, element_repo_path: str
     
     # Global (no app_id)
     if _elements_cache is None or force_reload:
-        _elements_cache = _load_yaml_dir("elements", "elements")
+        _elements_cache = _load_json_dir("elements", "elements")
         _build_element_caches()  # Rebuild caches when elements reload
     return _elements_cache
 

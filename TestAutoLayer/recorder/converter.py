@@ -2,7 +2,7 @@
 Converter / Generator Tool
 ============================
 Merges the recorder's raw JSON output into:
-  1. Element Repository YAML entries (adds a FlaUI strategy block; other
+  1. Element Repository JSON entries (adds a FlaUI strategy block; other
      driver strategies are left for a human to fill in / extend later)
   2. Step Repository JSON entries
   3. A draft Layer 1 Robot Framework test script that calls Layer 3
@@ -15,7 +15,6 @@ Verifications -> Refactor to Reusable Modules -> Finalize.
 
 import json
 import os
-import yaml
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _SAMPLE_DIR = os.path.join(_THIS_DIR, "sample_recorded")
@@ -29,10 +28,10 @@ def _load(name):
         return json.load(f)
 
 
-def generate_element_repository(recorded_elements: dict, out_file="recorded_draft_elements.yaml"):
-    elements_yaml = {"elements": {}}
+def generate_element_repository(recorded_elements: dict, out_file="recorded_draft_elements.json"):
+    elements_json = {"elements": {}}
     for alias, meta in recorded_elements.items():
-        elements_yaml["elements"][alias] = {
+        elements_json["elements"][alias] = {
             "displayName": meta["automationId"],
             "controlType": meta["controlType"],
             "parentAlias": alias.split(".")[0] + ".MainWindow",
@@ -51,7 +50,7 @@ def generate_element_repository(recorded_elements: dict, out_file="recorded_draf
         }
     out_path = os.path.join(_REPO_ELEMENTS_DIR, out_file)
     with open(out_path, "w") as f:
-        yaml.dump(elements_yaml, f, sort_keys=False, default_flow_style=False)
+        json.dump(elements_json, f, indent=2)
     print(f"[Converter] Wrote draft Element Repository -> {out_path}")
     return out_path
 

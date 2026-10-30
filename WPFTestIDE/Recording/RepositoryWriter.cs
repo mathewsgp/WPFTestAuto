@@ -1,29 +1,27 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using WpfTestIde.Models;
-using YamlDotNet.Serialization;
 
 namespace WpfTestIde.Recording
 {
     /// <summary>
-    /// Serializes discovered ElementEntry objects into the exact YAML
-    /// schema used by repository/elements/*.yaml in the Python framework
+    /// Serializes discovered ElementEntry objects into the exact JSON
+    /// schema used by repository/elements/*.json in the Python framework
     /// (see docs/ELEMENT_REPOSITORY_GUIDE.md) — the C# equivalent of
     /// recorder/converter.py's generate_element_repository. Built as
-    /// plain Dictionary trees (rather than typed classes) so the emitted
-    /// YAML keys are guaranteed to match the schema exactly, independent
-    /// of YamlDotNet's naming-convention settings.
+    /// plain Dictionary trees so the emitted JSON keys match the schema exactly.
     /// </summary>
     public static class RepositoryWriter
     {
         /// <summary>
-        /// Generates YAML for the element repository, including only
+        /// Generates JSON for the element repository, including only
         /// strategies for the selected recording modes.
         /// </summary>
         /// <param name="entries">Discovered element entries.</param>
         /// <param name="recordingModes">Selected recording modes (FlaUI, WPFSpy, Sikuli).
         /// If empty or null, all strategies are included (backward compatible).</param>
-        public static string GenerateYaml(IEnumerable<ElementEntry> entries, List<string>? recordingModes = null)
+        public static string GenerateJson(IEnumerable<ElementEntry> entries, List<string>? recordingModes = null)
         {
             var elements = new Dictionary<string, object>();
 
@@ -166,8 +164,8 @@ namespace WpfTestIde.Recording
 
             var root = new Dictionary<string, object> { ["elements"] = elements };
 
-            var serializer = new SerializerBuilder().Build();
-            return serializer.Serialize(root);
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            return JsonSerializer.Serialize(root, options);
         }
 
         /// <summary>Deduplicates a raw step/entry stream by alias, keeping
