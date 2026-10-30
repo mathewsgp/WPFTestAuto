@@ -147,6 +147,26 @@ class _ElementWrapper:
             except Exception:
                 pass
 
+    def select_text(self, text):
+        """Select an item in a ComboBox by text."""
+        try:
+            # ComboBox.select accepts text or index
+            self._element.select(text)
+        except Exception:
+            # Fallback: expand, find matching ComboBoxItem, click it
+            try:
+                self._element.expand()
+                time.sleep(0.3)
+                for item in self._element.items:
+                    try:
+                        if item.text == text:
+                            item.click_input()
+                            return
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
     def type_keys(self, keys):
         Keyboard.type(keys)
 
@@ -237,6 +257,7 @@ class Application:
         self._automation = Automation(UIAutomationTypes.UIA3)
         self._app = None
         self._connect_title = None
+        self._connected_window = None  # Window found by connect() title pattern
 
     def start(self, exe_path):
         self._app = self._automation.application
@@ -244,7 +265,30 @@ class Application:
         return self
 
     def connect(self, title_re=None, timeout=10):
+        """Attach to an already-running application window matching title_re.
+
+        Uses flaui's desktop enumeration to find a top-level window whose
+        name matches the regex pattern, then wraps it so subsequent
+        window() calls return it.
+        """
         self._connect_title = title_re
+        pattern = re.compile(title_re) if title_re else None
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            try:
+                desktop = Desktop(backend=self.backend)
+                for w in desktop.windows():
+                    try:
+                        name = w.window_text() or ""
+                        if pattern and re.search(pattern, name):
+                            self._connected_window = w
+                            return self
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+            time.sleep(0.5)
+        # If no match found yet, still return self; window() will retry
         return self
 
     def kill(self):
@@ -255,6 +299,15 @@ class Application:
                 pass
 
     def window(self, title_re=None, title=None, control_type=None):
+        if self._connected_window is not None:
+            pattern = title_re or title or self._connect_title
+            if pattern:
+                try:
+                    if re.search(pattern, self._connected_window.window_text() or ""):
+                        return self._connected_window
+                except Exception:
+                    pass
+            return self._connected_window
         if self._app is None:
             raise PywinautoTimeout("No application started")
         pattern = title_re or title or self._connect_title

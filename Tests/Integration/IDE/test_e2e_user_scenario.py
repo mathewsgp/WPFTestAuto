@@ -288,10 +288,9 @@ class TestE2EUserScenario:
             if sku_combo:
                 sku_combo[0].click_input()
                 time.sleep(0.5)
-                try:
-                    sku_combo[0].type_keys("{DOWN}{ENTER}")
-                except Exception:
-                    pass
+                sku_combo[0].select_text("SKU-1001")
+        except Exception:
+            pass
         except Exception:
             pass
         time.sleep(0.5)
