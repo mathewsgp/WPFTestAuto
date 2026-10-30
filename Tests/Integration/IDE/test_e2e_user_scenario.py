@@ -46,12 +46,19 @@ def _find_by_auto_id(window, automation_id, control_type=None):
 
 
 def click_by_auto_id(window, automation_id, timeout=10, control_type=None):
-    """Click any control by its AutomationId (searches all descendants)."""
+    """Click any control by its AutomationId (searches all descendants).
+    
+    Uses invoke() first (triggers WPF Command binding), falls back to
+    click_input() if invoke() fails (e.g., button state changed).
+    """
     matched = _find_by_auto_id(window, automation_id, control_type)
     if not matched:
         raise PywinautoTimeout(f"Control '{automation_id}' not found")
     ctrl = matched[0]
-    ctrl.click_input()
+    try:
+        ctrl.invoke()
+    except Exception:
+        ctrl.click_input()
     return ctrl
 
 
@@ -165,6 +172,56 @@ def get_main_window(app, title_pattern=".*WPF Test IDE.*"):
     return win
 
 
+def get_attach_dialog(ide_app, timeout=15):
+    """Find the AttachToProcessDialog window after btnAttach is clicked.
+    
+    The dialog is a separate top-level Window owned by the IDE main window.
+    Search both ide_app.windows() and desktop windows for it.
+    """
+    from pywinauto import Desktop
+    end_time = time.time() + timeout
+    while time.time() < end_time:
+        # Search IDE app windows
+        try:
+            for w in ide_app.windows():
+                try:
+                    title = w.window_text()
+                    if "Attach to Process" in title:
+                        w.wait("visible", timeout=5)
+                        return w
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        # Search desktop windows as fallback
+        try:
+            desktop = Desktop(backend="uia")
+            for w in desktop.windows():
+                try:
+                    title = w.window_text()
+                    if "Attach to Process" in title:
+                        w.wait("visible", timeout=5)
+                        return w
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        time.sleep(0.5)
+    # Debug: print all windows we can see
+    try:
+        desktop = Desktop(backend="uia")
+        all_titles = []
+        for w in desktop.windows():
+            try:
+                all_titles.append(w.window_text())
+            except Exception:
+                pass
+        print(f"\nDEBUG: Desktop windows at timeout: {all_titles}")
+    except Exception:
+        pass
+    raise PywinautoTimeout(f"Attach to Process dialog not found within {timeout}s")
+
+
 def get_sample_window(app, title_pattern=".*Sample WPF App.*"):
     """Return SampleWpfApp window handle."""
     win = app.window(title_re=title_pattern)
@@ -188,28 +245,58 @@ class TestE2EUserScenario:
 
         # --- Step 2: Attach to SampleWpfApp using IDE ---
         click_by_auto_id(ide_window, "btnAttach")
-        time.sleep(2)
+        time.sleep(1)
+
+        # Find the AttachToProcessDialog window (separate top-level window)
+        # Use Desktop to find it since it's a separate Window
+        from pywinauto import Desktop
+        attach_dialog = None
+        end_time = time.time() + 15
+        while time.time() < end_time:
+            try:
+                for w in Desktop(backend="uia").windows():
+                    try:
+                        title = w.window_text()
+                        if "Attach to Process" in title:
+                            attach_dialog = w
+                            break
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+            if attach_dialog:
+                break
+            time.sleep(0.5)
+
+        if not attach_dialog:
+            # Debug: print all visible windows
+            try:
+                desktop = Desktop(backend="uia")
+                titles = [w.window_text() for w in desktop.windows()]
+                print(f"\nDEBUG: Desktop windows: {titles}")
+            except Exception:
+                pass
+            raise PywinautoTimeout("Attach to Process dialog not found")
 
         # Select runtime attach (Already Running mode)
         try:
-            toggle_by_auto_id(ide_window, "RuntimeAttachRadio")
+            toggle_by_auto_id(attach_dialog, "RuntimeAttachRadio")
         except PywinautoTimeout:
             pass
         time.sleep(1)
 
         # Refresh the process list so SampleWpfApp appears
         try:
-            click_by_auto_id(ide_window, "btnRefreshProcessList", timeout=5)
+            click_by_auto_id(attach_dialog, "btnRefreshProcessList", timeout=5)
         except PywinautoTimeout:
             pass
         time.sleep(1)
 
         # Select SampleWpfApp from the ProcessListView
         try:
-            process_list = _find_by_auto_id(ide_window, "ProcessListView", "ListView")
+            process_list = _find_by_auto_id(attach_dialog, "ProcessListView", "ListView")
             if process_list:
                 list_view = process_list[0]
-                # Find the ListViewItem containing "SampleWpfApp" or "Sample WPF App"
                 list_items = list_view.descendants(control_type="ListItem")
                 selected = False
                 for item in list_items:
@@ -222,21 +309,17 @@ class TestE2EUserScenario:
                             break
                     except Exception:
                         continue
-                if not selected:
-                    # Fallback: try clicking the first item in the list
-                    if list_items:
-                        list_items[0].click_input()
-                        selected = True
-                        time.sleep(0.5)
+                if not selected and list_items:
+                    list_items[0].click_input()
+                    time.sleep(0.5)
         except Exception:
             pass
 
-        # Click Attach button INSIDE the dialog (not the toolbar button)
+        # Click Attach button INSIDE the dialog
         try:
-            click_by_auto_id(ide_window, "btnAttach", timeout=10)
+            click_by_auto_id(attach_dialog, "btnAttach", timeout=10)
         except PywinautoTimeout:
-            # Try finding it within the dialog
-            attach_btns = _find_by_auto_id(ide_window, "btnAttach", "Button")
+            attach_btns = _find_by_auto_id(attach_dialog, "btnAttach", "Button")
             if len(attach_btns) > 1:
                 attach_btns[1].click_input()
             else:
@@ -379,25 +462,48 @@ class TestE2EAttachOnly:
         assert sample_window.exists(), "SampleWpfApp should be running"
 
         click_by_auto_id(ide_window, "btnAttach")
-        time.sleep(2)
+        time.sleep(1)
+
+        # Find the AttachToProcessDialog window
+        from pywinauto import Desktop
+        attach_dialog = None
+        end_time = time.time() + 15
+        while time.time() < end_time:
+            try:
+                for w in Desktop(backend="uia").windows():
+                    try:
+                        title = w.window_text()
+                        if "Attach to Process" in title:
+                            attach_dialog = w
+                            break
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+            if attach_dialog:
+                break
+            time.sleep(0.5)
+
+        if not attach_dialog:
+            raise PywinautoTimeout("Attach to Process dialog not found")
 
         # Select runtime attach
         try:
-            toggle_by_auto_id(ide_window, "RuntimeAttachRadio")
+            toggle_by_auto_id(attach_dialog, "RuntimeAttachRadio")
         except PywinautoTimeout:
             pass
         time.sleep(1)
 
         # Refresh process list
         try:
-            click_by_auto_id(ide_window, "btnRefreshProcessList", timeout=5)
+            click_by_auto_id(attach_dialog, "btnRefreshProcessList", timeout=5)
         except PywinautoTimeout:
             pass
         time.sleep(1)
 
         # Select SampleWpfApp from ProcessListView
         try:
-            process_list = _find_by_auto_id(ide_window, "ProcessListView", "ListView")
+            process_list = _find_by_auto_id(attach_dialog, "ProcessListView", "ListView")
             if process_list:
                 list_items = process_list[0].descendants(control_type="ListItem")
                 for item in list_items:
@@ -414,9 +520,9 @@ class TestE2EAttachOnly:
 
         # Click Attach button inside the dialog
         try:
-            click_by_auto_id(ide_window, "btnAttach", timeout=10)
+            click_by_auto_id(attach_dialog, "btnAttach", timeout=10)
         except PywinautoTimeout:
-            attach_btns = _find_by_auto_id(ide_window, "btnAttach", "Button")
+            attach_btns = _find_by_auto_id(attach_dialog, "btnAttach", "Button")
             if len(attach_btns) > 1:
                 attach_btns[1].click_input()
             else:
