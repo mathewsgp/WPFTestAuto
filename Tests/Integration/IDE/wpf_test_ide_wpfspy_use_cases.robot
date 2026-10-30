@@ -4,7 +4,7 @@ Documentation    WPFSpy use case tests for WpfTestIde.
 ...              Set WPFSPY_MODE=real to test against the live WPFSpy pipe;
 ...              otherwise the mock driver is used.
 ...              Run with: python -m robot Tests/IDE/wpf_test_ide_wpfspy_use_cases.robot
-Library          ../../TestAutoLayer/api/DriverAgnosticApi.py
+Library          ../../../TestAutoLayer/api/DriverAgnosticApi.py
 Library          OperatingSystem
 
 *** Variables ***

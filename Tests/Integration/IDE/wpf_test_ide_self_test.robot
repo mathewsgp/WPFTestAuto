@@ -3,7 +3,7 @@ Documentation    Self-test for WPFTestAuto framework using SampleWpfApp and WpfT
 ...              Validates that the automation framework can drive both WPF apps.
 ...              Note: PasswordBox automation is limited by UIAutomation security;
 ...              this test focuses on elements that are automatable.
-Library          ../../TestAutoLayer/api/DriverAgnosticApi.py
+Library          ../../../TestAutoLayer/api/DriverAgnosticApi.py
 
 *** Variables ***
 ${SAMPLE_APP_PATH}    SampleWpfApp/bin/Debug/net9.0-windows/SampleWpfApp.exe

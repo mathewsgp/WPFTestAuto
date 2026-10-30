@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation    Comprehensive use case tests for WpfTestIde IDE covering recording, verification, script generation, execution, and multi-app workflows.
 ...              Run with: WPFSPY_MODE=real robot tests/wpf_test_ide_use_cases.robot
-Library          ../../TestAutoLayer/api/DriverAgnosticApi.py
+Library          ../../../TestAutoLayer/api/DriverAgnosticApi.py
 Library          OperatingSystem
 
 *** Variables ***

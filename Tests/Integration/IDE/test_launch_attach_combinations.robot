@@ -2,7 +2,7 @@
 Documentation    Test launch/attach combinations for SampleWpfApp.
 ...              Covers .NET Core startup-hook path and .NET Framework
 ...              native-inject path, with driver priority variations.
-Library           ../../TestAutoLayer/api/DriverAgnosticApi.py
+Library           ../../../TestAutoLayer/api/DriverAgnosticApi.py
 
 *** Variables ***
 ${NET_CORE_APP}    C:/Users/mathe/source/repos/WPFTestAuto/Tests/bin/SampleWPFApp/Debug/net9.0-windows/SampleWpfApp.exe
