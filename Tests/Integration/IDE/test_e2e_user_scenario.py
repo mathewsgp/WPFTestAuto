@@ -190,17 +190,65 @@ class TestE2EUserScenario:
         click_by_auto_id(ide_window, "btnAttach")
         time.sleep(2)
 
-        # Select runtime attach (app already running)
+        # Select runtime attach (Already Running mode)
         try:
             toggle_by_auto_id(ide_window, "RuntimeAttachRadio")
         except PywinautoTimeout:
-            # Radio button may not be visible; try without it
             pass
         time.sleep(1)
 
-        # Click Attach button in dialog
-        click_by_auto_id(ide_window, "btnAttach", timeout=10)
+        # Refresh the process list so SampleWpfApp appears
+        try:
+            click_by_auto_id(ide_window, "btnRefreshProcessList", timeout=5)
+        except PywinautoTimeout:
+            pass
+        time.sleep(1)
+
+        # Select SampleWpfApp from the ProcessListView
+        try:
+            process_list = _find_by_auto_id(ide_window, "ProcessListView", "ListView")
+            if process_list:
+                list_view = process_list[0]
+                # Find the ListViewItem containing "SampleWpfApp" or "Sample WPF App"
+                list_items = list_view.descendants(control_type="ListItem")
+                selected = False
+                for item in list_items:
+                    try:
+                        item_text = item.window_text()
+                        if "SampleWpfApp" in item_text or "Sample WPF App" in item_text:
+                            item.click_input()
+                            selected = True
+                            time.sleep(0.5)
+                            break
+                    except Exception:
+                        continue
+                if not selected:
+                    # Fallback: try clicking the first item in the list
+                    if list_items:
+                        list_items[0].click_input()
+                        selected = True
+                        time.sleep(0.5)
+        except Exception:
+            pass
+
+        # Click Attach button INSIDE the dialog (not the toolbar button)
+        try:
+            click_by_auto_id(ide_window, "btnAttach", timeout=10)
+        except PywinautoTimeout:
+            # Try finding it within the dialog
+            attach_btns = _find_by_auto_id(ide_window, "btnAttach", "Button")
+            if len(attach_btns) > 1:
+                attach_btns[1].click_input()
+            else:
+                raise
         time.sleep(2)
+
+        # Verify attachment succeeded - StatusText should update
+        try:
+            status_text = get_text_by_auto_id(ide_window, "StatusText")
+            assert status_text != "", "StatusText should not be empty after attach"
+        except PywinautoTimeout:
+            pass
 
         # --- Step 3: Record scenarios in SampleWpfApp using IDE ---
         click_by_auto_id(ide_window, "btnRecord")
@@ -333,15 +381,51 @@ class TestE2EAttachOnly:
         click_by_auto_id(ide_window, "btnAttach")
         time.sleep(2)
 
+        # Select runtime attach
         try:
             toggle_by_auto_id(ide_window, "RuntimeAttachRadio")
-            time.sleep(1)
         except PywinautoTimeout:
             pass
+        time.sleep(1)
+
+        # Refresh process list
+        try:
+            click_by_auto_id(ide_window, "btnRefreshProcessList", timeout=5)
+        except PywinautoTimeout:
+            pass
+        time.sleep(1)
+
+        # Select SampleWpfApp from ProcessListView
+        try:
+            process_list = _find_by_auto_id(ide_window, "ProcessListView", "ListView")
+            if process_list:
+                list_items = process_list[0].descendants(control_type="ListItem")
+                for item in list_items:
+                    try:
+                        item_text = item.window_text()
+                        if "SampleWpfApp" in item_text or "Sample WPF App" in item_text:
+                            item.click_input()
+                            time.sleep(0.5)
+                            break
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+
+        # Click Attach button inside the dialog
+        try:
+            click_by_auto_id(ide_window, "btnAttach", timeout=10)
+        except PywinautoTimeout:
+            attach_btns = _find_by_auto_id(ide_window, "btnAttach", "Button")
+            if len(attach_btns) > 1:
+                attach_btns[1].click_input()
+            else:
+                raise
+        time.sleep(2)
 
         try:
-            click_by_auto_id(ide_window, "btnAttach", timeout=5)
-            time.sleep(2)
+            status = get_text_by_auto_id(ide_window, "StatusText")
+            assert status != "", "StatusText should not be empty after attach"
         except PywinautoTimeout:
             pass
 
