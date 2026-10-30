@@ -407,7 +407,19 @@ class TestE2EUserScenario:
                 if step_type_combo:
                     step_type_combo[0].click_input()
                     time.sleep(0.5)
-                    step_type_combo[0].type_keys("{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}")
+                    # Click the "Verify Element Text" ComboBoxItem directly
+                    picked = False
+                    for item in step_type_combo[0].descendants(control_type="ComboBoxItem"):
+                        try:
+                            txt = item.window_text()
+                            if txt == "Verify Element Text":
+                                item.click_input()
+                                picked = True
+                                break
+                        except Exception:
+                            continue
+                    if not picked:
+                        step_type_combo[0].type_keys("{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}")
                     time.sleep(0.5)
             except Exception:
                 pass
@@ -418,10 +430,8 @@ class TestE2EUserScenario:
                 if alias_combo:
                     alias_combo[0].click_input()
                     time.sleep(0.5)
-                    # Scroll/select lblConfirmation: find it among aliases
-                    items = alias_combo[0].descendants(control_type="ListItem")
                     picked = False
-                    for item in items:
+                    for item in alias_combo[0].descendants(control_type="ComboBoxItem"):
                         try:
                             txt = item.window_text()
                             if "lblConfirmation" in txt:
@@ -433,7 +443,7 @@ class TestE2EUserScenario:
                     if not picked:
                         alias_combo[0].type_keys("{HOME}")
                         time.sleep(0.2)
-                        alias_combo[0].type_keys("{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}")
+                        alias_combo[0].type_keys("{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}")
                     time.sleep(0.5)
             except Exception:
                 pass
