@@ -361,7 +361,7 @@ repository/
 │   ├── login_page.yaml
 │   └── orders_page.yaml
 └── steps/
-    └── steps.yaml
+    └── steps.json
 ```
 
 #### Element Repository Schema

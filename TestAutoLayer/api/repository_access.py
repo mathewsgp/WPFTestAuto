@@ -1,9 +1,10 @@
 """
-Repository Access — loads the Element & Step Repositories (YAML) at Suite
-Setup and caches them as plain dictionaries, keyed by alias. This is the
-single place that knows how repository files are laid out on disk; Layer 3
-(DriverAgnosticApi) only ever asks it for "the locator + step for this
-alias" and never touches YAML directly.
+Repository Access — loads the Element & Step Repositories at Suite
+Setup and caches them as plain dictionaries, keyed by alias. Elements
+are loaded from YAML (*.yaml); steps are loaded from JSON (*.json).
+This is the single place that knows how repository files are laid out
+on disk; Layer 3 (DriverAgnosticApi) only ever asks it for "the locator
++ step for this alias" and never touches YAML/JSON directly.
 
 Hierarchical Element Support with parentAlias:
 - Each element specifies its parent via parentAlias
@@ -22,6 +23,7 @@ Example:
 """
 
 import glob
+import json
 import os
 import yaml
 from typing import Dict, List, Optional, Tuple
@@ -55,6 +57,25 @@ def _load_yaml_dir(subfolder, top_key):
     for path in sorted(glob.glob(fallback_pattern)):
         with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
+        merged.update(data.get(top_key, {}))
+    
+    return merged
+
+
+def _load_json_dir(subfolder, top_key):
+    """Load JSON files from a directory, merging top_key dicts into one dict."""
+    merged = {}
+    
+    primary_pattern = os.path.join(_REPO_ROOT, subfolder, "*.json")
+    for path in sorted(glob.glob(primary_pattern)):
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f) or {}
+        merged.update(data.get(top_key, {}))
+    
+    fallback_pattern = os.path.join(_REPO_ROOT_FALLBACK, subfolder, "*.json")
+    for path in sorted(glob.glob(fallback_pattern)):
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f) or {}
         merged.update(data.get(top_key, {}))
     
     return merged
@@ -123,7 +144,7 @@ def load_elements(force_reload=False, app_id: str = None, element_repo_path: str
 def load_steps(force_reload=False):
     global _steps_cache
     if _steps_cache is None or force_reload:
-        _steps_cache = _load_yaml_dir("steps", "steps")
+        _steps_cache = _load_json_dir("steps", "steps")
     return _steps_cache
 
 

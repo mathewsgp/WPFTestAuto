@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Text.Json;
 using WpfTestIde.Helpers;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
@@ -496,7 +497,7 @@ namespace WpfTestIde.ViewModels
         public ICommand SaveScriptCommand { get; }
         public ICommand LoadSampleCommand { get; }
         public ICommand ImportElementsCommand { get; }
-        public ICommand ExportStepsAsYamlCommand { get; }
+        public ICommand ExportStepsAsJsonCommand { get; }
         public ICommand ImportStepsCommand { get; }
         public ICommand ResetCommand { get; }
         public ICommand ResetLayoutCommand { get; }
@@ -530,7 +531,7 @@ namespace WpfTestIde.ViewModels
             SaveScriptCommand = new RelayCommand(_ => SaveScript());
             LoadSampleCommand = new RelayCommand(_ => LoadSample());
             ImportElementsCommand = new RelayCommand(_ => ImportElements());
-            ExportStepsAsYamlCommand = new RelayCommand(_ => ExportStepsAsYaml());
+            ExportStepsAsJsonCommand = new RelayCommand(_ => ExportStepsAsJson());
             ImportStepsCommand = new RelayCommand(_ => ImportSteps());
             ResetCommand = new RelayCommand(_ => Reset());
             ResetLayoutCommand = new RelayCommand(_ => ResetLayout());
@@ -1907,12 +1908,12 @@ namespace WpfTestIde.ViewModels
             }
         }
 
-        private void ExportStepsAsYaml()
+        private void ExportStepsAsJson()
         {
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
-                FileName = "recorded_steps.yaml",
-                Filter = "YAML files (*.yaml)|*.yaml",
+                FileName = "recorded_steps.json",
+                Filter = "JSON files (*.json)|*.json",
                 InitialDirectory = Path.Combine(FrameworkRoot, "repository", "steps")
             };
             if (dialog.ShowDialog() != true) return;
@@ -1945,8 +1946,8 @@ namespace WpfTestIde.ViewModels
             }
 
             var root = new Dictionary<string, object> { ["steps"] = stepsList };
-            var serializer = new SerializerBuilder().Build();
-            File.WriteAllText(dialog.FileName, serializer.Serialize(root));
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(root, options));
             StatusText = $"Steps exported to {dialog.FileName}";
             EnqueueToast($"Exported steps: {dialog.FileName}", ToastKind.Success);
         }
@@ -1955,62 +1956,54 @@ namespace WpfTestIde.ViewModels
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "YAML files (*.yaml)|*.yaml",
+                Filter = "JSON files (*.json)|*.json",
                 InitialDirectory = Path.Combine(FrameworkRoot, "repository", "steps"),
                 Multiselect = false
             };
             if (dialog.ShowDialog() != true) return;
 
-            var deserializer = new DeserializerBuilder()
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                .Build();
-
             try
             {
-                string yaml = File.ReadAllText(dialog.FileName);
-                var root = deserializer.Deserialize<Dictionary<object, object>>(yaml);
-                if (root == null || !root.TryGetValue("steps", out var stepsObj)) return;
+                string json = File.ReadAllText(dialog.FileName);
+                using var doc = JsonDocument.Parse(json);
+                var rootElement = doc.RootElement;
 
-                var stepsList = stepsObj as List<object>;
-                if (stepsList == null) return;
+                if (!rootElement.TryGetProperty("steps", out var stepsObj)) return;
 
                 int imported = 0;
-                foreach (var stepObj in stepsList)
+                foreach (var stepObj in stepsObj.EnumerateArray())
                 {
-                    var stepDict = ConvertToDictionary(stepObj);
-                    if (stepDict == null) continue;
-
-                    if (!stepDict.TryGetValue("alias", out var aliasObj) || aliasObj?.ToString() is not string alias || string.IsNullOrEmpty(alias))
+                    if (!stepObj.TryGetProperty("alias", out var aliasProp) || string.IsNullOrEmpty(aliasProp.GetString()))
                         continue;
 
-                    if (!stepDict.TryGetValue("kind", out var kindObj) || kindObj?.ToString() is not string kindStr)
+                    if (!stepObj.TryGetProperty("kind", out var kindProp) || string.IsNullOrEmpty(kindProp.GetString()))
                         continue;
-                    if (!Enum.TryParse<StepKind>(kindStr, out var kind)) continue;
+                    if (!Enum.TryParse<StepKind>(kindProp.GetString(), out var kind)) continue;
 
-                    if (!stepDict.TryGetValue("action", out var actionObj) || actionObj?.ToString() is not string actionStr)
+                    if (!stepObj.TryGetProperty("action", out var actionProp) || string.IsNullOrEmpty(actionProp.GetString()))
                         continue;
-                    if (!Enum.TryParse<ActionKind>(actionStr, out var action)) continue;
+                    if (!Enum.TryParse<ActionKind>(actionProp.GetString(), out var action)) continue;
 
                     var step = new RecordedStep
                     {
                         Kind = kind,
-                        Alias = alias,
+                        Alias = aliasProp.GetString()!,
                         Action = action,
-                        NonStandard = stepDict.TryGetValue("nonStandard", out var nsObj) && nsObj is bool ns && ns
+                        NonStandard = stepObj.TryGetProperty("nonStandard", out var nsProp) && nsProp.GetBoolean()
                     };
 
-                    if (stepDict.TryGetValue("value", out var valueObj) && valueObj != null)
-                        step.Value = valueObj.ToString();
-                    if (stepDict.TryGetValue("attributeName", out var attrObj) && attrObj != null)
-                        step.AttributeName = attrObj.ToString();
-                    if (stepDict.TryGetValue("targetAlias", out var targetObj) && targetObj != null)
-                        step.TargetAlias = targetObj.ToString();
-                    if (stepDict.TryGetValue("propertyName", out var propObj) && propObj != null)
-                        step.PropertyName = propObj.ToString();
-                    if (stepDict.TryGetValue("expectedCount", out var countObj) && countObj != null)
-                        step.ExpectedCount = countObj.ToString();
-                    if (stepDict.TryGetValue("appId", out var appIdObj) && appIdObj != null)
-                        step.AppId = appIdObj.ToString();
+                    if (stepObj.TryGetProperty("value", out var valueProp))
+                        step.Value = valueProp.GetString() ?? "";
+                    if (stepObj.TryGetProperty("attributeName", out var attrProp))
+                        step.AttributeName = attrProp.GetString() ?? "";
+                    if (stepObj.TryGetProperty("targetAlias", out var targetProp))
+                        step.TargetAlias = targetProp.GetString() ?? "";
+                    if (stepObj.TryGetProperty("propertyName", out var propProp))
+                        step.PropertyName = propProp.GetString() ?? "";
+                    if (stepObj.TryGetProperty("expectedCount", out var countProp))
+                        step.ExpectedCount = countProp.GetString() ?? "";
+                    if (stepObj.TryGetProperty("appId", out var appIdProp))
+                        step.AppId = appIdProp.GetString() ?? "";
 
                     Steps.Add(step);
                     imported++;

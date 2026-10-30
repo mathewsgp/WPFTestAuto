@@ -9,7 +9,7 @@ repository/
 │   ├── orders_page.yaml
 │   └── <your_page>.yaml       <- add one file per page/screen
 └── steps/
-    └── steps.yaml              <- add entries here for every new alias
+    └── steps.json              <- add entries here for every new alias
 ```
 
 All `.yaml` files under `repository/elements/` are merged into one alias
@@ -82,7 +82,7 @@ steps:
 ## Adding a new page
 
 1. Create `repository/elements/<page>.yaml` with one entry per control.
-2. Add matching entries to `repository/steps/steps.yaml`.
+2. Add matching entries to `repository/steps/steps.json`.
 3. Add Layer 2 keywords in `src/python/modules/<page>_module.robot` /
    `src/python/modules/<page>_verifications.robot` that call Layer 3 keywords by
    alias.

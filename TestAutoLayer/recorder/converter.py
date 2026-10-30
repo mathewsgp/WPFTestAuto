@@ -4,7 +4,7 @@ Converter / Generator Tool
 Merges the recorder's raw JSON output into:
   1. Element Repository YAML entries (adds a FlaUI strategy block; other
      driver strategies are left for a human to fill in / extend later)
-  2. Step Repository YAML entries
+  2. Step Repository JSON entries
   3. A draft Layer 1 Robot Framework test script that calls Layer 3
      (Driver-Agnostic API) keywords directly, in the exact recorded order
 
@@ -56,18 +56,18 @@ def generate_element_repository(recorded_elements: dict, out_file="recorded_draf
     return out_path
 
 
-def generate_step_repository(recorded_steps: dict, out_file="recorded_draft_steps.yaml"):
-    steps_yaml = {"steps": {}}
+def generate_step_repository(recorded_steps: dict, out_file="recorded_draft_steps.json"):
+    steps_json = {"steps": {}}
     for alias, meta in recorded_steps.items():
         entry = {"step": meta["step"]}
         if meta["step"] == "ValueStep":
             entry["parameters"] = [{"name": "text", "type": "string", "required": True}]
         else:
             entry["parameters"] = []
-        steps_yaml["steps"][alias] = entry
+        steps_json["steps"][alias] = entry
     out_path = os.path.join(_REPO_STEPS_DIR, out_file)
     with open(out_path, "w") as f:
-        yaml.dump(steps_yaml, f, sort_keys=False, default_flow_style=False)
+        json.dump(steps_json, f, indent=2)
     print(f"[Converter] Wrote draft Step Repository -> {out_path}")
     return out_path
 

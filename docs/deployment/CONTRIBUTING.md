@@ -21,7 +21,7 @@ automatically (see `docs/ELEMENT_REPOSITORY_GUIDE.md`).
 
 ## Adding a new step type (e.g. RangeValueStep for sliders)
 
-1. Add the step definition to `repository/steps/steps.yaml` for the
+1. Add the step definition to `repository/steps/steps.json` for the
    relevant alias(es).
 2. Add a corresponding keyword to `api/DriverAgnosticApi.py` (e.g.
    `set_range_value`) that calls a same-named method on each Layer 4
