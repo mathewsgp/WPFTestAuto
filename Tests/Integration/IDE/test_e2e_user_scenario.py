@@ -337,14 +337,14 @@ class TestE2EUserScenario:
         time.sleep(1)
 
         # Interact with SampleWpfApp Login page — these are CRITICAL
-        set_text_by_auto_id(sample_window, "txtUsername", "e2e_user")
+        set_text_by_auto_id(sample_window, "txtUsername", "user1")
         time.sleep(0.5)
-        set_text_by_auto_id(sample_window, "txtPassword", "e2e_pass")
+        set_text_by_auto_id(sample_window, "txtPassword", "Pass@123")
         time.sleep(0.5)
         click_by_auto_id(sample_window, "btnSubmit")
         time.sleep(2)
 
-        # Wait for OrdersWindow to appear after login
+        # Verify we reached OrdersWindow (login succeeded)
         orders_window = None
         try:
             orders_app = Application(backend="uia").connect(
@@ -354,8 +354,9 @@ class TestE2EUserScenario:
                 title_re=".*Sample WPF App — Orders.*"
             )
             orders_window.wait("visible", timeout=10)
-        except Exception:
-            orders_window = sample_window
+            assert orders_window.exists(), "OrdersWindow should appear after successful login"
+        except Exception as e:
+            raise AssertionError(f"Login failed — OrdersWindow did not appear: {e}")
 
         # Interact with OrdersWindow
         try:
