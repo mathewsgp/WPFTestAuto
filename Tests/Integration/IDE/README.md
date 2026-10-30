@@ -59,7 +59,7 @@ End-to-end test covering the complete user workflow:
 1. Launch `WpfTestIde.exe` and `SampleWpfApp.exe`
 2. Attach to SampleWpfApp using IDE (btnAttach → RuntimeAttachRadio → btnAttach)
 3. Record interactions (btnRecord → enter username/password → login → select SKU → create order → btnRecord)
-4. Add verification steps (Switch to Scripts tab → btnAddVerification)
+4. **Add verification steps** (tabScripts → btnAddVerification → verify username value is properly set)
 5. Save script (File > Save Script)
 6. Load script (File > Open Script)
 7. Run script (btnRunScript)

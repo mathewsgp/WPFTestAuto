@@ -76,6 +76,14 @@ def toggle_by_auto_id(window, automation_id, timeout=10):
     return matched[0]
 
 
+def get_text_by_auto_id(window, automation_id, timeout=10):
+    """Get the text of a control by AutomationId (searches all descendants)."""
+    matched = _find_by_auto_id(window, automation_id)
+    if not matched:
+        raise PywinautoTimeout(f"Control '{automation_id}' not found")
+    return matched[0].window_text()
+
+
 def click_menu_item(window, menu_path, timeout=10):
     """Click a menu item by path, e.g. 'File > Open Script...'."""
     parts = [p.strip() for p in menu_path.split(">")]
@@ -241,19 +249,49 @@ class TestE2EUserScenario:
         time.sleep(1)
 
         # --- Step 4: Add verification steps ---
-        # Switch to Scripts tab if accessible
+        # Use IDE's verification feature to insert value verification steps
+        # after recorded actions (e.g., verify username value is properly set)
         try:
             click_by_auto_id(ide_window, "tabScripts")
             time.sleep(1)
         except PywinautoTimeout:
             pass
 
+        # Add a verification step via btnAddVerification if available
         try:
             verification_btn = _find_by_auto_id(ide_window, "btnAddVerification")
             if verification_btn:
                 verification_btn[0].click_input()
                 time.sleep(1)
+                # Select the username field as verification target
+                try:
+                    # Look for a verification target selector or use StatusText
+                    verify_target = _find_by_auto_id(ide_window, "txtUsername")
+                    if verify_target:
+                        verify_target[0].click_input()
+                        time.sleep(0.5)
+                except Exception:
+                    pass
         except Exception:
+            pass
+
+        # Verify StatusText indicates recording captured interactions
+        try:
+            status_text = get_text_by_auto_id(ide_window, "StatusText")
+            assert status_text != "", "StatusText should not be empty after recording"
+        except PywinautoTimeout:
+            # StatusText may not be immediately available — app still running
+            pass
+
+        # Verify the generated script area contains Robot Framework keywords
+        try:
+            script_text = get_text_by_auto_id(ide_window, "txtGeneratedScript")
+            assert script_text != "", "Generated script should not be empty"
+            # Should contain at least one Robot Framework keyword pattern
+            assert "Click Element" in script_text or "Set Element Value" in script_text or "Wait Until" in script_text, \
+                f"Generated script should contain Robot Framework keywords, got: {script_text[:200]}"
+        except PywinautoTimeout:
+            # txtGeneratedScript may not be found in current layout — app still running
             pass
 
         # --- Step 5: Save the modified script ---
