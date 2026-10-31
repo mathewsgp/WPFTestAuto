@@ -731,30 +731,31 @@ namespace WpfTestIde
         private static void RecreateDefaultDockPanes(LayoutPanel rootPanel)
         {
             rootPanel.Children.Clear();
-            
+
+            // Left: WORKING FOLDER (narrow, icon-only toolbar).
+            var workingFolderPane = new LayoutAnchorable { Title = "WORKING FOLDER", IsActive = false };
+            workingFolderPane.Content = CreatePaneContent(new Docking.Views.WorkingFolderPane(), "tabWorkingFolder");
+            var workingFolderHost = new LayoutAnchorablePane();
+            workingFolderHost.Children.Add(workingFolderPane);
+
+            // Right: ELEMENTS / SCRIPTS / RESULTS as a single vertical
+            // LayoutPanel containing one LayoutAnchorablePane with all three
+            // anchorables — this is what makes them render as a tabbed group.
+            var rightGroup = new LayoutPanel { Orientation = Orientation.Vertical };
+            var rightTabHost = new LayoutAnchorablePane();
             var elementsPane = new LayoutAnchorable { Title = "ELEMENTS", IsActive = true };
             elementsPane.Content = CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements");
-            var elementsPaneHost = new LayoutAnchorablePane();
-            elementsPaneHost.Children.Add(elementsPane);
-            rootPanel.Children.Add(elementsPaneHost);
-            
             var scriptsPane = new LayoutAnchorable { Title = "SCRIPTS" };
             scriptsPane.Content = CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts");
-            var scriptsPaneHost = new LayoutAnchorablePane();
-            scriptsPaneHost.Children.Add(scriptsPane);
-            rootPanel.Children.Add(scriptsPaneHost);
-            
             var resultsPane = new LayoutAnchorable { Title = "RESULTS" };
             resultsPane.Content = CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults");
-            var resultsPaneHost = new LayoutAnchorablePane();
-            resultsPaneHost.Children.Add(resultsPane);
-            rootPanel.Children.Add(resultsPaneHost);
+            rightTabHost.Children.Add(elementsPane);
+            rightTabHost.Children.Add(scriptsPane);
+            rightTabHost.Children.Add(resultsPane);
+            rightGroup.Children.Add(rightTabHost);
 
-            var workingFolderPane = new LayoutAnchorable { Title = "WORKING FOLDER" };
-            workingFolderPane.Content = CreatePaneContent(new Docking.Views.WorkingFolderPane(), "tabWorkingFolder");
-            var workingFolderPaneHost = new LayoutAnchorablePane();
-            workingFolderPaneHost.Children.Add(workingFolderPane);
-            rootPanel.Children.Add(workingFolderPaneHost);
+            rootPanel.Children.Add(workingFolderHost);
+            rootPanel.Children.Add(rightGroup);
         }
 
         // ------------------------------------------------------------

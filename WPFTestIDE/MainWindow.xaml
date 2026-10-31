@@ -374,50 +374,49 @@
                      AutomationProperties.AutomationId="txtRunOutputTail"/>
         </Expander>
 
-        <!-- ================= Docked Panes (A6 Step 3) =================
-             The 3 legacy MainTabControl TabItems have been promoted to
-             dockable LayoutAnchorable panes under DockingManager.Layout. The
-             TabItem bodies now live verbatim in
-             Docking/Views/{Elements,Scripts,Results}Pane.xaml and are inlined
-             here as LayoutAnchorable child content. Each LayoutAnchorable keeps
-             the legacy tab-header AutomationId (tabElements/tabScripts/tabResults)
-             so UC-010/UC-014 `Click Element` locators still resolve. The
-             standalone width=0 host from Step 1 is replaced by this real Layout.
-             (AnchorablesSource was rejected — the probe showed it auto-builds a
-             LayoutDocumentPaneGroup, not tool panes.) -->
+<!-- ================= Docked Panes (A6 Step 3) =================
+      Default layout:
+        - Left  : WORKING FOLDER (narrow, icon-only toolbar)
+        - Right : ELEMENTS / SCRIPTS / RESULTS as a single tabbed group
+        - Bottom: Run Output expander (outside the manager, docked bottom)
+      OCR Result expander stays collapsed by default (OcrPanelExpanded=false).
+      The 3 legacy Main-Control TabItems have been promoted to dockable
+      LayoutAnchorable panes. Each keeps its legacy tab-header AutomationId
+      (tabElements/tabScripts/tabResults/tabWorkingFolder) so UC-010/UC-014
+      `Click Element` locators still resolve. -->
         <avalonDock:DockingManager x:Name="dockManager">
             <avalonDock:DockingManager.Layout>
                 <avalonDock:LayoutRoot>
                     <avalonDock:LayoutRoot.RootPanel>
                         <avalonDock:LayoutPanel>
+                            <!-- Left: Working Folder -->
                             <avalonDock:LayoutAnchorablePane>
-                                <avalonDock:LayoutAnchorable Title="ELEMENTS" IsActive="True">
-                                    <Grid AutomationProperties.AutomationId="tabElements">
-                                        <dockViews:ElementsPane/>
-                                    </Grid>
-                                </avalonDock:LayoutAnchorable>
-                            </avalonDock:LayoutAnchorablePane>
-                            <avalonDock:LayoutAnchorablePane>
-                                <avalonDock:LayoutAnchorable Title="SCRIPTS">
-                                    <Grid AutomationProperties.AutomationId="tabScripts">
-                                        <dockViews:ScriptsPane/>
-                                    </Grid>
-                                </avalonDock:LayoutAnchorable>
-                            </avalonDock:LayoutAnchorablePane>
-                            <avalonDock:LayoutAnchorablePane>
-                                <avalonDock:LayoutAnchorable Title="RESULTS">
-                                    <Grid AutomationProperties.AutomationId="tabResults">
-                                        <dockViews:ResultsPane/>
-                                    </Grid>
-                                </avalonDock:LayoutAnchorable>
-                            </avalonDock:LayoutAnchorablePane>
-                            <avalonDock:LayoutAnchorablePane>
-                                <avalonDock:LayoutAnchorable Title="WORKING FOLDER">
+                                <avalonDock:LayoutAnchorable Title="WORKING FOLDER" IsActive="False">
                                     <Grid AutomationProperties.AutomationId="tabWorkingFolder">
                                         <dockViews:WorkingFolderPane/>
                                     </Grid>
                                 </avalonDock:LayoutAnchorable>
                             </avalonDock:LayoutAnchorablePane>
+                            <!-- Right: ELEMENTS / SCRIPTS / RESULTS as one tabbed group -->
+                            <avalonDock:LayoutPanel Orientation="Vertical">
+                                <avalonDock:LayoutAnchorablePane>
+                                    <avalonDock:LayoutAnchorable Title="ELEMENTS" IsActive="True">
+                                        <Grid AutomationProperties.AutomationId="tabElements">
+                                            <dockViews:ElementsPane/>
+                                        </Grid>
+                                    </avalonDock:LayoutAnchorable>
+                                    <avalonDock:LayoutAnchorable Title="SCRIPTS">
+                                        <Grid AutomationProperties.AutomationId="tabScripts">
+                                            <dockViews:ScriptsPane/>
+                                        </Grid>
+                                    </avalonDock:LayoutAnchorable>
+                                    <avalonDock:LayoutAnchorable Title="RESULTS">
+                                        <Grid AutomationProperties.AutomationId="tabResults">
+                                            <dockViews:ResultsPane/>
+                                        </Grid>
+                                    </avalonDock:LayoutAnchorable>
+                                </avalonDock:LayoutAnchorablePane>
+                            </avalonDock:LayoutPanel>
                         </avalonDock:LayoutPanel>
                     </avalonDock:LayoutRoot.RootPanel>
                 </avalonDock:LayoutRoot>
