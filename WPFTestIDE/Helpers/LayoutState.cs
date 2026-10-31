@@ -55,50 +55,25 @@ namespace WpfTestIde.Helpers
         public bool RepositoryPanelExpanded { get; set; }
         public bool RunOutputPanelExpanded { get; set; }
 
-        // A6+E4: persisted dock state — Exercise Step 1 introduced the DockingManager
-        // host; Steps 3-6 promote tabs/dialogs into dockable panes whose arrangement
-        // should round-trip across IDE restarts. ActivePaneId takes over forward from
-        // SelectedTabIndex (which is kept for backward-compat — old layout.json files
-        // still load and source applies SelectedTabIndex->pane-id fallback). DockLayoutJson
-        // is the AvalonDock.Serializer.JsonLayoutSerializer serialized dock arrangement,
-        // verbatim. Both default to null on a fresh layout.json — the apply-path treats
-        // null DockLayoutJson as "use dock-manager default layout" and null ActivePaneId
-        // as "fall back to SelectedTabIndex hint".
-        /// <summary>The active dockable pane id selected on close. null on first run or
-        /// when no pane host is registered. Forward successor to SelectedTabIndex (which
-        /// is kept for backward-compat; the apply-path falls back to SelectedTabIndex when
+        // A6+E4: persisted dock state — ActivePaneId takes over forward from
+        // SelectedTabIndex (which is kept for backward-compat — old layout.json
+        // files still load and source applies SelectedTabIndex->pane-id fallback).
+        // DockLayoutJson is the AvalonDock.Serializer.Json LayoutRoot serialized
+        // verbatim via JsonLayoutSerializer. Both default to null on a fresh
+        // layout.json — the apply-path treats null DockLayoutJson as "use dock
+        // manager default layout" and null ActivePaneId as "fall back to
+        // SelectedTabIndex hint".
+        /// <summary>The active dockable pane id selected on close. null on first run
+        /// or when no pane host is registered. Forward successor to SelectedTabIndex
+        /// (which is kept for backward-compat; the apply-path falls back to SelectedTabIndex when
         /// this is null).</summary>
         public string? ActivePaneId { get; set; }
 
         /// <summary>Serialized dock layout JSON from AvalonDock.Serializer.Json's
         /// LayoutSerializer (the v5 dock-manager.Layout round-tripped verbatim). null
-        /// until Steps 3-6 register panes; the apply-path treats null as "use dock
-        /// default layout".</summary>
+        /// until dock panes are registered; the apply-path treats null as "use dock
+        // default layout".</summary>
         public string? DockLayoutJson { get; set; }
-
-        // ------------------------------------------------------------
-        // E1: docked ELEMENTS/SCRIPTS/RESULTS pane widths.
-        //
-        // JsonLayoutSerializer v5 DOES round-trip LayoutAnchorablePane.DockWidth
-        // (star "1*" or absolute pixels "300"), but in practice the docked columns
-        // still do not reliably keep their width across restarts: the layout is
-        // deserialized/replaced while the window is still at its XAML size and
-        // before the pane content is materialized, and an exception during
-        // serialize (window tearing down) silently writes DockLayoutJson=null.
-        //
-        // To make the three pane widths robust, we ALSO persist them here as plain
-        // absolute pixel values keyed by pane title. Only absolute (>0) widths are
-        // stored — star widths are intentionally omitted (the XAML default is star,
-        // and there is no single pixel value that captures a star ratio). The
-        // apply-path re-applies them after the window is sized and the DockingManager
-        // has realized its content, so they win over whatever the (possibly corrupt
-        // or default) dock layout produced.
-        // ------------------------------------------------------------
-        /// <summary>Absolute docked pane widths in device-independent pixels, keyed
-        /// by pane title (e.g. "Elements", "Scripts", "Results"). Empty on first run
-        /// or when no pane was resized; the apply-path then leaves the dock defaults
-        /// in place.</summary>
-        public Dictionary<string, double> PaneWidths { get; set; } = new();
     }
 
     /// <summary>Load/save LayoutState to %AppData%\WpfTestIde\layout.json.
@@ -129,10 +104,6 @@ namespace WpfTestIde.Helpers
                 var json = File.ReadAllText(FilePath);
                 if (string.IsNullOrWhiteSpace(json)) return new LayoutState();
                 var state = JsonSerializer.Deserialize<LayoutState>(json, Options) ?? new LayoutState();
-                // Migrate older layout.json files written before PaneWidths existed:
-                // a missing/null entry must resolve to an empty dictionary so callers
-                // can safely iterate and so the next Save() writes a clean object.
-                state.PaneWidths ??= new Dictionary<string, double>();
                 return state;
             }
             catch

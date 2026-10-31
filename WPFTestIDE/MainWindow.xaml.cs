@@ -106,83 +106,39 @@ namespace WpfTestIde
                     WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 }
             }
-            // A6+E4 step 3: dock layout restore + pane activation -- TEMPORARILY DISABLED
-            // so you can verify the default XAML view. Re-enable by uncommenting below.
-            /*
+            // -------- Dock layout restore --------
+            // Use AvalonDock's built-in JsonLayoutSerializer to round-trip the dock
+            // arrangement. After deserialization, LayoutAnchorables arrive with null
+            // Content (the serializer doesn't persist UIElement Content), so we
+            // re-inject the pane UserControls.
             if (!string.IsNullOrWhiteSpace(state.DockLayoutJson))
             {
                 try
                 {
-                    System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: BEFORE DESERIALIZE ===");
-                    LogLayoutStructure("XAML Default", dockManager.Layout);
-                    
                     var serializer = new JsonLayoutSerializer(dockManager);
                     using var stream = new MemoryStream(Encoding.UTF8.GetBytes(state.DockLayoutJson));
                     serializer.Deserialize(stream);
-                    
-                    System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER DESERIALIZE ===");
-                    LogLayoutStructure("After Deserialize", dockManager.Layout);
-                    
-                    // JsonLayoutSerializer cannot persist UIElement Content (UserControls),
-                    // so deserialized LayoutAnchorables arrive with null Content. Re-inject
-                    // the pane UserControls here so the three tabs are visible after restart.
+
                     RestoreDockPaneContent();
-                    
-                    // JsonLayoutSerializer v5 BUG: does NOT deserialize LeftSide/RightSide/TopSide/BottomSide
-                    // auto-hide panes. Manually restore them from the saved JSON.
-                    RestoreAutoHidePanesFromJson(state.DockLayoutJson);
-                    
-                    DeduplicateLayout();
+
+                    if (!string.IsNullOrWhiteSpace(state.ActivePaneId))
+                    {
+                        ShowPane(state.ActivePaneId);
+                    }
+                    else if (state.SelectedTabIndex >= 0 && state.SelectedTabIndex < 3)
+                    {
+                        ShowPane(state.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" });
+                    }
+
+                    // Apply splitter state after content is re-injected.
+                    ApplySplitterState(state);
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Dock layout deserialize failed: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Dock layout restore failed: {ex.Message}");
                     // Fall back to the XAML-defined default layout (already set).
                 }
             }
-            
-            System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER CONTENT RESTORE ===");
-            LogLayoutStructure("After RestoreDockPaneContent", dockManager.Layout);
-            
-            if (!string.IsNullOrWhiteSpace(state.ActivePaneId))
-            {
-                ShowPane(state.ActivePaneId);
-            }
-            else if (state.SelectedTabIndex >= 0 && state.SelectedTabIndex < 3)
-            {
-                ShowPane(state.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" });
-            }
-
-            // Defer the post-restore layout pass + pane-width re-application until the
-            // visual tree has realized the docked pane content.
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                dockManager.UpdateLayout();
-                ApplyPaneWidths(state.PaneWidths);
-                ApplySplitterState(state);
-
-                System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER UPDATELAYOUT ===");
-                LogLayoutStructure("After UpdateLayout", dockManager.Layout);
-            }), DispatcherPriority.Loaded);
-
-            // 2nd-tick re-apply of pane widths.
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                ApplyPaneWidths(state.PaneWidths);
-
-                System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER 2ND TICK ===");
-                LogLayoutStructure("After 2nd Tick", dockManager.Layout);
-            }), DispatcherPriority.Background);
-
-            // 3rd-tick re-apply at ContextIdle.
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                ApplyPaneWidths(state.PaneWidths);
-
-                System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER 3RD TICK ===");
-                LogLayoutStructure("After 3rd Tick", dockManager.Layout);
-            }), DispatcherPriority.ContextIdle);
-            */
         }
 
         private void ApplySplitterState(LayoutState state)
@@ -231,12 +187,6 @@ namespace WpfTestIde
                 System.Diagnostics.Debug.WriteLine($"ElementsPane splitter snapshot skipped: {ex.Message}");
             }
             
-            // Snapshot pane widths BEFORE SerializeLayout, because SerializeLayout
-            // calls dm.UpdateLayout() which triggers OnFixChildrenDockLengths and
-            // forces non-star DockWidths back to star — we must capture the live
-            // (possibly user-resized) absolute widths first.
-            var paneWidths = SnapshotPaneWidths();
-
             var state = new LayoutState
             {
                 WindowState = (int)WindowState,
@@ -254,7 +204,6 @@ namespace WpfTestIde
                 RunOutputPanelExpanded = vm.RunOutputPanelExpanded,
                 ActivePaneId = vm.ActivePaneId ?? (vm.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" }),
                 DockLayoutJson = SerializeLayout(dockManager),
-                PaneWidths = paneWidths,
             };
             LayoutPersistence.Save(state);
         }
@@ -594,107 +543,6 @@ namespace WpfTestIde
         }
 
         // ------------------------------------------------------------
-        // E1: docked ELEMENTS/SCRIPTS/RESULTS pane-width persistence.
-        //
-        // JsonLayoutSerializer v5 round-trips LayoutAnchorablePane.DockWidth in
-        // principle, but in practice the three docked columns still did not keep
-        // their width across restarts: the layout is deserialized/replaced before
-        // the window reaches its saved size and before the pane content is
-        // materialized, and an exception during serialize (window tearing down)
-        // silently wrote DockLayoutJson=null. To make the pane widths reliable we
-        // ALSO persist them here as plain absolute pixel values and re-apply them
-        // after the DockingManager has been (re)built and UpdateLayout has run.
-        //
-        // We snapshot DockWidth (not ActualWidth) so the value is independent of
-        // whether the visual tree has rendered. Only ABSOLUTE widths are recorded:
-        // star widths ("1*") are the XAML default and carry no single pixel value,
-        // so they are intentionally omitted and the apply-path leaves them alone.
-        // ------------------------------------------------------------
-        /// <summary>Snapshots the absolute DockWidth of every docked
-        /// LayoutAnchorablePane in the layout tree, keyed by the title of its first
-        /// child anchorable (Elements/Scripts/Results). Star widths are skipped.</summary>
-        private Dictionary<string, double> SnapshotPaneWidths()
-        {
-            var widths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            try
-            {
-                if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return widths;
-                foreach (var pane in GetAllAnchorablePanes(rootPanel))
-                {
-                    var anchorable = pane.Children.FirstOrDefault();
-                    if (string.IsNullOrWhiteSpace(anchorable?.Title)) continue;
-                    var dockWidth = pane.DockWidth;
-                    // Only absolute pixel widths are meaningful to persist; star widths
-                    // are the default and have no single pixel representation.
-                    if (dockWidth.IsAbsolute && dockWidth.Value > 0)
-                    {
-                        widths[anchorable.Title] = dockWidth.Value;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"SnapshotPaneWidths failed: {ex.Message}");
-            }
-            return widths;
-        }
-
-        /// <summary>Re-applies persisted absolute pane widths to the docked
-        /// LayoutAnchorablePanes, matched by the title of their first child
-        /// anchorable. Called after UpdateLayout so the (possibly deserialized or
-        /// default) dock tree has been realized. Star entries are left untouched.</summary>
-        private void ApplyPaneWidths(IReadOnlyDictionary<string, double>? paneWidths)
-        {
-            if (paneWidths == null || paneWidths.Count == 0) return;
-            if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return;
-
-            int applied = 0;
-            foreach (var pane in GetAllAnchorablePanes(rootPanel))
-            {
-                var anchorable = pane.Children.FirstOrDefault();
-                if (string.IsNullOrWhiteSpace(anchorable?.Title)) continue;
-                if (paneWidths.TryGetValue(anchorable.Title, out var width) && width > 0)
-                {
-                    pane.DockWidth = new GridLength(width, GridUnitType.Pixel);
-                    applied++;
-                }
-            }
-            if (applied > 0)
-            {
-                // NOTE: do NOT call dockManager.UpdateLayout() here —
-                // UpdateLayout() triggers LayoutPanelControl.OnFixChildrenDockLengths
-                // which forces non-star DockWidths back to star, undoing the widths
-                // we just set. The widths take effect on the next natural layout pass,
-                // and re-applies at lower DispatcherPriority in MainWindow_Loaded
-                // ensure they stick.
-                System.Diagnostics.Debug.WriteLine($"ApplyPaneWidths: matched {applied}/{paneWidths.Count} pane width(s)");
-                return;
-            }
-            System.Diagnostics.Debug.WriteLine($"ApplyPaneWidths: matched {applied}/{paneWidths.Count} pane width(s)");
-        }
-
-        /// <summary>Recursively collects every LayoutAnchorablePane in the layout
-        /// tree rooted at <paramref name="panel"/>. Docked panes can be nested inside
-        /// intermediate LayoutPanel groups (e.g. ELEMENTS/SCRIPTS/RESULTS live under
-        /// a right-hand LayoutPanel), so a direct-children-only walk misses them.</summary>
-        private static IEnumerable<LayoutAnchorablePane> GetAllAnchorablePanes(LayoutPanel panel)
-        {
-            foreach (var child in panel.Children)
-            {
-                switch (child)
-                {
-                    case LayoutAnchorablePane pane:
-                        yield return pane;
-                        break;
-                    case LayoutPanel childPanel:
-                        foreach (var nested in GetAllAnchorablePanes(childPanel))
-                            yield return nested;
-                        break;
-                }
-            }
-        }
-
-        // ------------------------------------------------------------
         // A6+E4 layout content restoration.
         // JsonLayoutSerializer cannot persist UIElement Content (UserControls),
         // so deserialized LayoutAnchorables arrive with null Content. Without
@@ -801,264 +649,6 @@ namespace WpfTestIde
 
             rootPanel.Children.Add(workingFolderHost);
             rootPanel.Children.Add(rightGroup);
-        }
-
-        // ------------------------------------------------------------
-        // Post-restore deduplication: JsonLayoutSerializer can leave ghost
-        // copies of auto-hidden panes in unexpected containers. After all
-        // restoration steps, walk the layout tree and remove any anchorable
-        // whose Title appears more than once, keeping only the first instance.
-        // ------------------------------------------------------------
-        private void DeduplicateLayout()
-        {
-            if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return;
-            
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var removed = 0;
-            
-            removed += RemoveDuplicatesInPanel(rootPanel, seen);
-            removed += RemoveDuplicatesInSide(dockManager.Layout.LeftSide, seen);
-            removed += RemoveDuplicatesInSide(dockManager.Layout.RightSide, seen);
-            removed += RemoveDuplicatesInSide(dockManager.Layout.TopSide, seen);
-            removed += RemoveDuplicatesInSide(dockManager.Layout.BottomSide, seen);
-            
-            removed += RemoveEmptyGroupsFromSide(dockManager.Layout.LeftSide);
-            removed += RemoveEmptyGroupsFromSide(dockManager.Layout.RightSide);
-            removed += RemoveEmptyGroupsFromSide(dockManager.Layout.TopSide);
-            removed += RemoveEmptyGroupsFromSide(dockManager.Layout.BottomSide);
-            
-            if (removed > 0)
-            {
-                System.Diagnostics.Debug.WriteLine($"DeduplicateLayout removed {removed} duplicate anchorable(s) or empty group(s)");
-            }
-        }
-
-        private static int RemoveEmptyGroupsFromSide(LayoutAnchorSide side)
-        {
-            if (side == null) return 0;
-            
-            int removed = 0;
-            foreach (var group in side.Children.ToList())
-            {
-                if (group is LayoutAnchorGroup anchorGroup && anchorGroup.Children.Count == 0)
-                {
-                    side.Children.Remove(group);
-                    removed++;
-                }
-            }
-            return removed;
-        }
-
-        private static int RemoveDuplicatesInSide(LayoutAnchorSide side, HashSet<string> seen)
-        {
-            if (side == null) return 0;
-            
-            int removed = 0;
-            
-            foreach (var group in side.Children.ToList())
-            {
-                if (group is LayoutAnchorGroup anchorGroup)
-                {
-                    foreach (var anchorable in anchorGroup.Children.ToList())
-                    {
-                        if (!string.IsNullOrEmpty(anchorable.Title))
-                        {
-                            if (!seen.Add(anchorable.Title))
-                            {
-                                anchorGroup.Children.Remove(anchorable);
-                                removed++;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            return removed;
-        }
-
-        private static int RemoveDuplicatesInPanel(LayoutPanel panel, HashSet<string> seen)
-        {
-            int removed = 0;
-            
-            foreach (var child in panel.Children.ToList())
-            {
-                switch (child)
-                {
-                    case LayoutAnchorablePane pane:
-                        removed += RemoveDuplicatesInPane(pane, seen);
-                        break;
-                    case LayoutPanel childPanel:
-                        removed += RemoveDuplicatesInPanel(childPanel, seen);
-                        break;
-                }
-            }
-            
-            return removed;
-        }
-
-        private static int RemoveDuplicatesInPane(LayoutAnchorablePane pane, HashSet<string> seen)
-        {
-            int removed = 0;
-            
-            foreach (var anchorable in pane.Children.ToList())
-            {
-                if (!string.IsNullOrEmpty(anchorable.Title))
-                {
-                    if (!seen.Add(anchorable.Title))
-                    {
-                        pane.Children.Remove(anchorable);
-                        removed++;
-                    }
-                }
-            }
-            
-            return removed;
-        }
-
-        // ------------------------------------------------------------
-        // JsonLayoutSerializer v5 BUG WORKAROUND:
-        // The serializer does NOT deserialize LeftSide/RightSide/TopSide/BottomSide
-        // (auto-hide panes). Worse: it can leave ghost copies of auto-hidden
-        // panes inside RootPanel, so if we just add the real copies to the
-        // sides we get duplicates. Strategy:
-        //   1. Collect every pane title that the saved JSON placed on a side.
-        //   2. Strip those anchorables out of the live layout tree so the
-        //      serializer's ghost copies are gone.
-        //   3. Rebuild the side groups from JSON and inject real UserControl
-        //      content so the panes are visible and functional.
-        // ------------------------------------------------------------
-        private void RestoreAutoHidePanesFromJson(string json)
-        {
-            try
-            {
-                using var doc = System.Text.Json.JsonDocument.Parse(json);
-                var root = doc.RootElement;
-                
-                var autoHideTitles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                CollectAutoHideTitles(root, "LeftSide", autoHideTitles);
-                CollectAutoHideTitles(root, "RightSide", autoHideTitles);
-                CollectAutoHideTitles(root, "TopSide", autoHideTitles);
-                CollectAutoHideTitles(root, "BottomSide", autoHideTitles);
-
-                if (dockManager.Layout?.RootPanel is LayoutPanel rootPanel && autoHideTitles.Count > 0)
-                {
-                    RemoveAnchorablesFromPanel(rootPanel, autoHideTitles);
-                }
-
-                RestoreSide(root, "LeftSide", dockManager.Layout.LeftSide);
-                RestoreSide(root, "RightSide", dockManager.Layout.RightSide);
-                RestoreSide(root, "TopSide", dockManager.Layout.TopSide);
-                RestoreSide(root, "BottomSide", dockManager.Layout.BottomSide);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"RestoreAutoHidePanesFromJson failed: {ex.Message}");
-            }
-        }
-
-        private void CollectAutoHideTitles(System.Text.Json.JsonElement root, string sideName, HashSet<string> titles)
-        {
-            if (!root.TryGetProperty(sideName, out var side) || !side.TryGetProperty("Children", out var children)) return;
-            foreach (var group in children.EnumerateArray())
-            {
-                if (group.TryGetProperty("Children", out var anchorables))
-                {
-                    foreach (var a in anchorables.EnumerateArray())
-                    {
-                        if (a.TryGetProperty("Title", out var t))
-                            titles.Add(t.GetString() ?? "");
-                    }
-                }
-            }
-        }
-
-        private static void RemoveAnchorablesFromPanel(LayoutPanel rootPanel, HashSet<string> titlesToRemove)
-        {
-            foreach (var child in rootPanel.Children.ToList())
-            {
-                switch (child)
-                {
-                    case LayoutAnchorablePane pane:
-                        RemoveFromPane(pane, titlesToRemove);
-                        break;
-                    case LayoutPanel panel:
-                        RemoveAnchorablesFromPanel(panel, titlesToRemove);
-                        break;
-                }
-            }
-        }
-
-        private static void RemoveFromPane(LayoutAnchorablePane pane, HashSet<string> titlesToRemove)
-        {
-            foreach (var anchorable in pane.Children.ToList())
-            {
-                if (titlesToRemove.Contains(anchorable.Title))
-                {
-                    pane.Children.Remove(anchorable);
-                }
-            }
-        }
-
-        private void RestoreSide(System.Text.Json.JsonElement root, string sideName, LayoutAnchorSide anchorSide)
-        {
-            try
-            {
-                if (anchorSide == null) return;
-                if (!root.TryGetProperty(sideName, out var side)) return;
-                if (!side.TryGetProperty("Children", out var children)) return;
-                
-                anchorSide.Children.Clear();
-                
-                foreach (var paneElement in children.EnumerateArray())
-                {
-                    if (!paneElement.TryGetProperty("Children", out var anchorableArray)) continue;
-                    
-                    var group = new LayoutAnchorGroup();
-                    
-                    foreach (var anchorableElement in anchorableArray.EnumerateArray())
-                    {
-                        var anchorable = new LayoutAnchorable();
-                        
-                        anchorable.Title = anchorableElement.TryGetProperty("Title", out var t) ? t.GetString() ?? "" : "";
-                        anchorable.CanHide = anchorableElement.TryGetProperty("CanHide", out var ch) && ch.GetBoolean();
-                        anchorable.CanAutoHide = anchorableElement.TryGetProperty("CanAutoHide", out var cah) && cah.GetBoolean();
-                        anchorable.AutoHideWidth = anchorableElement.TryGetProperty("AutoHideWidth", out var ahw) ? ahw.GetDouble() : 0;
-                        anchorable.AutoHideHeight = anchorableElement.TryGetProperty("AutoHideHeight", out var ahh) ? ahh.GetDouble() : 0;
-                        anchorable.AutoHideMinWidth = anchorableElement.TryGetProperty("AutoHideMinWidth", out var ahmw) ? ahmw.GetDouble() : 100;
-                        anchorable.AutoHideMinHeight = anchorableElement.TryGetProperty("AutoHideMinHeight", out var ahmh) ? ahmh.GetDouble() : 100;
-                        anchorable.CanDockAsTabbedDocument = anchorableElement.TryGetProperty("CanDockAsTabbedDocument", out var cdatd) && cdatd.GetBoolean();
-                        anchorable.CanMove = anchorableElement.TryGetProperty("CanMove", out var cm) && cm.GetBoolean();
-                        anchorable.IsDetached = anchorableElement.TryGetProperty("IsDetached", out var idet) && idet.GetBoolean();
-                        anchorable.CanClose = anchorableElement.TryGetProperty("CanClose", out var cc) && cc.GetBoolean();
-                        anchorable.CanFloat = anchorableElement.TryGetProperty("CanFloat", out var cf) && cf.GetBoolean();
-                        anchorable.CanShowOnHover = anchorableElement.TryGetProperty("CanShowOnHover", out var csh) && csh.GetBoolean();
-                        
-                        if (!string.IsNullOrEmpty(anchorable.Title))
-                        {
-                            anchorable.Content = anchorable.Title switch
-                            {
-                                "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
-                                "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
-                                "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
-                                _ => anchorable.Content
-                            };
-                        }
-                        
-                        group.Children.Add(anchorable);
-                    }
-                    
-                    if (group.Children.Count > 0)
-                    {
-                        anchorSide.Children.Add(group);
-                    }
-                }
-                
-                System.Diagnostics.Debug.WriteLine($"Restored {anchorSide.Children.Count} auto-hide group(s) to {sideName}");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"RestoreSide({sideName}) failed: {ex.Message}");
-            }
         }
 
         private static object CreatePaneContent(UserControl pane, string automationId)
