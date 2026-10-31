@@ -188,12 +188,15 @@ namespace WpfTestIde.Converters
         {
             if (value is not FolderTreeItem item) return "📄";
             if (item.IsDirectory) return "📁";
-            var ext = (item.Extension ?? "").ToLowerInvariant();
-            return ext switch
+            // Use the computed FileType so element vs. script JSONs get
+            // distinct glyphs even though they share the .json extension.
+            var type = item.FileType;
+            return type switch
             {
-                ".json" => "📋",
-                ".py" => "🐍",
-                ".robot" => "🤖",
+                "Element JSON" => "🧩",
+                "Script JSON" => "📜",
+                "Python" => "🐍",
+                "Robot" => "🤖",
                 _ => "📄",
             };
         }

@@ -24,21 +24,32 @@ namespace WpfTestIde.Models
         /// "Element JSON", "Script JSON", "Python", "Robot", "Directory", or
         /// "File". Computed lazily from the extension and, for .json files,
         /// the file's parent directory name so element vs. script JSONs are
-        /// visually distinct before the user clicks Import.</summary>
+        /// visually distinct before the user clicks Import. The result is
+        /// cached after the first computation so a deep tree doesn't re-read
+        /// every file on each render pass.</summary>
         public string FileType
         {
             get
             {
-                if (IsDirectory) return "Directory";
-                var ext = (Extension ?? "").ToLowerInvariant();
-                return ext switch
-                {
-                    ".json" => IsScriptJson() ? "Script JSON" : "Element JSON",
-                    ".py" => "Python",
-                    ".robot" => "Robot",
-                    _ => "File",
-                };
+                if (_fileType is not null) return _fileType;
+                _fileType = ComputeFileType();
+                return _fileType;
             }
+        }
+
+        private string? _fileType;
+
+        private string ComputeFileType()
+        {
+            if (IsDirectory) return "Directory";
+            var ext = (Extension ?? "").ToLowerInvariant();
+            return ext switch
+            {
+                ".json" => IsScriptJson() ? "Script JSON" : "Element JSON",
+                ".py" => "Python",
+                ".robot" => "Robot",
+                _ => "File",
+            };
         }
 
         /// <summary>Heuristic: a .json file is treated as a *script* JSON when
