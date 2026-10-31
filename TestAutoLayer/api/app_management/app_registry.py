@@ -52,7 +52,7 @@ def _create_driver_for_app(driver_name: str, app_context: 'AppContext') -> Any:
             from flaui_driver import FlaUIDriver
             return FlaUIDriver(app_pid=app_context.process_id)
         except ImportError:
-            raise ImportError("FlaUI driver not available. Install: pip install robotframework-flaui")
+            raise ImportError("FlaUI driver not available. Install: pip install flaui-uiautomation-wrapper")
 
     if driver_name == "WPFSpy":
         if effective_mode == "real":

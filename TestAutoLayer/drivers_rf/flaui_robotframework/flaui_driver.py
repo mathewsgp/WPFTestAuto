@@ -3,91 +3,437 @@ FLaUI.RobotFramework — Layer 4 driver wrapper for FlaUI.
 
 This module provides:
 1. `FlaUIDriver` — Python driver class implementing the Layer 3 interface
-   for the real SampleWpfApp using the robotframework-flaui package.
+   for the real SampleWpfApp using flaui-uiautomation-wrapper directly.
 2. `FlaUILibrary` — Robot Framework library exposing FlaUI keywords directly.
+
+No dependency on robotframework-flaui — all UI Automation calls go through
+flaui-uiautomation-wrapper (Automation, AutomationElement, ConditionFactory,
+Keyboard) using live element objects instead of XPath strings.
 """
 
+import re
 import sys
 import os
 import time
-import random
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-# Add parent directories to path for mock app fallback
+# Initialize Python.NET bridge before any flaui import (same as flaui_adapter)
+from flaui.lib.pythonnet_bridge import setup_pythonnet_bridge  # noqa: E402
+
+setup_pythonnet_bridge()
+
+from flaui.core.input import Keyboard  # noqa: E402
+from flaui.core.definitions import ControlType  # noqa: E402
+from flaui.lib.enums import UIAutomationTypes  # noqa: E402
+from flaui.modules.automation import Automation  # noqa: E402
+
+# Add parent directories to path for base driver, retry policy, and mock app
 _base_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(_base_dir, "..", "..", "mock_wpf_app"))
-sys.path.insert(0, os.path.join(_base_dir, "..", ".."))
-
-# Import base driver interface
 sys.path.insert(0, os.path.join(_base_dir, "..", "..", "api"))
-from base_driver import BaseDriver, ElementHandle
-from retry_policy import retry_with_backoff, default_retry_policy
+sys.path.insert(0, os.path.join(_base_dir, "..", "..", "mock_wpf_app"))
 
-# WPF control type -> UIA control type mapping
-# UI Automation maps WPF controls to different UIA control types
+from base_driver import BaseDriver, ElementHandle  # noqa: E402
+from retry_policy import retry_with_backoff, default_retry_policy  # noqa: E402
+from mock_app import ElementNotFoundError, ElementNotInteractableError  # noqa: E402
+
+# WPF control type -> flaui ControlType enum mapping
 _WPF_TO_UIA_TYPE = {
-    "Window": "Window",
-    "TextBox": "Edit",
-    "PasswordBox": "Edit",
-    "Button": "Button",
-    "CheckBox": "CheckBox",
-    "RadioButton": "RadioButton",
-    "ComboBox": "ComboBox",
-    "ListBox": "ListBox",
-    "DataGrid": "DataGrid",
-    "TabControl": "Tab",
-    "TabItem": "TabItem",
-    "Label": "Text",
-    "TextBlock": "Text",
-    "ProgressBar": "ProgressBar",
-    "Slider": "Slider",
-    "Menu": "Menu",
-    "MenuItem": "MenuItem",
-    "TreeView": "Tree",
-    "TreeViewItem": "TreeItem",
-    "ListView": "List",
-    "StatusBar": "StatusBar",
-    "ToolBar": "ToolBar",
-    "Separator": "Separator",
-    "GroupBox": "Group",
-    "Expander": "Group",
-    "ScrollViewer": "ScrollBar",
-    "Border": "Pane",
-    "Grid": "Pane",
-    "StackPanel": "Pane",
-    "Canvas": "Pane",
-    "Image": "Image",
-    "MediaElement": "Image",
+    "Window": ControlType.Window,
+    "TextBox": ControlType.Edit,
+    "PasswordBox": ControlType.Edit,
+    "Button": ControlType.Button,
+    "CheckBox": ControlType.CheckBox,
+    "RadioButton": ControlType.RadioButton,
+    "ComboBox": ControlType.ComboBox,
+    "ListBox": ControlType.List,
+    "DataGrid": ControlType.DataGrid,
+    "TabControl": ControlType.Tab,
+    "TabItem": ControlType.TabItem,
+    "Label": ControlType.Text,
+    "TextBlock": ControlType.Text,
+    "ProgressBar": ControlType.ProgressBar,
+    "Slider": ControlType.Slider,
+    "Menu": ControlType.Menu,
+    "MenuItem": ControlType.MenuItem,
+    "TreeView": ControlType.Tree,
+    "TreeViewItem": ControlType.TreeItem,
+    "ListView": ControlType.List,
+    "StatusBar": ControlType.StatusBar,
+    "ToolBar": ControlType.ToolBar,
+    "Separator": ControlType.Separator,
+    "GroupBox": ControlType.Group,
+    "Expander": ControlType.Group,
+    "ScrollViewer": ControlType.ScrollBar,
+    "Border": ControlType.Pane,
+    "Grid": ControlType.Pane,
+    "StackPanel": ControlType.Pane,
+    "Canvas": ControlType.Pane,
+    "Image": ControlType.Image,
+    "MediaElement": ControlType.Image,
 }
 
 
-def _translate_wpf_to_uia_xpath(xpath: str) -> str:
-    """Translate WPF control types in XPath to UIA control types.
-    
-    Args:
-        xpath: XPath with WPF control types (TextBox, PasswordBox, etc.)
-        
-    Returns:
-        XPath with UIA control types (Edit, Button, etc.)
+def _control_type_from_name(name: str) -> ControlType:
+    """Resolve a WPF/UIA control type name to a flaui ControlType enum."""
+    mapped = _WPF_TO_UIA_TYPE.get(name)
+    if mapped is not None:
+        return mapped
+    try:
+        return ControlType[name]
+    except (KeyError, AttributeError):
+        return ControlType.Window
+
+
+# ---------------------------------------------------------------------------
+# XPath parsing
+# ---------------------------------------------------------------------------
+# flaui-uiautomation-wrapper does not support XPath natively.  We parse simple
+# XPath attribute patterns into flaui ConditionFactory conditions:
+#
+#   //*[@AutomationId='btnAttach']          -> by_automation_id("btnAttach")
+#   //Button[@AutomationId='btnAttach']     -> by_control_type(Button) AND by_automation_id("btnAttach")
+#   Window[@Name='MainWindow']/Button[@AutomationId='btnAttach']  -> parent->child chain
+#   //ListItem[1]                            -> indexed child
+#
+# Unsupported XPath features: axes (following-sibling, .., etc.), contains(),
+# position() predicates other than simple [N], union (|), etc.
+
+_SEGMENT_RE = re.compile(
+    r"""^
+    (?P<type>\w+|\*)?          # optional element type (Window, Button, *, etc.)
+    \[
+        (?P<attr>\w+)          # attribute name (AutomationId, Name, Text, ControlType)
+        =
+        ['\"](?P<value>.*?)['\"]  # attribute value
+    \]
+    (?P<index>\[\d+\])?        # optional [N] index
+    $""",
+    re.VERBOSE,
+)
+
+
+def _parse_xpath_segment(segment: str):
+    """Parse a single XPath segment like Button[@AutomationId='x'][1].
+
+    Returns (control_type_or_None, attr_name, attr_value, index_or_None).
     """
-    result = xpath
-    for wpf_type, uia_type in _WPF_TO_UIA_TYPE.items():
-        result = result.replace(f"{wpf_type}[", f"{uia_type}[")
+    segment = segment.strip()
+    m = _SEGMENT_RE.match(segment)
+    if not m:
+        # Fallback: treat the whole segment as a Name search
+        return None, "Name", segment, None
+    ctype = m.group("type")
+    attr = m.group("attr")
+    val = m.group("value")
+    idx = None
+    if m.group("index"):
+        idx = int(m.group("index").strip("[]"))
+    return ctype, attr, val, idx
+
+
+def _condition_for(cf, ctype: Optional[str], attr: str, value: str):
+    """Build a flaui condition (possibly combined) for one XPath segment."""
+    conditions = []
+    if ctype and ctype != "*":
+        conditions.append(cf.by_control_type(_control_type_from_name(ctype)))
+    if attr == "AutomationId":
+        conditions.append(cf.by_automation_id(value))
+    elif attr == "Name":
+        conditions.append(cf.by_name(value))
+    elif attr == "Text":
+        conditions.append(cf.by_text(value))
+    elif attr == "ControlType":
+        conditions.append(cf.by_control_type(_control_type_from_name(value)))
+    else:
+        conditions.append(cf.by_name(value))
+
+    if len(conditions) == 1:
+        return conditions[0]
+    result = conditions[0]
+    for extra in conditions[1:]:
+        result = result.And(extra)
     return result
 
 
+def _resolve_xpath_path(automation, xpath: str):
+    """Resolve a hierarchical XPath string to a flaui AutomationElement.
+
+    Walks the path segment by segment, starting from the desktop, using
+    find_first_descendant for the first segment and find_first_child for
+    subsequent segments (parent->child).
+    """
+    cf = automation.cf
+    xpath = xpath.strip()
+
+    # Remove leading //
+    if xpath.startswith("//"):
+        xpath = xpath[2:]
+    elif xpath.startswith("/"):
+        xpath = xpath[1:]
+
+    segments = [s for s in xpath.split("/") if s]
+    if not segments:
+        return None
+
+    desktop = automation.automation_base.get_desktop()
+    current = desktop
+
+    for i, seg in enumerate(segments):
+        ctype, attr, value, idx = _parse_xpath_segment(seg)
+        cond = _condition_for(cf, ctype, attr, value)
+
+        try:
+            if i == 0:
+                # First segment: search from desktop (all descendants)
+                found = current.find_first_descendant(condition=cond)
+            else:
+                # Subsequent segments: direct children only (parent->child)
+                found = current.find_first_child(condition=cond)
+        except Exception:
+            found = None
+
+        if found is None:
+            return None
+
+        # Apply index if present on this segment
+        if idx is not None:
+            try:
+                siblings = current.find_all_children(condition=cond)
+                if 0 <= idx < len(siblings):
+                    found = siblings[idx]
+                else:
+                    return None
+            except Exception:
+                return None
+
+        current = found
+
+    return current
+
+
+def _resolve_locator(automation, locator: Dict[str, Any]):
+    """Resolve a locator dict to a flaui AutomationElement.
+
+    Supports:
+      searchBy + value: AutomationId, Name, ControlType, Text, XPath
+      parent_searchBy + parent_value: parent element locator (parent->child)
+      index: 0-based index among matches (indexed finding)
+    """
+    if automation is None:
+        return None
+
+    cf = automation.cf
+    search_by = locator.get("searchBy", "AutomationId")
+    value = locator.get("value", "")
+    index = locator.get("index", None)
+
+    # Determine starting element
+    parent_sb = locator.get("parent_searchBy")
+    parent_val = locator.get("parent_value")
+    start = None
+
+    if parent_sb and parent_val:
+        # Find parent first, then search under it
+        parent_cond = _build_condition(cf, parent_sb, parent_val)
+        try:
+            desktop = automation.automation_base.get_desktop()
+            start = desktop.find_first_descendant(condition=parent_cond)
+        except Exception:
+            start = None
+
+    if start is None:
+        # Default: start from the desktop root
+        try:
+            start = automation.automation_base.get_desktop()
+        except Exception:
+            return None
+
+    # XPath value: parse hierarchical path
+    if search_by == "XPath":
+        found = _resolve_xpath_path(automation, value)
+        if found is None:
+            return None
+        # Apply index from locator if present
+        if index is not None:
+            try:
+                siblings = start.find_all_children(condition=_build_condition(cf, "AutomationId", value))
+                if 0 <= int(index) < len(siblings):
+                    found = siblings[int(index)]
+                else:
+                    return None
+            except Exception:
+                return None
+        return found
+
+    # Non-XPath: build a single condition
+    cond = _build_condition(cf, search_by, value)
+
+    try:
+        if index is not None:
+            siblings = start.find_all_children(condition=cond)
+            if 0 <= int(index) < len(siblings):
+                return siblings[int(index)]
+            return None
+        found = start.find_first_descendant(condition=cond)
+        return found
+    except Exception:
+        return None
+
+
+def _build_condition(cf, search_by: str, value: str):
+    """Build a flaui ConditionFactory condition from searchBy/value."""
+    if search_by == "AutomationId":
+        return cf.by_automation_id(value)
+    if search_by == "Name":
+        return cf.by_name(value)
+    if search_by == "ControlType":
+        return cf.by_control_type(_control_type_from_name(value))
+    if search_by == "Text":
+        return cf.by_text(value)
+    if search_by == "XPath":
+        # Simple //*[@Attr='value'] without path hierarchy
+        return _condition_for(cf, None, "Name", value)
+    return cf.by_name(value)
+
+
+# ---------------------------------------------------------------------------
+# Element wrapper
+# ---------------------------------------------------------------------------
+
+
+class _FlauiElement:
+    """Wraps a flaui AutomationElement for use with the BaseDriver contract."""
+
+    def __init__(self, element, automation: Automation):
+        self._element = element
+        self._automation = automation
+
+    @property
+    def raw_element(self):
+        return self._element
+
+    @property
+    def name(self) -> str:
+        try:
+            return self._element.name or ""
+        except Exception:
+            return ""
+
+    @property
+    def automation_id(self):
+        try:
+            return self._element.automation_id
+        except Exception:
+            return None
+
+    @property
+    def is_visible(self) -> bool:
+        try:
+            return not bool(self._element.is_offscreen)
+        except Exception:
+            return False
+
+    @property
+    def is_enabled(self) -> bool:
+        try:
+            return bool(getattr(self._element, "is_enabled", True))
+        except Exception:
+            return True
+
+    @property
+    def text(self) -> str:
+        try:
+            return self._element.text
+        except Exception:
+            return self.name or ""
+
+    def click(self):
+        try:
+            self._element.click()
+        except Exception:
+            try:
+                self._element.raw_element.Click(False)
+            except Exception:
+                pass
+
+    def invoke(self):
+        try:
+            self._element.invoke()
+        except Exception:
+            try:
+                self._element.raw_element.Invoke()
+            except Exception:
+                pass
+
+    def toggle(self):
+        try:
+            self._element.toggle()
+        except Exception:
+            try:
+                self._element.raw_element.Toggle()
+            except Exception:
+                pass
+
+    def set_text(self, text: str):
+        try:
+            self._element.as_text_box().enter(text)
+            return
+        except Exception:
+            pass
+        try:
+            self._element.raw_element.Text = text
+        except Exception:
+            pass
+
+    def double_click(self):
+        try:
+            self._element.click()
+            time.sleep(0.1)
+            self._element.click()
+        except Exception:
+            pass
+
+    def right_click(self):
+        try:
+            self._element.raw_element.RightClick(False)
+        except Exception:
+            pass
+
+    def press_keys(self, keys: str):
+        Keyboard.type(keys)
+
+    def hover(self):
+        try:
+            self._element.set_focus()
+        except Exception:
+            pass
+
+    def scroll(self, direction: str):
+        # flaui-uiautomation-wrapper does not expose element scroll directly.
+        # Attempt via raw element scrollable pattern if available.
+        try:
+            scrollable = getattr(self._element.raw_element, "GetScrollPattern", None)
+            if scrollable:
+                sp = scrollable()
+                if direction.lower() in ("down", "pagedown"):
+                    sp.Scroll(0, 1)  # horizontalScrollPercent, verticalScrollPercent
+                elif direction.lower() in ("up", "pageup"):
+                    sp.Scroll(0, -1)
+        except Exception:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# FlaUIDriver — BaseDriver implementation
+# ---------------------------------------------------------------------------
+
+
 class FlaUIDriver(BaseDriver):
-    """Real FlaUI driver — locates and interacts with elements in the
-    running SampleWpfApp using the robotframework-flaui package.
-    
-    The real FlaUI library uses XPath strings as element identifiers,
-    so this driver stores the resolved XPath and passes it to all
-    subsequent operations.
-    
-    Strategy Priority:
-    1. AutomationId (most reliable)
-    2. Name (second choice)
-    3. XPath (fallback)
+    """Real FlaUI driver using flaui-uiautomation-wrapper directly.
+
+    Replaces the robotframework-flaui dependency.  Locates elements via
+    flaui ConditionFactory (AutomationId, Name, ControlType, Text) and
+    parses simple XPath strings for parent->child and indexed finding.
     """
 
     @property
@@ -95,339 +441,283 @@ class FlaUIDriver(BaseDriver):
         return "FlaUI"
 
     def __init__(self, app_pid: Optional[int] = None):
-        """Initialize the FlaUI driver.
-        
-        Args:
-            app_pid: Process ID of the SampleWpfApp to attach to.
-                    If None, will try to find an existing SampleWpfApp.
-        """
         self._app_pid = app_pid
-        self._lib = None
+        self._automation: Optional[Automation] = None
+        self._app = None
         self._connected = False
         self._init_library()
 
     def _init_library(self):
-        """Initialize the FlaUILibrary and attach to the application."""
+        """Initialize flaui automation and attach to the application."""
         try:
-            import FlaUILibrary
-            self._lib = FlaUILibrary.FlaUILibrary()
-            self._rf_lib_class = FlaUILibrary.FlaUILibrary
+            self._automation = Automation(UIAutomationTypes.UIA3)
+            self._app = self._automation.application
             self._connected = False
+
+            def _attach():
+                if self._app_pid:
+                    try:
+                        self._app.attach(self._app_pid)
+                        self._connected = True
+                        return
+                    except Exception:
+                        pass
+
+                # Fallback: find SampleWpfApp window on the desktop
+                try:
+                    desktop = self._automation.automation_base.get_desktop()
+                    cond = self._automation.cf.by_control_type(ControlType.Window)
+                    found = desktop.find_all_descendants(condition=cond)
+                    for elem in found:
+                        try:
+                            if "SampleWpfApp" in (elem.name or ""):
+                                self._connected = True
+                                return
+                        except Exception:
+                            continue
+                except Exception:
+                    pass
+
+                if not self._connected:
+                    raise ConnectionError(
+                        "FlaUI: Could not attach to application. Ensure the app is running."
+                    )
+
+            retry_with_backoff(_attach, default_retry_policy())
         except ImportError as e:
-            raise ImportError("FlaUILibrary not available. Install with: pip install robotframework-flaui") from e
+            raise ImportError(
+                "flaui-uiautomation-wrapper not available. "
+                "Install with: pip install flaui-uiautomation-wrapper"
+            ) from e
 
     def _ensure_attached(self):
-        """Ensure the driver is attached to the application."""
-        if self._connected and self._lib is not None:
-            return
+        if not self._connected or self._automation is None:
+            self._init_library()
 
-        def _attach():
-            if self._lib is None:
-                self._init_library()
+    # ------------------------------------------------------------------
+    # Element resolution
+    # ------------------------------------------------------------------
 
-            # Try to attach by PID first if we have one
-            if self._app_pid:
-                try:
-                    self._lib.attach_application_by_pid(self._app_pid)
-                    self._connected = True
-                    return
-                except Exception:
-                    pass
+    def _resolve_element(self, locator: Dict[str, Any]):
+        """Resolve a locator dict to a raw flaui AutomationElement."""
+        self._ensure_attached()
+        return _resolve_locator(self._automation, locator)
 
-            # Fallback: attach by name
-            try:
-                self._lib.attach_application_by_name("SampleWpfApp")
-                self._connected = True
-            except Exception:
-                try:
-                    self._lib.attach_application_by_name("dotnet")
-                    self._connected = True
-                except Exception:
-                    pass
+    def _wrap(self, element) -> _FlauiElement:
+        return _FlauiElement(element, self._automation)
 
-            if not self._connected:
-                raise ConnectionError("FlaUI: Could not attach to application. Ensure the app is running.")
+    # ------------------------------------------------------------------
+    # BaseDriver interface
+    # ------------------------------------------------------------------
 
-        retry_with_backoff(_attach, default_retry_policy())
-
-    def _to_xpath(self, element) -> str:
-        """Convert element handle to XPath string for FlaUI keywords.
-        
-        The real FlaUI library uses XPath strings as identifiers.
-        ElementHandle.locator.value holds the raw search value (e.g.,
-        AutomationId "btnAttach"), so we must wrap it into a proper
-        XPath based on searchBy before passing to FlaUILibrary.
-        """
-        if isinstance(element, str):
-            return element
-        if isinstance(element, ElementHandle):
-            locator = element.locator
+    def find_element(self, locator: Dict[str, Any]) -> ElementHandle:
+        self._ensure_attached()
+        element = _resolve_locator(self._automation, locator)
+        if element is None:
             search_by = locator.get("searchBy", "AutomationId")
             value = locator.get("value", "")
-            if search_by == "AutomationId":
-                return f"//*[@AutomationId='{value}']"
-            elif search_by == "Name":
-                return f"//*[@Name='{value}']"
-            elif search_by == "XPath":
-                return value
-            return f"//*[@AutomationId='{value}']"
-        # If we ever get an AutomationElement, we can't convert it back to XPath
-        # This should not happen with the current implementation
-        raise TypeError(f"FlaUIDriver expects XPath string handles, got {type(element)}")
+            raise ElementNotFoundError(
+                f"FlaUI: element not found: searchBy={searchBy}, value={value}"
+            )
+        return ElementHandle(
+            locator=dict(locator),
+            driver_name=self.name,
+            found_at=time.time(),
+        )
 
-    def find_element(self, locator: dict) -> ElementHandle:
-        """Locates an element using FlaUI strategy.
-        
-        Args:
-            locator: Dict with searchBy and value keys.
-                      
-        Returns:
-            ElementHandle identifying the found element.
-            
-        Raises:
-            ElementNotFoundError: If no matching element is found.
-        """
-        from mock_app import ElementNotFoundError, ElementNotInteractableError
-        
-        search_by = locator.get("searchBy", "AutomationId")
-        value = locator.get("value")
-
+    def find_elements(self, locator: Dict[str, Any]) -> List[ElementHandle]:
         self._ensure_attached()
-
-        def _find_one(xpath: str):
-            """Retry-wrapped find_one_element with exponential backoff."""
-            def _call():
-                return self._lib.find_one_element(xpath)
-            return retry_with_backoff(_call, default_retry_policy())
-
-        if search_by == "AutomationId":
-            xpath = f"//*[@AutomationId='{value}']"
-            try:
-                _find_one(xpath)
-                return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
-            except Exception as e:
-                raise ElementNotFoundError(f"FlaUI: no element with AutomationId='{value}': {e}")
-
-        elif search_by == "Name":
-            xpath = f"//*[@Name='{value}']"
-            try:
-                _find_one(xpath)
-                return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
-            except Exception as e:
-                raise ElementNotFoundError(f"FlaUI: no element with Name='{value}': {e}")
-
-        elif search_by == "XPath":
-            uia_xpath = _translate_wpf_to_uia_xpath(value)
-            try:
-                _find_one(uia_xpath)
-                return ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())
-            except Exception as e:
-                raise ElementNotFoundError(f"FlaUI: no element found for XPath '{value}' (translated: '{uia_xpath}'): {e}")
-
-        else:
-            raise ElementNotFoundError(f"Unsupported FlaUI searchBy: {search_by}")
-
-    def find_elements(self, locator: dict) -> List[ElementHandle]:
-        """Locates all elements matching the FlaUI strategy.
-        
-        Args:
-            locator: Dict with searchBy and value keys.
-                      
-        Returns:
-            List of ElementHandles for all matching elements (may be empty).
-        """
+        cf = self._automation.cf
         search_by = locator.get("searchBy", "AutomationId")
-        value = locator.get("value")
+        value = locator.get("value", "")
+        index = locator.get("index", None)
 
-        self._ensure_attached()
-        try:
-            if search_by == "AutomationId":
-                xpath = f"//*[@AutomationId='{value}']"
-                self._lib.find_all_elements(xpath)
-                return [ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())]
-            elif search_by == "Name":
-                xpath = f"//*[@Name='{value}']"
-                self._lib.find_all_elements(xpath)
-                return [ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())]
-            elif search_by == "XPath":
-                uia_xpath = _translate_wpf_to_uia_xpath(value)
-                self._lib.find_all_elements(uia_xpath)
-                return [ElementHandle(locator=locator, driver_name=self.name, found_at=time.time())]
-            else:
+        parent_sb = locator.get("parent_searchBy")
+        parent_val = locator.get("parent_value")
+
+        start = None
+        if parent_sb and parent_val:
+            parent_cond = _build_condition(cf, parent_sb, parent_val)
+            try:
+                desktop = self._automation.automation_base.get_desktop()
+                start = desktop.find_first_descendant(condition=parent_cond)
+            except Exception:
+                start = None
+
+        if start is None:
+            try:
+                start = self._automation.automation_base.get_desktop()
+            except Exception:
                 return []
-        except Exception:
-            return []
 
-    def invoke(self, element):
-        """Click/invoke an element."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
-        self._ensure_attached()
-        self._lib.click(xpath)
+        if search_by == "XPath":
+            found = _resolve_xpath_path(self._automation, value)
+            els = [found] if found else []
+        else:
+            cond = _build_condition(cf, search_by, value)
+            try:
+                els = start.find_all_descendants(condition=cond)
+            except Exception:
+                els = []
 
-    def set_value(self, element, value: str):
-        """Set text value on an input element."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
+        if index is not None:
+            try:
+                idx = int(index)
+                els = els[idx : idx + 1] if 0 <= idx < len(els) else []
+            except (ValueError, TypeError):
+                els = []
+
+        return [
+            ElementHandle(locator=dict(locator), driver_name=self.name, found_at=time.time())
+            for _ in els
+        ]
+
+    def invoke(self, element: ElementHandle) -> None:
         self._ensure_attached()
+        el = self._resolve_element(element.locator)
+        if el is None:
+            raise ElementNotInteractableError(
+                f"FlaUI: cannot invoke element: {element.locator}"
+            )
         try:
-            self._lib.set_text_to_textbox(xpath, value)
+            el.click()
+        except Exception:
+            try:
+                el.raw_element.Click(False)
+            except Exception:
+                pass
+
+    def set_value(self, element: ElementHandle, value: str) -> None:
+        self._ensure_attached()
+        el = self._resolve_element(element.locator)
+        if el is None:
+            raise ElementNotInteractableError(
+                f"FlaUI: cannot set value on element: {element.locator}"
+            )
+        try:
+            el.as_text_box().enter(value)
             return
         except Exception:
             pass
         try:
-            self._lib.select_combobox_item_by_name(xpath, value)
-            return
-        except Exception as e:
-            raise ElementNotInteractableError(f"FlaUI: cannot set value on element '{xpath}': {e}")
+            el.raw_element.Text = value
+        except Exception:
+            raise ElementNotInteractableError(
+                f"FlaUI: cannot set value on element: {element.locator}"
+            )
 
-    def get_text(self, element) -> str:
-        """Get the text content of an element."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
+    def get_text(self, element: ElementHandle) -> str:
         self._ensure_attached()
-        try:
-            text = self._lib.get_text_from_textbox(xpath)
-            if text:
-                return text
-        except Exception:
-            pass
-        try:
-            texts = self._lib.get_all_selected_texts_from_combobox(xpath)
-            if texts:
-                return texts[0]
-        except Exception:
-            pass
-        try:
-            data = self._lib.get_all_data_from_grid(xpath)
-            if isinstance(data, list):
-                lines = []
-                for row in data:
-                    lines.append(",".join(row if isinstance(row, list) else [str(row)]))
-                return "\n".join(lines)
-            return str(data)
-        except Exception:
-            pass
-        try:
-            return self._lib.get_name_from_element(xpath)
-        except Exception:
+        el = self._resolve_element(element.locator)
+        if el is None:
             return ""
-
-    def is_visible(self, element) -> bool:
-        """Check if an element is visible."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
-        self._ensure_attached()
         try:
-            return self._lib.is_visible(xpath)
+            return el.text
         except Exception:
-            # FlaUILibrary.is_visible() may not support the IsVisible property
-            # for top-level Window elements. If we found the element, it is
-            # present in the UI tree and therefore visible.
-            return True
+            return el.name or ""
 
-    def is_enabled(self, element) -> bool:
-        """Check if an element is enabled."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
+    def is_visible(self, element: ElementHandle) -> bool:
         self._ensure_attached()
+        el = self._resolve_element(element.locator)
+        if el is None:
+            return False
         try:
-            return self._lib.is_element_enabled(xpath)
+            return not bool(el.is_offscreen)
         except Exception:
             return False
 
-    def is_actionable(self, element) -> bool:
-        """Check if an element is both visible and enabled."""
-        return self.is_visible(element) and self.is_enabled(element)
-
-    def get_attribute(self, element, attribute_name: str) -> Optional[str]:
-        """Get a specific attribute value from an element."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
+    def is_enabled(self, element: ElementHandle) -> bool:
         self._ensure_attached()
+        el = self._resolve_element(element.locator)
+        if el is None:
+            return False
         try:
-            return self._lib.get_property_from_element(xpath, attribute_name)
+            return bool(getattr(el, "is_enabled", True))
+        except Exception:
+            return True
+
+    def toggle(self, element: ElementHandle, state: Optional[bool] = None) -> bool:
+        self._ensure_attached()
+        el = self._resolve_element(element.locator)
+        if el is None:
+            return False
+        try:
+            if state is None:
+                el.toggle()
+            else:
+                el.toggle()  # flaui toggle() has no state param; call regardless
+            return bool(getattr(el.raw_element, "TogglePattern", None) and el.raw_element.TogglePattern.ToggleState)
+        except Exception:
+            pass
+        try:
+            el.toggle()
+            return True
+        except Exception:
+            return False
+
+    def double_click(self, element: ElementHandle) -> None:
+        self._ensure_attached()
+        el = self._resolve_element(element.locator)
+        if el is not None:
+            el.double_click()
+
+    def right_click(self, element: ElementHandle) -> None:
+        self._ensure_attached()
+        el = self._resolve_element(element.locator)
+        if el is not None:
+            el.right_click()
+
+    def press_keys(self, element: ElementHandle, keys: str) -> None:
+        self._ensure_attached()
+        Keyboard.type(keys)
+
+    def drag_drop(self, element: ElementHandle, target_element: ElementHandle) -> None:
+        self._ensure_attached()
+        src = self._resolve_element(element.locator)
+        dst = self._resolve_element(target_element.locator)
+        if src is None or dst is None:
+            return
+        try:
+            src.raw_element.DragDrop(dst.raw_element)  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    def hover(self, element: ElementHandle) -> None:
+        self._ensure_attached()
+        el = self._resolve_element(element.locator)
+        if el is not None:
+            el.hover()
+
+    def scroll(self, element: ElementHandle, direction: str) -> None:
+        self._ensure_attached()
+        el = self._resolve_element(element.locator)
+        if el is not None:
+            el.scroll(direction)
+
+    def get_attribute(
+        self, element: ElementHandle, attribute_name: str
+    ) -> Optional[str]:
+        self._ensure_attached()
+        el = self._resolve_element(element.locator)
+        if el is None:
+            return None
+        try:
+            val = getattr(el.raw_element, attribute_name, None)
+            return str(val) if val is not None else None
         except Exception:
             return None
 
-    def capture_screenshot(self, element=None) -> bytes:
-        """Capture a screenshot."""
+    def get_data_grid_content_ocr(self, element: ElementHandle) -> str:
+        self._ensure_attached()
+        el = self._resolve_element(element.locator)
+        if el is None:
+            return ""
         try:
-            return self._lib.take_screenshot()
-        except Exception:
-            return b""
-
-    def toggle(self, element, state: bool = None):
-        """Toggle a checkbox or toggle button."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
-        self._ensure_attached()
-        if state is None:
-            self._lib.click(xpath)
-        else:
-            self._lib.set_checkbox_state(xpath, state)
-
-    def double_click(self, element):
-        """Double-click an element."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
-        self._ensure_attached()
-        self._lib.double_click(xpath)
-
-    def right_click(self, element):
-        """Right-click an element."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
-        self._ensure_attached()
-        self._lib.right_click(xpath)
-
-    def press_keys(self, element, keys: str):
-        """Press keys into an element."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
-        self._ensure_attached()
-        self._lib.press_keys(keys, xpath)
-
-    def drag_drop(self, element: ElementHandle, target_element: ElementHandle):
-        """Drag an element and drop it on a target."""
-        element = self.ensure_fresh(element)
-        target_element = self.ensure_fresh(target_element)
-        source_xpath = self._to_xpath(element)
-        target_xpath = self._to_xpath(target_element)
-        self._ensure_attached()
-        self._lib.drag_and_drop(source_xpath, target_xpath)
-
-    def hover(self, element):
-        """Hover over an element."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
-        self._ensure_attached()
-        self._lib.move_to(xpath)
-
-    def scroll(self, element, direction: str):
-        """Scroll an element in a direction."""
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
-        self._ensure_attached()
-        if direction.lower() in ("down", "pagedown"):
-            self._lib.scroll_down(xpath, 50)
-        elif direction.lower() in ("up", "pageup"):
-            self._lib.scroll_up(xpath, 50)
-        else:
-            self._lib.scroll_down(xpath, 50)
-
-    def get_data_grid_content_ocr(self, element) -> str:
-        """OCR-based DataGrid content extraction.
-        
-        Returns grid text in CSV format: SKU,Qty
-        """
-        element = self.ensure_fresh(element)
-        xpath = self._to_xpath(element)
-        self._ensure_attached()
-        try:
-            data = self._lib.get_all_data_from_grid(xpath)
+            data = el.raw_element.GetAllDataFromGrid()  # type: ignore[attr-defined]
             if isinstance(data, list):
-                import io, csv
+                import csv
+                import io
+
                 output = io.StringIO()
                 writer = csv.writer(output)
                 for row in data:
@@ -437,41 +727,98 @@ class FlaUIDriver(BaseDriver):
         except Exception:
             return ""
 
-    def close(self):
-        """Clean up driver resources."""
+    def capture_screenshot(self, element: Optional[ElementHandle] = None) -> bytes:
         try:
-            if self._lib is not None:
-                self._lib.close_application()
+            if self._automation is not None:
+                # flaui-uiautomation-wrapper does not expose screenshot capture
+                pass
+        except Exception:
+            pass
+        return b""
+
+    def close(self) -> None:
+        try:
+            if self._app is not None:
+                self._app.close()
         except Exception:
             pass
         self._connected = False
 
 
+# ---------------------------------------------------------------------------
+# FlaUILibrary — Robot Framework keyword wrapper (flaui-uiautomation-wrapper)
+# ---------------------------------------------------------------------------
+
+
 class FlaUILibrary:
-    """Robot Framework library exposing FlaUI keywords directly (rarely
-    used directly by test authors — Layer 3 is the normal entry point).
-    Kept here to show the wrapper is independently usable/testable.
+    """Robot Framework library exposing FlaUI keywords directly.
+
+    Uses flaui-uiautomation-wrapper instead of robotframework-flaui.
     """
+
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
 
     def __init__(self):
         try:
-            from FlaUILibrary import FlaUILibrary as RFlaUILibrary
-            self._lib = RFlaUILibrary()
+            from flaui.lib.pythonnet_bridge import setup_pythonnet_bridge
+
+            setup_pythonnet_bridge()
+            from flaui.modules.automation import Automation
+            from flaui.lib.enums import UIAutomationTypes
+
+            self._automation = Automation(UIAutomationTypes.UIA3)
+            self._cf = self._automation.cf
         except ImportError as e:
-            raise ImportError(f"FlaUILibrary not available: {e}. Install with: pip install robotframework-flaui")
+            raise ImportError(
+                f"flaui-uiautomation-wrapper not available: {e}. "
+                "Install with: pip install flaui-uiautomation-wrapper"
+            )
 
-    def flaui_find_element(self, automation_id):
-        return self._lib.find_one_element(f"//*[@AutomationId='{automation_id}']")
+    # -- Desktop / window helpers --
 
-    def flaui_invoke(self, automation_id):
+    def _desktop(self):
+        return self._automation.automation_base.get_desktop()
+
+    # -- Keywords --
+
+    def flaui_find_element(self, automation_id: str):
+        """Find an element by AutomationId. Returns the raw element or None."""
+        try:
+            cond = self._cf.by_automation_id(automation_id)
+            return self._desktop().find_first_descendant(condition=cond)
+        except Exception:
+            return None
+
+    def flaui_invoke(self, automation_id: str):
+        """Invoke (click) an element by AutomationId."""
         el = self.flaui_find_element(automation_id)
-        self._lib.click(el)
+        if el is not None:
+            try:
+                el.click()
+            except Exception:
+                try:
+                    el.raw_element.Click(False)
+                except Exception:
+                    pass
 
-    def flaui_set_value(self, automation_id, value):
+    def flaui_set_value(self, automation_id: str, value: str):
+        """Set text on an element by AutomationId."""
         el = self.flaui_find_element(automation_id)
-        self._lib.set_text_to_textbox(el, value)
+        if el is not None:
+            try:
+                el.as_text_box().enter(value)
+            except Exception:
+                try:
+                    el.raw_element.Text = value
+                except Exception:
+                    pass
 
-    def flaui_get_text(self, automation_id):
+    def flaui_get_text(self, automation_id: str):
+        """Get text from an element by AutomationId."""
         el = self.flaui_find_element(automation_id)
-        return self._lib.get_text_from_textbox(el)
+        if el is not None:
+            try:
+                return el.text
+            except Exception:
+                return el.name or ""
+        return ""
