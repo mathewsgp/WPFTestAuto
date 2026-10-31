@@ -586,6 +586,7 @@ private string _ocrResultText = "";
             OpenWorkingFolderCommand = new RelayCommand(_ => OpenWorkingFolder());
             ImportWorkingFolderSelectedCommand = new RelayCommand(_ => ImportWorkingFolderSelected(), _ => CanImportSelected);
             ShowWorkingFolderCommand = new RelayCommand(_ => ShowWorkingFolder());
+            RefreshWorkingFolderCommand = new RelayCommand(_ => RefreshWorkingFolder());
             MoveElementPriorityUpCommand = new RelayCommand(_ => MoveElementPriorityUp(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
             MoveElementPriorityDownCommand = new RelayCommand(_ => MoveElementPriorityDown(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
 
