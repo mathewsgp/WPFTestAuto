@@ -2059,24 +2059,24 @@ namespace WpfTestIde.ViewModels
                         case "hover_over_element": step.Action = ActionKind.Hover; break;
                         case "press_keys":
                             step.Action = ActionKind.PressKeys;
-                            step.Value = ExtractQuotedArg(line, 2);
+                            step.Value = ExtractQuotedArg(line, 1);
                             break;
                         case "scroll":
                             step.Action = ActionKind.Scroll;
-                            step.Value = ExtractQuotedArg(line, 2);
+                            step.Value = ExtractQuotedArg(line, 1);
                             break;
                         case "drag_and_drop":
                             step.Action = ActionKind.DragDrop;
-                            step.TargetAlias = ExtractQuotedArg(line, 2);
+                            step.TargetAlias = ExtractQuotedArg(line, 1);
                             break;
                         case "set_element_value":
                             step.Action = ActionKind.SetValue;
-                            step.Value = ExtractQuotedArg(line, 2);
+                            step.Value = ExtractQuotedArg(line, 1);
                             break;
                         case "sikuli_click": step.Action = ActionKind.SikuliClick; break;
                         case "sikuli_type":
                             step.Action = ActionKind.SikuliType;
-                            step.Value = ExtractQuotedArg(line, 2);
+                            step.Value = ExtractQuotedArg(line, 1);
                             break;
                         default: continue;
                     }
@@ -2104,11 +2104,11 @@ namespace WpfTestIde.ViewModels
                     if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#") || line.StartsWith("***") || line.StartsWith("Library") || line.StartsWith("Test Setup"))
                         continue;
 
-                    // Robot format: Keyword    arg1    arg2    ...
-                    var parts = line.Split(new[] { '\t', ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+                    // Robot format: Keyword    arg1    arg2    ... (split on 2+ whitespace)
+                    var parts = System.Text.RegularExpressions.Regex.Split(line, @"\s{2,}|\t");
                     if (parts.Length == 0) continue;
 
-                    var keyword = parts[0];
+                    var keyword = parts[0].Trim();
                     var step = new RecordedStep { Kind = StepKind.Action };
 
                     switch (keyword)
