@@ -281,6 +281,33 @@ namespace WpfTestIde.ViewModels
         }
         public string[] AvailableModes { get; } = { "Auto", "mock", "real" };
 
+        // ------------------------------------------------------------
+        // Working Folder (B3): open a folder, browse its tree, and import
+        // element JSON files into Elements or script files into Steps.
+        // ------------------------------------------------------------
+        private string _workingFolderPath = "";
+        public string WorkingFolderPath
+        {
+            get => _workingFolderPath;
+            set { _workingFolderPath = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasWorkingFolder)); }
+        }
+        public bool HasWorkingFolder => !string.IsNullOrWhiteSpace(WorkingFolderPath);
+
+        private FolderTreeItem? _workingFolderRoot;
+        public FolderTreeItem? WorkingFolderRoot
+        {
+            get => _workingFolderRoot;
+            set { _workingFolderRoot = value; OnPropertyChanged(); }
+        }
+
+        private FolderTreeItem? _workingFolderSelectedItem;
+        public FolderTreeItem? WorkingFolderSelectedItem
+        {
+            get => _workingFolderSelectedItem;
+            set { _workingFolderSelectedItem = value; OnPropertyChanged(); OnPropertyChanged(nameof(CanImportSelected)); }
+        }
+        public bool CanImportSelected => WorkingFolderSelectedItem != null && !WorkingFolderSelectedItem.IsDirectory;
+
         // Recording mode checkboxes (FlaUI, WPFSpy, Sikuli)
         private bool _recordFlaUI = true;
         public bool RecordFlaUI
@@ -541,6 +568,11 @@ namespace WpfTestIde.ViewModels
         public ICommand OpenMultiAppDialogCommand { get; }
             public ICommand EnableLaunchAttachRecordingCommand { get; }
 
+        // Working Folder commands
+        public ICommand OpenWorkingFolderCommand { get; }
+        public ICommand ImportWorkingFolderSelectedCommand { get; }
+        public ICommand ShowWorkingFolderCommand { get; }
+
         public MainViewModel()
         {
             ToggleRecordingCommand = new RelayCommand(_ => ToggleRecording(), _ => IsAttached);
@@ -574,6 +606,9 @@ namespace WpfTestIde.ViewModels
             OpenVisualTestBuilderCommand = new RelayCommand(_ => OpenVisualTestBuilder());
             OpenMultiAppDialogCommand = new RelayCommand(_ => OpenMultiAppDialog(), _ => AttachedApps.Count > 0);
             EnableLaunchAttachRecordingCommand = new RelayCommand(_ => EnableRecordingForLaunchedApps(), _ => Steps.Any(s => s.Kind == StepKind.LaunchApplication && s.AutoAttach));
+            OpenWorkingFolderCommand = new RelayCommand(_ => OpenWorkingFolder());
+            ImportWorkingFolderSelectedCommand = new RelayCommand(_ => ImportWorkingFolderSelected(), _ => CanImportSelected);
+            ShowWorkingFolderCommand = new RelayCommand(_ => ShowWorkingFolder());
             MoveElementPriorityUpCommand = new RelayCommand(_ => MoveElementPriorityUp(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
             MoveElementPriorityDownCommand = new RelayCommand(_ => MoveElementPriorityDown(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
 
@@ -2191,6 +2226,136 @@ namespace WpfTestIde.ViewModels
             return null;
         }
 
+        // ------------------------------------------------------------
+        // Working Folder (B3)
+        // ------------------------------------------------------------
+        private void OpenWorkingFolder()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                CheckFileExists = false,
+                CheckPathExists = true,
+                FileName = "Select a folder (then press Open)",
+                Filter = "Folders|",
+                InitialDirectory = string.IsNullOrWhiteSpace(WorkingFolderPath)
+                    ? Path.Combine(FrameworkRoot, "repository")
+                    : WorkingFolderPath,
+                Multiselect = false,
+                Title = "Open Working Folder"
+            };
+            // OpenFileDialog can't pick a folder directly; use FolderBrowserDialog via
+            // the Windows Forms-free FolderBrowser dialog wrapped below.
+            var folderDlg = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = "Select the working folder to browse",
+                InitialDirectory = string.IsNullOrWhiteSpace(WorkingFolderPath)
+                    ? Path.Combine(FrameworkRoot, "repository")
+                    : WorkingFolderPath,
+                ShowNewFolderButton = true,
+            };
+            if (folderDlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            WorkingFolderPath = folderDlg.SelectedPath;
+            LoadWorkingFolder();
+            StatusText = $"Working folder opened: {WorkingFolderPath}";
+            EnqueueToast($"Working folder: {Path.GetFileName(WorkingFolderPath)}", ToastKind.Info);
+        }
+
+        private void LoadWorkingFolder()
+        {
+            if (string.IsNullOrWhiteSpace(WorkingFolderPath) || !Directory.Exists(WorkingFolderPath)) return;
+            WorkingFolderRoot = FolderTreeItem.CreateRoot(WorkingFolderPath);
+            WorkingFolderRoot.IsExpanded = true;
+            WorkingFolderRoot.LoadChildren();
+            WorkingFolderSelectedItem = null;
+        }
+
+        private void ImportWorkingFolderSelected()
+        {
+            if (WorkingFolderSelectedItem == null || WorkingFolderSelectedItem.IsDirectory) return;
+            string path = WorkingFolderSelectedItem.FullPath;
+            string ext = Path.GetExtension(path).ToLowerInvariant();
+
+            // Element JSON files go into Elements.
+            if (ext == ".json")
+            {
+                try
+                {
+                    string json = File.ReadAllText(path);
+                    using var doc = System.Text.Json.JsonDocument.Parse(json);
+                    var rootElement = doc.RootElement;
+
+                    if (!rootElement.TryGetProperty("elements", out var elementsObj))
+                    {
+                        EnqueueToast($"Not an element JSON file: missing 'elements' root.", ToastKind.Warning);
+                        return;
+                    }
+
+                    int imported = 0;
+                    foreach (var kv in elementsObj.EnumerateObject())
+                    {
+                        string alias = kv.Name;
+                        if (string.IsNullOrEmpty(alias)) continue;
+                        if (Elements.Any(e => e.Alias == alias)) continue;
+
+                        var entry = kv.Value;
+                        var element = new ElementEntry
+                        {
+                            Alias = alias,
+                            DisplayName = entry.TryGetProperty("displayName", out var dnProp) ? dnProp.GetString() ?? "" : "",
+                            ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
+                            AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
+                            Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
+                            XPath = entry.TryGetProperty("relativeXPath", out var xpProp) ? xpProp.GetString() : null,
+                        };
+                        Elements.Add(element);
+                        imported++;
+                    }
+
+                    RefreshElementTree();
+                    StatusText = $"Imported {imported} element(s) from {Path.GetFileName(path)}.";
+                    EnqueueToast($"Imported {imported} elements", ToastKind.Success);
+                }
+                catch (Exception ex)
+                {
+                    EnqueueToast($"Element import failed: {ex.Message}", ToastKind.Error);
+                }
+                return;
+            }
+
+            // Script files (.py, .robot, .json) go into Steps via the shared parsers.
+            if (ext == ".py" || ext == ".robot" || ext == ".json")
+            {
+                try
+                {
+                    string text = File.ReadAllText(path);
+                    bool ok = ext switch
+                    {
+                        ".json" => ParseJsonScript(text),
+                        ".py" => ParsePythonScript(text),
+                        ".robot" => ParseRobotScript(text),
+                        _ => false
+                    };
+                    if (ok)
+                    {
+                        RegenerateScript();
+                        StatusText = $"Imported {Steps.Count} step(s) from {Path.GetFileName(path)}.";
+                        EnqueueToast($"Imported script: {Path.GetFileName(path)}", ToastKind.Success);
+                    }
+                    else
+                    {
+                        EnqueueToast($"Could not parse script: {Path.GetFileName(path)}", ToastKind.Error);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    EnqueueToast($"Script import failed: {ex.Message}", ToastKind.Error);
+                }
+                return;
+            }
+
+            EnqueueToast($"Unsupported file type: {ext}", ToastKind.Warning);
+        }
+
         private void ImportElements()
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
@@ -2797,8 +2962,8 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
 
         public int SelectedTabIndex
         {
-            get => ActivePaneId switch { "Scripts" => 1, "Results" => 2, _ => 0 };
-            set => ActivePaneId = value switch { 1 => "Scripts", 2 => "Results", _ => "Elements" };
+            get => ActivePaneId switch { "Scripts" => 1, "Results" => 2, "Working Folder" => 3, _ => 0 };
+            set => ActivePaneId = value switch { 1 => "Scripts", 2 => "Results", 3 => "Working Folder", _ => "Elements" };
         }
 
         private string? _activePaneId;
@@ -2806,6 +2971,11 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
         {
             get => _activePaneId;
             set { _activePaneId = value; OnPropertyChanged(); }
+        }
+
+        private void ShowWorkingFolder()
+        {
+            ActivePaneId = "Working Folder";
         }
 
         private void ToggleTheme()

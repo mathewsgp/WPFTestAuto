@@ -698,6 +698,7 @@ namespace WpfTestIde
                             "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
                             "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
                             "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
+                            "WORKING FOLDER" => CreatePaneContent(new Docking.Views.WorkingFolderPane(), "tabWorkingFolder"),
                             _ => null
                         };
                     }
@@ -711,6 +712,7 @@ namespace WpfTestIde
                             "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
                             "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
                             "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
+                            "WORKING FOLDER" => CreatePaneContent(new Docking.Views.WorkingFolderPane(), "tabWorkingFolder"),
                             _ => null
                         };
                     }
@@ -747,6 +749,12 @@ namespace WpfTestIde
             var resultsPaneHost = new LayoutAnchorablePane();
             resultsPaneHost.Children.Add(resultsPane);
             rootPanel.Children.Add(resultsPaneHost);
+
+            var workingFolderPane = new LayoutAnchorable { Title = "WORKING FOLDER" };
+            workingFolderPane.Content = CreatePaneContent(new Docking.Views.WorkingFolderPane(), "tabWorkingFolder");
+            var workingFolderPaneHost = new LayoutAnchorablePane();
+            workingFolderPaneHost.Children.Add(workingFolderPane);
+            rootPanel.Children.Add(workingFolderPaneHost);
         }
 
         // ------------------------------------------------------------

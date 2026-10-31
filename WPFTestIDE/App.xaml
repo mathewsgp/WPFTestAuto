@@ -20,6 +20,8 @@
             <conv:ZeroToVisibleConverter x:Key="ZeroToVisibleConverter"/>
             <conv:NullToVisibleConverter x:Key="NullToVisibleConverter"/>
             <conv:ToastKindToBrushConverter x:Key="ToastKindToBrushConverter"/>
+            <conv:SingleItemToCollectionConverter x:Key="SingleItemToCollectionConverter"/>
+            <conv:FolderItemIconConverter x:Key="FolderItemIconConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -166,4 +166,39 @@ namespace WpfTestIde.Converters
             _ => "TextPrimaryBrush",
         };
     }
+
+    /// <summary>Wraps a single item into an array so a TreeView's ItemsSource
+    /// can bind to a single root node (WorkingFolderRoot).</summary>
+    public class SingleItemToCollectionConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value is null ? System.Array.Empty<object>() : new object[] { value };
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+
+    /// <summary>Returns a folder or file glyph for a <see cref="FolderTreeItem"/>
+    /// based on whether it is a directory and, for files, its extension.</summary>
+    public class FolderItemIconConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not FolderTreeItem item) return "📄";
+            if (item.IsDirectory) return "📁";
+            var ext = (item.Extension ?? "").ToLowerInvariant();
+            return ext switch
+            {
+                ".json" => "📋",
+                ".py" => "🐍",
+                ".robot" => "🤖",
+                _ => "📄",
+            };
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
 }
