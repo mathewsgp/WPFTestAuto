@@ -213,28 +213,35 @@ namespace WpfTestIde.ViewModels
         // Element Tree ViewModel
         public ElementTreeViewModel ElementTree { get; } = new();
 
-        // Script format selection (JSON / Python / Robot Framework)
-        public enum ScriptFormat { Json, Python, Robot }
+        // Separate content per format — each tab edits its own text, Apply
+        // syncs the active tab back into the Steps collection so all views
+        // reflect the change when switching.
+        private string _jsonScriptContent = "";
+        public string JsonScriptContent
+        {
+            get => _jsonScriptContent;
+            set { _jsonScriptContent = value; OnPropertyChanged(); }
+        }
+
+        private string _pythonScriptContent = "";
+        public string PythonScriptContent
+        {
+            get => _pythonScriptContent;
+            set { _pythonScriptContent = value; OnPropertyChanged(); }
+        }
+
+        private string _robotScriptContent = "";
+        public string RobotScriptContent
+        {
+            get => _robotScriptContent;
+            set { _robotScriptContent = value; OnPropertyChanged(); }
+        }
 
         private string _currentScriptFormat = "Robot";
         public string CurrentScriptFormat
         {
             get => _currentScriptFormat;
-            set { _currentScriptFormat = value; OnPropertyChanged(); UpdateScriptContent(); }
-        }
-
-        private string _scriptContent = "";
-        public string ScriptContent
-        {
-            get => _scriptContent;
-            set { _scriptContent = value; OnPropertyChanged(); }
-        }
-
-        private string _generatedScript = "";
-        public string GeneratedScript
-        {
-            get => _generatedScript;
-            set { _generatedScript = value; OnPropertyChanged(); }
+            set { _currentScriptFormat = value; OnPropertyChanged(); }
         }
 
         private string _repositoryJson = "{ \"elements\": {} }";
@@ -512,7 +519,8 @@ namespace WpfTestIde.ViewModels
         public ICommand RunCommand { get; }
         public ICommand ExportRepositoryCommand { get; }
         public ICommand ExportScriptCommand { get; }
-        public ICommand ExportScriptAsPyCommand { get; }
+        public ICommand ApplyScriptCommand { get; }
+        public ICommand ImportScriptCommand { get; }
         public ICommand SaveScriptCommand { get; }
         public ICommand LoadSampleCommand { get; }
         public ICommand ImportElementsCommand { get; }
@@ -547,7 +555,8 @@ namespace WpfTestIde.ViewModels
             RunCommand = new AsyncRelayCommand(_ => RunAsync(), _ => Steps.Count > 0);
             ExportRepositoryCommand = new RelayCommand(_ => ExportRepository());
             ExportScriptCommand = new RelayCommand(_ => ExportScript());
-            ExportScriptAsPyCommand = new RelayCommand(_ => ExportScriptAsPy());
+            ApplyScriptCommand = new RelayCommand(_ => ApplyScript());
+            ImportScriptCommand = new RelayCommand(_ => ImportScript());
             SaveScriptCommand = new RelayCommand(_ => SaveScript());
             LoadSampleCommand = new RelayCommand(_ => LoadSample());
             ImportElementsCommand = new RelayCommand(_ => ImportElements());
@@ -1477,7 +1486,7 @@ namespace WpfTestIde.ViewModels
         }
 
         /// <summary>Regenerate all three script formats (JSON, Python, Robot)
-        /// from the current Steps collection and refresh ScriptContent.</summary>
+        /// from the current Steps collection and refresh each format's content.</summary>
         private void UpdateScriptContent()
         {
             var driver = _selectedDriver != "Auto" ? _selectedDriver : null;
@@ -1485,11 +1494,11 @@ namespace WpfTestIde.ViewModels
             var recordingModes = GetSelectedRecordingModes();
             var appId = SelectedApp?.AppId;
 
-            // Robot Framework (already bound to GeneratedScript)
-            GeneratedScript = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
+            // Robot Framework
+            RobotScriptContent = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
 
             // Python
-            var pythonScript = ScriptGenerator.GeneratePython(Steps, testCaseName: "test_recorded_session_playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
+            PythonScriptContent = ScriptGenerator.GeneratePython(Steps, testCaseName: "test_recorded_session_playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
 
             // JSON (steps only)
             var jsonSteps = new List<object>();
@@ -1518,22 +1527,7 @@ namespace WpfTestIde.ViewModels
             }
             var jsonRoot = new Dictionary<string, object> { ["steps"] = jsonSteps };
             var jsonOptions = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
-            var jsonScript = System.Text.Json.JsonSerializer.Serialize(jsonRoot, jsonOptions);
-
-            // Select the active format's content
-            switch (_currentScriptFormat)
-            {
-                case "Json":
-                    ScriptContent = jsonScript;
-                    break;
-                case "Python":
-                    ScriptContent = pythonScript;
-                    break;
-                case "Robot":
-                default:
-                    ScriptContent = GeneratedScript;
-                    break;
-            }
+            JsonScriptContent = System.Text.Json.JsonSerializer.Serialize(jsonRoot, jsonOptions);
         }
 
         private List<string> GetSelectedRecordingModes()
@@ -1603,7 +1597,7 @@ namespace WpfTestIde.ViewModels
              // Pre-launch and inject them here, then rewrite the script to use
              // Attach To Application instead of Launch Application.
              var fwProcessIds = new List<int>();
-             var scriptContent = GeneratedScript;
+             var scriptContent = RobotScriptContent;
              
              if (scriptContent.Contains("Launch Application"))
              {
@@ -1891,40 +1885,112 @@ namespace WpfTestIde.ViewModels
 
         private void ExportScript()
         {
+            string fileName, filter, content;
+            switch (_currentScriptFormat)
+            {
+                case "Json":
+                    fileName = "recorded_steps.json";
+                    filter = "JSON files (*.json)|*.json";
+                    content = JsonScriptContent;
+                    break;
+                case "Python":
+                    fileName = "recorded_test.py";
+                    filter = "Python files (*.py)|*.py";
+                    content = PythonScriptContent;
+                    break;
+                case "Robot":
+                default:
+                    fileName = "recorded_test.robot";
+                    filter = "Robot files (*.robot)|*.robot";
+                    content = RobotScriptContent;
+                    break;
+            }
+
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
-                FileName = "draft_recorded_test.robot",
-                Filter = "Robot files (*.robot)|*.robot",
+                FileName = fileName,
+                Filter = filter,
                 InitialDirectory = Path.Combine(FrameworkRoot, "tests"),
             };
             if (dialog.ShowDialog() == true)
             {
-                File.WriteAllText(dialog.FileName, GeneratedScript);
-                // E3: announce the export with a transient Info toast; the user
-                // may be on a different tab when the Save dialog closes, and the
-                // toast is independent of the active tab.
+                File.WriteAllText(dialog.FileName, content);
                 EnqueueToast($"Exported script: {dialog.FileName}", ToastKind.Info);
             }
         }
 
-        private void ExportScriptAsPy()
+        /// <summary>Apply edits from the current view back to the Steps
+        /// collection so all views reflect the change when switching tabs.</summary>
+        private void ApplyScript()
         {
-            var driver = _selectedDriver != "Auto" ? _selectedDriver : null;
-            var mode = _selectedMode != "Auto" ? _selectedMode : null;
-            var recordingModes = GetSelectedRecordingModes();
-            var appId = SelectedApp?.AppId;
-            var pyScript = ScriptGenerator.GeneratePython(Steps, testCaseName: "test_recorded_session_playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
-
-            var dialog = new Microsoft.Win32.SaveFileDialog
+            var text = _currentScriptFormat switch
             {
-                FileName = "draft_recorded_test.py",
-                Filter = "Python files (*.py)|*.py",
-                InitialDirectory = Path.Combine(FrameworkRoot, "tests"),
+                "Json" => JsonScriptContent,
+                "Python" => PythonScriptContent,
+                _ => RobotScriptContent
             };
-            if (dialog.ShowDialog() == true)
+
+            if (string.IsNullOrWhiteSpace(text))
             {
-                File.WriteAllText(dialog.FileName, pyScript);
-                EnqueueToast($"Exported Python script: {dialog.FileName}", ToastKind.Info);
+                EnqueueToast("Nothing to apply.", ToastKind.Warning);
+                return;
+            }
+
+            bool ok = _currentScriptFormat switch
+            {
+                "Json" => ParseJsonScript(text),
+                "Python" => ParsePythonScript(text),
+                _ => ParseRobotScript(text)
+            };
+
+            if (ok)
+            {
+                RegenerateScript();
+                EnqueueToast($"Applied {_currentScriptFormat} script ({Steps.Count} steps).", ToastKind.Success);
+            }
+            else
+            {
+                EnqueueToast("Apply failed — could not parse the script.", ToastKind.Error);
+            }
+        }
+
+        /// <summary>Import a script from .json, .py, or .robot and populate Steps.</summary>
+        private void ImportScript()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Script files (*.json;*.py;*.robot)|*.json;*.py;*.robot|JSON files (*.json)|*.json|Python files (*.py)|*.py|Robot files (*.robot)|*.robot",
+                InitialDirectory = Path.Combine(FrameworkRoot, "tests"),
+                Multiselect = false
+            };
+            if (dialog.ShowDialog() != true) return;
+
+            try
+            {
+                string ext = System.IO.Path.GetExtension(dialog.FileName).ToLowerInvariant();
+                string text = File.ReadAllText(dialog.FileName);
+
+                bool ok = ext switch
+                {
+                    ".json" => ParseJsonScript(text),
+                    ".py" => ParsePythonScript(text),
+                    ".robot" => ParseRobotScript(text),
+                    _ => false
+                };
+
+                if (ok)
+                {
+                    RegenerateScript();
+                    EnqueueToast($"Imported {Steps.Count} step(s) from {System.IO.Path.GetFileName(dialog.FileName)}.", ToastKind.Success);
+                }
+                else
+                {
+                    EnqueueToast("Import failed — could not parse the file.", ToastKind.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                EnqueueToast($"Import failed: {ex.Message}", ToastKind.Error);
             }
         }
 
@@ -1936,18 +2002,18 @@ namespace WpfTestIde.ViewModels
                 case "Json":
                     fileName = "recorded_steps.json";
                     filter = "JSON files (*.json)|*.json";
-                    content = ScriptContent;
+                    content = JsonScriptContent;
                     break;
                 case "Python":
                     fileName = "recorded_test.py";
                     filter = "Python files (*.py)|*.py";
-                    content = ScriptContent;
+                    content = PythonScriptContent;
                     break;
                 case "Robot":
                 default:
                     fileName = "recorded_test.robot";
                     filter = "Robot files (*.robot)|*.robot";
-                    content = GeneratedScript;
+                    content = RobotScriptContent;
                     break;
             }
 
@@ -1961,10 +2027,220 @@ namespace WpfTestIde.ViewModels
             {
                 File.WriteAllText(dialog.FileName, content);
                 StatusText = $"Script saved to {dialog.FileName}";
-                // E3: mirror the StatusText line with a green Success toast so
-                // a save from a different tab is still noticed at a glance.
                 EnqueueToast($"Saved: {dialog.FileName}", ToastKind.Success);
             }
+        }
+
+        // ------------------------------------------------------------
+        // Script parsing (Apply / Import round-trip)
+        // ------------------------------------------------------------
+
+        /// <summary>Parse JSON script text into Steps.</summary>
+        private bool ParseJsonScript(string text)
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(text);
+                var root = doc.RootElement;
+
+                if (!root.TryGetProperty("steps", out var stepsObj))
+                    return false;
+
+                Steps.Clear();
+                foreach (var stepObj in stepsObj.EnumerateArray())
+                {
+                    if (!stepObj.TryGetProperty("kind", out var kindProp) ||
+                        !stepObj.TryGetProperty("alias", out var aliasProp) ||
+                        !stepObj.TryGetProperty("action", out var actionProp))
+                        continue;
+
+                    if (!Enum.TryParse<StepKind>(kindProp.GetString(), out var kind)) continue;
+                    if (!Enum.TryParse<ActionKind>(actionProp.GetString(), out var action)) continue;
+
+                    var step = new RecordedStep
+                    {
+                        Kind = kind,
+                        Alias = aliasProp.GetString() ?? "",
+                        Action = action,
+                        NonStandard = stepObj.TryGetProperty("nonStandard", out var nsProp) && nsProp.GetBoolean(),
+                        Value = GetOptionalString(stepObj, "value"),
+                        AttributeName = GetOptionalString(stepObj, "attributeName"),
+                        TargetAlias = GetOptionalString(stepObj, "targetAlias"),
+                        PropertyName = GetOptionalString(stepObj, "propertyName"),
+                        ExpectedCount = GetOptionalString(stepObj, "expectedCount"),
+                        AppId = GetOptionalString(stepObj, "appId"),
+                    };
+                    Steps.Add(step);
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Parse Python script text (DriverAgnosticApi calls) into Steps.</summary>
+        private bool ParsePythonScript(string text)
+        {
+            try
+            {
+                Steps.Clear();
+                var lines = text.Split('\n');
+                foreach (var rawLine in lines)
+                {
+                    var line = rawLine.Trim();
+                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#") || line.StartsWith("api =") || line.StartsWith("api.set_") || line.StartsWith("def ") || line.StartsWith("if __"))
+                        continue;
+
+                    // Match: api.click_element('alias'[, app_id='...'])
+                    var m = System.Text.RegularExpressions.Regex.Match(line, @"api\.(\w+)\(['""](?<alias>[^'""]+)['""]");
+                    if (!m.Success) continue;
+
+                    var call = m.Groups[1].Value;
+                    var alias = m.Groups["alias"].Value;
+
+                    var step = new RecordedStep { Kind = StepKind.Action, Alias = alias };
+
+                    switch (call)
+                    {
+                        case "click_element": step.Action = ActionKind.Invoke; break;
+                        case "double_click_element": step.Action = ActionKind.DoubleClick; break;
+                        case "right_click_element": step.Action = ActionKind.RightClick; break;
+                        case "toggle_element": step.Action = ActionKind.Toggle; break;
+                        case "hover_over_element": step.Action = ActionKind.Hover; break;
+                        case "press_keys":
+                            step.Action = ActionKind.PressKeys;
+                            step.Value = ExtractQuotedArg(line, 2);
+                            break;
+                        case "scroll":
+                            step.Action = ActionKind.Scroll;
+                            step.Value = ExtractQuotedArg(line, 2);
+                            break;
+                        case "drag_and_drop":
+                            step.Action = ActionKind.DragDrop;
+                            step.TargetAlias = ExtractQuotedArg(line, 2);
+                            break;
+                        case "set_element_value":
+                            step.Action = ActionKind.SetValue;
+                            step.Value = ExtractQuotedArg(line, 2);
+                            break;
+                        case "sikuli_click": step.Action = ActionKind.SikuliClick; break;
+                        case "sikuli_type":
+                            step.Action = ActionKind.SikuliType;
+                            step.Value = ExtractQuotedArg(line, 2);
+                            break;
+                        default: continue;
+                    }
+
+                    Steps.Add(step);
+                }
+                return Steps.Count > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Parse Robot Framework script text into Steps.</summary>
+        private bool ParseRobotScript(string text)
+        {
+            try
+            {
+                Steps.Clear();
+                var lines = text.Split('\n');
+                foreach (var rawLine in lines)
+                {
+                    var line = rawLine.Trim();
+                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#") || line.StartsWith("***") || line.StartsWith("Library") || line.StartsWith("Test Setup"))
+                        continue;
+
+                    // Robot format: Keyword    arg1    arg2    ...
+                    var parts = line.Split(new[] { '\t', ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length == 0) continue;
+
+                    var keyword = parts[0];
+                    var step = new RecordedStep { Kind = StepKind.Action };
+
+                    switch (keyword)
+                    {
+                        case "Click Element":
+                            step.Action = ActionKind.Invoke;
+                            step.Alias = parts.Length > 1 ? parts[1] : "";
+                            break;
+                        case "Double Click Element":
+                            step.Action = ActionKind.DoubleClick;
+                            step.Alias = parts.Length > 1 ? parts[1] : "";
+                            break;
+                        case "Right Click Element":
+                            step.Action = ActionKind.RightClick;
+                            step.Alias = parts.Length > 1 ? parts[1] : "";
+                            break;
+                        case "Toggle Element":
+                            step.Action = ActionKind.Toggle;
+                            step.Alias = parts.Length > 1 ? parts[1] : "";
+                            break;
+                        case "Hover Over Element":
+                            step.Action = ActionKind.Hover;
+                            step.Alias = parts.Length > 1 ? parts[1] : "";
+                            break;
+                        case "Press Keys":
+                            step.Action = ActionKind.PressKeys;
+                            step.Alias = parts.Length > 1 ? parts[1] : "";
+                            step.Value = parts.Length > 2 ? parts[2] : "";
+                            break;
+                        case "Scroll":
+                            step.Action = ActionKind.Scroll;
+                            step.Alias = parts.Length > 1 ? parts[1] : "";
+                            step.Value = parts.Length > 2 ? parts[2] : "";
+                            break;
+                        case "Drag And Drop":
+                            step.Action = ActionKind.DragDrop;
+                            step.Alias = parts.Length > 1 ? parts[1] : "";
+                            step.TargetAlias = parts.Length > 2 ? parts[2] : "";
+                            break;
+                        case "Set Element Value":
+                            step.Action = ActionKind.SetValue;
+                            step.Alias = parts.Length > 1 ? parts[1] : "";
+                            step.Value = parts.Length > 2 ? parts[2] : "";
+                            break;
+                        case "OculiX Click":
+                            step.Action = ActionKind.SikuliClick;
+                            step.Alias = parts.Length > 1 ? parts[1] : "";
+                            break;
+                        case "OculiX Type":
+                            step.Action = ActionKind.SikuliType;
+                            step.Alias = parts.Length > 1 ? parts[1] : "";
+                            step.Value = parts.Length > 2 ? parts[2] : "";
+                            break;
+                        default: continue;
+                    }
+
+                    Steps.Add(step);
+                }
+                return Steps.Count > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Extract the Nth quoted string argument from a Python call.</summary>
+        private static string? ExtractQuotedArg(string line, int argIndex)
+        {
+            var matches = System.Text.RegularExpressions.Regex.Matches(line, @"['""](?<val>[^'""]+)['""]");
+            if (matches.Count > argIndex)
+                return matches[argIndex].Groups["val"].Value;
+            return null;
+        }
+
+        private static string? GetOptionalString(System.Text.Json.JsonElement obj, string propName)
+        {
+            if (obj.TryGetProperty(propName, out var prop) && prop.ValueKind == System.Text.Json.JsonValueKind.String)
+                return prop.GetString();
+            return null;
         }
 
         private void ImportElements()

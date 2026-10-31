@@ -2,37 +2,24 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              DataContext="{Binding DataContext, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}">
-    <!-- A6+E4 Step 3: extracted verbatim from MainWindow.xaml tabScripts body (lines 460-528). 
-         The inner TabControl (Visual/Raw) and all AutomationIds are preserved.
-         Drag-reorder event handlers are wired to ScriptsPane.xaml.cs. -->
     <DockPanel Margin="6">
-        <!-- A7: per-tab toolbar for SCRIPTS. Hosts the Run + Export buttons
-             that previously lived in the global toolbar (kept AutomationIds:
-             btnRunScript / btnExportRepo / btnExportScript / btnSaveScript).
-             Record/Run duplicate driver checkboxes that used to live inside
-             the inner Raw sub-tab have been removed (they already live once,
-             canonically, in the StatusBar - see chkRecordFlaUI etc.). -->
+        <!-- Toolbar: Run, Save, Export, Apply, Import, Export Steps, Add Step, Checkpoint Wizard -->
         <Border DockPanel.Dock="Top" Style="{DynamicResource TabToolbarBorder}">
             <StackPanel Orientation="Horizontal">
                 <Button x:Name="btnRunScript" Style="{DynamicResource ToolbarButton}" Content="Run Script" ToolTip="Run the current script (F5)"
                         Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnRunScript"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                <Button x:Name="btnSaveScript" Style="{DynamicResource ToolbarButton}" Content="Save Script" ToolTip="Save the generated script (Ctrl+S)"
+                <Button x:Name="btnSaveScript" Style="{DynamicResource ToolbarButton}" Content="Save Script" ToolTip="Save the current script (Ctrl+S)"
                         Command="{Binding SaveScriptCommand}" AutomationProperties.AutomationId="btnSaveScript"/>
-                <Button x:Name="btnExportScript" Style="{DynamicResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
-                <Button x:Name="btnExportScriptPy" Style="{DynamicResource ToolbarButton}" Content="Export Script (.py)" Command="{Binding ExportScriptAsPyCommand}" AutomationProperties.AutomationId="btnExportScriptPy"/>
+                <Button x:Name="btnExportScript" Style="{DynamicResource ToolbarButton}" Content="Export Script" ToolTip="Export the current script to a file"
+                        Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                <TextBlock Text="View:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                <ComboBox x:Name="cmbScriptFormat" Width="90" VerticalAlignment="Center" FontSize="11"
-                          SelectedValue="{Binding CurrentScriptFormat}" SelectedValuePath="Content"
-                          AutomationProperties.AutomationId="cmbScriptFormat">
-                    <ComboBoxItem Content="JSON"/>
-                    <ComboBoxItem Content="Python"/>
-                    <ComboBoxItem Content="Robot"/>
-                </ComboBox>
+                <Button x:Name="btnApplyScript" Style="{DynamicResource ToolbarButton}" Content="Apply" ToolTip="Apply edits from the current view back to the step list"
+                        Command="{Binding ApplyScriptCommand}" AutomationProperties.AutomationId="btnApplyScript"/>
+                <Button x:Name="btnImportScript" Style="{DynamicResource ToolbarButton}" Content="Import" ToolTip="Import a script from .json, .py, or .robot file"
+                        Command="{Binding ImportScriptCommand}" AutomationProperties.AutomationId="btnImportScript"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnExportStepsJson" Style="{DynamicResource ToolbarButton}" Content="Export Steps (.json)" Command="{Binding ExportStepsAsJsonCommand}" AutomationProperties.AutomationId="btnExportStepsJson"/>
-                <Button x:Name="btnImportSteps" Style="{DynamicResource ToolbarButton}" Content="Import Steps (.json)" Command="{Binding ImportStepsCommand}" AutomationProperties.AutomationId="btnImportSteps"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnAddStep" Style="{DynamicResource ToolbarButton}" Content="Add Step" Command="{Binding AddStepCommand}" AutomationProperties.AutomationId="btnAddStep"/>
                 <Button x:Name="btnCheckpointWizard" Style="{DynamicResource ToolbarButton}" Content="Checkpoint Wizard" Command="{Binding OpenCheckpointWizardCommand}" AutomationProperties.AutomationId="btnCheckpointWizard"/>
@@ -40,12 +27,8 @@
         </Border>
 
         <TabControl>
-            <!-- Visual: Recorded Steps -->
+            <!-- Tab 1: Visual (recorded steps list) -->
             <TabItem x:Name="tabVisualSteps" Header="Visual" AutomationProperties.AutomationId="tabVisualSteps">
-                <!-- D3: AllowDrop + PreviewMouseLeftButtonDown/DragOver/Drop enable
-                     drag-to-reorder of recorded steps. Handlers live in MainWindow.xaml.cs.
-                     ItemContainerStyle is added so the per-row ListBoxItem stretches to
-                     the full usable width (default ListBoxItem is left-aligned + clipped). -->
                 <ListBox x:Name="StepsListBox" ItemsSource="{Binding Steps}" ItemTemplate="{DynamicResource StepTemplate}"
                          BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          Margin="0,6,0,0" AutomationProperties.AutomationId="StepsListBox"
@@ -63,28 +46,40 @@
                     </ListBox.ItemContainerStyle>
                 </ListBox>
             </TabItem>
-            <!-- Raw: Generated Script -->
-            <TabItem x:Name="tabRawScript" Header="Raw" AutomationProperties.AutomationId="tabRawScript">
+
+            <!-- Tab 2: JSON Script -->
+            <TabItem x:Name="tabJsonScript" Header="JSON" AutomationProperties.AutomationId="tabJsonScript">
                 <DockPanel Margin="0,6,0,0">
-                    <TextBlock DockPanel.Dock="Top" Text="Raw Layer 3 calls - review/refactor before committing to the suite."
+                    <TextBlock DockPanel.Dock="Top" Text="JSON step list — edit and click Apply to sync across all views."
                                FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
-                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                        <TextBlock DockPanel.Dock="Left" Text="Run Driver:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <ComboBox x:Name="cmbRunDriver" DockPanel.Dock="Left" SelectedItem="{Binding SelectedDriver}"
-                                  ItemsSource="{Binding AvailableDrivers}" Width="100" FontSize="11" AutomationProperties.AutomationId="cmbRunDriver"/>
-                        <TextBlock DockPanel.Dock="Left" Text="  Mode:" VerticalAlignment="Center" Margin="8,0,4,0" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <ComboBox x:Name="cmbRunMode" DockPanel.Dock="Left" SelectedItem="{Binding SelectedMode}"
-                                  ItemsSource="{Binding AvailableModes}" Width="80" FontSize="11" AutomationProperties.AutomationId="cmbRunMode"/>
-                    </DockPanel>
-                    <!-- A7: the duplicate Record/Run driver checkboxes that
-                         lived here (chkScriptRecordFlaUI / chkScriptRun*
-                         etc.) have been removed - they duplicated the
-                         canonical StatusBar ones (chkRecordFlaUI / chkRun*
-                         in the status bar) and were unused by tests. -->
-                    <TextBox x:Name="txtGeneratedScript" Text="{Binding ScriptContent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
+                    <TextBox x:Name="txtJsonScript" Text="{Binding JsonScriptContent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
                              TextWrapping="NoWrap" AcceptsReturn="True"
                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                             Style="{DynamicResource VsCodeEditor}" AutomationProperties.AutomationId="txtGeneratedScript"/>
+                             Style="{DynamicResource VsCodeEditor}" AutomationProperties.AutomationId="txtJsonScript"/>
+                </DockPanel>
+            </TabItem>
+
+            <!-- Tab 3: Python Script -->
+            <TabItem x:Name="tabPythonScript" Header="Python Script" AutomationProperties.AutomationId="tabPythonScript">
+                <DockPanel Margin="0,6,0,0">
+                    <TextBlock DockPanel.Dock="Top" Text="Python script using DriverAgnosticApi — edit and click Apply to sync across all views."
+                               FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                    <TextBox x:Name="txtPythonScript" Text="{Binding PythonScriptContent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
+                             TextWrapping="NoWrap" AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                             Style="{DynamicResource VsCodeEditor}" AutomationProperties.AutomationId="txtPythonScript"/>
+                </DockPanel>
+            </TabItem>
+
+            <!-- Tab 4: Robot Script -->
+            <TabItem x:Name="tabRobotScript" Header="Robot Script" AutomationProperties.AutomationId="tabRobotScript">
+                <DockPanel Margin="0,6,0,0">
+                    <TextBlock DockPanel.Dock="Top" Text="Robot Framework script using DriverAgnosticApi — edit and click Apply to sync across all views."
+                               FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                    <TextBox x:Name="txtRobotScript" Text="{Binding RobotScriptContent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
+                             TextWrapping="NoWrap" AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                             Style="{DynamicResource VsCodeEditor}" AutomationProperties.AutomationId="txtRobotScript"/>
                 </DockPanel>
             </TabItem>
         </TabControl>
