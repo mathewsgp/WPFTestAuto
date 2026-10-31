@@ -518,13 +518,11 @@ namespace WpfTestIde.ViewModels
         public ICommand MoveStepDownCommand { get; }
         public ICommand RunCommand { get; }
         public ICommand ExportRepositoryCommand { get; }
-        public ICommand ExportScriptCommand { get; }
+        public ICommand SaveExportScriptCommand { get; }
         public ICommand ApplyScriptCommand { get; }
         public ICommand ImportScriptCommand { get; }
-        public ICommand SaveScriptCommand { get; }
         public ICommand LoadSampleCommand { get; }
         public ICommand ImportElementsCommand { get; }
-        public ICommand ExportStepsAsJsonCommand { get; }
         public ICommand ImportStepsCommand { get; }
         public ICommand ResetCommand { get; }
         public ICommand ResetLayoutCommand { get; }
@@ -554,13 +552,11 @@ namespace WpfTestIde.ViewModels
             MoveStepDownCommand = new RelayCommand(param => MoveStep(param as RecordedStep, +1));
             RunCommand = new AsyncRelayCommand(_ => RunAsync(), _ => Steps.Count > 0);
             ExportRepositoryCommand = new RelayCommand(_ => ExportRepository());
-            ExportScriptCommand = new RelayCommand(_ => ExportScript());
+            SaveExportScriptCommand = new RelayCommand(_ => SaveExportScript());
             ApplyScriptCommand = new RelayCommand(_ => ApplyScript());
             ImportScriptCommand = new RelayCommand(_ => ImportScript());
-            SaveScriptCommand = new RelayCommand(_ => SaveScript());
             LoadSampleCommand = new RelayCommand(_ => LoadSample());
             ImportElementsCommand = new RelayCommand(_ => ImportElements());
-            ExportStepsAsJsonCommand = new RelayCommand(_ => ExportStepsAsJson());
             ImportStepsCommand = new RelayCommand(_ => ImportSteps());
             ResetCommand = new RelayCommand(_ => Reset());
             ResetLayoutCommand = new RelayCommand(_ => ResetLayout());
@@ -1883,39 +1879,28 @@ namespace WpfTestIde.ViewModels
             }
         }
 
-        private void ExportScript()
+        /// <summary>Save or export the current script. Opens a SaveFileDialog
+        /// with filters for JSON, Python, and Robot Framework formats so the
+        /// user can choose the target format regardless of the active view tab.</summary>
+        private void SaveExportScript()
         {
-            string fileName, filter, content;
-            switch (_currentScriptFormat)
-            {
-                case "Json":
-                    fileName = "recorded_steps.json";
-                    filter = "JSON files (*.json)|*.json";
-                    content = JsonScriptContent;
-                    break;
-                case "Python":
-                    fileName = "recorded_test.py";
-                    filter = "Python files (*.py)|*.py";
-                    content = PythonScriptContent;
-                    break;
-                case "Robot":
-                default:
-                    fileName = "recorded_test.robot";
-                    filter = "Robot files (*.robot)|*.robot";
-                    content = RobotScriptContent;
-                    break;
-            }
-
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
-                FileName = fileName,
-                Filter = filter,
+                FileName = "recorded_test",
+                Filter = "Script files (*.json;*.py;*.robot)|*.json;*.py;*.robot|JSON files (*.json)|*.json|Python files (*.py)|*.py|Robot files (*.robot)|*.robot",
                 InitialDirectory = Path.Combine(FrameworkRoot, "tests"),
             };
             if (dialog.ShowDialog() == true)
             {
+                string ext = System.IO.Path.GetExtension(dialog.FileName).ToLowerInvariant();
+                string content = ext switch
+                {
+                    ".json" => JsonScriptContent,
+                    ".py" => PythonScriptContent,
+                    _ => RobotScriptContent
+                };
                 File.WriteAllText(dialog.FileName, content);
-                EnqueueToast($"Exported script: {dialog.FileName}", ToastKind.Info);
+                EnqueueToast($"Saved/exported script: {dialog.FileName}", ToastKind.Info);
             }
         }
 
@@ -1991,43 +1976,6 @@ namespace WpfTestIde.ViewModels
             catch (Exception ex)
             {
                 EnqueueToast($"Import failed: {ex.Message}", ToastKind.Error);
-            }
-        }
-
-        private void SaveScript()
-        {
-            string fileName, filter, content;
-            switch (_currentScriptFormat)
-            {
-                case "Json":
-                    fileName = "recorded_steps.json";
-                    filter = "JSON files (*.json)|*.json";
-                    content = JsonScriptContent;
-                    break;
-                case "Python":
-                    fileName = "recorded_test.py";
-                    filter = "Python files (*.py)|*.py";
-                    content = PythonScriptContent;
-                    break;
-                case "Robot":
-                default:
-                    fileName = "recorded_test.robot";
-                    filter = "Robot files (*.robot)|*.robot";
-                    content = RobotScriptContent;
-                    break;
-            }
-
-            var dialog = new Microsoft.Win32.SaveFileDialog
-            {
-                FileName = fileName,
-                Filter = filter,
-                InitialDirectory = Path.Combine(FrameworkRoot, "tests"),
-            };
-            if (dialog.ShowDialog() == true)
-            {
-                File.WriteAllText(dialog.FileName, content);
-                StatusText = $"Script saved to {dialog.FileName}";
-                EnqueueToast($"Saved: {dialog.FileName}", ToastKind.Success);
             }
         }
 
@@ -2292,50 +2240,6 @@ namespace WpfTestIde.ViewModels
                 StatusText = $"Import failed: {ex.Message}";
                 EnqueueToast($"Import failed: {ex.Message}", ToastKind.Error);
             }
-        }
-
-        private void ExportStepsAsJson()
-        {
-            var dialog = new Microsoft.Win32.SaveFileDialog
-            {
-                FileName = "recorded_steps.json",
-                Filter = "JSON files (*.json)|*.json",
-                InitialDirectory = Path.Combine(FrameworkRoot, "repository", "steps")
-            };
-            if (dialog.ShowDialog() != true) return;
-
-            var stepsList = new List<object>();
-            foreach (var step in Steps)
-            {
-                var stepDict = new Dictionary<string, object>
-                {
-                    ["kind"] = step.Kind.ToString(),
-                    ["alias"] = step.Alias,
-                    ["action"] = step.Action.ToString(),
-                    ["nonStandard"] = step.NonStandard
-                };
-
-                if (!string.IsNullOrEmpty(step.Value))
-                    stepDict["value"] = step.Value;
-                if (!string.IsNullOrEmpty(step.AttributeName))
-                    stepDict["attributeName"] = step.AttributeName;
-                if (!string.IsNullOrEmpty(step.TargetAlias))
-                    stepDict["targetAlias"] = step.TargetAlias;
-                if (!string.IsNullOrEmpty(step.PropertyName))
-                    stepDict["propertyName"] = step.PropertyName;
-                if (!string.IsNullOrEmpty(step.ExpectedCount))
-                    stepDict["expectedCount"] = step.ExpectedCount;
-                if (!string.IsNullOrEmpty(step.AppId))
-                    stepDict["appId"] = step.AppId;
-
-                stepsList.Add(stepDict);
-            }
-
-            var root = new Dictionary<string, object> { ["steps"] = stepsList };
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(root, options));
-            StatusText = $"Steps exported to {dialog.FileName}";
-            EnqueueToast($"Exported steps: {dialog.FileName}", ToastKind.Success);
         }
 
         private void ImportSteps()

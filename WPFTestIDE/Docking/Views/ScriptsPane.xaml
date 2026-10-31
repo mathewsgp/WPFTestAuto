@@ -9,17 +9,13 @@
                 <Button x:Name="btnRunScript" Style="{DynamicResource ToolbarButton}" Content="Run Script" ToolTip="Run the current script (F5)"
                         Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnRunScript"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                <Button x:Name="btnSaveScript" Style="{DynamicResource ToolbarButton}" Content="Save Script" ToolTip="Save the current script (Ctrl+S)"
-                        Command="{Binding SaveScriptCommand}" AutomationProperties.AutomationId="btnSaveScript"/>
-                <Button x:Name="btnExportScript" Style="{DynamicResource ToolbarButton}" Content="Export Script" ToolTip="Export the current script to a file"
-                        Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
+                <Button x:Name="btnSaveExportScript" Style="{DynamicResource ToolbarButton}" Content="Save / Export Script" ToolTip="Save or export the current script (JSON / Python / Robot)"
+                        Command="{Binding SaveExportScriptCommand}" AutomationProperties.AutomationId="btnSaveExportScript"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnApplyScript" Style="{DynamicResource ToolbarButton}" Content="Apply" ToolTip="Apply edits from the current view back to the step list"
                         Command="{Binding ApplyScriptCommand}" AutomationProperties.AutomationId="btnApplyScript"/>
                 <Button x:Name="btnImportScript" Style="{DynamicResource ToolbarButton}" Content="Import" ToolTip="Import a script from .json, .py, or .robot file"
                         Command="{Binding ImportScriptCommand}" AutomationProperties.AutomationId="btnImportScript"/>
-                <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                <Button x:Name="btnExportStepsJson" Style="{DynamicResource ToolbarButton}" Content="Export Steps (.json)" Command="{Binding ExportStepsAsJsonCommand}" AutomationProperties.AutomationId="btnExportStepsJson"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnAddStep" Style="{DynamicResource ToolbarButton}" Content="Add Step" Command="{Binding AddStepCommand}" AutomationProperties.AutomationId="btnAddStep"/>
                 <Button x:Name="btnCheckpointWizard" Style="{DynamicResource ToolbarButton}" Content="Checkpoint Wizard" Command="{Binding OpenCheckpointWizardCommand}" AutomationProperties.AutomationId="btnCheckpointWizard"/>
