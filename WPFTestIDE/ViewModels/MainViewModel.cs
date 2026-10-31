@@ -505,7 +505,6 @@ namespace WpfTestIde.ViewModels
         public ICommand AddVerificationCommand { get; }
         public ICommand AddStepCommand { get; }
         public ICommand DeleteStepCommand { get; }
-        public ICommand EditStepCommand { get; }
         // D3: re-order recorded steps. Two explicit commands (up/down buttons) plus
         // a drag-drop path that calls MoveStep directly from MainWindow code-behind.
         public ICommand MoveStepUpCommand { get; }
@@ -543,7 +542,6 @@ namespace WpfTestIde.ViewModels
             AddVerificationCommand = new RelayCommand(param => AddVerification(param as RecordedStep));
             AddStepCommand = new RelayCommand(param => AddStep(param as RecordedStep));
             DeleteStepCommand = new RelayCommand(param => DeleteStep(param as RecordedStep));
-            EditStepCommand = new RelayCommand(param => EditStep(param as RecordedStep));
             MoveStepUpCommand = new RelayCommand(param => MoveStep(param as RecordedStep, -1));
             MoveStepDownCommand = new RelayCommand(param => MoveStep(param as RecordedStep, +1));
             RunCommand = new AsyncRelayCommand(_ => RunAsync(), _ => Steps.Count > 0);
@@ -1445,26 +1443,6 @@ namespace WpfTestIde.ViewModels
             if (step != null)
             {
                 Steps.Remove(step);
-            }
-        }
-
-        private void EditStep(RecordedStep? step)
-        {
-            if (step == null) return;
-            // Open a step editor dialog for visual editing of the selected step.
-            var dlg = new Dialogs.StepEditorDialog(step);
-            if (dlg.ShowDialog() == true)
-            {
-                // Update the step from the dialog's result
-                step.Alias = dlg.ResultStep.Alias;
-                step.Value = dlg.ResultStep.Value;
-                step.AttributeName = dlg.ResultStep.AttributeName;
-                step.TargetAlias = dlg.ResultStep.TargetAlias;
-                step.PropertyName = dlg.ResultStep.PropertyName;
-                step.ExpectedCount = dlg.ResultStep.ExpectedCount;
-                step.AppId = dlg.ResultStep.AppId;
-                step.NonStandard = dlg.ResultStep.NonStandard;
-                RegenerateScript();
             }
         }
 

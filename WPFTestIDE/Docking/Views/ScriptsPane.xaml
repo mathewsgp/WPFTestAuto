@@ -35,7 +35,6 @@
                 <Button x:Name="btnImportSteps" Style="{DynamicResource ToolbarButton}" Content="Import Steps (.json)" Command="{Binding ImportStepsCommand}" AutomationProperties.AutomationId="btnImportSteps"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnAddStep" Style="{DynamicResource ToolbarButton}" Content="Add Step" Command="{Binding AddStepCommand}" AutomationProperties.AutomationId="btnAddStep"/>
-                <Button x:Name="btnEditStep" Style="{DynamicResource ToolbarButton}" Content="Edit Step" Command="{Binding EditStepCommand}" AutomationProperties.AutomationId="btnEditStep"/>
                 <Button x:Name="btnCheckpointWizard" Style="{DynamicResource ToolbarButton}" Content="Checkpoint Wizard" Command="{Binding OpenCheckpointWizardCommand}" AutomationProperties.AutomationId="btnCheckpointWizard"/>
             </StackPanel>
         </Border>
