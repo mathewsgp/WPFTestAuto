@@ -144,6 +144,25 @@ namespace WpfTestIde
                     }
 
                     ApplySplitterState(state);
+
+                    // Deferred re-apply at Background priority: ShowPane/SplitterState
+                    // at Loaded can race with AvalonDock's own layout pass. Re-apply
+                    // after the visual tree has settled so the active pane actually
+                    // becomes visible and the splitter widths stick.
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: Deferred re-apply at Background");
+                        if (!string.IsNullOrWhiteSpace(state.ActivePaneId))
+                        {
+                            ShowPane(state.ActivePaneId);
+                        }
+                        else if (state.SelectedTabIndex >= 0 && state.SelectedTabIndex < 3)
+                        {
+                            var paneName = state.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" };
+                            ShowPane(paneName);
+                        }
+                        ApplySplitterState(state);
+                    }), DispatcherPriority.Background);
                 }
                 catch (Exception ex)
                 {
@@ -516,15 +535,30 @@ namespace WpfTestIde
 
         private void ShowPane(string paneId)
         {
-            if (dockManager.Layout == null) return;
+            if (dockManager.Layout == null)
+            {
+                System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: ShowPane({paneId}) - dockManager.Layout is null");
+                return;
+            }
             var anchorable = FindAnchorableByTitle(dockManager.Layout.RootPanel, paneId);
-            anchorable?.Show();
+            if (anchorable == null)
+            {
+                System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: ShowPane({paneId}) - anchorable NOT FOUND in layout tree");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: ShowPane({paneId}) - anchorable found, calling Show()");
+                anchorable.Show();
+            }
         }
 
         private static LayoutAnchorable? FindAnchorableByTitle(ILayoutElement element, string title)
         {
             if (element is LayoutAnchorable anchorable && string.Equals(anchorable.Title, title, StringComparison.OrdinalIgnoreCase))
+            {
+                System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: FindAnchorableByTitle - found '{title}' directly");
                 return anchorable;
+            }
             if (element is ILayoutContainer container)
             {
                 foreach (var child in container.Children)
@@ -569,24 +603,34 @@ namespace WpfTestIde
         // ------------------------------------------------------------
         private void RestoreDockPaneContent()
         {
-            if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return;
-            
+            if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel)
+            {
+                System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: RestoreDockPaneContent - RootPanel is {(dockManager.Layout?.RootPanel == null ? "null" : dockManager.Layout.RootPanel.GetType().Name)}, not LayoutPanel");
+                return;
+            }
+
+            System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: RestoreDockPaneContent - RootPanel children={rootPanel.Children.Count}");
+
             // Only recreate if RootPanel is completely empty (no layout elements at all).
             // After deserialization, the serializer may produce a LayoutDocumentPane
             // containing our panes — that's fine, we just inject content into it.
             if (rootPanel.Children.Count == 0)
             {
+                System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: RootPanel empty, recreating default panes");
                 RecreateDefaultDockPanes(rootPanel);
                 return;
             }
-            
+
             bool foundAny = false;
             RestoreDockPaneContentRecursive(rootPanel, ref foundAny);
-            
+
+            System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: RestoreDockPaneContentRecursive foundAny={foundAny}");
+
             // If no anchorables/documents were found at all (completely corrupted
             // layout), recreate the three expected panes from scratch.
             if (!foundAny)
             {
+                System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: No anchorables found, recreating default panes");
                 RecreateDefaultDockPanes(rootPanel);
             }
         }
@@ -597,6 +641,7 @@ namespace WpfTestIde
             {
                 case LayoutAnchorable anchorable:
                     foundAny = true;
+                    System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: Found anchorable '{anchorable.Title}', Content={(anchorable.Content == null ? "null" : "has content")}");
                     if (anchorable.Content == null)
                     {
                         anchorable.Content = anchorable.Title switch
@@ -607,10 +652,12 @@ namespace WpfTestIde
                             "WORKING FOLDER" => CreatePaneContent(new Docking.Views.WorkingFolderPane(), "tabWorkingFolder"),
                             _ => null
                         };
+                        System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: Injected content into '{anchorable.Title}'");
                     }
                     break;
                 case LayoutDocument document:
                     foundAny = true;
+                    System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: Found document '{document.Title}', Content={(document.Content == null ? "null" : "has content")}");
                     if (document.Content == null)
                     {
                         document.Content = document.Title switch
@@ -624,7 +671,7 @@ namespace WpfTestIde
                     }
                     break;
             }
-            
+
             if (element is ILayoutContainer container)
             {
                 foreach (var child in container.Children)
