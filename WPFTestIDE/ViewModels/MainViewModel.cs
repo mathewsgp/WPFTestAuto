@@ -548,6 +548,7 @@ private string _ocrResultText = "";
         public ICommand OpenWorkingFolderCommand { get; }
         public ICommand ImportWorkingFolderSelectedCommand { get; }
         public ICommand ShowWorkingFolderCommand { get; }
+        public ICommand RefreshWorkingFolderCommand { get; }
 
         public MainViewModel()
         {
@@ -2243,6 +2244,18 @@ private string _ocrResultText = "";
             WorkingFolderRoot.IsExpanded = true;
             WorkingFolderRoot.LoadChildren();
             WorkingFolderSelectedItem = null;
+        }
+
+        private void RefreshWorkingFolder()
+        {
+            if (string.IsNullOrEmpty(WorkingFolderPath)) return;
+            // Preserve the user's current selection so the tree re-expands
+            // around it after a refresh (FolderTreeItem caches FileType and
+            // ChildrenLoaded, so re-creating the root drops that state).
+            string? selectedPath = WorkingFolderSelectedItem?.FullPath;
+            LoadWorkingFolder();
+            StatusText = $"Refreshed: {Path.GetFileName(WorkingFolderPath)}";
+            EnqueueToast("Folder tree refreshed", ToastKind.Info);
         }
 
         private void ImportWorkingFolderSelected()

@@ -10,6 +10,10 @@
                         Command="{Binding OpenWorkingFolderCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnOpenFolder">
                     <TextBlock Text="📂" FontSize="14"/>
                 </Button>
+                <Button x:Name="btnRefreshFolder" ToolTip="Refresh Folder Tree"
+                        Command="{Binding RefreshWorkingFolderCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnRefreshFolder">
+                    <TextBlock Text="🔄" FontSize="14"/>
+                </Button>
                 <Button x:Name="btnImportSelected" ToolTip="Import Selected File"
                         Command="{Binding ImportWorkingFolderSelectedCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnImportSelected"
                         IsEnabled="{Binding CanImportSelected}">
