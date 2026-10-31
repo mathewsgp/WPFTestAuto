@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -10,8 +9,6 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using AvalonDock;
 using AvalonDock.Layout;
-using AvalonDock.Serializer.Json;
-using WpfTestIde.Helpers;
 using WpfTestIde.Models;
 using WpfTestIde.ViewModels;
 
@@ -44,241 +41,27 @@ namespace WpfTestIde
 
         // ------------------------------------------------------------
         // E1: layout + theme persistence.
-        // On Loaded apply the snapshot loaded by App.OnStartup; on Closing
-        // capture the live window/panel/splitter state back into a new
-        // LayoutState and save it via LayoutPersistence.
+        // Save/restore has been removed; the window now always uses the
+        // XAML-defined default layout.
         // ------------------------------------------------------------
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            if (Application.Current?.Properties["LayoutState"] is not LayoutState state)
-            {
-                System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: Properties[\"LayoutState\"] is null or not LayoutState - using XAML defaults");
-                return;
-            }
-            System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: Loaded state - DockLayoutJson={(state.DockLayoutJson == null ? "null" : $"{(state.DockLayoutJson.Length)} chars")}, ActivePaneId={state.ActivePaneId}, SelectedTabIndex={state.SelectedTabIndex}");
-
-            // Theme first so the rest of the UI paints in the user's theme.
-            Themes.ThemeManager.ApplyTheme(string.IsNullOrWhiteSpace(state.Theme) ? "Light" : state.Theme);
-            if (DataContext is MainViewModel vm)
-            {
-                vm.RepositoryPanelExpanded = state.RepositoryPanelExpanded;
-                vm.RunOutputPanelExpanded = state.RunOutputPanelExpanded;
-            }
-
-            // -------- Window geometry FIRST --------
-            // Apply size/state/position before deserializing the dock layout so the
-            // DockingManager rebuilds into an already-correctly-sized host. Previously
-            // geometry was applied AFTER the dock restore, which meant AvalonDock laid
-            // out against the transient XAML default size and the pane widths drifted
-            // from what was saved. Only apply if the persisted size is reasonable;
-            // ignore obviously-broken values (zero/negative) so a corrupted file
-            // can't push the window off-screen or shrink it to nothing.
-            if (state.Width > 100 && state.Height > 100)
-            {
-                Width = state.Width;
-                Height = state.Height;
-            }
-            if (System.Windows.WindowState.Normal <= (System.Windows.WindowState)state.WindowState
-                && (System.Windows.WindowState)state.WindowState <= System.Windows.WindowState.Maximized)
-            {
-                WindowState = (System.Windows.WindowState)state.WindowState;
-            }
-            // Position only when Normal (a maximized window has Top/Left off-screen
-            // on some multi-monitor configs). Restore to TopLeft so windows reopen
-            // where they were; guard against off-screen placement.
-            // Treat 0,0 as "unset" (fresh layout.json) and fall back to centering.
-            if (WindowState == System.Windows.WindowState.Normal)
-            {
-                if (state.Left > 0 || state.Top > 0)
-                {
-                    if (state.Left >= SystemParameters.VirtualScreenLeft - 10
-                        && state.Top >= SystemParameters.VirtualScreenTop - 10
-                        && state.Left < SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 100
-                        && state.Top < SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 100)
-                    {
-                        Left = state.Left;
-                        Top = state.Top;
-                    }
-                    else
-                    {
-                        // Persisted position is off the current monitor layout -> fall
-                        // back to centering so the window stays reachable.
-                        WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                    }
-                }
-                else
-                {
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                }
-            }
-            // -------- Dock layout restore --------
-            // Use AvalonDock's built-in JsonLayoutSerializer to round-trip the dock
-            // arrangement. After deserialization, LayoutAnchorables arrive with null
-            // Content (the serializer doesn't persist UIElement Content), so we
-            // re-inject the pane UserControls.
-            if (!string.IsNullOrWhiteSpace(state.DockLayoutJson))
-            {
-                System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: Attempting dock layout deserialize...");
-                try
-                {
-                    var serializer = new JsonLayoutSerializer(dockManager);
-                    using var stream = new MemoryStream(Encoding.UTF8.GetBytes(state.DockLayoutJson));
-                    serializer.Deserialize(stream);
-
-                    System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: After deserialize - RootPanel={dockManager.Layout?.RootPanel?.GetType().Name}, Children={dockManager.Layout?.RootPanel?.Children?.Count}");
-
-                    RestoreDockPaneContent();
-
-                    System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: After RestoreDockPaneContent");
-
-                    if (!string.IsNullOrWhiteSpace(state.ActivePaneId))
-                    {
-                        System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: ShowPane({state.ActivePaneId})");
-                        ShowPane(state.ActivePaneId);
-                    }
-                    else if (state.SelectedTabIndex >= 0 && state.SelectedTabIndex < 3)
-                    {
-                        var paneName = state.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" };
-                        System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: ShowPane({paneName}) from SelectedTabIndex");
-                        ShowPane(paneName);
-                    }
-
-                    ApplySplitterState(state);
-
-                    // Deferred re-apply at Background priority: ShowPane/SplitterState
-                    // at Loaded can race with AvalonDock's own layout pass. Re-apply
-                    // after the visual tree has settled so the active pane actually
-                    // becomes visible and the splitter widths stick.
-                    Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: Deferred re-apply at Background");
-                        if (!string.IsNullOrWhiteSpace(state.ActivePaneId))
-                        {
-                            ShowPane(state.ActivePaneId);
-                        }
-                        else if (state.SelectedTabIndex >= 0 && state.SelectedTabIndex < 3)
-                        {
-                            var paneName = state.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" };
-                            ShowPane(paneName);
-                        }
-                        ApplySplitterState(state);
-                    }), DispatcherPriority.Background);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Dock layout restore failed: {ex.Message}");
-                    System.Diagnostics.Debug.WriteLine($"Dock layout restore stack: {ex.StackTrace}");
-                }
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: DockLayoutJson is null/empty - using XAML defaults");
-            }
+            // No layout save/restore.
         }
 
-        private void ApplySplitterState(LayoutState state)
+        private void ApplySplitterState()
         {
-            try
-            {
-                var elementsAnchorable = FindAnchorableByTitle(dockManager.Layout, "Elements");
-                if (elementsAnchorable?.Content is FrameworkElement fe)
-                {
-                    var elementsPane = fe.FindName("ElementsPaneRoot") as Docking.Views.ElementsPane
-                        ?? FindVisualChild<Docking.Views.ElementsPane>(fe);
-                    elementsPane?.ApplySplitterState(state.TreeColumnWidth, state.PropertiesColumnWidth);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Stop hiding the cause: a silent no-op here means the Element Tree
-                // <-> Properties splitter width is silently lost.
-                System.Diagnostics.Debug.WriteLine($"ElementsPane splitter restore skipped: {ex.Message}");
-            }
+            // No layout save/restore.
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (DataContext is not MainViewModel vm) return;
-            
-            // Snapshot ElementsPane splitter state from the live pane content.
-            double treeWidth = 0, propsWidth = 0;
-            try
-            {
-                var elementsAnchorable = FindAnchorableByTitle(dockManager.Layout, "Elements");
-                if (elementsAnchorable?.Content is FrameworkElement fe)
-                {
-                    var elementsPane = fe.FindName("ElementsPaneRoot") as Docking.Views.ElementsPane
-                        ?? FindVisualChild<Docking.Views.ElementsPane>(fe);
-                    if (elementsPane != null)
-                    {
-                        (treeWidth, propsWidth) = elementsPane.SnapshotSplitterState();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Persist zeros if the pane isn't reachable, but stop hiding the cause:
-                // a silent no-op here means the splitter width is silently lost.
-                System.Diagnostics.Debug.WriteLine($"ElementsPane splitter snapshot skipped: {ex.Message}");
-            }
-            
-            var state = new LayoutState
-            {
-                WindowState = (int)WindowState,
-                Top = Top,
-                Left = Left,
-                // When maximized/minimized, ActualWidth/Height are the maximized
-                // size; save RestoreBounds instead so the "restored" size is correct.
-                Width = WindowState == System.Windows.WindowState.Normal && ActualWidth > 0 ? ActualWidth : RestoreBounds.Width,
-                Height = WindowState == System.Windows.WindowState.Normal && ActualHeight > 0 ? ActualHeight : RestoreBounds.Height,
-                Theme = Themes.ThemeManager.CurrentTheme,
-                SelectedTabIndex = vm.SelectedTabIndex,
-                TreeColumnWidth = treeWidth,
-                PropertiesColumnWidth = propsWidth,
-                RepositoryPanelExpanded = vm.RepositoryPanelExpanded,
-                RunOutputPanelExpanded = vm.RunOutputPanelExpanded,
-                ActivePaneId = vm.ActivePaneId ?? (vm.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" }),
-                DockLayoutJson = SerializeLayout(dockManager),
-            };
-            LayoutPersistence.Save(state);
+            // No layout save/restore.
         }
 
         public void ResetLayout()
         {
-            try
-            {
-                // Clear the saved layout state so next launch uses XAML defaults.
-                var defaultState = new LayoutState();
-                LayoutPersistence.Save(defaultState);
-
-                // Recreate the default dock panes in the root panel.
-                if (dockManager.Layout?.RootPanel is LayoutPanel rootPanel)
-                {
-                    RecreateDefaultDockPanes(rootPanel);
-                    dockManager.UpdateLayout();
-                }
-
-                // Reset window geometry to defaults.
-                Width = defaultState.Width;
-                Height = defaultState.Height;
-                WindowState = System.Windows.WindowState.Normal;
-                Left = 0;
-                Top = 0;
-                WindowStartupLocation = WindowStartupLocation.CenterScreen;
-
-                // Reset splitter state to defaults.
-                if (DataContext is MainViewModel vm)
-                {
-                    vm.RepositoryPanelExpanded = false;
-                    vm.RunOutputPanelExpanded = false;
-                }
-
-                System.Diagnostics.Debug.WriteLine("Layout reset to defaults.");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"ResetLayout failed: {ex.Message}");
-            }
+            // No layout save/restore.
         }
 
         private void ActivityElements_Click(object sender, RoutedEventArgs e)
@@ -365,7 +148,7 @@ namespace WpfTestIde
         // ------------------------------------------------------------
         // D3: drag-to-reorder recorded steps in StepsListBox.
         // Strategy: capture the hit-tested RecordedStep on PreviewMouseLeftButtonDown
-        // (only when the press is NOT on a Button, so ↑/↓/verify/X keep working),
+        // (only when the press is NOT on a Button, so ?/?/verify/X keep working),
         // then start DoDragDrop on PreviewMouseMove once the mouse moves past the
         // system drag threshold. On Drop, find the RecordedStep under the cursor
         // and move the dragged step to that position via MainViewModel.MoveStepTo.
@@ -379,7 +162,7 @@ namespace WpfTestIde
             _dragPossible = false;
             _draggedStep = null;
             if (sender is not ListBox listBox) return;
-            // If the press originated on a Button (↑/↓/verify/X), don't start a drag.
+            // If the press originated on a Button (?/?/verify/X), don't start a drag.
             if (e.OriginalSource is DependencyObject d && FindAncestor<Button>(d) != null) return;
             var hit = TryGetStepFromPoint(listBox, e.GetPosition(listBox));
             if (hit == null) return;
@@ -524,252 +307,8 @@ namespace WpfTestIde
 
         private void Vm_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(MainViewModel.ActivePaneId))
-            {
-                if (DataContext is MainViewModel vm && vm.ActivePaneId is string paneId)
-                {
-                    ShowPane(paneId);
-                }
-            }
+            // No layout save/restore.
         }
 
-        private void ShowPane(string paneId)
-        {
-            if (dockManager.Layout == null)
-            {
-                System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: ShowPane({paneId}) - dockManager.Layout is null");
-                return;
-            }
-            var anchorable = FindAnchorableByTitle(dockManager.Layout.RootPanel, paneId);
-            if (anchorable == null)
-            {
-                System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: ShowPane({paneId}) - anchorable NOT FOUND in layout tree");
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: ShowPane({paneId}) - anchorable found, calling Show()");
-                anchorable.Show();
-            }
-        }
-
-        private static LayoutAnchorable? FindAnchorableByTitle(ILayoutElement element, string title)
-        {
-            if (element is LayoutAnchorable anchorable && string.Equals(anchorable.Title, title, StringComparison.OrdinalIgnoreCase))
-            {
-                System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: FindAnchorableByTitle - found '{title}' directly");
-                return anchorable;
-            }
-            if (element is ILayoutContainer container)
-            {
-                foreach (var child in container.Children)
-                {
-                    var found = FindAnchorableByTitle(child, title);
-                    if (found != null) return found;
-                }
-            }
-            return null;
-        }
-
-        private string SerializeLayout(DockingManager dm)
-        {
-            try
-            {
-                // Force pending layout passes so runtime changes (auto-hide, float, dock)
-                // are committed to the model before serialization.
-                dm.UpdateLayout();
-                var serializer = new JsonLayoutSerializer(dm);
-                using var stream = new MemoryStream();
-                serializer.Serialize(stream);
-                return Encoding.UTF8.GetString(stream.ToArray());
-            }
-            catch (Exception ex)
-            {
-                // Stop swallowing this silently: a null DockLayoutJson here means the
-                // next launch falls back to XAML defaults and ALL docked pane widths
-                // (and auto-hide/float state) are lost with no diagnostic.
-                System.Diagnostics.Debug.WriteLine($"SerializeLayout failed: {ex.Message}");
-                return null;
-            }
-        }
-
-        // ------------------------------------------------------------
-        // A6+E4 layout content restoration.
-        // JsonLayoutSerializer cannot persist UIElement Content (UserControls),
-        // so deserialized LayoutAnchorables arrive with null Content. Without
-        // re-injection the three dock tabs are invisible after restart.
-        // Note: JsonLayoutSerializer can wrap our LayoutAnchorablePanes inside
-        // a LayoutDocumentPane. The recursive walker below handles whatever
-        // structure the serializer produces.
-        // ------------------------------------------------------------
-        private void RestoreDockPaneContent()
-        {
-            if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel)
-            {
-                System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: RestoreDockPaneContent - RootPanel is {(dockManager.Layout?.RootPanel == null ? "null" : dockManager.Layout.RootPanel.GetType().Name)}, not LayoutPanel");
-                return;
-            }
-
-            System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: RestoreDockPaneContent - RootPanel children={rootPanel.Children.Count}");
-
-            // Only recreate if RootPanel is completely empty (no layout elements at all).
-            // After deserialization, the serializer may produce a LayoutDocumentPane
-            // containing our panes — that's fine, we just inject content into it.
-            if (rootPanel.Children.Count == 0)
-            {
-                System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: RootPanel empty, recreating default panes");
-                RecreateDefaultDockPanes(rootPanel);
-                return;
-            }
-
-            bool foundAny = false;
-            RestoreDockPaneContentRecursive(rootPanel, ref foundAny);
-
-            System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: RestoreDockPaneContentRecursive foundAny={foundAny}");
-
-            // If no anchorables/documents were found at all (completely corrupted
-            // layout), recreate the three expected panes from scratch.
-            if (!foundAny)
-            {
-                System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: No anchorables found, recreating default panes");
-                RecreateDefaultDockPanes(rootPanel);
-            }
-        }
-
-        private static void RestoreDockPaneContentRecursive(ILayoutElement element, ref bool foundAny)
-        {
-            switch (element)
-            {
-                case LayoutAnchorable anchorable:
-                    foundAny = true;
-                    System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: Found anchorable '{anchorable.Title}', Content={(anchorable.Content == null ? "null" : "has content")}");
-                    if (anchorable.Content == null)
-                    {
-                        anchorable.Content = anchorable.Title switch
-                        {
-                            "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
-                            "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
-                            "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
-                            "WORKING FOLDER" => CreatePaneContent(new Docking.Views.WorkingFolderPane(), "tabWorkingFolder"),
-                            _ => null
-                        };
-                        System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: Injected content into '{anchorable.Title}'");
-                    }
-                    break;
-                case LayoutDocument document:
-                    foundAny = true;
-                    System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: Found document '{document.Title}', Content={(document.Content == null ? "null" : "has content")}");
-                    if (document.Content == null)
-                    {
-                        document.Content = document.Title switch
-                        {
-                            "ELEMENTS" => CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements"),
-                            "SCRIPTS" => CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts"),
-                            "RESULTS" => CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults"),
-                            "WORKING FOLDER" => CreatePaneContent(new Docking.Views.WorkingFolderPane(), "tabWorkingFolder"),
-                            _ => null
-                        };
-                    }
-                    break;
-            }
-
-            if (element is ILayoutContainer container)
-            {
-                foreach (var child in container.Children)
-                {
-                    RestoreDockPaneContentRecursive(child, ref foundAny);
-                }
-            }
-        }
-
-        private static void RecreateDefaultDockPanes(LayoutPanel rootPanel)
-        {
-            rootPanel.Children.Clear();
-
-            // Left: WORKING FOLDER (narrow, icon-only toolbar). Use star units
-            // (not pixels) because LayoutPanelControl.OnFixChildrenDockLengths
-            // resets non-star DockWidths back to 1* on every layout pass.
-            var workingFolderPane = new LayoutAnchorable { Title = "WORKING FOLDER", IsActive = false };
-            workingFolderPane.Content = CreatePaneContent(new Docking.Views.WorkingFolderPane(), "tabWorkingFolder");
-            var workingFolderHost = new LayoutAnchorablePane();
-            workingFolderHost.DockWidth = new GridLength(0.2, GridUnitType.Star);
-            workingFolderHost.Children.Add(workingFolderPane);
-
-            // Right: ELEMENTS / SCRIPTS / RESULTS as a single vertical
-            // LayoutPanel containing one LayoutAnchorablePane with all three
-            // anchorables — this is what makes them render as a tabbed group.
-            var rightGroup = new LayoutPanel { Orientation = Orientation.Vertical, DockWidth = new GridLength(1, GridUnitType.Star) };
-            var rightTabHost = new LayoutAnchorablePane();
-            var elementsPane = new LayoutAnchorable { Title = "ELEMENTS", IsActive = true };
-            elementsPane.Content = CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements");
-            var scriptsPane = new LayoutAnchorable { Title = "SCRIPTS" };
-            scriptsPane.Content = CreatePaneContent(new Docking.Views.ScriptsPane(), "tabScripts");
-            var resultsPane = new LayoutAnchorable { Title = "RESULTS" };
-            resultsPane.Content = CreatePaneContent(new Docking.Views.ResultsPane(), "tabResults");
-            rightTabHost.Children.Add(elementsPane);
-            rightTabHost.Children.Add(scriptsPane);
-            rightTabHost.Children.Add(resultsPane);
-            rightGroup.Children.Add(rightTabHost);
-
-            rootPanel.Children.Add(workingFolderHost);
-            rootPanel.Children.Add(rightGroup);
-        }
-
-        private static object CreatePaneContent(UserControl pane, string automationId)
-        {
-            var grid = new Grid();
-            AutomationProperties.SetAutomationId(grid, automationId);
-            grid.Children.Add(pane);
-            return grid;
-        }
-
-        // ------------------------------------------------------------
-        // Debug: log layout tree structure for comparison at different stages.
-        // ------------------------------------------------------------
-        private static void LogLayoutStructure(string stage, LayoutRoot layout)
-        {
-            try
-            {
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine($"=== LAYOUT STRUCTURE: {stage} ===");
-                if (layout == null)
-                {
-                    sb.AppendLine("  LayoutRoot is NULL");
-                }
-                else
-                {
-                    LogElementRecursive(sb, layout, 0);
-                }
-                System.Diagnostics.Debug.WriteLine(sb.ToString());
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"LogLayoutStructure error: {ex.Message}");
-            }
-        }
-
-        private static void LogElementRecursive(System.Text.StringBuilder sb, ILayoutElement element, int indent)
-        {
-            if (element == null) return;
-            
-            var prefix = new string(' ', indent * 2);
-            var typeName = element.GetType().Name;
-            var title = "";
-            
-            if (element is LayoutAnchorable a) title = $" Title='{a.Title}'";
-            else if (element is LayoutDocument d) title = $" Title='{d.Title}'";
-            
-            var content = element is LayoutAnchorable la && la.Content != null ? " [HAS CONTENT]" : 
-                         element is LayoutDocument ld && ld.Content != null ? " [HAS CONTENT]" : "";
-            
-            sb.AppendLine($"{prefix}{typeName}{title}{content}");
-            
-            if (element is ILayoutContainer container)
-            {
-                foreach (var child in container.Children)
-                {
-                    LogElementRecursive(sb, child, indent + 1);
-                }
-            }
-        }
     }
 }
