@@ -1,258 +1,32 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using WpfTestIde.Execution;
 using WpfTestIde.Models;
+using WpfTestIde.Recording;
 
 namespace WpfTestIde.ViewModels
 {
-    /// <summary>
-    /// Represents a single step in the visual test flow.
-    /// </summary>
-    public class FlowStep : INotifyPropertyChanged
+    /// <summary>The visual builder edits the same recursive nodes as every script view.</summary>
+    public sealed class TestFlowViewModel : INotifyPropertyChanged
     {
-        private int _stepNumber;
-        private string _actionType = "Click";
-        private string _elementAlias = "";
-        private string _value = "";
-        private string _checkpointType = "";
-        private string _expectedValue = "";
-        private bool _isSelected;
-        private FlowStepStatus _status = FlowStepStatus.Pending;
-
-        public int StepNumber
-        {
-            get => _stepNumber;
-            set { _stepNumber = value; OnPropertyChanged(); }
-        }
-
-        public string ActionType
-        {
-            get => _actionType;
-            set { _actionType = value; OnPropertyChanged(); GenerateDescription(); }
-        }
-
-        public string ElementAlias
-        {
-            get => _elementAlias;
-            set { _elementAlias = value; OnPropertyChanged(); GenerateDescription(); }
-        }
-
-        public string Value
-        {
-            get => _value;
-            set { _value = value; OnPropertyChanged(); GenerateDescription(); }
-        }
-
-        public string CheckpointType
-        {
-            get => _checkpointType;
-            set { _checkpointType = value; OnPropertyChanged(); GenerateDescription(); }
-        }
-
-        public string ExpectedValue
-        {
-            get => _expectedValue;
-            set { _expectedValue = value; OnPropertyChanged(); }
-        }
-
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set { _isSelected = value; OnPropertyChanged(); }
-        }
-
-        public FlowStepStatus Status
-        {
-            get => _status;
-            set { _status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusColor)); }
-        }
-
-        public string StatusColor => Status switch
-        {
-            FlowStepStatus.Pending => "#9E9E9E",
-            FlowStepStatus.Running => "#2196F3",
-            FlowStepStatus.Passed => "#4CAF50",
-            FlowStepStatus.Failed => "#F44336",
-            FlowStepStatus.Skipped => "#FF9800",
-            _ => "#9E9E9E"
-        };
-
-        public string Description { get; private set; } = "";
-
-        public string? AppId { get; set; }
-
-        public string Icon => ActionType switch
-        {
-            "Click" => "🖱️",
-            "DoubleClick" => "🖱️🖱️",
-            "RightClick" => "🖱️☑️",
-            "Hover" => "👆",
-            "SetText" => "⌨️",
-            "GetText" => "📝",
-            "Select" => "☑️",
-            "Check" => "✅",
-            "Uncheck" => "⬜",
-            "Verify" => "🔍",
-            "Wait" => "⏳",
-            "Screenshot" => "📷",
-            "KeyPress" => "🎹",
-            _ => "➡️"
-        };
-
-        void GenerateDescription()
-        {
-            Description = ActionType switch
-            {
-                "Click" or "DoubleClick" or "RightClick" or "Hover" =>
-                    $"{Icon} {ActionType} [{ElementAlias}]",
-                "SetText" =>
-                    $"{Icon} Set text '{Value}' in [{ElementAlias}]",
-                "GetText" =>
-                    $"{Icon} Get text from [{ElementAlias}]",
-                "Select" =>
-                    $"{Icon} Select '{Value}' in [{ElementAlias}]",
-                "Check" or "Uncheck" =>
-                    $"{Icon} {ActionType} [{ElementAlias}]",
-                "Verify" =>
-                    $"{Icon} Verify {CheckpointType} '{ExpectedValue}' in [{ElementAlias}]",
-                "Wait" =>
-                    $"{Icon} Wait {Value}ms",
-                "Screenshot" =>
-                    $"{Icon} Take screenshot",
-                "KeyPress" =>
-                    $"{Icon} Press key '{Value}'",
-                _ => $"{Icon} {ActionType} [{ElementAlias}]"
-            };
-            OnPropertyChanged(nameof(Description));
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? name = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-
-        /// <summary>
-        /// Generates the Robot Framework code for this step.
-        /// </summary>
-        public string ToRobotCode()
-        {
-            string appIdArg = string.IsNullOrEmpty(AppId) ? "" : $"    app_id={AppId}";
-            return ActionType switch
-            {
-                "Click" => $"Click Element    alias={ElementAlias}{appIdArg}",
-                "DoubleClick" => $"Double Click Element    alias={ElementAlias}{appIdArg}",
-                "RightClick" => $"Click Element    alias={ElementAlias}    button=right{appIdArg}",
-                "Hover" => $"Mouse Over    alias={ElementAlias}{appIdArg}",
-                "SetText" => $"Input Text    alias={ElementAlias}    text={Value}{appIdArg}",
-                "GetText" => $"Get Text    alias={ElementAlias}{appIdArg}",
-                "Select" => $"Select From List By Label    alias={ElementAlias}    label={Value}{appIdArg}",
-                "Check" => $"Select Checkbox    alias={ElementAlias}{appIdArg}",
-                "Uncheck" => $"Unselect Checkbox    alias={ElementAlias}{appIdArg}",
-                "Verify" => CheckpointType switch
-                {
-                    "Text" => $"Verify Element Text    alias={ElementAlias}    expected={ExpectedValue}{appIdArg}",
-                    "Value" => $"Verify Element Value    alias={ElementAlias}    expected={ExpectedValue}{appIdArg}",
-                    "Property" => $"Verify Element Property    alias={ElementAlias}    property=IsEnabled    expected={ExpectedValue}{appIdArg}",
-                    _ => $"Verify Element Attribute    alias={ElementAlias}    attribute=IsVisible    expected={ExpectedValue}{appIdArg}"
-                },
-                "Wait" => $"Sleep    {Value}",
-                "Screenshot" => $"Capture Page Screenshot",
-                "KeyPress" => $"Press Key    alias={ElementAlias}    key={Value}{appIdArg}",
-                _ => $"Log    Unknown action: {ActionType}"
-            };
-        }
-    }
-
-    public enum FlowStepStatus
-    {
-        Pending,
-        Running,
-        Passed,
-        Failed,
-        Skipped
-    }
-
-    /// <summary>
-    /// Available action types for visual test building.
-    /// </summary>
-    public class ActionTypeInfo
-    {
-        public string Name { get; set; } = "";
-        public string Icon { get; set; } = "";
-        public string Category { get; set; } = "";
-        public string Description { get; set; } = "";
-    }
-
-    /// <summary>
-    /// ViewModel for the Visual Test Builder.
-    /// </summary>
-    public class TestFlowViewModel : INotifyPropertyChanged
-    {
-        private ObservableCollection<FlowStep> _steps = new();
-        private FlowStep? _selectedStep;
+        private RecordedStep? _selectedStep;
         private string _testName = "New Test";
         private string _description = "";
-        private bool _isRecording;
-        private string _searchFilter = "";
-        private ElementEntry? _selectedElement;
 
-        public TestFlowViewModel()
-        {
-            Steps = new ObservableCollection<FlowStep>();
-            
-            // Initialize action types
-            ActionTypes = new ObservableCollection<ActionTypeInfo>
-            {
-                // Mouse actions
-                new() { Name = "Click", Icon = "🖱️", Category = "Mouse", Description = "Click on element" },
-                new() { Name = "DoubleClick", Icon = "🖱️🖱️", Category = "Mouse", Description = "Double-click on element" },
-                new() { Name = "RightClick", Icon = "🖱️☑️", Category = "Mouse", Description = "Right-click on element" },
-                new() { Name = "Hover", Icon = "👆", Category = "Mouse", Description = "Hover over element" },
-                
-                // Input actions
-                new() { Name = "SetText", Icon = "⌨️", Category = "Input", Description = "Enter text into element" },
-                new() { Name = "GetText", Icon = "📝", Category = "Input", Description = "Get text from element" },
-                new() { Name = "Select", Icon = "☑️", Category = "Input", Description = "Select from dropdown" },
-                
-                // Checkbox actions
-                new() { Name = "Check", Icon = "✅", Category = "Checkbox", Description = "Check a checkbox" },
-                new() { Name = "Uncheck", Icon = "⬜", Category = "Checkbox", Description = "Uncheck a checkbox" },
-                
-                // Verification
-                new() { Name = "Verify", Icon = "🔍", Category = "Verification", Description = "Verify element property" },
-                
-                // Control flow
-                new() { Name = "Wait", Icon = "⏳", Category = "Control", Description = "Wait for specified time" },
-                new() { Name = "Screenshot", Icon = "📷", Category = "Control", Description = "Capture screenshot" },
-                new() { Name = "KeyPress", Icon = "🎹", Category = "Control", Description = "Press keyboard key" },
-            };
+        public ObservableCollection<RecordedStep> Steps { get; } = new();
+        public ObservableCollection<ElementEntry> AvailableElements { get; } = new();
+        public ObservableCollection<string> DatasetNames { get; } = new();
+        public IReadOnlyList<FlowConditionKind> FlowConditionKinds { get; } = Enum.GetValues<FlowConditionKind>();
+        public IReadOnlyList<FlowLoopSourceKind> FlowLoopSourceKinds { get; } = Enum.GetValues<FlowLoopSourceKind>();
+        public IReadOnlyList<ActionKind> ActionKinds { get; } = Enum.GetValues<ActionKind>();
+        public Dictionary<string, List<string>> Datasets { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
 
-            // Initialize commands
-            AddStepCommand = new RelayCommand(_ => AddStep());
-            RemoveStepCommand = new RelayCommand(_ => RemoveSelectedStep(), _ => SelectedStep != null);
-            MoveUpCommand = new RelayCommand(_ => MoveStep(-1), _ => CanMoveUp());
-            MoveDownCommand = new RelayCommand(_ => MoveStep(1), _ => CanMoveDown());
-            DuplicateStepCommand = new RelayCommand(_ => DuplicateStep(), _ => SelectedStep != null);
-            InsertStepCommand = new RelayCommand(_ => InsertStep(), _ => _selectedElement != null);
-            ClearAllCommand = new RelayCommand(_ => ClearSteps());
-            SelectElementCommand = new RelayCommand(p => SelectElement(p as ElementEntry));
-
-            // Initialize checkpoint types
-            CheckpointTypes = new ObservableCollection<string>
-            {
-                "Text", "Value", "Property", "Exists", "IsVisible", "IsEnabled"
-            };
-        }
-
-        public ObservableCollection<FlowStep> Steps
-        {
-            get => _steps;
-            set { _steps = value; OnPropertyChanged(); }
-        }
-
-        public FlowStep? SelectedStep
+        public RecordedStep? SelectedStep
         {
             get => _selectedStep;
             set { _selectedStep = value; OnPropertyChanged(); }
@@ -270,291 +44,241 @@ namespace WpfTestIde.ViewModels
             set { _description = value; OnPropertyChanged(); }
         }
 
-        public bool IsRecording
-        {
-            get => _isRecording;
-            set { _isRecording = value; OnPropertyChanged(); }
-        }
+        public ICommand AddActionCommand { get; }
+        public ICommand AddIfCommand { get; }
+        public ICommand AddRepeatCommand { get; }
+        public ICommand AddForEachCommand { get; }
+        public ICommand AddThenStepCommand { get; }
+        public ICommand AddElseStepCommand { get; }
+        public ICommand AddLoopStepCommand { get; }
+        public ICommand AddNestedIfCommand { get; }
+        public ICommand AddNestedRepeatCommand { get; }
+        public ICommand AddNestedForEachCommand { get; }
+        public ICommand AddElseIfCommand { get; }
+        public ICommand AddElseRepeatCommand { get; }
+        public ICommand AddElseForEachCommand { get; }
+        public ICommand DeleteStepCommand { get; }
+        public ICommand MoveUpCommand { get; }
+        public ICommand MoveDownCommand { get; }
+        public ICommand ClearAllCommand { get; }
 
-        public string SearchFilter
+        public TestFlowViewModel()
         {
-            get => _searchFilter;
-            set { _searchFilter = value; OnPropertyChanged(); OnPropertyChanged(nameof(FilteredSteps)); }
-        }
-
-        public ElementEntry? SelectedElement
-        {
-            get => _selectedElement;
-            set { _selectedElement = value; OnPropertyChanged(); }
-        }
-
-        public ObservableCollection<FlowStep> FilteredSteps
-        {
-            get
+            AddActionCommand = new BuilderCommand(parameter => AddAction(parameter?.ToString() ?? "Click"));
+            AddIfCommand = new BuilderCommand(_ => Steps.Add(new RecordedStep
             {
-                if (string.IsNullOrWhiteSpace(SearchFilter))
-                    return Steps;
-                return new ObservableCollection<FlowStep>(
-                    Steps.Where(s => 
-                        s.Description.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
-                        s.ElementAlias.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase)));
+                Kind = StepKind.If,
+                Condition = new FlowCondition { Alias = AvailableElements.FirstOrDefault()?.Alias ?? "" },
+                HasElse = true,
+            }));
+            AddRepeatCommand = new BuilderCommand(_ => Steps.Add(new RecordedStep { Kind = StepKind.Repeat, RepeatCount = 2 }));
+            AddForEachCommand = new BuilderCommand(_ => Steps.Add(new RecordedStep
+            {
+                Kind = StepKind.ForEach,
+                LoopVariable = "item",
+                LoopValues = new ObservableCollection<string> { "value1" },
+            }));
+            AddThenStepCommand = new BuilderCommand(parameter => AddChild(parameter as RecordedStep, false));
+            AddElseStepCommand = new BuilderCommand(parameter => AddChild(parameter as RecordedStep, true));
+            AddLoopStepCommand = new BuilderCommand(parameter => AddChild(parameter as RecordedStep, false));
+            AddNestedIfCommand = new BuilderCommand(parameter => AddNestedFlow(parameter as RecordedStep, StepKind.If, false));
+            AddNestedRepeatCommand = new BuilderCommand(parameter => AddNestedFlow(parameter as RecordedStep, StepKind.Repeat, false));
+            AddNestedForEachCommand = new BuilderCommand(parameter => AddNestedFlow(parameter as RecordedStep, StepKind.ForEach, false));
+            AddElseIfCommand = new BuilderCommand(parameter => AddNestedFlow(parameter as RecordedStep, StepKind.If, true));
+            AddElseRepeatCommand = new BuilderCommand(parameter => AddNestedFlow(parameter as RecordedStep, StepKind.Repeat, true));
+            AddElseForEachCommand = new BuilderCommand(parameter => AddNestedFlow(parameter as RecordedStep, StepKind.ForEach, true));
+            DeleteStepCommand = new BuilderCommand(parameter => DeleteStep(parameter as RecordedStep));
+            MoveUpCommand = new BuilderCommand(parameter => MoveStep(parameter as RecordedStep, -1));
+            MoveDownCommand = new BuilderCommand(parameter => MoveStep(parameter as RecordedStep, 1));
+            ClearAllCommand = new BuilderCommand(_ => { Steps.Clear(); SelectedStep = null; });
+        }
+
+        public void LoadSteps(IEnumerable<RecordedStep> nodes)
+        {
+            Steps.Clear();
+            foreach (var node in nodes)
+                Steps.Add(node.CloneDeep());
+            SelectedStep = Steps.FirstOrDefault();
+        }
+
+        public void LoadDatasets(IReadOnlyDictionary<string, List<string>>? datasets)
+        {
+            Datasets = datasets == null
+                ? new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, List<string>>(datasets, StringComparer.OrdinalIgnoreCase);
+            DatasetNames.Clear();
+            foreach (var name in Datasets.Keys.OrderBy(value => value, StringComparer.OrdinalIgnoreCase))
+                DatasetNames.Add(name);
+        }
+
+        public string GenerateRobotTest()
+            => ScriptGenerator.Generate(Steps, TestName, datasets: Datasets);
+
+        public string GenerateFlowDiagram()
+        {
+            var lines = new List<string> { $"Test: {TestName}" };
+            AppendNodes(lines, Steps, 0);
+            return string.Join(Environment.NewLine, lines);
+        }
+
+        private static void AppendNodes(List<string> lines, IEnumerable<RecordedStep> nodes, int depth)
+        {
+            foreach (var node in nodes)
+            {
+                string indent = new string(' ', depth * 2);
+                lines.Add(indent + "• " + node.DisplayVerb + (string.IsNullOrWhiteSpace(node.Alias) ? "" : $" [{node.Alias}]"));
+                if (node.Kind == StepKind.If)
+                {
+                    lines.Add(indent + "  THEN");
+                    AppendNodes(lines, node.ThenSteps, depth + 2);
+                    if (node.HasElse || node.ElseSteps.Count > 0)
+                    {
+                        lines.Add(indent + "  ELSE");
+                        AppendNodes(lines, node.ElseSteps, depth + 2);
+                    }
+                }
+                else if (node.Kind is StepKind.Repeat or StepKind.ForEach)
+                {
+                    lines.Add(indent + "  BODY");
+                    AppendNodes(lines, node.BodySteps, depth + 2);
+                }
             }
         }
 
-        public ObservableCollection<ActionTypeInfo> ActionTypes { get; }
-
-        public ObservableCollection<string> CheckpointTypes { get; }
-
-        public ObservableCollection<ElementEntry> AvailableElements { get; set; } = new();
-
-        // Commands
-        public ICommand AddStepCommand { get; }
-        public ICommand RemoveStepCommand { get; }
-        public ICommand MoveUpCommand { get; }
-        public ICommand MoveDownCommand { get; }
-        public ICommand DuplicateStepCommand { get; }
-        public ICommand InsertStepCommand { get; }
-        public ICommand ClearAllCommand { get; }
-        public ICommand SelectElementCommand { get; }
-
-        public void AddStep()
+        private void AddAction(string type)
         {
-            var step = new FlowStep
+            var alias = AvailableElements.FirstOrDefault()?.Alias ?? "";
+            var step = type switch
             {
-                StepNumber = Steps.Count + 1,
-                ActionType = "Click",
-                ElementAlias = SelectedElement?.Alias ?? "",
-                Status = FlowStepStatus.Pending
+                "Set Text" => new RecordedStep { Kind = StepKind.Action, Action = ActionKind.SetValue, Alias = alias, Value = "" },
+                "Toggle" => new RecordedStep { Kind = StepKind.Action, Action = ActionKind.Toggle, Alias = alias },
+                "Double Click" => new RecordedStep { Kind = StepKind.Action, Action = ActionKind.DoubleClick, Alias = alias },
+                "Right Click" => new RecordedStep { Kind = StepKind.Action, Action = ActionKind.RightClick, Alias = alias },
+                "Hover" => new RecordedStep { Kind = StepKind.Action, Action = ActionKind.Hover, Alias = alias },
+                "Verify Text" => new RecordedStep { Kind = StepKind.Verify, Alias = alias, Value = "" },
+                "Wait Visible" => new RecordedStep { Kind = StepKind.WaitVisible, Alias = alias, Value = "5" },
+                _ => new RecordedStep { Kind = StepKind.Action, Action = ActionKind.Invoke, Alias = alias },
             };
             Steps.Add(step);
             SelectedStep = step;
-            RenumberSteps();
-            OnPropertyChanged(nameof(FilteredSteps));
         }
 
-        public void RemoveSelectedStep()
+        private void AddChild(RecordedStep? parent, bool elseBranch)
         {
-            if (SelectedStep != null)
+            if (parent == null) return;
+            var child = new RecordedStep
             {
-                var index = Steps.IndexOf(SelectedStep);
-                Steps.Remove(SelectedStep);
-                if (Steps.Count > 0)
+                Kind = StepKind.Action,
+                Action = ActionKind.Invoke,
+                Alias = AvailableElements.FirstOrDefault()?.Alias ?? "",
+            };
+            if (parent.Kind == StepKind.If)
+            {
+                if (elseBranch)
                 {
-                    SelectedStep = Steps[Math.Min(index, Steps.Count - 1)];
+                    parent.HasElse = true;
+                    parent.ElseSteps.Add(child);
                 }
-                else
+                else parent.ThenSteps.Add(child);
+            }
+            else if (parent.Kind is StepKind.Repeat or StepKind.ForEach)
+            {
+                parent.BodySteps.Add(child);
+            }
+            SelectedStep = child;
+        }
+
+        private void AddNestedFlow(RecordedStep? parent, StepKind kind, bool elseBranch)
+        {
+            if (parent == null) return;
+            RecordedStep node = kind switch
+            {
+                StepKind.If => new RecordedStep
                 {
-                    SelectedStep = null;
+                    Kind = StepKind.If,
+                Condition = new FlowCondition { Alias = AvailableElements.FirstOrDefault()?.Alias ?? "" },
+                    HasElse = true,
+                },
+                StepKind.Repeat => new RecordedStep { Kind = StepKind.Repeat, RepeatCount = 2 },
+                _ => new RecordedStep
+                {
+                    Kind = StepKind.ForEach,
+                    LoopVariable = "item",
+                    LoopValues = new ObservableCollection<string> { "value1" },
+                },
+            };
+            if (parent.Kind == StepKind.If)
+            {
+                if (elseBranch)
+                {
+                    parent.HasElse = true;
+                    parent.ElseSteps.Add(node);
                 }
-                RenumberSteps();
-                OnPropertyChanged(nameof(FilteredSteps));
+                else parent.ThenSteps.Add(node);
             }
-        }
-
-        public void InsertStep()
-        {
-            if (SelectedElement == null) return;
-            
-            var step = new FlowStep
+            else if ((parent.Kind is StepKind.Repeat or StepKind.ForEach) && !elseBranch)
             {
-                StepNumber = SelectedStep != null ? SelectedStep.StepNumber + 1 : Steps.Count + 1,
-                ActionType = "Click",
-                ElementAlias = SelectedElement.Alias,
-                Status = FlowStepStatus.Pending
-            };
-
-            if (SelectedStep != null)
-            {
-                var index = Steps.IndexOf(SelectedStep);
-                Steps.Insert(index + 1, step);
+                parent.BodySteps.Add(node);
             }
-            else
+            SelectedStep = node;
+        }
+
+        private void DeleteStep(RecordedStep? target)
+        {
+            if (target == null) return;
+            if (RemoveFrom(Steps, target))
+                SelectedStep = Steps.FirstOrDefault();
+        }
+
+        private static bool RemoveFrom(ObservableCollection<RecordedStep> nodes, RecordedStep target)
+        {
+            if (nodes.Remove(target)) return true;
+            foreach (var node in nodes)
             {
-                Steps.Add(step);
+                if (RemoveFrom(node.ThenSteps, target) || RemoveFrom(node.ElseSteps, target) || RemoveFrom(node.BodySteps, target))
+                    return true;
             }
-
-            SelectedStep = step;
-            RenumberSteps();
-            OnPropertyChanged(nameof(FilteredSteps));
+            return false;
         }
 
-        private void DuplicateStep()
+        private void MoveStep(RecordedStep? target, int delta)
         {
-            if (SelectedStep == null) return;
+            if (target == null) return;
+            MoveRecursive(Steps, target, delta);
+        }
 
-            var copy = new FlowStep
+        private static bool MoveRecursive(ObservableCollection<RecordedStep> nodes, RecordedStep target, int delta)
+        {
+            if (MoveIn(nodes, target, delta)) return true;
+            foreach (var node in nodes)
             {
-                StepNumber = Steps.Count + 1,
-                ActionType = SelectedStep.ActionType,
-                ElementAlias = SelectedStep.ElementAlias,
-                Value = SelectedStep.Value,
-                CheckpointType = SelectedStep.CheckpointType,
-                ExpectedValue = SelectedStep.ExpectedValue,
-                Status = FlowStepStatus.Pending
-            };
-
-            Steps.Add(copy);
-            SelectedStep = copy;
-            RenumberSteps();
-            OnPropertyChanged(nameof(FilteredSteps));
-        }
-
-        private bool CanMoveUp() => SelectedStep != null && Steps.IndexOf(SelectedStep) > 0;
-        private bool CanMoveDown() => SelectedStep != null && Steps.IndexOf(SelectedStep) < Steps.Count - 1;
-
-        public void MoveStep(int direction)
-        {
-            if (SelectedStep == null) return;
-
-            var index = Steps.IndexOf(SelectedStep);
-            var newIndex = index + direction;
-
-            if (newIndex < 0 || newIndex >= Steps.Count) return;
-
-            Steps.Move(index, newIndex);
-            RenumberSteps();
-            SelectedStep = Steps[newIndex];
-            OnPropertyChanged(nameof(FilteredSteps));
-        }
-
-        public void ClearSteps()
-        {
-            Steps.Clear();
-            SelectedStep = null;
-            OnPropertyChanged(nameof(FilteredSteps));
-        }
-
-        public void LoadSteps(ObservableCollection<RecordedStep> recordedSteps)
-        {
-            Steps.Clear();
-            int i = 1;
-            foreach (var rs in recordedSteps)
-            {
-                var step = new FlowStep
-                {
-                    StepNumber = i++,
-                    ActionType = MapActionType(rs.Kind, rs.Action),
-                    ElementAlias = rs.Alias ?? "",
-                    Value = rs.Value ?? "",
-                    CheckpointType = rs.Kind == StepKind.Verify ? "Text" : "",
-                    ExpectedValue = rs.Value ?? "",
-                    Status = FlowStepStatus.Pending,
-                    AppId = rs.AppId,
-                };
-                Steps.Add(step);
+                if (MoveRecursive(node.ThenSteps, target, delta)
+                    || MoveRecursive(node.ElseSteps, target, delta)
+                    || MoveRecursive(node.BodySteps, target, delta)) return true;
             }
-            OnPropertyChanged(nameof(FilteredSteps));
+            return false;
         }
 
-        private string MapActionType(StepKind kind, ActionKind action)
+        private static bool MoveIn(ObservableCollection<RecordedStep> nodes, RecordedStep target, int delta)
         {
-            if (kind == StepKind.Verify)
-                return "Verify";
-            if (kind == StepKind.VerifyOcr)
-                return "GetText";
-                
-            return action switch
-            {
-                ActionKind.Invoke => "Click",
-                ActionKind.SetValue => "SetText",
-                ActionKind.Toggle => "Check",
-                _ => "Click"
-            };
-        }
-
-        private void RenumberSteps()
-        {
-            for (int i = 0; i < Steps.Count; i++)
-            {
-                Steps[i].StepNumber = i + 1;
-            }
-        }
-
-        private void SelectElement(ElementEntry? element)
-        {
-            SelectedElement = element;
-        }
-
-        /// <summary>
-        /// Generates the complete Robot Framework test from the flow.
-        /// </summary>
-        public string GenerateRobotTest()
-        {
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine("*** Settings ***");
-            sb.AppendLine("Library    WpfTestLibrary");
-            sb.AppendLine();
-            sb.AppendLine("*** Test Cases ***");
-            sb.AppendLine($"{TestName}");
-            if (!string.IsNullOrEmpty(Description))
-            {
-                sb.AppendLine($"    [Documentation]    {Description}");
-            }
-            sb.AppendLine();
-
-            foreach (var step in Steps)
-            {
-                sb.AppendLine($"    {step.ToRobotCode()}");
-            }
-
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// Generates a visual flow diagram description.
-        /// </summary>
-        public string GenerateFlowDiagram()
-        {
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine("┌─────────────────────────────────────────────────────────┐");
-            sb.AppendLine($"│  📋 Test: {TestName}");
-            sb.AppendLine("├─────────────────────────────────────────────────────────┤");
-
-            foreach (var step in Steps)
-            {
-                var status = step.Status switch
-                {
-                    FlowStepStatus.Passed => "✅",
-                    FlowStepStatus.Failed => "❌",
-                    FlowStepStatus.Running => "🔄",
-                    FlowStepStatus.Skipped => "⏭️",
-                    _ => "⬜"
-                };
-                sb.AppendLine($"│ {step.StepNumber:2}. {status} {step.Description}");
-                sb.AppendLine("│         │");
-            }
-
-            sb.AppendLine("└─────────┘");
-            return sb.ToString();
+            int index = nodes.IndexOf(target);
+            int next = index + delta;
+            if (index < 0 || next < 0 || next >= nodes.Count) return false;
+            nodes.Move(index, next);
+            return true;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? name = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-    }
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-    /// <summary>
-    /// Simple relay command implementation.
-    /// </summary>
-    public class RelayCommand : ICommand
-    {
-        private readonly Action<object?> _execute;
-        private readonly Func<object?, bool>? _canExecute;
-
-        public RelayCommand(Action<object?> execute, Func<object?, bool>? canExecute = null)
+        private sealed class BuilderCommand : ICommand
         {
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            _canExecute = canExecute;
-        }
-
-        public bool CanExecute(object? parameter) => _canExecute?.Invoke(parameter) ?? true;
-
-        public void Execute(object? parameter) => _execute(parameter);
-
-        public event EventHandler? CanExecuteChanged
-        {
-            add => CommandManager.RequerySuggested += value;
-            remove => CommandManager.RequerySuggested -= value;
+            private readonly Action<object?> _execute;
+            public BuilderCommand(Action<object?> execute) => _execute = execute;
+            public bool CanExecute(object? parameter) => true;
+            public void Execute(object? parameter) => _execute(parameter);
+            public event EventHandler? CanExecuteChanged { add { } remove { } }
         }
     }
 }

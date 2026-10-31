@@ -28,8 +28,15 @@ namespace WpfTestIde.ViewModels
         private readonly IScriptExecutionService _scriptExecutionService = new ScriptExecutionService();
         private CancellationTokenSource? _runCancellation;
         private string? _importedAppId;
+        private readonly Dictionary<string, List<string>> _scriptDatasets = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<RecordedStep> _observedSteps = new();
+        private readonly HashSet<ObservableCollection<RecordedStep>> _observedStepCollections = new();
 
         public ObservableCollection<RecordedStep> Steps { get; } = new();
+        public ObservableCollection<string> ScriptDatasetNames { get; } = new();
+        public IReadOnlyList<FlowConditionKind> FlowConditionKinds { get; } = Enum.GetValues<FlowConditionKind>();
+        public IReadOnlyList<FlowLoopSourceKind> FlowLoopSourceKinds { get; } = Enum.GetValues<FlowLoopSourceKind>();
+        public IReadOnlyList<ActionKind> ActionKinds { get; } = Enum.GetValues<ActionKind>();
         public ObservableCollection<ElementEntry> Elements { get; } = new();
         public ObservableCollection<string> RunOutputLines { get; } = new();
         public string RunOutputText { get => string.Join(Environment.NewLine, RunOutputLines); }
@@ -534,6 +541,19 @@ private string _ocrResultText = "";
         // a drag-drop path that calls MoveStep directly from MainWindow code-behind.
         public ICommand MoveStepUpCommand { get; }
         public ICommand MoveStepDownCommand { get; }
+        public ICommand AddIfCommand { get; }
+        public ICommand AddRepeatCommand { get; }
+        public ICommand AddForEachCommand { get; }
+        public ICommand AddThenStepCommand { get; }
+        public ICommand AddElseStepCommand { get; }
+        public ICommand AddLoopStepCommand { get; }
+        public ICommand AddNestedIfCommand { get; }
+        public ICommand AddNestedRepeatCommand { get; }
+        public ICommand AddNestedForEachCommand { get; }
+        public ICommand AddElseIfCommand { get; }
+        public ICommand AddElseRepeatCommand { get; }
+        public ICommand AddElseForEachCommand { get; }
+        public ICommand EditDatasetsCommand { get; }
         public ICommand RunCommand { get; }
         public ICommand CancelRunCommand { get; }
         public ICommand ExportRepositoryCommand { get; }
@@ -575,6 +595,29 @@ private string _ocrResultText = "";
             DeleteStepCommand = new RelayCommand(param => DeleteStep(param as RecordedStep));
             MoveStepUpCommand = new RelayCommand(param => MoveStep(param as RecordedStep, -1));
             MoveStepDownCommand = new RelayCommand(param => MoveStep(param as RecordedStep, +1));
+            AddIfCommand = new RelayCommand(_ => AddFlowNode(new RecordedStep
+            {
+                Kind = StepKind.If,
+                Condition = new FlowCondition { Alias = Elements.FirstOrDefault()?.Alias ?? "" },
+                HasElse = true,
+            }));
+            AddRepeatCommand = new RelayCommand(_ => AddFlowNode(new RecordedStep { Kind = StepKind.Repeat, RepeatCount = 2 }));
+            AddForEachCommand = new RelayCommand(_ => AddFlowNode(new RecordedStep
+            {
+                Kind = StepKind.ForEach,
+                LoopVariable = "item",
+                LoopValues = new ObservableCollection<string> { "value1" },
+            }));
+            AddThenStepCommand = new RelayCommand(param => AddChildStep(param as RecordedStep, elseBranch: false), param => param is RecordedStep { Kind: StepKind.If });
+            AddElseStepCommand = new RelayCommand(param => AddChildStep(param as RecordedStep, elseBranch: true), param => param is RecordedStep { Kind: StepKind.If });
+            AddLoopStepCommand = new RelayCommand(param => AddChildStep(param as RecordedStep, elseBranch: false), param => param is RecordedStep { Kind: StepKind.Repeat or StepKind.ForEach });
+            AddNestedIfCommand = new RelayCommand(param => AddNestedFlowNode(param as RecordedStep, StepKind.If, elseBranch: false));
+            AddNestedRepeatCommand = new RelayCommand(param => AddNestedFlowNode(param as RecordedStep, StepKind.Repeat, elseBranch: false));
+            AddNestedForEachCommand = new RelayCommand(param => AddNestedFlowNode(param as RecordedStep, StepKind.ForEach, elseBranch: false));
+            AddElseIfCommand = new RelayCommand(param => AddNestedFlowNode(param as RecordedStep, StepKind.If, elseBranch: true));
+            AddElseRepeatCommand = new RelayCommand(param => AddNestedFlowNode(param as RecordedStep, StepKind.Repeat, elseBranch: true));
+            AddElseForEachCommand = new RelayCommand(param => AddNestedFlowNode(param as RecordedStep, StepKind.ForEach, elseBranch: true));
+            EditDatasetsCommand = new RelayCommand(_ => EditScriptDatasets());
             RunCommand = new AsyncRelayCommand(_ => RunAsync(), _ => CanRunCurrentScript());
             CancelRunCommand = new RelayCommand(_ => _runCancellation?.Cancel(), _ => _runCancellation != null);
             ExportRepositoryCommand = new RelayCommand(_ => ExportRepository());
@@ -599,7 +642,7 @@ private string _ocrResultText = "";
             OpenSpyToolCommand = new RelayCommand(_ => OpenSpyTool());
             OpenVisualTestBuilderCommand = new RelayCommand(_ => OpenVisualTestBuilder());
             OpenMultiAppDialogCommand = new RelayCommand(_ => OpenMultiAppDialog(), _ => AttachedApps.Count > 0);
-            EnableLaunchAttachRecordingCommand = new RelayCommand(_ => EnableRecordingForLaunchedApps(), _ => Steps.Any(s => s.Kind == StepKind.LaunchApplication && s.AutoAttach));
+            EnableLaunchAttachRecordingCommand = new RelayCommand(_ => EnableRecordingForLaunchedApps(), _ => EnumerateSteps(Steps).Any(s => s.Kind == StepKind.LaunchApplication && s.AutoAttach));
             OpenWorkingFolderCommand = new RelayCommand(_ => OpenWorkingFolder());
             ImportWorkingFolderSelectedCommand = new RelayCommand(_ => ImportWorkingFolderSelected(), _ => CanImportSelected);
             ShowWorkingFolderCommand = new RelayCommand(_ => ShowWorkingFolder());
@@ -639,11 +682,8 @@ private string _ocrResultText = "";
             RedoCommand = new RelayCommand(_ => { /* TODO: implement redo */ });
             StopRecordingCommand = new RelayCommand(_ => ToggleRecording(), _ => IsAttached && IsRecording);
 
-            Steps.CollectionChanged += (_, __) =>
-            {
-                RegenerateScript();
-                CommandManager.InvalidateRequerySuggested();
-            };
+            Steps.CollectionChanged += Steps_CollectionChanged;
+            RefreshStepSubscriptions();
             Elements.CollectionChanged += (_, __) => { RegenerateRepository(); RefreshElementTree(); };
             RunOutputLines.CollectionChanged += (_, __) => OnPropertyChanged(nameof(RunOutputText));
             // D4: also parse each new raw line into RunOutputLog. Reset tag handler
@@ -831,7 +871,7 @@ private string _ocrResultText = "";
         public void EnableRecordingForLaunchedApps()
         {
             // Find all Launch Application steps with AutoAttach=true
-            var launchSteps = Steps.Where(s => s.Kind == StepKind.LaunchApplication && s.AutoAttach).ToList();
+            var launchSteps = EnumerateSteps(Steps).Where(s => s.Kind == StepKind.LaunchApplication && s.AutoAttach).ToList();
 
             if (!launchSteps.Any())
             {
@@ -1307,8 +1347,7 @@ private string _ocrResultText = "";
                     return;
                 }
 
-                int index = afterStep is null ? Steps.Count : Steps.IndexOf(afterStep) + 1;
-                Steps.Insert(index, dialog.CreatedStep);
+                InsertStepAfter(afterStep, dialog.CreatedStep);
             }
             catch (Exception ex)
             {
@@ -1326,13 +1365,230 @@ private string _ocrResultText = "";
                     return;
                 }
 
-                int index = afterStep is null ? Steps.Count : Steps.IndexOf(afterStep) + 1;
-                Steps.Insert(index, dialog.CreatedStep);
+                InsertStepAfter(afterStep, dialog.CreatedStep);
             }
             catch (Exception ex)
             {
                 StatusText = $"Add step error: {ex.Message}";
             }
+        }
+
+        private void InsertStepAfter(RecordedStep? afterStep, RecordedStep step)
+        {
+            if (afterStep is { Kind: StepKind.If })
+            {
+                afterStep.ThenSteps.Add(step);
+                return;
+            }
+            if (afterStep is { Kind: StepKind.Repeat or StepKind.ForEach })
+            {
+                afterStep.BodySteps.Add(step);
+                return;
+            }
+
+            if (afterStep != null && TryFindStep(afterStep, out var collection, out int index))
+            {
+                collection!.Insert(index + 1, step);
+                return;
+            }
+            Steps.Add(step);
+        }
+
+        private void AddFlowNode(RecordedStep node)
+        {
+            Steps.Add(node);
+            CurrentScriptFormat = "Steps";
+        }
+
+        private void AddNestedFlowNode(RecordedStep? parent, StepKind kind, bool elseBranch)
+        {
+            if (parent == null) return;
+            var node = CreateFlowNode(kind);
+            if (parent.Kind == StepKind.If)
+            {
+                if (elseBranch)
+                {
+                    parent.HasElse = true;
+                    parent.ElseSteps.Add(node);
+                }
+                else parent.ThenSteps.Add(node);
+            }
+            else if (parent.Kind is StepKind.Repeat or StepKind.ForEach)
+            {
+                if (!elseBranch) parent.BodySteps.Add(node);
+            }
+        }
+
+        private RecordedStep CreateFlowNode(StepKind kind) => kind switch
+        {
+            StepKind.If => new RecordedStep
+            {
+                Kind = StepKind.If,
+                Condition = new FlowCondition { Alias = Elements.FirstOrDefault()?.Alias ?? "" },
+                HasElse = true,
+            },
+            StepKind.Repeat => new RecordedStep { Kind = StepKind.Repeat, RepeatCount = 2 },
+            _ => new RecordedStep
+            {
+                Kind = StepKind.ForEach,
+                LoopVariable = "item",
+                LoopValues = new ObservableCollection<string> { "value1" },
+            },
+        };
+
+        private void AddChildStep(RecordedStep? parent, bool elseBranch)
+        {
+            if (parent == null) return;
+            try
+            {
+                var dialog = new Dialogs.AddStepWizardDialog(Elements.ToList(), PipeName);
+                if (dialog.ShowDialog() != true || dialog.CreatedStep == null)
+                    return;
+
+                if (parent.Kind == StepKind.If)
+                {
+                    if (elseBranch)
+                    {
+                        parent.HasElse = true;
+                        parent.ElseSteps.Add(dialog.CreatedStep);
+                    }
+                    else
+                    {
+                        parent.ThenSteps.Add(dialog.CreatedStep);
+                    }
+                }
+                else if (parent.Kind is StepKind.Repeat or StepKind.ForEach)
+                {
+                    parent.BodySteps.Add(dialog.CreatedStep);
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"Add nested step error: {ex.Message}";
+            }
+        }
+
+        private void EditScriptDatasets()
+        {
+            var dialog = new Dialogs.ScriptDatasetsDialog(_scriptDatasets)
+            {
+                Owner = Application.Current?.MainWindow,
+            };
+            if (dialog.ShowDialog() != true) return;
+
+            try
+            {
+                ScriptFlowValidator.Validate(Steps, dialog.Datasets);
+            }
+            catch (FormatException ex)
+            {
+                MessageBox.Show(Application.Current?.MainWindow, ex.Message, "Datasets are in use", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            _scriptDatasets.Clear();
+            foreach (var dataset in dialog.Datasets)
+                _scriptDatasets.Add(dataset.Key, dataset.Value);
+            SyncScriptDatasetNames();
+            RegenerateScript();
+        }
+
+        private void SyncScriptDatasetNames()
+        {
+            ScriptDatasetNames.Clear();
+            foreach (var name in _scriptDatasets.Keys.OrderBy(name => name, StringComparer.OrdinalIgnoreCase))
+                ScriptDatasetNames.Add(name);
+        }
+
+        private bool TryFindStep(RecordedStep target, out ObservableCollection<RecordedStep>? owner, out int index)
+        {
+            ObservableCollection<RecordedStep>? foundOwner = null;
+            int foundIndex = -1;
+            bool Find(ObservableCollection<RecordedStep> collection)
+            {
+                for (int i = 0; i < collection.Count; i++)
+                {
+                    var node = collection[i];
+                    if (ReferenceEquals(node, target))
+                    {
+                        foundOwner = collection;
+                        foundIndex = i;
+                        return true;
+                    }
+                    if (Find(node.ThenSteps) || Find(node.ElseSteps) || Find(node.BodySteps))
+                        return true;
+                }
+                return false;
+            }
+
+            bool found = Find(Steps);
+            owner = foundOwner;
+            index = foundIndex;
+            return found;
+        }
+
+        private static IEnumerable<RecordedStep> EnumerateSteps(IEnumerable<RecordedStep> roots)
+        {
+            foreach (var node in roots)
+            {
+                yield return node;
+                foreach (var child in EnumerateSteps(node.ThenSteps)) yield return child;
+                foreach (var child in EnumerateSteps(node.ElseSteps)) yield return child;
+                foreach (var child in EnumerateSteps(node.BodySteps)) yield return child;
+            }
+        }
+
+        private void Steps_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            RefreshStepSubscriptions();
+            RegenerateScript();
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void NestedSteps_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            RefreshStepSubscriptions();
+            RegenerateScript();
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void RefreshStepSubscriptions()
+        {
+            foreach (var step in _observedSteps)
+                step.PropertyChanged -= Step_PropertyChanged;
+            foreach (var collection in _observedStepCollections)
+                collection.CollectionChanged -= NestedSteps_CollectionChanged;
+            _observedSteps.Clear();
+            _observedStepCollections.Clear();
+
+            void Observe(ObservableCollection<RecordedStep> collection)
+            {
+                if (!_observedStepCollections.Add(collection)) return;
+                collection.CollectionChanged += NestedSteps_CollectionChanged;
+                foreach (var node in collection)
+                {
+                    if (_observedSteps.Add(node)) node.PropertyChanged += Step_PropertyChanged;
+                    Observe(node.ThenSteps);
+                    Observe(node.ElseSteps);
+                    Observe(node.BodySteps);
+                }
+            }
+
+            foreach (var node in Steps)
+            {
+                if (_observedSteps.Add(node)) node.PropertyChanged += Step_PropertyChanged;
+                Observe(node.ThenSteps);
+                Observe(node.ElseSteps);
+                Observe(node.BodySteps);
+            }
+        }
+
+        private void Step_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(RecordedStep.ThenSteps) or nameof(RecordedStep.ElseSteps) or nameof(RecordedStep.BodySteps))
+                RefreshStepSubscriptions();
+            RegenerateScript();
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private void OpenCheckpointWizard()
@@ -1405,93 +1661,35 @@ private string _ocrResultText = "";
 
         private void OpenVisualTestBuilder()
         {
-            // Create visual test builder with current elements and steps
-            var dialog = new Views.TestFlowDialog(Elements);
-            
-            // Load existing steps if any
-            foreach (var step in Steps)
+            var dialog = new Views.TestFlowDialog(Elements, Steps, _scriptDatasets)
             {
-                var flowStep = new ViewModels.FlowStep
-                {
-                    StepNumber = dialog.Steps.Steps.Count + 1,
-                    ActionType = MapFlowActionToString(step),
-                    ElementAlias = step.Alias ?? "",
-                    Value = step.Value ?? ""
-                };
-                dialog.Steps.Steps.Add(flowStep);
-            }
-            
+                Owner = Application.Current?.MainWindow,
+            };
             if (dialog.ShowDialog() == true)
             {
-                // Import steps back from visual builder
                 Steps.Clear();
-                foreach (var flowStep in dialog.Steps.Steps)
-                {
-                    var (kind, action) = MapFlowActionToRecorded(flowStep.ActionType);
-                    var recordedStep = new RecordedStep
-                    {
-                        Kind = kind,
-                        Action = action,
-                        Alias = flowStep.ElementAlias,
-                        Value = flowStep.Value,
-                        AppId = flowStep.AppId,
-                    };
-                    Steps.Add(recordedStep);
-                }
+                foreach (var node in dialog.Nodes)
+                    Steps.Add(node.CloneDeep());
+                _scriptDatasets.Clear();
+                foreach (var dataset in dialog.Datasets)
+                    _scriptDatasets.Add(dataset.Key, dataset.Value);
+                SyncScriptDatasetNames();
                 StatusText = $"Imported {Steps.Count} steps from Visual Test Builder";
             }
         }
 
-        private string MapFlowActionToString(RecordedStep step)
-        {
-            if (step.Kind == Models.StepKind.Verify)
-                return "Verify";
-            if (step.Kind == Models.StepKind.VerifyOcr)
-                return "GetText";
-                
-            return step.Action switch
-            {
-                Models.ActionKind.Invoke => "Click",
-                Models.ActionKind.SetValue => "SetText",
-                Models.ActionKind.Toggle => "Check",
-                _ => "Click"
-            };
-        }
-
-        private (Models.StepKind kind, Models.ActionKind action) MapFlowActionToRecorded(string flowActionType)
-        {
-            return flowActionType switch
-            {
-                "Click" or "DoubleClick" or "RightClick" or "Hover" => 
-                    (Models.StepKind.Action, Models.ActionKind.Invoke),
-                "SetText" or "Select" => 
-                    (Models.StepKind.Action, Models.ActionKind.SetValue),
-                "Check" or "Uncheck" => 
-                    (Models.StepKind.Action, Models.ActionKind.Toggle),
-                "Verify" => 
-                    (Models.StepKind.Verify, Models.ActionKind.Invoke),
-                "GetText" => 
-                    (Models.StepKind.VerifyOcr, Models.ActionKind.Invoke),
-                _ => 
-                    (Models.StepKind.Action, Models.ActionKind.Invoke)
-            };
-        }
-
         private void DeleteStep(RecordedStep? step)
         {
-            if (step != null)
-            {
-                Steps.Remove(step);
-            }
+            if (step != null && TryFindStep(step, out var collection, out int index))
+                collection!.RemoveAt(index);
         }
 
         /// <summary>D3: move a step by a relative delta (�1) from the up/down buttons.</summary>
         private void MoveStep(RecordedStep? step, int delta)
         {
             if (step == null) return;
-            var index = Steps.IndexOf(step);
-            if (index < 0) return;
-            MoveStepTo(step, index + delta);
+            if (!TryFindStep(step, out var collection, out int index)) return;
+            MoveStepInCollection(collection!, index, index + delta);
         }
 
         /// <summary>D3: move a step to an absolute index. Called by the relative
@@ -1499,11 +1697,16 @@ private string _ocrResultText = "";
         /// valid bounds and regenerates the Raw script so the order change is visible.</summary>
         public void MoveStepTo(RecordedStep step, int newIndex)
         {
-            var currentIndex = Steps.IndexOf(step);
-            if (currentIndex < 0) return;
-            newIndex = Math.Clamp(newIndex, 0, Steps.Count - 1);
+            if (!TryFindStep(step, out var collection, out int currentIndex)) return;
+            MoveStepInCollection(collection!, currentIndex, newIndex);
+        }
+
+        private void MoveStepInCollection(ObservableCollection<RecordedStep> collection, int currentIndex, int newIndex)
+        {
+            if (currentIndex < 0 || currentIndex >= collection.Count) return;
+            newIndex = Math.Clamp(newIndex, 0, collection.Count - 1);
             if (newIndex == currentIndex) return;
-            Steps.Move(currentIndex, newIndex);
+            collection.Move(currentIndex, newIndex);
             RegenerateScript();
         }
 
@@ -1523,14 +1726,18 @@ private string _ocrResultText = "";
             var mode = _selectedMode != "Auto" ? _selectedMode : null;
             var recordingModes = GetSelectedRecordingModes();
             var appId = _importedAppId ?? SelectedApp?.AppId;
-
-            RobotScriptContent = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
-
-            // Python
-            PythonScriptContent = ScriptGenerator.GeneratePython(Steps, testCaseName: "test_recorded_session_playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
-
-            // JSON carries the same steps and script-level settings as the code views.
-            JsonScriptContent = JsonStepScript.Serialize(Steps, driver, mode, appId);
+            try
+            {
+                RobotScriptContent = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId, datasets: _scriptDatasets);
+                PythonScriptContent = ScriptGenerator.GeneratePython(Steps, testCaseName: "test_recorded_session_playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId, datasets: _scriptDatasets);
+                JsonScriptContent = JsonStepScript.Serialize(Steps, driver, mode, appId, _scriptDatasets);
+                if (StatusText.StartsWith("Script flow:", StringComparison.Ordinal))
+                    StatusText = "Ready";
+            }
+            catch (FormatException ex)
+            {
+                StatusText = $"Script flow: {ex.Message}";
+            }
         }
 
         private List<string> GetSelectedRecordingModes()
@@ -1623,7 +1830,7 @@ private string _ocrResultText = "";
                 {
                     var jsonDocument = JsonStepScript.DeserializeDocument(JsonScriptContent);
                     runAppId = jsonDocument.AppId
-                        ?? jsonDocument.Steps.Select(step => step.AppId).FirstOrDefault(id => !string.IsNullOrWhiteSpace(id))
+                        ?? EnumerateSteps(jsonDocument.Steps).Select(step => step.AppId).FirstOrDefault(id => !string.IsNullOrWhiteSpace(id))
                         ?? runAppId;
                 }
 
@@ -1658,6 +1865,7 @@ private string _ocrResultText = "";
                     },
                     SourcePath = null,
                     Steps = Steps.ToArray(),
+                    Datasets = _scriptDatasets,
                     FrameworkRoot = FrameworkRoot,
                     WorkingDirectory = FrameworkRoot,
                     OutputDirectory = outputDir,
@@ -2001,6 +2209,13 @@ private string _ocrResultText = "";
             Steps.Clear();
             foreach (var step in imported.Steps)
                 Steps.Add(step);
+            _scriptDatasets.Clear();
+            if (imported.Datasets != null)
+            {
+                foreach (var dataset in imported.Datasets)
+                    _scriptDatasets.Add(dataset.Key, dataset.Value);
+            }
+            SyncScriptDatasetNames();
             RegenerateScript();
         }
 
@@ -2431,6 +2646,8 @@ private string _ocrResultText = "";
         private void Reset()
         {
             Steps.Clear();
+            _scriptDatasets.Clear();
+            SyncScriptDatasetNames();
             _importedAppId = null;
             _selectedDriver = "Auto";
             _selectedMode = "Auto";

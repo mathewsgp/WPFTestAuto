@@ -11,7 +11,8 @@ namespace WpfTestIde.Execution
         List<RecordedStep> Steps,
         string? Driver = null,
         string? Mode = null,
-        string? AppId = null);
+        string? AppId = null,
+        Dictionary<string, List<string>>? Datasets = null);
 
     /// <summary>Parses the IDE's common step subset from its JSON, Python, and Robot views.</summary>
     public static class ScriptInterop
@@ -30,26 +31,46 @@ namespace WpfTestIde.Execution
                 _ => throw new FormatException($"The {format} view cannot be imported as a script.")
             };
             ApplyDefaultAppId(imported.Steps, imported.AppId);
+            var datasets = imported.Datasets ?? new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                ScriptFlowValidator.Validate(imported.Steps, datasets);
+            }
+            catch (FormatException ex)
+            {
+                throw new FormatException($"Invalid script flow: {ex.Message}", ex);
+            }
+            if (imported.Datasets == null)
+                imported = imported with { Datasets = datasets };
             return imported;
         }
 
         private static ScriptImportResult ParsePython(string text)
         {
             var steps = new List<RecordedStep>();
+            var datasets = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             string? driver = null;
             string? mode = null;
             string? appId = null;
             string? generatedFunction = null;
-            bool insideGeneratedFunction = false;
             bool sawApiInitialization = false;
             bool sawFunction = false;
 
-            var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
-            for (int index = 0; index < lines.Length; index++)
+            var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n')
+                .Select((raw, index) => new PythonSourceLine(index + 1, Indentation(raw), raw.Trim()))
+                .ToList();
+            int cursor = 0;
+            while (cursor < lines.Count)
             {
-                string line = lines[index].Trim();
+                var source = lines[cursor];
+                string line = source.Text;
+                cursor++;
                 if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal))
                     continue;
+                if (generatedFunction != null && line == generatedFunction + "()")
+                    continue;
+                if (source.Indent != 0)
+                    throw new FormatException($"Unexpected top-level indentation on Python line {source.Number}.");
                 if (line.StartsWith("import ", StringComparison.Ordinal)
                     || line.StartsWith("from ", StringComparison.Ordinal))
                     continue;
@@ -58,34 +79,40 @@ namespace WpfTestIde.Execution
                     sawApiInitialization = true;
                     continue;
                 }
+                var datasetMatch = Regex.Match(line, @"^__ide_datasets\s*=\s*(?<json>\{.*\})$");
+                if (datasetMatch.Success)
+                {
+                    var parsed = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, List<string>>>(datasetMatch.Groups["json"].Value);
+                    if (parsed == null)
+                        throw new FormatException($"Could not parse the Python dataset declaration on line {source.Number}.");
+                    datasets = new Dictionary<string, List<string>>(parsed, StringComparer.OrdinalIgnoreCase);
+                    continue;
+                }
                 if (line.StartsWith("def ", StringComparison.Ordinal))
                 {
                     var match = Regex.Match(line, @"^def\s+(?<name>[A-Za-z_]\w*)\s*\(");
                     if (match.Success)
                     {
                         generatedFunction = match.Groups["name"].Value;
-                        insideGeneratedFunction = true;
                         sawFunction = true;
+                        if (cursor < lines.Count && (lines[cursor].Text.StartsWith("\"\"\"", StringComparison.Ordinal)
+                            || lines[cursor].Text.StartsWith("'''", StringComparison.Ordinal)))
+                            cursor++;
+                        steps.AddRange(ParsePythonBlock(lines, ref cursor, source.Indent + 4, datasets));
                         continue;
                     }
                 }
                 if (line.StartsWith("if __name__", StringComparison.Ordinal))
                     continue;
-                if (generatedFunction != null && line == generatedFunction + "()")
-                    continue;
-                if (line.StartsWith("\"\"\"", StringComparison.Ordinal)
+                if (line == "pass" || line.StartsWith("\"\"\"", StringComparison.Ordinal)
                     || line.StartsWith("'''", StringComparison.Ordinal))
                     continue;
 
                 var callMatch = PythonCallPattern.Match(line);
                 if (!callMatch.Success)
-                {
-                    if (line.StartsWith("api.", StringComparison.Ordinal) || insideGeneratedFunction)
-                        throw new FormatException($"Unsupported Python statement on line {index + 1}: {line}");
-                    throw new FormatException($"Unsupported Python statement on line {index + 1}: {line}");
-                }
+                    throw new FormatException($"Unsupported Python statement on line {source.Number}: {line}");
 
-                var call = ParsePythonCall(callMatch.Groups["name"].Value, callMatch.Groups["arguments"].Value, index + 1);
+                var call = ParsePythonCall(callMatch.Groups["name"].Value, callMatch.Groups["arguments"].Value, source.Number);
                 switch (call.Name)
                 {
                     case "set_mode_and_driver":
@@ -103,23 +130,25 @@ namespace WpfTestIde.Execution
                         continue;
                 }
 
-                steps.Add(ParsePythonStep(call, index + 1));
+                steps.Add(ParsePythonStep(call, source.Number));
             }
 
             if (steps.Count == 0 && !(sawApiInitialization && sawFunction))
                 throw new FormatException("No supported DriverAgnosticApi step calls were found in the Python script.");
 
-            return new ScriptImportResult(steps, driver, mode, appId);
+            return new ScriptImportResult(steps, driver, mode, appId, datasets);
         }
 
         private static ScriptImportResult ParseRobot(string text)
         {
             var steps = new List<RecordedStep>();
+            var datasets = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             string? driver = null;
             string? mode = null;
             string? appId = null;
             string section = "";
             bool sawTestCase = false;
+            var testLines = new List<RobotSourceLine>();
 
             var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
             for (int index = 0; index < lines.Length; index++)
@@ -138,38 +167,395 @@ namespace WpfTestIde.Execution
                     ParseRobotSetting(line, ref driver, ref mode, ref appId);
                     continue;
                 }
+                if (section == "VARIABLES")
+                {
+                    ParseRobotDataset(line, datasets, index + 1);
+                    continue;
+                }
                 if (section != "TEST CASES")
                     continue;
                 if (line.StartsWith("[Documentation]", StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 var cells = SplitRobotCells(rawLine);
+                int indentation = Indentation(rawLine);
+                if (indentation == 0)
+                {
+                    sawTestCase = true;
+                    continue;
+                }
                 if (cells.Length < 2)
                 {
-                    if (line.Length > 0)
-                        sawTestCase = true;
-                    continue; // Test case name or a free-standing metadata line.
+                    continue;
                 }
-
-                var keyword = cells[0].Trim();
                 if (TryParseRobotSetupKeyword(cells, ref driver, ref mode, ref appId))
                     continue;
-
-                try
-                {
-                    steps.Add(ParseRobotStep(keyword, cells.Skip(1).ToArray(), index + 1));
-                }
-                catch (KeyNotFoundException)
-                {
-                    throw new FormatException($"Unsupported Robot keyword on line {index + 1}: {keyword}");
-                }
+                testLines.Add(new RobotSourceLine(index + 1, indentation, cells));
             }
 
+            var conditionByVariable = new Dictionary<string, FlowCondition>(StringComparer.OrdinalIgnoreCase);
+            int lineCursor = 0;
+            if (testLines.Count > 0)
+                steps = ParseRobotBlock(testLines, ref lineCursor, testLines[0].Indent, conditionByVariable, datasets);
             if (steps.Count == 0 && !sawTestCase)
                 throw new FormatException("No supported Robot Framework step keywords were found in the script.");
 
-            return new ScriptImportResult(steps, driver, mode, appId);
+            return new ScriptImportResult(steps, driver, mode, appId, datasets);
         }
+
+        private static List<RecordedStep> ParsePythonBlock(
+            IReadOnlyList<PythonSourceLine> lines,
+            ref int cursor,
+            int expectedIndent,
+            Dictionary<string, List<string>> datasets,
+            int depth = 0)
+        {
+            if (depth > 64)
+                throw new FormatException("Python script control-flow nesting exceeds 64 levels.");
+            var nodes = new List<RecordedStep>();
+            while (cursor < lines.Count)
+            {
+                var source = lines[cursor];
+                if (source.Text.Length == 0 || source.Text.StartsWith("#", StringComparison.Ordinal))
+                {
+                    cursor++;
+                    continue;
+                }
+                if (source.Indent < expectedIndent)
+                    break;
+                if (source.Indent > expectedIndent)
+                    throw new FormatException($"Unexpected Python indentation on line {source.Number}.");
+                if (source.Text == "else:")
+                    break;
+
+                if (source.Text.StartsWith("if ", StringComparison.Ordinal))
+                {
+                    var condition = ParsePythonCondition(source.Text, source.Number);
+                    cursor++;
+                    var thenNodes = ParsePythonBlock(lines, ref cursor, expectedIndent + 4, datasets, depth + 1);
+                    var elseNodes = new List<RecordedStep>();
+                    bool hasElse = cursor < lines.Count
+                        && lines[cursor].Indent == expectedIndent
+                        && lines[cursor].Text == "else:";
+                    if (hasElse)
+                    {
+                        cursor++;
+                        elseNodes = ParsePythonBlock(lines, ref cursor, expectedIndent + 4, datasets, depth + 1);
+                    }
+                    nodes.Add(new RecordedStep
+                    {
+                        Kind = StepKind.If,
+                        Condition = condition,
+                        HasElse = hasElse,
+                        ThenSteps = new System.Collections.ObjectModel.ObservableCollection<RecordedStep>(thenNodes),
+                        ElseSteps = new System.Collections.ObjectModel.ObservableCollection<RecordedStep>(elseNodes),
+                    });
+                    continue;
+                }
+
+                if (source.Text.StartsWith("for ", StringComparison.Ordinal))
+                {
+                    var loop = ParsePythonLoop(source.Text, source.Number, datasets);
+                    cursor++;
+                    loop.BodySteps = new System.Collections.ObjectModel.ObservableCollection<RecordedStep>(
+                        ParsePythonBlock(lines, ref cursor, expectedIndent + 4, datasets, depth + 1));
+                    nodes.Add(loop);
+                    continue;
+                }
+
+                if (source.Text == "pass")
+                {
+                    cursor++;
+                    continue;
+                }
+
+                var callMatch = PythonCallPattern.Match(source.Text);
+                if (!callMatch.Success)
+                    throw new FormatException($"Unsupported Python statement on line {source.Number}: {source.Text}");
+                var call = ParsePythonCall(callMatch.Groups["name"].Value, callMatch.Groups["arguments"].Value, source.Number);
+                if (call.Name is "evaluate_script_condition" or "resolve_script_value")
+                    throw new FormatException($"The helper call '{call.Name}' can only appear in a generated condition or value on Python line {source.Number}.");
+                if (call.Name is "set_mode" or "set_mode_and_driver" or "set_driver" or "attach_to_application")
+                    throw new FormatException($"Script metadata calls must be outside the Python test function (line {source.Number}).");
+                nodes.Add(ParsePythonStep(call, source.Number));
+                cursor++;
+            }
+            return nodes;
+        }
+
+        private static FlowCondition ParsePythonCondition(string line, int lineNumber)
+        {
+            var match = Regex.Match(line, @"^if\s+(?<call>api\.evaluate_script_condition\(.*\)):$", RegexOptions.CultureInvariant);
+            if (!match.Success)
+                throw new FormatException($"Unsupported Python condition on line {lineNumber}: {line}");
+            var callMatch = PythonCallPattern.Match(match.Groups["call"].Value);
+            var call = ParsePythonCall(callMatch.Groups["name"].Value, callMatch.Groups["arguments"].Value, lineNumber);
+            if (!Enum.TryParse<FlowConditionKind>(PositionalString(call, 0), ignoreCase: false, out var kind))
+                throw new FormatException($"Unknown script condition on Python line {lineNumber}.");
+            return new FlowCondition
+            {
+                Kind = kind,
+                Alias = KeywordScriptValue(call, "alias") ?? "",
+                ExpectedValue = KeywordScriptValue(call, "expected_value"),
+                AppId = KeywordScriptValue(call, "app_id"),
+            };
+        }
+
+        private static RecordedStep ParsePythonLoop(
+            string line,
+            int lineNumber,
+            IReadOnlyDictionary<string, List<string>> datasets)
+        {
+            var repeatMatch = Regex.Match(line, @"^for\s+(?<variable>[A-Za-z_]\w*)\s+in\s+range\((?<count>\d+)\):$", RegexOptions.CultureInvariant);
+            if (repeatMatch.Success && int.TryParse(repeatMatch.Groups["count"].Value, out int count))
+            {
+                return new RecordedStep { Kind = StepKind.Repeat, RepeatCount = count };
+            }
+
+            var eachMatch = Regex.Match(line, @"^for\s+(?<variable>[A-Za-z_]\w*)\s+in\s+(?<source>.+):$", RegexOptions.CultureInvariant);
+            if (!eachMatch.Success)
+                throw new FormatException($"Unsupported Python loop on line {lineNumber}: {line}");
+
+            string variable = eachMatch.Groups["variable"].Value;
+            string source = eachMatch.Groups["source"].Value.Trim();
+            var datasetMatch = Regex.Match(source, @"^__ide_datasets\[(?<name>.+)\]$", RegexOptions.CultureInvariant);
+            if (datasetMatch.Success)
+            {
+                string? datasetName = ParsePythonString(datasetMatch.Groups["name"].Value);
+                if (datasetName == null || !datasets.ContainsKey(datasetName))
+                    throw new FormatException($"Python loop on line {lineNumber} refers to an undeclared dataset.");
+                return new RecordedStep
+                {
+                    Kind = StepKind.ForEach,
+                    LoopVariable = variable,
+                    LoopSourceKind = FlowLoopSourceKind.NamedDataset,
+                    DatasetName = datasetName,
+                };
+            }
+
+            if (source.StartsWith("[", StringComparison.Ordinal) && source.EndsWith("]", StringComparison.Ordinal))
+            {
+                var values = SplitPythonArguments(source[1..^1]).Where(value => value.Length > 0)
+                    .Select(ParsePythonScriptValue).ToList();
+                return new RecordedStep
+                {
+                    Kind = StepKind.ForEach,
+                    LoopVariable = variable,
+                    LoopSourceKind = FlowLoopSourceKind.LiteralValues,
+                    LoopValues = new System.Collections.ObjectModel.ObservableCollection<string>(values),
+                };
+            }
+
+            throw new FormatException($"Unsupported Python loop source on line {lineNumber}: {source}");
+        }
+
+        private static List<RecordedStep> ParseRobotBlock(
+            IReadOnlyList<RobotSourceLine> lines,
+            ref int cursor,
+            int expectedIndent,
+            Dictionary<string, FlowCondition> conditions,
+            IReadOnlyDictionary<string, List<string>> datasets,
+            int depth = 0)
+        {
+            if (depth > 64)
+                throw new FormatException("Robot script control-flow nesting exceeds 64 levels.");
+            var nodes = new List<RecordedStep>();
+            while (cursor < lines.Count)
+            {
+                var source = lines[cursor];
+                var cells = source.Cells;
+                string keyword = cells[0].Trim().ToUpperInvariant();
+                if (source.Indent < expectedIndent)
+                    break;
+                if (source.Indent > expectedIndent)
+                    throw new FormatException($"Unexpected Robot indentation on line {source.Number}.");
+                if (keyword is "ELSE" or "END")
+                    break;
+
+                if (TryParseRobotConditionAssignment(source, conditions))
+                {
+                    cursor++;
+                    continue;
+                }
+
+                if (keyword == "IF")
+                {
+                    if (cells.Length < 2)
+                        throw new FormatException($"Robot IF on line {source.Number} must reference a generated condition.");
+                    string conditionName = ExtractRobotVariable(cells[1], '$');
+                    if (!conditions.TryGetValue(conditionName, out var condition))
+                        throw new FormatException($"Robot IF on line {source.Number} references an unknown condition '{conditionName}'.");
+                    cursor++;
+                    var thenNodes = ParseRobotBlock(lines, ref cursor, expectedIndent + 4, conditions, datasets, depth + 1);
+                    var elseNodes = new List<RecordedStep>();
+                    bool hasElse = cursor < lines.Count && lines[cursor].Indent == expectedIndent
+                        && lines[cursor].Cells[0].Equals("ELSE", StringComparison.OrdinalIgnoreCase);
+                    if (hasElse)
+                    {
+                        cursor++;
+                        elseNodes = ParseRobotBlock(lines, ref cursor, expectedIndent + 4, conditions, datasets, depth + 1);
+                    }
+                    RequireRobotEnd(lines, ref cursor, expectedIndent, source.Number);
+                    nodes.Add(new RecordedStep
+                    {
+                        Kind = StepKind.If,
+                        Condition = new FlowCondition
+                        {
+                            Kind = condition.Kind,
+                            Alias = condition.Alias,
+                            ExpectedValue = condition.ExpectedValue,
+                            AppId = condition.AppId,
+                        },
+                        HasElse = hasElse,
+                        ThenSteps = new System.Collections.ObjectModel.ObservableCollection<RecordedStep>(thenNodes),
+                        ElseSteps = new System.Collections.ObjectModel.ObservableCollection<RecordedStep>(elseNodes),
+                    });
+                    continue;
+                }
+
+                if (keyword == "FOR")
+                {
+                    var loop = ParseRobotLoop(source, datasets);
+                    cursor++;
+                    loop.BodySteps = new System.Collections.ObjectModel.ObservableCollection<RecordedStep>(
+                        ParseRobotBlock(lines, ref cursor, expectedIndent + 4, conditions, datasets, depth + 1));
+                    RequireRobotEnd(lines, ref cursor, expectedIndent, source.Number);
+                    nodes.Add(loop);
+                    continue;
+                }
+
+                if (keyword == "NO OPERATION")
+                {
+                    cursor++;
+                    continue;
+                }
+
+                try
+                {
+                    nodes.Add(ParseRobotStep(cells[0], cells.Skip(1).ToArray(), source.Number));
+                }
+                catch (KeyNotFoundException)
+                {
+                    throw new FormatException($"Unsupported Robot keyword on line {source.Number}: {cells[0]}");
+                }
+                cursor++;
+            }
+            return nodes;
+        }
+
+        private static bool TryParseRobotConditionAssignment(RobotSourceLine source, IDictionary<string, FlowCondition> conditions)
+        {
+            var cells = source.Cells;
+            if (cells.Length < 4 || !cells[1].Equals("Evaluate Script Condition", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            string variable = ExtractRobotVariable(cells[0].TrimEnd('='), '$');
+            if (!Enum.TryParse<FlowConditionKind>(cells[2], ignoreCase: false, out var kind))
+                throw new FormatException($"Unknown Robot condition on line {source.Number}.");
+            var named = ParseRobotNamedArguments(cells.Skip(4));
+            conditions[variable] = new FlowCondition
+            {
+                Kind = kind,
+                Alias = cells[3],
+                ExpectedValue = Named(named, "expected_value"),
+                AppId = Named(named, "app_id"),
+            };
+            return true;
+        }
+
+        private static RecordedStep ParseRobotLoop(RobotSourceLine source, IReadOnlyDictionary<string, List<string>> datasets)
+        {
+            var cells = source.Cells;
+            if (cells.Length < 4)
+                throw new FormatException($"Robot FOR on line {source.Number} has an incomplete header.");
+            string variable = ExtractRobotVariable(cells[1], '$');
+            string mode = cells[2].Trim().ToUpperInvariant();
+            if (mode == "IN RANGE")
+            {
+                if (!int.TryParse(cells[3], out int count))
+                    throw new FormatException($"Robot Repeat count on line {source.Number} must be an integer.");
+                return new RecordedStep { Kind = StepKind.Repeat, RepeatCount = count };
+            }
+            if (mode != "IN")
+                throw new FormatException($"Unsupported Robot FOR mode '{cells[2]}' on line {source.Number}.");
+
+            if (cells.Length == 4 && cells[3].Equals("@{EMPTY}", StringComparison.OrdinalIgnoreCase))
+            {
+                return new RecordedStep
+                {
+                    Kind = StepKind.ForEach,
+                    LoopVariable = variable,
+                    LoopSourceKind = FlowLoopSourceKind.LiteralValues,
+                };
+            }
+
+            if (cells.Length == 4 && cells[3].StartsWith("@{__ide_dataset_", StringComparison.OrdinalIgnoreCase)
+                && cells[3].EndsWith("}", StringComparison.Ordinal))
+            {
+                string name = cells[3]["@{__ide_dataset_".Length..^1];
+                if (!datasets.ContainsKey(name))
+                    throw new FormatException($"Robot FOR on line {source.Number} refers to undeclared dataset '{name}'.");
+                return new RecordedStep
+                {
+                    Kind = StepKind.ForEach,
+                    LoopVariable = variable,
+                    LoopSourceKind = FlowLoopSourceKind.NamedDataset,
+                    DatasetName = name,
+                };
+            }
+
+            return new RecordedStep
+            {
+                Kind = StepKind.ForEach,
+                LoopVariable = variable,
+                LoopSourceKind = FlowLoopSourceKind.LiteralValues,
+                LoopValues = new System.Collections.ObjectModel.ObservableCollection<string>(cells.Skip(3)),
+            };
+        }
+
+        private static void RequireRobotEnd(IReadOnlyList<RobotSourceLine> lines, ref int cursor, int expectedIndent, int startLine)
+        {
+            if (cursor >= lines.Count || lines[cursor].Indent != expectedIndent
+                || !lines[cursor].Cells[0].Equals("END", StringComparison.OrdinalIgnoreCase))
+                throw new FormatException($"Robot control block opened on line {startLine} is missing END.");
+            cursor++;
+        }
+
+        private static string ExtractRobotVariable(string value, char marker)
+        {
+            string prefix = marker + "{";
+            return value.StartsWith(prefix, StringComparison.Ordinal) && value.EndsWith("}", StringComparison.Ordinal)
+                ? value[prefix.Length..^1]
+                : value.TrimEnd('=');
+        }
+
+        private static void ParseRobotDataset(string line, IDictionary<string, List<string>> datasets, int lineNumber)
+        {
+            var cells = SplitRobotCells(line);
+            const string prefix = "@{__ide_dataset_";
+            if (cells.Length == 0 || !cells[0].StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return;
+            if (!cells[0].EndsWith("}", StringComparison.Ordinal))
+                throw new FormatException($"Malformed IDE dataset variable on Robot line {lineNumber}.");
+            string name = cells[0][prefix.Length..^1];
+            if (!datasets.TryAdd(name, cells.Skip(1).ToList()))
+                throw new FormatException($"Robot dataset '{name}' is declared more than once.");
+        }
+
+        private static int Indentation(string line)
+        {
+            int indent = 0;
+            foreach (char ch in line)
+            {
+                if (ch == ' ') indent++;
+                else if (ch == '\t') indent += 4;
+                else break;
+            }
+            return indent;
+        }
+
+        private sealed record PythonSourceLine(int Number, int Indent, string Text);
+        private sealed record RobotSourceLine(int Number, int Indent, string[] Cells);
 
         private static void ParseRobotSetting(string line, ref string? driver, ref string? mode, ref string? appId)
         {
@@ -496,7 +882,7 @@ namespace WpfTestIde.Execution
         private static readonly HashSet<string> RobotNamedArguments = new(StringComparer.OrdinalIgnoreCase)
         {
             "app_id", "timeout", "start_in", "args", "attach", "driver", "drivers",
-            "spy_agent", "spy_agent_enabled", "pipe_name", "window_title", "process_name", "force",
+            "spy_agent", "spy_agent_enabled", "pipe_name", "window_title", "process_name", "force", "expected_value",
         };
 
         private static Dictionary<string, string> ParseRobotNamedArguments(IEnumerable<string> args)
@@ -530,7 +916,14 @@ namespace WpfTestIde.Execution
         {
             if (string.IsNullOrWhiteSpace(appId)) return;
             foreach (var step in steps)
+            {
                 step.AppId ??= appId;
+                if (step.Condition != null)
+                    step.Condition.AppId ??= appId;
+                ApplyDefaultAppId(step.ThenSteps, appId);
+                ApplyDefaultAppId(step.ElseSteps, appId);
+                ApplyDefaultAppId(step.BodySteps, appId);
+            }
         }
 
         private static string Positional(IReadOnlyList<string> values, int index) =>
@@ -553,9 +946,25 @@ namespace WpfTestIde.Execution
 
         private sealed record PythonCall(string Name, List<string> Positional, Dictionary<string, string> Named, int LineNumber)
         {
-            public string? PositionalString(int index) => index >= 0 && index < Positional.Count ? ParsePythonString(Positional[index]) : null;
+            public string? PositionalString(int index) => index >= 0 && index < Positional.Count ? ParsePythonScriptValue(Positional[index]) : null;
             public string? KeywordRaw(string name) => Named.TryGetValue(name, out var raw) ? raw : null;
-            public string? KeywordString(string name) => KeywordRaw(name) is { } raw ? ParsePythonString(raw) : null;
+            public string? KeywordString(string name) => KeywordRaw(name) is { } raw ? ParsePythonScriptValue(raw) : null;
+        }
+
+        private static string? KeywordScriptValue(PythonCall call, string name) => call.KeywordString(name);
+
+        private static string ParsePythonScriptValue(string value)
+        {
+            value = value.Trim();
+            var match = Regex.Match(value,
+                @"^api\.resolve_script_value\((?<arguments>.*)\)$",
+                RegexOptions.CultureInvariant);
+            if (match.Success)
+            {
+                var call = ParsePythonCall("resolve_script_value", match.Groups["arguments"].Value, 0);
+                return call.PositionalString(0) ?? "";
+            }
+            return ParsePythonString(value);
         }
 
         private static string? PositionalString(PythonCall call, int index) => call.PositionalString(index);

@@ -15,6 +15,7 @@ This is a thin facade (~200 lines) that delegates to:
 """
 
 import os
+import re
 import sys
 from typing import Optional, Union, List, Any
 
@@ -429,6 +430,39 @@ class DriverAgnosticApi:
         self._verification.image_checkpoint(alias, baseline_path, app_id)
     
     # Wait keywords
+    def evaluate_script_condition(
+        self,
+        condition: str,
+        alias: str,
+        expected_value: Optional[str] = None,
+        app_id: Optional[str] = None,
+    ) -> bool:
+        """Evaluate a portable, allow-listed condition used by IDE flow nodes."""
+        if condition == "ElementExists":
+            return bool(self.find_elements(alias, app_id))
+        if condition == "ElementVisible":
+            return self.is_element_visible(alias, app_id)
+        if condition == "ElementEnabled":
+            return self.is_element_enabled(alias, app_id)
+        if condition == "TextEquals":
+            if not self.find_elements(alias, app_id):
+                return False
+            return self.get_element_text(alias, app_id) == (expected_value or "")
+        if condition == "TextContains":
+            if not self.find_elements(alias, app_id):
+                return False
+            return (expected_value or "") in self.get_element_text(alias, app_id)
+        raise ValueError(f"Unsupported script condition: {condition}")
+
+    def resolve_script_value(self, value: str, context: Optional[dict] = None) -> str:
+        """Resolve ${name} placeholders in a script value from the active loop scope."""
+        scope = context or {}
+        return re.sub(
+            r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}",
+            lambda match: str(scope.get(match.group(1), match.group(0))),
+            value,
+        )
+
     def is_element_visible(self, alias: str, app_id: Optional[str] = None) -> bool:
         return self._wait.is_element_visible(alias, app_id)
     

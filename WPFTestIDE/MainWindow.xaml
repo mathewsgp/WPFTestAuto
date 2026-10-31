@@ -59,6 +59,10 @@
                     Background="{Binding Kind, Converter={StaticResource StepKindToBrushConverter}}"
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                 <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -69,7 +73,7 @@
                     <!-- D3: drag handle + explicit up/down reorder buttons.
                          The handle is the visual cue; the whole Border above is
                          the actual drag source (wired in StepsListBox handlers). -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
                         <TextBlock Text="&#x2630;" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" Margin="0,0,2,0" ToolTip="Drag to reorder"/>
                         <Button Content="&#x25B2;" FontSize="9" Padding="4,2" Margin="1,0" VerticalAlignment="Center"
@@ -84,7 +88,7 @@
                                 AutomationProperties.AutomationId="btnStepDown"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1">
+                    <StackPanel Grid.Row="0" Grid.Column="1">
                         <TextBlock FontFamily="Consolas" FontSize="12">
                             <Run Text="{Binding DisplayVerb, Mode=OneWay}" FontWeight="Bold"/>
                             <Run Text="  "/>
@@ -96,17 +100,130 @@
                         <TextBlock FontSize="10" Foreground="{DynamicResource WarningBrush}" Text="Warning: custom control - resolved via WPFSpy"
                                    Visibility="{Binding NonStandard, Converter={StaticResource BoolToVisibilityConverter}}"/>
                     </StackPanel>
-                    <Button Grid.Column="2" Content="+ add step"
+                    <Button Grid.Row="0" Grid.Column="2" Content="+ add step"
                             Command="{Binding DataContext.AddStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"
                             FontSize="10" Padding="4,2" Margin="4,0" VerticalAlignment="Center"
                             AutomationProperties.AutomationId="btnAddStep"/>
-                    <Button Grid.Column="3" Content="X"
+                    <Button Grid.Row="0" Grid.Column="3" Content="X"
                             Command="{Binding DataContext.DeleteStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"
                             FontSize="10" Padding="4,2" VerticalAlignment="Center"/>
+
+                    <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,8,0,0">
+                        <WrapPanel x:Name="GenericEditor">
+                            <TextBox Width="165" Margin="0,0,6,4" Text="{Binding Alias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Element alias"/>
+                            <TextBox Width="210" Margin="0,0,6,4" Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Value or expected result"/>
+                            <ComboBox Width="145" Margin="0,0,6,4" ItemsSource="{Binding DataContext.ActionKinds, RelativeSource={RelativeSource AncestorType=Window}}"
+                                      SelectedItem="{Binding Action, Mode=TwoWay}">
+                                <ComboBox.Style>
+                                    <Style TargetType="ComboBox">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.Action}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ComboBox.Style>
+                            </ComboBox>
+                        </WrapPanel>
+                        <StackPanel x:Name="IfEditor" Visibility="Collapsed">
+                            <TextBlock Text="IF CONDITION" FontSize="10" FontWeight="Bold" Margin="0,0,0,4"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <WrapPanel>
+                                <ComboBox Width="145" Margin="0,0,6,4" ItemsSource="{Binding DataContext.FlowConditionKinds, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          SelectedItem="{Binding Condition.Kind, Mode=TwoWay}"/>
+                                <TextBox Width="140" Margin="0,0,6,4" Text="{Binding Condition.Alias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Element alias"/>
+                                <TextBox Width="150" Margin="0,0,6,4" Text="{Binding Condition.ExpectedValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Expected text for text conditions"/>
+                                <TextBox Width="110" Margin="0,0,6,4" Text="{Binding Condition.AppId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Optional app id"/>
+                                <CheckBox Content="Else branch" IsChecked="{Binding HasElse, Mode=TwoWay}" VerticalAlignment="Center" Margin="4,0,0,4"/>
+                            </WrapPanel>
+                            <DockPanel Margin="0,2,0,0">
+                                <TextBlock Text="THEN" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="+ action" Padding="5,2" FontSize="10" Command="{Binding DataContext.AddThenStepCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ If" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedIfCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ Repeat" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedRepeatCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ ForEach" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedForEachCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding ThenSteps}" ItemTemplate="{DynamicResource StepTemplate}" Margin="12,4,0,4"/>
+                            <DockPanel Visibility="{Binding HasElse, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="ELSE" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="+ action" Padding="5,2" FontSize="10" Command="{Binding DataContext.AddElseStepCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ If" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddElseIfCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ Repeat" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddElseRepeatCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ ForEach" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddElseForEachCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding ElseSteps}" ItemTemplate="{DynamicResource StepTemplate}" Margin="12,4,0,4"
+                                          Visibility="{Binding HasElse, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                        </StackPanel>
+                        <StackPanel x:Name="RepeatEditor" Visibility="Collapsed">
+                            <WrapPanel>
+                                <TextBlock Text="Repeat count (max 1000):" VerticalAlignment="Center" Margin="0,0,6,4"/>
+                                <TextBox Width="80" Text="{Binding RepeatCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            </WrapPanel>
+                            <DockPanel Margin="0,4,0,0">
+                                <TextBlock Text="BODY" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="+ action" Padding="5,2" FontSize="10" Command="{Binding DataContext.AddLoopStepCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ If" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedIfCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ Repeat" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedRepeatCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ ForEach" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedForEachCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding BodySteps}" ItemTemplate="{DynamicResource StepTemplate}" Margin="12,4,0,4"/>
+                        </StackPanel>
+                        <StackPanel x:Name="ForEachEditor" Visibility="Collapsed">
+                            <WrapPanel>
+                                <TextBlock Text="For each" VerticalAlignment="Center" Margin="0,0,6,4"/>
+                                <TextBox Width="90" Margin="0,0,6,4" Text="{Binding LoopVariable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Loop variable"/>
+                                <ComboBox Width="145" Margin="0,0,6,4" ItemsSource="{Binding DataContext.FlowLoopSourceKinds, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          SelectedItem="{Binding LoopSourceKind, Mode=TwoWay}"/>
+                                <ComboBox Width="150" Margin="0,0,6,4" ItemsSource="{Binding DataContext.ScriptDatasetNames, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          SelectedItem="{Binding DatasetName, Mode=TwoWay}"
+                                          Visibility="{Binding UsesNamedDataset, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                <TextBox Width="190" Height="48" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                         Text="{Binding LoopValuesText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                         ToolTip="One literal value per line"/>
+                            </WrapPanel>
+                            <DockPanel Margin="0,4,0,0">
+                                <TextBlock Text="BODY" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="+ action" Padding="5,2" FontSize="10" Command="{Binding DataContext.AddLoopStepCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ If" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedIfCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ Repeat" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedRepeatCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ ForEach" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedForEachCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding BodySteps}" ItemTemplate="{DynamicResource StepTemplate}" Margin="12,4,0,4"/>
+                        </StackPanel>
+                    </StackPanel>
                 </Grid>
             </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.If}">
+                    <Setter TargetName="GenericEditor" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.Repeat}">
+                    <Setter TargetName="GenericEditor" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.ForEach}">
+                    <Setter TargetName="GenericEditor" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.If}">
+                    <Setter TargetName="IfEditor" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.Repeat}">
+                    <Setter TargetName="RepeatEditor" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.ForEach}">
+                    <Setter TargetName="ForEachEditor" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
         </DataTemplate>
     </Window.Resources>
 

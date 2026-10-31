@@ -20,6 +20,10 @@
                         Command="{Binding ImportScriptCommand}" AutomationProperties.AutomationId="btnImportScript"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnAddStep" Style="{DynamicResource ToolbarButton}" Content="Add Step" Command="{Binding AddStepCommand}" AutomationProperties.AutomationId="btnAddStep"/>
+                <Button x:Name="btnAddIf" Style="{DynamicResource ToolbarButton}" Content="If / Else" Command="{Binding AddIfCommand}" ToolTip="Add a conditional block"/>
+                <Button x:Name="btnAddRepeat" Style="{DynamicResource ToolbarButton}" Content="Repeat" Command="{Binding AddRepeatCommand}" ToolTip="Add a fixed-count loop (maximum 1000)"/>
+                <Button x:Name="btnAddForEach" Style="{DynamicResource ToolbarButton}" Content="For Each" Command="{Binding AddForEachCommand}" ToolTip="Add a bounded loop over values"/>
+                <Button x:Name="btnEditDatasets" Style="{DynamicResource ToolbarButton}" Content="Datasets" Command="{Binding EditDatasetsCommand}" ToolTip="Edit named script datasets"/>
                 <Button x:Name="btnCheckpointWizard" Style="{DynamicResource ToolbarButton}" Content="Checkpoint Wizard" Command="{Binding OpenCheckpointWizardCommand}" AutomationProperties.AutomationId="btnCheckpointWizard"/>
             </StackPanel>
         </Border>

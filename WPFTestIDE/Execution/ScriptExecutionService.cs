@@ -15,6 +15,7 @@ namespace WpfTestIde.Execution
         public string SourceText { get; init; } = "";
         public string? SourcePath { get; init; }
         public IReadOnlyList<RecordedStep> Steps { get; init; } = Array.Empty<RecordedStep>();
+        public IReadOnlyDictionary<string, List<string>> Datasets { get; init; } = new Dictionary<string, List<string>>();
         public string FrameworkRoot { get; init; } = "";
         public string WorkingDirectory { get; init; } = "";
         public string OutputDirectory { get; init; } = "";
@@ -61,7 +62,7 @@ namespace WpfTestIde.Execution
             switch (request.Format)
             {
                 case ScriptFormat.Steps:
-                    content = GenerateRobotScript(request, request.Steps);
+                    content = GenerateRobotScript(request, request.Steps, datasets: request.Datasets);
                     executionFormat = ScriptFormat.Robot;
                     break;
                 case ScriptFormat.Json:
@@ -71,7 +72,8 @@ namespace WpfTestIde.Execution
                         imported.Steps,
                         imported.Driver ?? request.Driver,
                         imported.Mode ?? request.Mode,
-                        imported.AppId ?? request.AppId);
+                        imported.AppId ?? request.AppId,
+                        imported.Datasets);
                     executionFormat = ScriptFormat.Robot;
                     break;
                 case ScriptFormat.Python:
@@ -159,15 +161,18 @@ namespace WpfTestIde.Execution
             IEnumerable<RecordedStep> steps,
             string? driver = null,
             string? mode = null,
-            string? appId = null)
+            string? appId = null,
+            IReadOnlyDictionary<string, List<string>>? datasets = null)
         {
+            var nodeList = steps.ToList();
             return ScriptGenerator.Generate(
-                steps,
+                nodeList,
                 testCaseName: "Recorded Session Playback",
                 driver: driver ?? request.Driver,
                 mode: mode ?? request.Mode,
                 recordingModes: request.RecordingModes.ToList(),
-                appId: appId ?? request.AppId);
+                appId: appId ?? request.AppId,
+                datasets: datasets ?? request.Datasets);
         }
 
         private static string GetScriptDirectory(string? sourcePath, string frameworkRoot)
