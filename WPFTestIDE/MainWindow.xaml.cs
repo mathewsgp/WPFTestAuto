@@ -50,7 +50,12 @@ namespace WpfTestIde
         // ------------------------------------------------------------
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            if (Application.Current?.Properties["LayoutState"] is not LayoutState state) return;
+            if (Application.Current?.Properties["LayoutState"] is not LayoutState state)
+            {
+                System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: Properties[\"LayoutState\"] is null or not LayoutState - using XAML defaults");
+                return;
+            }
+            System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: Loaded state - DockLayoutJson={(state.DockLayoutJson == null ? "null" : $"{(state.DockLayoutJson.Length)} chars")}, ActivePaneId={state.ActivePaneId}, SelectedTabIndex={state.SelectedTabIndex}");
 
             // Theme first so the rest of the UI paints in the user's theme.
             Themes.ThemeManager.ApplyTheme(string.IsNullOrWhiteSpace(state.Theme) ? "Light" : state.Theme);
@@ -113,31 +118,42 @@ namespace WpfTestIde
             // re-inject the pane UserControls.
             if (!string.IsNullOrWhiteSpace(state.DockLayoutJson))
             {
+                System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: Attempting dock layout deserialize...");
                 try
                 {
                     var serializer = new JsonLayoutSerializer(dockManager);
                     using var stream = new MemoryStream(Encoding.UTF8.GetBytes(state.DockLayoutJson));
                     serializer.Deserialize(stream);
 
+                    System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: After deserialize - RootPanel={dockManager.Layout?.RootPanel?.GetType().Name}, Children={dockManager.Layout?.RootPanel?.Children?.Count}");
+
                     RestoreDockPaneContent();
+
+                    System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: After RestoreDockPaneContent");
 
                     if (!string.IsNullOrWhiteSpace(state.ActivePaneId))
                     {
+                        System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: ShowPane({state.ActivePaneId})");
                         ShowPane(state.ActivePaneId);
                     }
                     else if (state.SelectedTabIndex >= 0 && state.SelectedTabIndex < 3)
                     {
-                        ShowPane(state.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" });
+                        var paneName = state.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" };
+                        System.Diagnostics.Debug.WriteLine($"LAYOUT RESTORE: ShowPane({paneName}) from SelectedTabIndex");
+                        ShowPane(paneName);
                     }
 
-                    // Apply splitter state after content is re-injected.
                     ApplySplitterState(state);
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Dock layout restore failed: {ex.Message}");
-                    // Fall back to the XAML-defined default layout (already set).
+                    System.Diagnostics.Debug.WriteLine($"Dock layout restore stack: {ex.StackTrace}");
                 }
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("LAYOUT RESTORE: DockLayoutJson is null/empty - using XAML defaults");
             }
         }
 
