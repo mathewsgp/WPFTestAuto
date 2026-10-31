@@ -106,7 +106,9 @@ namespace WpfTestIde
                     WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 }
             }
-            // A6+E4 step 3: dock layout restore + pane activation.
+            // A6+E4 step 3: dock layout restore + pane activation -- TEMPORARILY DISABLED
+            // so you can verify the default XAML view. Re-enable by uncommenting below.
+            /*
             if (!string.IsNullOrWhiteSpace(state.DockLayoutJson))
             {
                 try
@@ -152,14 +154,7 @@ namespace WpfTestIde
             }
 
             // Defer the post-restore layout pass + pane-width re-application until the
-            // visual tree has realized the docked pane content. Two phases so the order
-            // is deterministic:
-            //   1) UpdateLayout - processes auto-hide sides JsonLayoutSerializer restored
-            //      but the visual tree hadn't realized yet, and realizes pane content.
-            //   2) ApplyPaneWidths / ApplySplitterState - re-assert the persisted absolute
-            //      pane widths AFTER the dock layout has been (re)built, so they win
-            //      regardless of whether the dock JSON round-tripped them correctly or
-            //      fell back to defaults.
+            // visual tree has realized the docked pane content.
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 dockManager.UpdateLayout();
@@ -170,9 +165,7 @@ namespace WpfTestIde
                 LogLayoutStructure("After UpdateLayout", dockManager.Layout);
             }), DispatcherPriority.Loaded);
 
-            // 2nd-tick re-apply of pane widths: OnFixChildrenDockLengths can reset
-            // non-star DockWidths back to star during subsequent layout passes, so
-            // re-apply after the layout system has settled to make persisted widths stick.
+            // 2nd-tick re-apply of pane widths.
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 ApplyPaneWidths(state.PaneWidths);
@@ -181,9 +174,7 @@ namespace WpfTestIde
                 LogLayoutStructure("After 2nd Tick", dockManager.Layout);
             }), DispatcherPriority.Background);
 
-            // 3rd-tick re-apply at ContextIdle: catches any late layout passes
-            // (e.g. from window show, content render, DPI changes) that may have
-            // reset widths back to star after the Background tick.
+            // 3rd-tick re-apply at ContextIdle.
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 ApplyPaneWidths(state.PaneWidths);
@@ -191,6 +182,7 @@ namespace WpfTestIde
                 System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER 3RD TICK ===");
                 LogLayoutStructure("After 3rd Tick", dockManager.Layout);
             }), DispatcherPriority.ContextIdle);
+            */
         }
 
         private void ApplySplitterState(LayoutState state)
