@@ -774,19 +774,19 @@ namespace WpfTestIde
         {
             rootPanel.Children.Clear();
 
-            // Left: WORKING FOLDER (narrow, icon-only toolbar). The host pane is given
-            // an explicit DockWidth so the tree view stays comfortably narrow
-            // regardless of AvalonDock's default star sizing.
+            // Left: WORKING FOLDER (narrow, icon-only toolbar). Use star units
+            // (not pixels) because LayoutPanelControl.OnFixChildrenDockLengths
+            // resets non-star DockWidths back to 1* on every layout pass.
             var workingFolderPane = new LayoutAnchorable { Title = "WORKING FOLDER", IsActive = false };
             workingFolderPane.Content = CreatePaneContent(new Docking.Views.WorkingFolderPane(), "tabWorkingFolder");
             var workingFolderHost = new LayoutAnchorablePane();
-            workingFolderHost.DockWidth = new GridLength(220, GridUnitType.Pixel);
+            workingFolderHost.DockWidth = new GridLength(0.2, GridUnitType.Star);
             workingFolderHost.Children.Add(workingFolderPane);
 
             // Right: ELEMENTS / SCRIPTS / RESULTS as a single vertical
             // LayoutPanel containing one LayoutAnchorablePane with all three
             // anchorables — this is what makes them render as a tabbed group.
-            var rightGroup = new LayoutPanel { Orientation = Orientation.Vertical };
+            var rightGroup = new LayoutPanel { Orientation = Orientation.Vertical, DockWidth = new GridLength(1, GridUnitType.Star) };
             var rightTabHost = new LayoutAnchorablePane();
             var elementsPane = new LayoutAnchorable { Title = "ELEMENTS", IsActive = true };
             elementsPane.Content = CreatePaneContent(new Docking.Views.ElementsPane(), "tabElements");

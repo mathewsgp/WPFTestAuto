@@ -365,8 +365,11 @@
                         <avalonDock:LayoutPanel>
                             <!-- Left: Working Folder (narrow, icon-only toolbar). The pane host is given
       an explicit DockWidth so the tree view stays comfortably narrow regardless
-      of AvalonDock's default star sizing. -->
-                            <avalonDock:LayoutAnchorablePane DockWidth="220">
+      of AvalonDock's default star sizing. Use star units (not pixels) because
+      LayoutPanelControl.OnFixChildrenDockLengths resets non-star DockWidths back
+      to 1* on every layout pass, which would otherwise make this pane take ~half
+      the screen instead of a narrow strip. -->
+                            <avalonDock:LayoutAnchorablePane DockWidth="0.2*">
                                 <avalonDock:LayoutAnchorable Title="WORKING FOLDER" IsActive="False">
                                     <Grid AutomationProperties.AutomationId="tabWorkingFolder">
                                         <dockViews:WorkingFolderPane/>
@@ -374,7 +377,7 @@
                                 </avalonDock:LayoutAnchorable>
                             </avalonDock:LayoutAnchorablePane>
                             <!-- Right: ELEMENTS / SCRIPTS / RESULTS as one tabbed group -->
-                            <avalonDock:LayoutPanel Orientation="Vertical">
+                            <avalonDock:LayoutPanel Orientation="Vertical" DockWidth="1*">
                                 <avalonDock:LayoutAnchorablePane>
                                     <avalonDock:LayoutAnchorable Title="ELEMENTS" IsActive="True">
                                         <Grid AutomationProperties.AutomationId="tabElements">
