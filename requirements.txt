@@ -13,7 +13,7 @@ pydantic-settings>=2.0.0
 # Required for flaui-uiautomation-wrapper Python UI Automation driver.
 flaui-uiautomation-wrapper>=1.0.0b1
 # Required for Sikuli image-based automation.
-robotframework-SikuliLibrary>=1.0
+okulix>=1.0
 
 # ---- Optional: OCR ----
 # Required for checkpoint/OCR verification features.

@@ -13,7 +13,7 @@ application. Layer 4's method signatures (the "API parity" contract) do
 | `drivers/mock_wpf_app/` | Nothing — delete/ignore. This only exists for the mock. |
 | `drivers_rf/flaui_robotframework/FlaUILibrary.py` body | Real FlaUI calls (via pythonnet or a .NET Remote Library server) |
 | `drivers_rf/wpfspy_robotframework/WPFSpyLibrary.py` | Already real — see "WPFSpy — already implemented for real" below |
-| `drivers_rf/sikuli_robotframework/SikuliLibrary.py` body | Real SikuliX (Java) integration or `robotframework-SikuliLibrary` |
+| `drivers_rf/sikuli_robotframework/SikuliLibrary.py` body | Real SikuliX (Java) integration or `okulix` |
 
 ## Option A — pythonnet bridge (FlaUI)
 
@@ -109,7 +109,7 @@ doc's "Option 3" for the honest tradeoffs, and ask if you need it built.
 Real image-based matching needs: (1) actual reference screenshots saved
 under an `images/` folder (referenced by `imagePath` in
 `repository/elements/*.json`, replacing the semantic tags used by the
-mock), and (2) either the SikuliX Java jar + `robotframework-SikuliLibrary`,
+mock), and (2) either the SikuliX Java jar + `okulix`,
 or an OpenCV-based Python template-matching implementation exposing the
 same `find_element`/`invoke`/etc. signatures.
 

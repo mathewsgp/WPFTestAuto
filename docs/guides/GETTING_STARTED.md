@@ -13,7 +13,7 @@ setup_env.bat
 This creates `.venv`, activates it, upgrades `pip`, and installs all
 required + optional packages (`robotframework`, `pyyaml`, `pytest`,
 `robotframework-requests`, `pywin32`, `FlaUILibrary`,
-`robotframework-SikuliLibrary`, `pytesseract`, `Pillow`).
+`okulix`, `pytesseract`, `Pillow`).
 
 ### Manual / cross-platform
 
@@ -22,7 +22,7 @@ python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate.bat
 pip install -U pip
 pip install robotframework pyyaml pytest robotframework-requests pywin32
-pip install FlaUILibrary robotframework-SikuliLibrary pytesseract Pillow
+pip install FlaUILibrary okulix pytesseract Pillow
 ```
 
 Requires Python 3.9+.
