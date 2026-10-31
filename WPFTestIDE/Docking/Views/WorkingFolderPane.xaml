@@ -2,43 +2,42 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              DataContext="{Binding DataContext, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}">
-    <DockPanel Margin="6">
-        <!-- Toolbar -->
-        <Border DockPanel.Dock="Top" Margin="0,6,0,6" Padding="4" Background="{DynamicResource PanelBrush}" CornerRadius="3">
+    <DockPanel Margin="4">
+        <!-- Toolbar: icon-only buttons -->
+        <Border DockPanel.Dock="Top" Margin="0,4,0,4" Padding="4" Background="{DynamicResource PanelBrush}" CornerRadius="3">
             <StackPanel Orientation="Horizontal">
-                <Button x:Name="btnOpenFolder" Content="📂 Open Folder" ToolTip="Open a working folder to browse"
-                        Command="{Binding OpenWorkingFolderCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnOpenFolder"/>
-                <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                <TextBlock FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" AutomationProperties.AutomationId="txtWorkingFolderPath">
-                    <Run Text="Folder: "/>
-                    <Run Text="{Binding WorkingFolderPath}"/>
-                </TextBlock>
-                <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                <Button x:Name="btnImportSelected" Content="📥 Import Selected" ToolTip="Import the selected element JSON or script file"
+                <Button x:Name="btnOpenFolder" ToolTip="Open Working Folder"
+                        Command="{Binding OpenWorkingFolderCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnOpenFolder">
+                    <TextBlock Text="📂" FontSize="14"/>
+                </Button>
+                <Button x:Name="btnImportSelected" ToolTip="Import Selected File"
                         Command="{Binding ImportWorkingFolderSelectedCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnImportSelected"
-                        IsEnabled="{Binding CanImportSelected}"/>
-                <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                <TextBlock Text="(element JSON → Elements; .json/.py/.robot script → Scripts)" FontSize="9" Margin="4,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextDisabledBrush}"/>
+                        IsEnabled="{Binding CanImportSelected}">
+                    <TextBlock Text="📥" FontSize="14"/>
+                </Button>
             </StackPanel>
         </Border>
 
-        <!-- Folder Tree -->
-        <Border Padding="6" Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3">
+        <!-- Folder Tree. The selected node's full path is shown as a tooltip so
+             deep paths don't get clipped by the narrow pane width. -->
+        <Border Padding="4" Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3">
             <TreeView x:Name="FolderTreeView" ItemsSource="{Binding WorkingFolderRoot, Converter={StaticResource SingleItemToCollectionConverter}}"
                       SelectedItemChanged="FolderTreeView_SelectedItemChanged"
+                      ToolTip="{Binding WorkingFolderPath}"
                       BorderThickness="0" Background="Transparent" AutomationProperties.AutomationId="FolderTreeView">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
-                        <Setter Property="Padding" Value="2"/>
+                        <Setter Property="Padding" Value="1"/>
+                        <Setter Property="ToolTip" Value="{Binding FullPath}"/>
                     </Style>
                 </TreeView.ItemContainerStyle>
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                        <StackPanel Orientation="Horizontal" Margin="2">
-                            <TextBlock Text="{Binding Converter={StaticResource FolderItemIconConverter}}" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock VerticalAlignment="Center" FontSize="12">
+                        <StackPanel Orientation="Horizontal" Margin="1">
+                            <TextBlock Text="{Binding Converter={StaticResource FolderItemIconConverter}}" FontSize="13" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock VerticalAlignment="Center" FontSize="11">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Text" Value="{Binding Name}"/>
@@ -53,22 +52,12 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <TextBlock Text="{Binding FileType}" FontSize="10" Margin="6,0,0,0" VerticalAlignment="Center"
+                            <TextBlock Text="{Binding FileType}" FontSize="9" Margin="4,0,0,0" VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>
-        </Border>
-
-        <!-- Selection hint -->
-        <Border DockPanel.Dock="Bottom" Padding="8" Background="{DynamicResource PanelBrush}" CornerRadius="3">
-            <TextBlock x:Name="txtSelectionHint" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
-                       AutomationProperties.AutomationId="txtSelectionHint">
-                <Run Text="Open a folder, then select a file. "/>
-                <Run Text="{Binding SelectedFileType}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
-                <Run Text=" selected — click Import to add it to Elements or Scripts."/>
-            </TextBlock>
         </Border>
     </DockPanel>
 </UserControl>

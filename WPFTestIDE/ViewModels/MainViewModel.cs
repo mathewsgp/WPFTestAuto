@@ -307,26 +307,14 @@ private FolderTreeItem? _workingFolderSelectedItem;
             set
             {
                 _workingFolderSelectedItem = value;
-                // CanImportSelected and SelectedFileType are computed from this
-                // property, so raise their change notifications explicitly.
-                foreach (var name in new[] { nameof(WorkingFolderSelectedItem), nameof(CanImportSelected), nameof(SelectedFileType) })
+                // CanImportSelected is computed from this property, so raise
+                // its change notification explicitly when the tree selection
+                // changes (the XAML Import button's IsEnabled re-evaluates).
+                foreach (var name in new[] { nameof(WorkingFolderSelectedItem), nameof(CanImportSelected) })
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
             }
         }
         public bool CanImportSelected => WorkingFolderSelectedItem != null && !WorkingFolderSelectedItem.IsDirectory;
-        public string? SelectedFileType
-        {
-            get => WorkingFolderSelectedItem?.FileType;
-            set
-            {
-                // Read-only computed property: the setter exists only so WPF
-                // TwoWay/OneWayToSource bindings don't throw on the read-only
-                // computed getter. The actual value is derived from
-                // WorkingFolderSelectedItem, which fires INPC for this property
-                // whenever the tree selection changes.
-                _ = value;
-            }
-        }
 
         // Recording mode checkboxes (FlaUI, WPFSpy, Sikuli)
         private bool _recordFlaUI = true;
