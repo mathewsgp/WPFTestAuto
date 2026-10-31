@@ -46,6 +46,8 @@ namespace WpfTestIde
                 Resources[key] = new System.Windows.Media.SolidColorBrush(color);
             }
 
+            Properties["LayoutState"] = WpfTestIde.Helpers.LayoutPersistence.Load();
+
             base.OnStartup(e);
         }
     }
