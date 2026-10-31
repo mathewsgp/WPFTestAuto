@@ -314,7 +314,19 @@ private FolderTreeItem? _workingFolderSelectedItem;
             }
         }
         public bool CanImportSelected => WorkingFolderSelectedItem != null && !WorkingFolderSelectedItem.IsDirectory;
-        public string? SelectedFileType => WorkingFolderSelectedItem?.FileType;
+        public string? SelectedFileType
+        {
+            get => WorkingFolderSelectedItem?.FileType;
+            set
+            {
+                // Read-only computed property: the setter exists only so WPF
+                // TwoWay/OneWayToSource bindings don't throw on the read-only
+                // computed getter. The actual value is derived from
+                // WorkingFolderSelectedItem, which fires INPC for this property
+                // whenever the tree selection changes.
+                _ = value;
+            }
+        }
 
         // Recording mode checkboxes (FlaUI, WPFSpy, Sikuli)
         private bool _recordFlaUI = true;

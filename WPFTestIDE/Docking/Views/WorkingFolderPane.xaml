@@ -66,7 +66,7 @@
             <TextBlock x:Name="txtSelectionHint" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
                        AutomationProperties.AutomationId="txtSelectionHint">
                 <Run Text="Open a folder, then select a file. "/>
-                <Run Text="{Binding SelectedFileType, StringFormat='{}{0}'}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
+                <Run Text="{Binding SelectedFileType}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
                 <Run Text=" selected — click Import to add it to Elements or Scripts."/>
             </TextBlock>
         </Border>
