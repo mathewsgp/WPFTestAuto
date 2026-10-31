@@ -169,6 +169,17 @@ namespace WpfTestIde
                 System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER UPDATELAYOUT ===");
                 LogLayoutStructure("After UpdateLayout", dockManager.Layout);
             }), DispatcherPriority.Loaded);
+
+            // 2nd-tick re-apply of pane widths: OnFixChildrenDockLengths can reset
+            // non-star DockWidths back to star during subsequent layout passes, so
+            // re-apply after the layout system has settled to make persisted widths stick.
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                ApplyPaneWidths(state.PaneWidths);
+
+                System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER 2ND TICK ===");
+                LogLayoutStructure("After 2nd Tick", dockManager.Layout);
+            }), DispatcherPriority.Background);
         }
 
         private void ApplySplitterState(LayoutState state)
@@ -217,6 +228,12 @@ namespace WpfTestIde
                 System.Diagnostics.Debug.WriteLine($"ElementsPane splitter snapshot skipped: {ex.Message}");
             }
             
+            // Snapshot pane widths BEFORE SerializeLayout, because SerializeLayout
+            // calls dm.UpdateLayout() which triggers OnFixChildrenDockLengths and
+            // forces non-star DockWidths back to star — we must capture the live
+            // (possibly user-resized) absolute widths first.
+            var paneWidths = SnapshotPaneWidths();
+
             var state = new LayoutState
             {
                 WindowState = (int)WindowState,
@@ -234,8 +251,7 @@ namespace WpfTestIde
                 RunOutputPanelExpanded = vm.RunOutputPanelExpanded,
                 ActivePaneId = vm.ActivePaneId ?? (vm.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" }),
                 DockLayoutJson = SerializeLayout(dockManager),
-                // E1: explicit absolute pane widths, independent of the dock JSON.
-                PaneWidths = SnapshotPaneWidths(),
+                PaneWidths = paneWidths,
             };
             LayoutPersistence.Save(state);
         }
@@ -642,9 +658,13 @@ namespace WpfTestIde
             }
             if (applied > 0)
             {
-                // Re-run a layout pass so the new absolute widths take effect visually
-                // immediately rather than on the next user interaction.
-                dockManager.UpdateLayout();
+                // NOTE: do NOT call dockManager.UpdateLayout() here —
+                // UpdateLayout() triggers LayoutPanelControl.OnFixChildrenDockLengths
+                // which forces non-star DockWidths back to star, undoing the widths
+                // we just set. The widths take effect on the next natural layout pass,
+                // and a 2nd-tick re-apply in MainWindow_Loaded ensures they stick.
+                System.Diagnostics.Debug.WriteLine($"ApplyPaneWidths: matched {applied}/{paneWidths.Count} pane width(s)");
+                return;
             }
             System.Diagnostics.Debug.WriteLine($"ApplyPaneWidths: matched {applied}/{paneWidths.Count} pane width(s)");
         }
