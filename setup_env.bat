@@ -81,12 +81,11 @@ echo.
 echo   -- Installing core dependencies --
 echo   robotframework       (test execution)
 echo   pytest               (unit tests)
-echo   robotframework-requests (HTTP client)
 echo   pywin32              (Windows named pipe / Win32 APIs)
 echo   pydantic             (data validation/settings)
 echo   pydantic-settings    (env-file based settings)
 echo.
-python -m pip install robotframework pytest robotframework-requests pywin32 pydantic pydantic-settings
+python -m pip install robotframework pytest pywin32 pydantic pydantic-settings
 if errorlevel 1 (
     echo WARNING: Some core packages failed to install. Check the output above.
 )

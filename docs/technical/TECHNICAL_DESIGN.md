@@ -674,9 +674,7 @@ WPFSpy agent returns:
 | Package | Version | Purpose |
 |---------|---------|---------|
 | robotframework | 7.x | Test execution |
-| pyyaml | - | YAML parsing |
 | FlaUILibrary | - | UI Automation wrapper |
-| robotframework-requests | - | HTTP client |
 | pywin32 | - | Named Pipe client (Windows) |
 
 ### 11.2 .NET Dependencies
