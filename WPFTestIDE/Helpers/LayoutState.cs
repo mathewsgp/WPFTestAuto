@@ -51,8 +51,7 @@ namespace WpfTestIde.Helpers
         public double TreeColumnWidth { get; set; }
         public double PropertiesColumnWidth { get; set; }
 
-        // A3 / A4 / A5 collapsible bottom-panel expanded states.
-        public bool OcrPanelExpanded { get; set; }
+        // A4 / A5 collapsible bottom-panel expanded states.
         public bool RepositoryPanelExpanded { get; set; }
         public bool RunOutputPanelExpanded { get; set; }
 

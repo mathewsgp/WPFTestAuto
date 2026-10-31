@@ -313,33 +313,6 @@
             </StatusBarItem>
         </StatusBar>
 
-        <!-- ================= OCR Result (collapsible bottom panel) =================
-             A3: previously a permanently-docked strip consuming ~120px even when
-             no OCR was running. Now an Expander collapsed by default; expands
-             automatically (via OcrPanelExpanded) when fresh OCR text arrives, and
-             the user can collapse it again. Frees the vertical space otherwise. -->
-        <Expander DockPanel.Dock="Bottom"
-                  IsExpanded="{Binding OcrPanelExpanded, Mode=TwoWay}"
-                  Padding="8,4"
-                  BorderBrush="{DynamicResource BorderBrush}"
-                  BorderThickness="0,1,0,0"
-                  AutomationProperties.AutomationId="OcrResultExpander">
-            <Expander.Header>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="OCR Result" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <!-- "(empty)" badge when no OCR text has been produced yet -->
-                     <TextBlock Text="(empty)" FontSize="10" Margin="6,0,0,0" VerticalAlignment="Center"
-                                Foreground="{DynamicResource TextSecondaryBrush}"
-                                Visibility="{Binding OcrResultText, Converter={StaticResource EmptyStringToVisibleConverter}, Mode=OneWay}"/>
-                </StackPanel>
-            </Expander.Header>
-            <TextBox x:Name="txtOcrResult" Text="{Binding OcrResultText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                     FontFamily="Consolas" FontSize="11" TextWrapping="Wrap" AcceptsReturn="True"
-                     Style="{StaticResource VsCodeEditor}"
-                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                     MaxHeight="120" AutomationProperties.AutomationId="txtOcrResult"/>
-        </Expander>
-
         <!-- ================= Run Output (collapsible bottom panel) =================
              A5: a bottom-docked tail of RunOutputText so the live Robot log stream
              is glanceable across any tab (ELEMENTS/SCRIPTS/RESULTS) without leaving
@@ -376,12 +349,13 @@
 
 <!-- ================= Docked Panes (A6 Step 3) =================
       Default layout:
-        - Left  : WORKING FOLDER (narrow, icon-only toolbar)
+        - Left  : WORKING FOLDER (narrow, icon-only toolbar, 220px wide)
         - Right : ELEMENTS / SCRIPTS / RESULTS as a single tabbed group
         - Bottom: Run Output expander (outside the manager, docked bottom)
-      OCR Result expander stays collapsed by default (OcrPanelExpanded=false).
-      The 3 legacy Main-Control TabItems have been promoted to dockable
-      LayoutAnchorable panes. Each keeps its legacy tab-header AutomationId
+      The OCR Result expander was removed entirely (A3) — it is no longer
+      surfaced in the default layout. The 3 legacy Main-Control TabItems have
+      been promoted to dockable LayoutAnchorable panes. Each keeps its
+      legacy tab-header AutomationId
       (tabElements/tabScripts/tabResults/tabWorkingFolder) so UC-010/UC-014
       `Click Element` locators still resolve. -->
         <avalonDock:DockingManager x:Name="dockManager">
@@ -389,8 +363,10 @@
                 <avalonDock:LayoutRoot>
                     <avalonDock:LayoutRoot.RootPanel>
                         <avalonDock:LayoutPanel>
-                            <!-- Left: Working Folder -->
-                            <avalonDock:LayoutAnchorablePane>
+                            <!-- Left: Working Folder (narrow, icon-only toolbar). The pane host is given
+      an explicit DockWidth so the tree view stays comfortably narrow regardless
+      of AvalonDock's default star sizing. -->
+                            <avalonDock:LayoutAnchorablePane DockWidth="220">
                                 <avalonDock:LayoutAnchorable Title="WORKING FOLDER" IsActive="False">
                                     <Grid AutomationProperties.AutomationId="tabWorkingFolder">
                                         <dockViews:WorkingFolderPane/>

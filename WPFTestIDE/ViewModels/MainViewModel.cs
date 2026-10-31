@@ -45,7 +45,7 @@ namespace WpfTestIde.ViewModels
         // Border's <c>Visibility</c>. The two-phase removal (hide-then-dequeue
         // on the next dispatcher tick) keeps the <c>ActiveToasts[0]</c>
         // indexer binding from re-evaluating against an empty collection while
-        // the Border is still in the visible tree — see the E3 risk register.
+        // the Border is still in the visible tree � see the E3 risk register.
         public ObservableCollection<ToastMessage> ActiveToasts { get; } = new();
 
         private bool _isToastVisible;
@@ -80,7 +80,7 @@ namespace WpfTestIde.ViewModels
 
         // E3: the single outstanding toast-removal timer. Tracked as a field
         // (not a per-call local) so a replacement toast's Enqueue-toast can
-        // Dispose the previous toast's still-pending timer — otherwise the
+        // Dispose the previous toast's still-pending timer � otherwise the
         // prior timer's 4-s callback fires against whatever toast is currently
         // shown and hides it early (the toast-overlap bug called out in the
         // E3 review).
@@ -89,7 +89,7 @@ namespace WpfTestIde.ViewModels
         private void EnqueueToastCore(string text, ToastKind kind)
         {
             // Cancel any prior in-flight removal timer before starting a new
-            // one — guarantees only one removal timer is outstanding at a
+            // one � guarantees only one removal timer is outstanding at a
             // time, so it can never fire against a replacement toast.
             var oldTimer = _toastTimer;
             _toastTimer = null;
@@ -99,11 +99,11 @@ namespace WpfTestIde.ViewModels
             // ActiveToasts[0] indexer binding isn't re-evaluated against the
             // collection while we mutate it. The Visibility flip is flushed
             // via the deferred reveal below (a fresh dispatcher tick at
-            // Render priority) so WPF actually sees a Collapsed→Visible
+            // Render priority) so WPF actually sees a Collapsed?Visible
             // transition and the fade-in Storyboard re-fires per toast.
             IsToastVisible = false;
 
-            // In-place swap when a toast is already showing — raises
+            // In-place swap when a toast is already showing � raises
             // NotifyCollectionChangedAction.Replace (not Reset) so the
             // ActiveToasts[0] indexer bindings never re-evaluate against a
             // 0-length collection (avoids the WPF trace binding errors that
@@ -135,7 +135,7 @@ namespace WpfTestIde.ViewModels
 
             // One-shot 4-s removal. The Timer Disposes itself in a try/finally
             // that wraps the dispatcher hop (NOT inside the BeginInvoke
-            // callback) so the native handle is always freed — even if the
+            // callback) so the native handle is always freed � even if the
             // Dispatcher is shutting down when the timer fires (window closing
             // mid-toast) and the queued callback is dropped/throws.
             System.Threading.Timer? timer = null;
@@ -145,7 +145,7 @@ namespace WpfTestIde.ViewModels
                 {
                     // Only act if this timer is still THE current one. A
                     // replacement toast Disposes this timer (above) and
-                    // sets _toastTimer to its own — in that case this
+                    // sets _toastTimer to its own � in that case this
                     // callback's captured `timer` ref equals the disposed
                     // old timer and we silently no-op.
                     if (timer != _toastTimer) return;
@@ -161,7 +161,7 @@ namespace WpfTestIde.ViewModels
                     {
                         // Hide first; the Border collapses so the bound
                         // TextBlock + indexer go quiescent, then the ActiveToasts
-                        // item is removed. Order matters — see the E3 risk
+                        // item is removed. Order matters � see the E3 risk
                         // register.
                         IsToastVisible = false;
                         if (ActiveToasts.Count > 0) ActiveToasts.Clear();
@@ -172,7 +172,7 @@ namespace WpfTestIde.ViewModels
                     // Dispose from the timer's own ThreadPool thread (NOT
                     // inside the BeginInvoke callback). try/finally guarantees
                     // the Dispose runs even if BeginInvoke throws because the
-                    // Dispatcher is shutting down — no native-handle leak and
+                    // Dispatcher is shutting down � no native-handle leak and
                     // the VM/ActiveToasts closure is release-able on window
                     // close.
                     timer?.Dispose();
@@ -186,7 +186,7 @@ namespace WpfTestIde.ViewModels
         /// View. Filtered in-place by the Show* / search props below; re-evaluated
         /// whenever a filter input changes via <see cref="RefreshLogFilter"/>.
         /// Exposed as a property (not a method) so XAML can bind
-        /// <c>ItemsSource="{Binding RunOutputFiltered}"</c> — a stable object ref
+        /// <c>ItemsSource="{Binding RunOutputFiltered}"</c> � a stable object ref
         /// through filter changes keeps the ListView from re-templating.</summary>
         public ICollectionView RunOutputFiltered { get; }
 
@@ -213,7 +213,7 @@ namespace WpfTestIde.ViewModels
         // Element Tree ViewModel
         public ElementTreeViewModel ElementTree { get; } = new();
 
-        // Separate content per format — each tab edits its own text, Apply
+        // Separate content per format � each tab edits its own text, Apply
         // syncs the active tab back into the Steps collection so all views
         // reflect the change when switching.
         private string _jsonScriptContent = "";
@@ -249,12 +249,12 @@ namespace WpfTestIde.ViewModels
 
         private bool _isRecording;
         public bool IsRecording { get => _isRecording; set { _isRecording = value; OnPropertyChanged(); OnPropertyChanged(nameof(RecordButtonLabel)); } }
-        public string RecordButtonLabel => IsRecording ? "■ Stop Recording" : "● Record";
+        public string RecordButtonLabel => IsRecording ? "� Stop Recording" : "? Record";
 
         private bool _isAttached;
         public bool IsAttached { get => _isAttached; set { _isAttached = value; OnPropertyChanged(); } }
 
-        private string _statusText = "Not attached — use \"Attach to Process...\" to begin.";
+        private string _statusText = "Not attached � use \"Attach to Process...\" to begin.";
         public string StatusText { get => _statusText; set { _statusText = value; OnPropertyChanged(); } }
 
         private string _pipeStatusText = "";
@@ -403,7 +403,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
         private bool _lastRunSuccess;
         public bool LastRunSuccess { get => _lastRunSuccess; set { _lastRunSuccess = value; OnPropertyChanged(); } }
 
-        // Paths — defaults match this repo's layout when the IDE is run
+        // Paths � defaults match this repo's layout when the IDE is run
         // from WpfTestIde/bin/.../ against the sibling WpfTestFramework checkout.
         public string FrameworkRoot { get; set; } = Path.GetFullPath(Path.Combine(System.AppContext.BaseDirectory, "..", "..", ".."));
         public string PipeName { get; set; } = "WPFSpyAgentPipe";
@@ -461,53 +461,21 @@ private FolderTreeItem? _workingFolderSelectedItem;
 
         private bool _isPickModeActive;
         public bool IsPickModeActive { get => _isPickModeActive; set { _isPickModeActive = value; OnPropertyChanged(); OnPropertyChanged(nameof(PickButtonLabel)); } }
-        public string PickButtonLabel => IsPickModeActive ? "■ Cancel Pick" : "🔍 Pick Element";
+        public string PickButtonLabel => IsPickModeActive ? "� Cancel Pick" : "?? Pick Element";
 
         private string _previewText = "";
         public string PreviewText { get => _previewText; set { _previewText = value; OnPropertyChanged(); } }
 
-        private string _ocrResultText = "";
+private string _ocrResultText = "";
         public string OcrResultText
         {
             get => _ocrResultText;
             set
             {
                 _ocrResultText = value;
-                OnPropertyChanged();
-                // Only raise HasOcrResult on a real state change to avoid spamming
-                // change notifications for identical content.
-                var hasResult = !string.IsNullOrEmpty(value);
-                if (hasResult != _hasOcrResult)
-                {
-                    HasOcrResult = hasResult;
-                }
-                // Auto-open the OCR panel whenever fresh OCR content arrives so the
-                // user sees it without hunting for the collapsed expander. Manual
-                // collapse is still honored afterwards.
-                if (hasResult)
-                {
-                    OcrPanelExpanded = true;
-                }
-            }
-        }
-
-        // True when there is OCR text to show; drives the Expander's caret/empty hint
-        // and is computed from OcrResultText so consumers don't have to re-test it.
-        private bool _hasOcrResult;
-        public bool HasOcrResult
-        {
-            get => _hasOcrResult;
-            set { _hasOcrResult = value; OnPropertyChanged(); }
-        }
-
-        // Two-way: user can collapse/expand manually, OCR arrival auto-expands.
-        private bool _ocrPanelExpanded;
-        public bool OcrPanelExpanded
-        {
-            get => _ocrPanelExpanded;
-            set
-            {
-                _ocrPanelExpanded = value;
+                // The OCR Result expander was removed from the default layout (A3);
+                // this property remains as a write-only sink so the OCR command can
+                // still record its output without surfacing a UI element.
                 OnPropertyChanged();
             }
         }
@@ -528,7 +496,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
 
         // A5: bottom-docked Run Output tail panel, collapsed by default. Two-way so
         // the user can collapse it again. Auto-expanded in RunAsync when a run begins
-        // (mirrors the OCR auto-expand on arrival pattern) — gives a glanceable live
+        // (mirrors the OCR auto-expand on arrival pattern) � gives a glanceable live
         // tail across any tab without leaving the SCRIPTS/ELEMENTS view. This is a
         // duplicate of the RESULTS-tab txtRunOutput; that editor stays unchanged.
         private bool _runOutputPanelExpanded;
@@ -658,7 +626,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
             // D4: also parse each new raw line into RunOutputLog. Reset tag handler
             // (sender == Collection clearing) replays nothing here because we
             // separately clear RunOutputLog in Reset()/RunAsync below. Insert of
-            // a single line at the end → LogLineParser.Parse + add to RunOutputLog;
+            // a single line at the end ? LogLineParser.Parse + add to RunOutputLog;
             // batch scenarios are not produced by the current Robot runner.
             RunOutputLines.CollectionChanged += (sender, args) =>
             {
@@ -701,7 +669,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
         }
 
         /// <summary>Maps the three Show* checkboxes to LogLevels. TRACE/DEBUG are
-        /// rolled under ShowInfo on purpose — Robot's quiet trace/debug lines are
+        /// rolled under ShowInfo on purpose � Robot's quiet trace/debug lines are
         /// noise most of the time and the DM filter strip only exposes Info/Warn/
         /// Error. Raw lines (unstructured Robot output: separator bars, blank
         /// lines, ASCII boxes) are shown when ShowInfo is on, hidden otherwise;
@@ -802,7 +770,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
             RepositoryLookup.EnsureLoaded(FrameworkRoot);
 
             IsAttached = true;
-            StatusText = $"Attached to {appName} (PID {dialog.SelectedProcessId}) — ready to record.";
+            StatusText = $"Attached to {appName} (PID {dialog.SelectedProcessId}) � ready to record.";
         }
 
         public void DetachApplication(string appId)
@@ -1099,7 +1067,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
         /// 3-attempt loop + the synchronous <see cref="SpyAgentClient"/>
         /// <c>Send</c> + the 1-second back-off sleeps on a ThreadPool thread.
         /// All <see cref="PipeStatusText"/> setter writes (and the
-        /// <see cref="EnqueueToast"/> calls) marshal back onto the dispatcher —
+        /// <see cref="EnqueueToast"/> calls) marshal back onto the dispatcher �
         /// the worker thread must not touch the bound string property directly.
         /// </summary>
         private async System.Threading.Tasks.Task CheckPipeConnectionAsync()
@@ -1126,8 +1094,8 @@ private FolderTreeItem? _workingFolderSelectedItem;
                 // The pipe responses (response.Data, response.Error, the
                 // message of any exception thrown by SpyAgentClient) come from
                 // the SpyAgent server which runs in the *attached target
-                // process* — a separate trust boundary. They are
-                // operator-readable here but their CRLF contents are not — a
+                // process* � a separate trust boundary. They are
+                // operator-readable here but their CRLF contents are not � a
                 // hostile or compromised attached process could otherwise
                 // forge arbitrary lines into the audit log
                 // (pipe_check_log.txt) by embedding \r\n. Strip control
@@ -1152,8 +1120,8 @@ private FolderTreeItem? _workingFolderSelectedItem;
 
                         if (response.Success && !string.IsNullOrEmpty(response.Data))
                         {
-                            Log($"Result: Pipe OK — attached app main window: {SanitizeForLog(response.Data)}");
-                            return ($"Pipe OK — attached app main window: {response.Data}", true, response.Data);
+                            Log($"Result: Pipe OK � attached app main window: {SanitizeForLog(response.Data)}");
+                            return ($"Pipe OK � attached app main window: {response.Data}", true, response.Data);
                         }
                         if (response.Success)
                         {
@@ -1161,8 +1129,8 @@ private FolderTreeItem? _workingFolderSelectedItem;
                             // CheckPipeConnection: the "Result:" line was
                             // emitted on both the data and no-data success
                             // branches; restore it here.
-                            Log("Result: Pipe OK — attached app has no main window title.");
-                            return ("Pipe OK — attached app has no main window title.", true, null);
+                            Log("Result: Pipe OK � attached app has no main window title.");
+                            return ("Pipe OK � attached app has no main window title.", true, null);
                         }
                         Log($"Result: Pipe check failed (attempt {attempt}/{maxAttempts}): {SanitizeForLog(response.Error ?? "unknown error")}");
                         Application.Current.Dispatcher.Invoke(() =>
@@ -1194,7 +1162,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
                 {
                     PipeStatusText = result.message;
                     // Mirror the status text exactly: on the empty-data
-                    // success branch result.message is "Pipe OK — attached
+                    // success branch result.message is "Pipe OK � attached
                     // app has no main window title." (NOT a "connected"
                     // fallback) so the toast and the status bar don't
                     // contradict each other.
@@ -1226,13 +1194,13 @@ private FolderTreeItem? _workingFolderSelectedItem;
             {
                 _session.Start();
                 IsRecording = true;
-                StatusText = "Recording — interact with the attached application now.";
+                StatusText = "Recording � interact with the attached application now.";
             }
         }
 
         private void OnStepCaptured(RecordedStep step, ElementEntry entry)
         {
-            // Marshal back to the UI thread — the mouse hook and FlaUI
+            // Marshal back to the UI thread � the mouse hook and FlaUI
             // focus events fire on non-UI threads.
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -1494,7 +1462,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
             }
         }
 
-        /// <summary>D3: move a step by a relative delta (±1) from the up/down buttons.</summary>
+        /// <summary>D3: move a step by a relative delta (�1) from the up/down buttons.</summary>
         private void MoveStep(RecordedStep? step, int delta)
         {
             if (step == null) return;
@@ -1693,18 +1661,18 @@ private FolderTreeItem? _workingFolderSelectedItem;
              LastRunSuccess = summary.Success;
              RunSummaryText = summary.Total > 0
                  ? $"{summary.Total} tests, {summary.Passed} passed, {summary.Failed} failed"
-                 : "No summary line found — check the output above for errors.";
+                 : "No summary line found � check the output above for errors.";
 
              // E3: amplify the run result with a transient toast. Suppress on
              // the "no test summary line" branch (the operator needs to read the
-             // log to diagnose those) — the banner RunSummaryText above stays
+             // log to diagnose those) � the banner RunSummaryText above stays
              // the authoritative read for everyone, the toast only mirrors the
              // pass/fail outcome for glancability when the operator is on a
              // different tab.
               if (summary.Total > 0)
               {
                   EnqueueToast(
-                      $"Run finished — {summary.Passed} passed, {summary.Failed} failed",
+                      $"Run finished � {summary.Passed} passed, {summary.Failed} failed",
                       summary.Success ? ToastKind.Success : ToastKind.Error);
               }
           }
@@ -1978,7 +1946,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
             }
             else
             {
-                EnqueueToast("Apply failed — could not parse the script.", ToastKind.Error);
+                EnqueueToast("Apply failed � could not parse the script.", ToastKind.Error);
             }
         }
 
@@ -2013,7 +1981,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
                 }
                 else
                 {
-                    EnqueueToast("Import failed — could not parse the file.", ToastKind.Error);
+                    EnqueueToast("Import failed � could not parse the file.", ToastKind.Error);
                 }
             }
             catch (Exception ex)
@@ -2292,7 +2260,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
 
             // .json files are ambiguous: both element repositories and script
             // JSONs use the .json extension. Disambiguate by inspecting the
-            // file's root JSON key ("elements" → Elements pane, "steps" →
+            // file's root JSON key ("elements" ? Elements pane, "steps" ?
             // Scripts pane). Fall back to the parent-directory name heuristic
             // (FolderTreeItem.IsScriptJson) when the file can't be parsed.
             if (ext == ".json")
@@ -2318,7 +2286,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
                         return;
                     }
 
-                    // Both present or neither present — fall back to the
+                    // Both present or neither present � fall back to the
                     // parent-directory heuristic used by FolderTreeItem.FileType.
                     if (WorkingFolderSelectedItem.IsScriptJson())
                     {
@@ -2330,7 +2298,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
                 }
                 catch
                 {
-                    // Unparseable — fall back to the directory heuristic.
+                    // Unparseable � fall back to the directory heuristic.
                     if (WorkingFolderSelectedItem.IsScriptJson())
                     {
                         ImportScriptFile(path);
@@ -2832,7 +2800,7 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                 _pickMouseHook.LeftButtonDown += OnPickClick;
                 _pickMouseHook.Start();
                 IsPickModeActive = true;
-                StatusText = "Pick mode active — click an element in the target app...";
+                StatusText = "Pick mode active � click an element in the target app...";
             }
             catch (Exception ex)
             {
@@ -2857,13 +2825,13 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                 dispatcher.Invoke(() =>
                 {
                     IsPickModeActive = false;
-                    StatusText = IsAttached ? "Attached — ready." : "Not attached.";
+                    StatusText = IsAttached ? "Attached � ready." : "Not attached.";
                 });
             }
             else
             {
                 IsPickModeActive = false;
-                StatusText = IsAttached ? "Attached — ready." : "Not attached.";
+                StatusText = IsAttached ? "Attached � ready." : "Not attached.";
             }
         }
 
@@ -2915,7 +2883,7 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                     if (end > start)
                     {
                         string name = predicate.Substring(start, end - start);
-                        // Skip WPF template parts (PART_*) and Adorner layers ・                        // they are internal visuals, not user-facing elements.
+                        // Skip WPF template parts (PART_*) and Adorner layers �                        // they are internal visuals, not user-facing elements.
                         if (name.StartsWith("PART_") || name == "AdornerLayer")
                             return null;
                         return name;

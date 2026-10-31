@@ -56,7 +56,6 @@ namespace WpfTestIde
             Themes.ThemeManager.ApplyTheme(string.IsNullOrWhiteSpace(state.Theme) ? "Light" : state.Theme);
             if (DataContext is MainViewModel vm)
             {
-                vm.OcrPanelExpanded = state.OcrPanelExpanded;
                 vm.RepositoryPanelExpanded = state.RepositoryPanelExpanded;
                 vm.RunOutputPanelExpanded = state.RunOutputPanelExpanded;
             }
@@ -231,7 +230,6 @@ namespace WpfTestIde
                 SelectedTabIndex = vm.SelectedTabIndex,
                 TreeColumnWidth = treeWidth,
                 PropertiesColumnWidth = propsWidth,
-                OcrPanelExpanded = vm.OcrPanelExpanded,
                 RepositoryPanelExpanded = vm.RepositoryPanelExpanded,
                 RunOutputPanelExpanded = vm.RunOutputPanelExpanded,
                 ActivePaneId = vm.ActivePaneId ?? (vm.SelectedTabIndex switch { 1 => "Scripts", 2 => "Results", _ => "Elements" }),
@@ -269,7 +267,6 @@ namespace WpfTestIde
                 if (DataContext is MainViewModel vm)
                 {
                     vm.RepositoryPanelExpanded = false;
-                    vm.OcrPanelExpanded = false;
                     vm.RunOutputPanelExpanded = false;
                 }
 
@@ -732,10 +729,13 @@ namespace WpfTestIde
         {
             rootPanel.Children.Clear();
 
-            // Left: WORKING FOLDER (narrow, icon-only toolbar).
+            // Left: WORKING FOLDER (narrow, icon-only toolbar). The host pane is given
+            // an explicit DockWidth so the tree view stays comfortably narrow
+            // regardless of AvalonDock's default star sizing.
             var workingFolderPane = new LayoutAnchorable { Title = "WORKING FOLDER", IsActive = false };
             workingFolderPane.Content = CreatePaneContent(new Docking.Views.WorkingFolderPane(), "tabWorkingFolder");
             var workingFolderHost = new LayoutAnchorablePane();
+            workingFolderHost.DockWidth = new GridLength(220, GridUnitType.Pixel);
             workingFolderHost.Children.Add(workingFolderPane);
 
             // Right: ELEMENTS / SCRIPTS / RESULTS as a single vertical
