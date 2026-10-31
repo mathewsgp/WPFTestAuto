@@ -180,6 +180,17 @@ namespace WpfTestIde
                 System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER 2ND TICK ===");
                 LogLayoutStructure("After 2nd Tick", dockManager.Layout);
             }), DispatcherPriority.Background);
+
+            // 3rd-tick re-apply at ContextIdle: catches any late layout passes
+            // (e.g. from window show, content render, DPI changes) that may have
+            // reset widths back to star after the Background tick.
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                ApplyPaneWidths(state.PaneWidths);
+
+                System.Diagnostics.Debug.WriteLine("=== LAYOUT RESTORE: AFTER 3RD TICK ===");
+                LogLayoutStructure("After 3rd Tick", dockManager.Layout);
+            }), DispatcherPriority.ContextIdle);
         }
 
         private void ApplySplitterState(LayoutState state)
@@ -608,7 +619,7 @@ namespace WpfTestIde
         // so they are intentionally omitted and the apply-path leaves them alone.
         // ------------------------------------------------------------
         /// <summary>Snapshots the absolute DockWidth of every docked
-        /// LayoutAnchorablePane in the root panel, keyed by the title of its first
+        /// LayoutAnchorablePane in the layout tree, keyed by the title of its first
         /// child anchorable (Elements/Scripts/Results). Star widths are skipped.</summary>
         private Dictionary<string, double> SnapshotPaneWidths()
         {
@@ -616,11 +627,11 @@ namespace WpfTestIde
             try
             {
                 if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return widths;
-                foreach (var child in rootPanel.Children.OfType<LayoutAnchorablePane>())
+                foreach (var pane in GetAllAnchorablePanes(rootPanel))
                 {
-                    var anchorable = child.Children.FirstOrDefault();
+                    var anchorable = pane.Children.FirstOrDefault();
                     if (string.IsNullOrWhiteSpace(anchorable?.Title)) continue;
-                    var dockWidth = child.DockWidth;
+                    var dockWidth = pane.DockWidth;
                     // Only absolute pixel widths are meaningful to persist; star widths
                     // are the default and have no single pixel representation.
                     if (dockWidth.IsAbsolute && dockWidth.Value > 0)
@@ -646,13 +657,13 @@ namespace WpfTestIde
             if (dockManager.Layout?.RootPanel is not LayoutPanel rootPanel) return;
 
             int applied = 0;
-            foreach (var child in rootPanel.Children.OfType<LayoutAnchorablePane>())
+            foreach (var pane in GetAllAnchorablePanes(rootPanel))
             {
-                var anchorable = child.Children.FirstOrDefault();
+                var anchorable = pane.Children.FirstOrDefault();
                 if (string.IsNullOrWhiteSpace(anchorable?.Title)) continue;
                 if (paneWidths.TryGetValue(anchorable.Title, out var width) && width > 0)
                 {
-                    child.DockWidth = new GridLength(width, GridUnitType.Pixel);
+                    pane.DockWidth = new GridLength(width, GridUnitType.Pixel);
                     applied++;
                 }
             }
@@ -662,11 +673,33 @@ namespace WpfTestIde
                 // UpdateLayout() triggers LayoutPanelControl.OnFixChildrenDockLengths
                 // which forces non-star DockWidths back to star, undoing the widths
                 // we just set. The widths take effect on the next natural layout pass,
-                // and a 2nd-tick re-apply in MainWindow_Loaded ensures they stick.
+                // and re-applies at lower DispatcherPriority in MainWindow_Loaded
+                // ensure they stick.
                 System.Diagnostics.Debug.WriteLine($"ApplyPaneWidths: matched {applied}/{paneWidths.Count} pane width(s)");
                 return;
             }
             System.Diagnostics.Debug.WriteLine($"ApplyPaneWidths: matched {applied}/{paneWidths.Count} pane width(s)");
+        }
+
+        /// <summary>Recursively collects every LayoutAnchorablePane in the layout
+        /// tree rooted at <paramref name="panel"/>. Docked panes can be nested inside
+        /// intermediate LayoutPanel groups (e.g. ELEMENTS/SCRIPTS/RESULTS live under
+        /// a right-hand LayoutPanel), so a direct-children-only walk misses them.</summary>
+        private static IEnumerable<LayoutAnchorablePane> GetAllAnchorablePanes(LayoutPanel panel)
+        {
+            foreach (var child in panel.Children)
+            {
+                switch (child)
+                {
+                    case LayoutAnchorablePane pane:
+                        yield return pane;
+                        break;
+                    case LayoutPanel childPanel:
+                        foreach (var nested in GetAllAnchorablePanes(childPanel))
+                            yield return nested;
+                        break;
+                }
+            }
         }
 
         // ------------------------------------------------------------
