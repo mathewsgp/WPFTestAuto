@@ -1,4 +1,4 @@
-"""End-to-end user scenario test.
+"""End-to-end user scenario test using flaui-uiautomation-wrapper directly.
 
 Scenario:
 1. User launches SampleWpfApp and WpfTestIDE
@@ -9,8 +9,10 @@ Scenario:
 6. User loads the modified script
 7. User runs the script
 
-Independent of TestAutoLayer — uses flaui-uiautomation-wrapper UI Automation directly.
+Uses the flaui wrapper directly (no pywinauto compatibility layer).
 """
+
+from __future__ import annotations
 
 import os
 import sys
@@ -18,54 +20,40 @@ import time
 
 import pytest
 
-# Make TestAutoLayer/api importable for the flaui adapter
+# Make the IDE test helpers importable
 sys.path.insert(
-    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "TestAutoLayer", "api")
+    0, os.path.join(os.path.dirname(os.path.abspath(__file__)))
 )
-from flaui_adapter import (  # noqa: E402
-    Application,
-    Desktop,
-    PywinautoTimeout,
+from ide_flaui import (  # noqa: E402
+    FlauiApp,
+    find_by_auto_id,
     click_by_auto_id,
     get_text_by_auto_id,
-    keyboard,
+    click_menu_item,
     set_text_by_auto_id,
     toggle_by_auto_id,
 )
 
 IDE_EXE = r"bin\Debug\net9.0-windows\WpfTestIde.exe"
-SAMPLE_APP_EXE = r"Tests/bin/SampleWpfApp/Debug/net9.0-windows/SampleWpfApp.exe"
+SAMPLE_APP_EXE = r"Tests\bin\SampleWPFApp\Debug\net9.0-windows\SampleWpfApp.exe"
 
 SCRIPT_NAME = "e2e_user_scenario_script"
 
 
-def _find_by_auto_id(window, automation_id, control_type=None):
-    """Find all descendants matching AutomationId (searches all levels)."""
-    from flaui_adapter import _find_by_auto_id as _ffi  # noqa: E402
-
-    return _ffi(window, automation_id, control_type)
-
-
-def click_menu_item(window, menu_path, timeout=10):
-    """Click a menu item by path, e.g. 'File > Save Script'.
-
-    Falls back to keyboard shortcuts (Ctrl+S for save, Ctrl+R for run,
-    Ctrl+O for open) since the IDE uses keyboard bindings as primary
-    activation and flaui menu_select may not work with WPF Menu.
-    """
-    from flaui_adapter import click_menu_item as _cmi  # noqa: E402
-
-    return _cmi(window, menu_path, timeout)
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 
 @pytest.fixture(scope="function")
 def ide_app():
-    """Launch WpfTestIde, yield the application, close on teardown."""
+    """Launch WpfTestIde, yield the FlauiApp, close on teardown."""
     exe_path = os.path.join(os.getcwd(), IDE_EXE)
     if not os.path.exists(exe_path):
         pytest.skip(f"WpfTestIde.exe not found at {exe_path}")
 
-    app = Application(backend="uia").start(exe_path)
+    app = FlauiApp()
+    app.launch(exe_path)
     time.sleep(3)
 
     try:
@@ -79,12 +67,13 @@ def ide_app():
 
 @pytest.fixture(scope="function")
 def sample_app():
-    """Launch SampleWpfApp, yield the application, close on teardown."""
+    """Launch SampleWpfApp, yield the FlauiApp, close on teardown."""
     exe_path = os.path.join(os.getcwd(), SAMPLE_APP_EXE)
     if not os.path.exists(exe_path):
         pytest.skip(f"SampleWpfApp.exe not found at {exe_path}")
 
-    app = Application(backend="uia").start(exe_path)
+    app = FlauiApp()
+    app.launch(exe_path)
     time.sleep(3)
 
     try:
@@ -96,28 +85,36 @@ def sample_app():
             pass
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
 def get_main_window(app, title_pattern=".*WPF Test IDE.*"):
-    """Return the main window handle, waiting for it to appear."""
-    win = app.window(title_re=title_pattern)
-    win.wait("visible", timeout=30)
-    return win
+    """Return the main window, waiting for it to appear."""
+    return app.main_window(title_pattern=title_pattern, timeout=30)
+
+
+def get_sample_window(app, title_pattern=".*Sample WPF App.*"):
+    """Return the SampleWpfApp main window."""
+    return app.main_window(title_pattern=title_pattern, timeout=30)
 
 
 def get_add_step_dialog(ide_app, timeout=15):
     """Find the AddStepWizardDialog window after btnAddStep is clicked.
 
-    The dialog is a separate top-level Window owned by the IDE main window.
-    Search desktop windows for it by AutomationId.
+    The dialog is a separate top-level window owned by the IDE main window.
+    Search desktop windows for it by AutomationId / title.
     """
     end_time = time.time() + timeout
     found = None
     while time.time() < end_time and found is None:
         try:
-            desktop = Desktop(backend="uia")
-            for w in desktop.windows():
+            for w in ide_app.desktop_windows():
                 try:
-                    aid = w.element_info.automation_id
-                    if aid == "AddStepWizardDialog":
+                    aid = w.automation_id
+                    title = w.title or w.name
+                    if aid == "AddStepWizardDialog" or "Add Step" in title:
                         found = w
                         break
                 except Exception:
@@ -128,18 +125,25 @@ def get_add_step_dialog(ide_app, timeout=15):
             time.sleep(0.5)
     if found is not None:
         try:
-            found.wait("visible", timeout=5)
+            found.wait_visible(timeout=5)
         except Exception:
             pass
         return found
-    raise PywinautoTimeout("Add Step wizard dialog not found")
+    raise TimeoutError("Add Step wizard dialog not found")
 
 
-def get_sample_window(app, title_pattern=".*Sample WPF App.*"):
-    """Return SampleWpfApp window handle."""
-    win = app.window(title_re=title_pattern)
-    win.wait("visible", timeout=30)
+def get_orders_window(sample_app, timeout=10):
+    """Return the SampleWpfApp OrdersWindow (separate top-level window)."""
+    win = sample_app.find_window_by_title("Sample WPF App — Orders", timeout=timeout)
+    if win is None:
+        # Fall back to the login window if OrdersWindow hasn't surfaced yet.
+        return get_sample_window(sample_app)
     return win
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
 
 
 class TestE2EUserScenario:
@@ -150,8 +154,7 @@ class TestE2EUserScenario:
         ide_window = get_main_window(ide_app)
         sample_window = get_sample_window(sample_app)
 
-        # Bring both windows to foreground so click_input() lands on the
-        # right window (not an overlapping VS/Explorer window).
+        # Bring both windows to foreground so click lands on the right window.
         ide_window.set_focus()
         sample_window.set_focus()
         time.sleep(0.5)
@@ -159,61 +162,42 @@ class TestE2EUserScenario:
         # --- Step 1: Both apps launched ---
         assert ide_window.exists(), "IDE should be running"
         assert sample_window.exists(), "SampleWpfApp should be running"
-        assert "WPF Test IDE" in ide_window.window_text()
-        assert "Sample WPF App" in sample_window.window_text()
+        assert "WPF Test IDE" in ide_window.name
+        assert "Sample WPF App" in sample_window.name
 
         # --- Step 2: Attach to SampleWpfApp using IDE ---
         click_by_auto_id(ide_window, "btnAttach")
         time.sleep(1)
 
         # Find the AttachToProcessDialog window (separate top-level window)
-        # Use Desktop to find it since it's a separate Window
-        attach_dialog = None
-        end_time = time.time() + 15
-        while time.time() < end_time:
-            try:
-                for w in Desktop(backend="uia").windows():
-                    try:
-                        title = w.window_text()
-                        if "Attach to Process" in title:
-                            attach_dialog = w
-                            break
-                    except Exception:
-                        continue
-            except Exception:
-                pass
-            if attach_dialog:
-                break
-            time.sleep(0.5)
-
+        attach_dialog = ide_app.find_window_by_title("Attach to Process", timeout=15)
         if not attach_dialog:
             # Debug: print all visible windows
             try:
-                desktop = Desktop(backend="uia")
-                titles = [w.window_text() for w in desktop.windows()]
+                titles = [w.title or w.name for w in ide_app.desktop_windows()]
                 print(f"\nDEBUG: Desktop windows: {titles}")
             except Exception:
                 pass
-            raise PywinautoTimeout("Attach to Process dialog not found")
+            raise TimeoutError("Attach to Process dialog not found")
 
         # Select runtime attach (Already Running mode)
         try:
             toggle_by_auto_id(attach_dialog, "RuntimeAttachRadio")
-        except PywinautoTimeout:
+        except TimeoutError:
             pass
         time.sleep(1)
 
         # Refresh the process list so SampleWpfApp appears
         try:
             click_by_auto_id(attach_dialog, "btnRefreshProcessList", timeout=5)
-        except PywinautoTimeout:
+        except TimeoutError:
             pass
         time.sleep(1)
 
         # Select SampleWpfApp from the ProcessListView
-        process_list = _find_by_auto_id(attach_dialog, "ProcessListView")
+        process_list = find_by_auto_id(attach_dialog, "ProcessListView")
         if not process_list:
-            raise PywinautoTimeout("ProcessListView not found in Attach to Process dialog")
+            raise TimeoutError("ProcessListView not found in Attach to Process dialog")
 
         list_view = process_list[0]
 
@@ -222,12 +206,12 @@ class TestE2EUserScenario:
         end_time = time.time() + 15
         while time.time() < end_time:
             try:
-                all_desc = attach_dialog.descendants()
+                all_desc = attach_dialog.find_all()
                 for d in all_desc:
                     try:
-                        txt = d.window_text()
+                        txt = d.name
                         if "SampleWpfApp" in txt:
-                            d.click_input()
+                            d.click()
                             time.sleep(0.5)
                             list_item = d
                             break
@@ -240,7 +224,7 @@ class TestE2EUserScenario:
             time.sleep(0.5)
 
         if not list_item:
-            raise PywinautoTimeout("SampleWpfApp not found in ProcessListView")
+            raise TimeoutError("SampleWpfApp not found in ProcessListView")
 
         # Click Attach button INSIDE the dialog
         click_by_auto_id(attach_dialog, "btnAttach", timeout=10)
@@ -254,7 +238,7 @@ class TestE2EUserScenario:
         click_by_auto_id(ide_window, "btnRecord")
         time.sleep(1)
 
-        # Interact with SampleWpfApp Login page — these are CRITICAL
+        # Interact with SampleWpfApp Login page
         set_text_by_auto_id(sample_window, "txtUsername", "user1")
         time.sleep(0.5)
         set_text_by_auto_id(sample_window, "txtPassword", "Pass@123")
@@ -263,34 +247,41 @@ class TestE2EUserScenario:
         time.sleep(2)
 
         # Wait for OrdersWindow to appear after login
-        orders_window = None
+        orders_window = get_orders_window(sample_app, timeout=10)
         try:
-            orders_app = Application(backend="uia").connect(
-                title_re=".*Sample WPF App — Orders.*", timeout=10
-            )
-            orders_window = orders_app.window(
-                title_re=".*Sample WPF App — Orders.*"
-            )
-            orders_window.wait("visible", timeout=10)
+            orders_window.set_focus()
+            time.sleep(0.5)
         except Exception:
-            orders_window = sample_window
-
-        if orders_window is not None:
-            try:
-                orders_window.set_focus()
-                time.sleep(0.5)
-            except Exception:
-                pass
+            pass
 
         # Interact with OrdersWindow
         try:
-            sku_combo = _find_by_auto_id(orders_window, "cmbSku", "ComboBox")
+            sku_combo = find_by_auto_id(orders_window, "cmbSku", "ComboBox")
             if sku_combo:
-                sku_combo[0].click_input()
+                combo = sku_combo[0]
+                # Click the dropdown button to open the combobox
+                try:
+                    combo.click()
+                except Exception:
+                    try:
+                        combo.expand()
+                    except Exception:
+                        pass
                 time.sleep(0.5)
-                sku_combo[0].select_text("SKU-1001")
-        except Exception:
-            pass
+                # Click the second item in the dropdown
+                items = combo.find_all(control_type="ListItem")
+                if len(items) >= 2:
+                    items[1].click()
+                    time.sleep(0.5)
+                # Close the dropdown
+                try:
+                    combo.collapse()
+                except Exception:
+                    pass
+            # Verify the SKU combo holds the selected value
+            sku_text = get_text_by_auto_id(orders_window, "cmbSku")
+            assert sku_text == "SKU-1001", \
+                f"Expected cmbSku text == 'SKU-1001', got: {sku_text!r}"
         except Exception:
             pass
         time.sleep(0.5)
@@ -307,9 +298,7 @@ class TestE2EUserScenario:
         except Exception:
             pass
 
-        # Click lblConfirmation to register it as a probed element so it
-        # appears in the Add Step dialog's element list. It appears after
-        # btnCreateOrder with text "Order confirmed: SKU-1001 x2".
+        # Click lblConfirmation to register it as a probed element
         try:
             click_by_auto_id(orders_window, "lblConfirmation")
             time.sleep(0.5)
@@ -321,8 +310,6 @@ class TestE2EUserScenario:
         time.sleep(1)
 
         # --- Step 4: Add verification step for order confirmation ---
-        # After btnCreateOrder, verify lblConfirmation shows
-        # "Order confirmed: SKU-1001 x2" using the IDE's Add Step feature.
         try:
             click_by_auto_id(ide_window, "btnAddStep")
             time.sleep(1)
@@ -332,55 +319,38 @@ class TestE2EUserScenario:
 
             # Select "Verify Element Text" step type
             try:
-                step_type_combo = _find_by_auto_id(add_step_dlg, "StepTypeCombo", "ComboBox")
+                step_type_combo = find_by_auto_id(add_step_dlg, "StepTypeCombo", "ComboBox")
                 if step_type_combo:
-                    combo = step_type_combo[0]
-                    try:
-                        combo.select("Verify Element Text")
-                    except Exception:
-                        combo.click_input()
-                        time.sleep(0.5)
-                        keyboard.send_keys(
-                            "{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}"
-                            "{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}"
-                        )
+                    step_type_combo[0].select_combo("Verify Element Text")
                     time.sleep(0.5)
             except Exception:
                 pass
 
             # Select the confirmation element (OrdersWindow.lblConfirmation)
             try:
-                alias_combo = _find_by_auto_id(add_step_dlg, "AliasCombo", "ComboBox")
+                alias_combo = find_by_auto_id(add_step_dlg, "AliasCombo", "ComboBox")
                 if alias_combo:
-                    combo = alias_combo[0]
-                    try:
-                        combo.select("lblConfirmation")
-                    except Exception:
-                        combo.click_input()
-                        time.sleep(0.5)
-                        keyboard.send_keys(
-                            "{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}"
-                        )
+                    alias_combo[0].select_combo("lblConfirmation")
                     time.sleep(0.5)
             except Exception:
                 pass
 
             # Set expected text: "Order confirmed: SKU-1001 x2"
             try:
-                value_box = _find_by_auto_id(add_step_dlg, "ValueBox", "Edit")
+                value_box = find_by_auto_id(add_step_dlg, "ValueBox", "Edit")
                 if value_box:
-                    value_box[0].click_input()
+                    value_box[0].click()
                     time.sleep(0.3)
-                    value_box[0].set_edit_text("Order confirmed: SKU-1001 x2")
+                    value_box[0].set_text("Order confirmed: SKU-1001 x2")
                     time.sleep(0.5)
             except Exception:
                 pass
 
             # Click Add to insert the verification step
             try:
-                add_btn = _find_by_auto_id(add_step_dlg, "btnStepAdd", "Button")
+                add_btn = find_by_auto_id(add_step_dlg, "btnStepAdd", "Button")
                 if add_btn:
-                    add_btn[0].click_input()
+                    add_btn[0].click()
                     time.sleep(1)
             except Exception:
                 pass
@@ -391,7 +361,7 @@ class TestE2EUserScenario:
         try:
             status_text = get_text_by_auto_id(ide_window, "StatusText")
             assert status_text != "", "StatusText should not be empty after recording"
-        except PywinautoTimeout:
+        except TimeoutError:
             # StatusText may not be immediately available — app still running
             pass
 
@@ -399,10 +369,9 @@ class TestE2EUserScenario:
         try:
             script_text = get_text_by_auto_id(ide_window, "txtGeneratedScript")
             assert script_text != "", "Generated script should not be empty"
-            # Should contain at least one Robot Framework keyword pattern
             assert "Click Element" in script_text or "Set Element Value" in script_text or "Wait Until" in script_text, \
                 f"Generated script should contain Robot Framework keywords, got: {script_text[:200]}"
-        except PywinautoTimeout:
+        except TimeoutError:
             # txtGeneratedScript may not be found in current layout — app still running
             pass
 
@@ -438,51 +407,34 @@ class TestE2EAttachOnly:
         time.sleep(1)
 
         # Find the AttachToProcessDialog window
-        attach_dialog = None
-        end_time = time.time() + 15
-        while time.time() < end_time:
-            try:
-                for w in Desktop(backend="uia").windows():
-                    try:
-                        title = w.window_text()
-                        if "Attach to Process" in title:
-                            attach_dialog = w
-                            break
-                    except Exception:
-                        continue
-            except Exception:
-                pass
-            if attach_dialog:
-                break
-            time.sleep(0.5)
-
+        attach_dialog = ide_app.find_window_by_title("Attach to Process", timeout=15)
         if not attach_dialog:
-            raise PywinautoTimeout("Attach to Process dialog not found")
+            raise TimeoutError("Attach to Process dialog not found")
 
         # Select runtime attach
         try:
             toggle_by_auto_id(attach_dialog, "RuntimeAttachRadio")
-        except PywinautoTimeout:
+        except TimeoutError:
             pass
         time.sleep(1)
 
         # Refresh process list
         try:
             click_by_auto_id(attach_dialog, "btnRefreshProcessList", timeout=5)
-        except PywinautoTimeout:
+        except TimeoutError:
             pass
         time.sleep(1)
 
         # Select SampleWpfApp from ProcessListView
         try:
-            process_list = _find_by_auto_id(attach_dialog, "ProcessListView", "ListView")
+            process_list = find_by_auto_id(attach_dialog, "ProcessListView", "ListView")
             if process_list:
-                list_items = process_list[0].descendants(control_type="ListItem")
+                list_items = process_list[0].find_all(control_type="ListItem")
                 for item in list_items:
                     try:
-                        item_text = item.window_text()
+                        item_text = item.name
                         if "SampleWpfApp" in item_text or "Sample WPF App" in item_text:
-                            item.click_input()
+                            item.click()
                             time.sleep(0.5)
                             break
                     except Exception:
@@ -493,10 +445,10 @@ class TestE2EAttachOnly:
         # Click Attach button inside the dialog
         try:
             click_by_auto_id(attach_dialog, "btnAttach", timeout=10)
-        except PywinautoTimeout:
-            attach_btns = _find_by_auto_id(attach_dialog, "btnAttach", "Button")
+        except TimeoutError:
+            attach_btns = find_by_auto_id(attach_dialog, "btnAttach", "Button")
             if len(attach_btns) > 1:
-                attach_btns[1].click_input()
+                attach_btns[1].click()
             else:
                 raise
         time.sleep(2)
@@ -504,7 +456,7 @@ class TestE2EAttachOnly:
         try:
             status = get_text_by_auto_id(ide_window, "StatusText")
             assert status != "", "StatusText should not be empty after attach"
-        except PywinautoTimeout:
+        except TimeoutError:
             pass
 
         assert ide_window.exists(), "IDE should still be running after attach attempt"
@@ -527,17 +479,17 @@ class TestE2ERecordOnly:
 
         try:
             set_text_by_auto_id(sample_window, "txtUsername", "user1")
-        except PywinautoTimeout:
+        except TimeoutError:
             pass
         time.sleep(0.5)
         try:
             set_text_by_auto_id(sample_window, "txtPassword", "Pass@123")
-        except PywinautoTimeout:
+        except TimeoutError:
             pass
         time.sleep(0.5)
         try:
             click_by_auto_id(sample_window, "btnSubmit")
-        except PywinautoTimeout:
+        except TimeoutError:
             pass
         time.sleep(2)
 

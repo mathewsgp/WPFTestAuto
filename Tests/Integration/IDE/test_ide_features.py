@@ -3,7 +3,8 @@
 These tests verify WPFTestIDE features end-to-end **without using
 TestAutoLayer**. They launch ``WpfTestIde.exe`` directly and interact
 with it via UI Automation (AutomationId-based).  No import from
-``TestAutoLayer`` is made, so framework changes cannot break these tests.
+``TestAutoLayer`` is made, and there is no pywinauto compatibility layer —
+all interaction goes through the flaui wrapper directly (see ide_flaui.py).
 
 Run:
 
@@ -16,35 +17,21 @@ import time
 
 import pytest
 
-# Make TestAutoLayer/api importable for the flaui adapter
+# Make the IDE test helpers importable
 sys.path.insert(
-    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "TestAutoLayer", "api")
+    0, os.path.join(os.path.dirname(os.path.abspath(__file__)))
 )
-from flaui_adapter import (  # noqa: E402
-    Application,
-    PywinautoTimeout,
+from ide_flaui import (  # noqa: E402
+    find_by_auto_id,
     click_by_auto_id,
     get_text_by_auto_id,
     toggle_by_auto_id,
+    click_menu_item,
 )
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _find_by_auto_id(window, automation_id, control_type=None):
-    """Find all descendants matching AutomationId (searches all levels)."""
-    from flaui_adapter import _find_by_auto_id as _ffi  # noqa: E402
-
-    return _ffi(window, automation_id, control_type)
-
-
-def click_menu_item(window, menu_path, timeout=10):
-    """Click a menu item by path, e.g. 'File > Open Script...'."""
-    from flaui_adapter import click_menu_item as _cmi  # noqa: E402
-
-    return _cmi(window, menu_path, timeout)
 
 
 # ---------------------------------------------------------------------------
@@ -56,7 +43,7 @@ class TestUC001ApplicationLaunch:
     def test_ide_launches_and_shows_main_window(self, main_window):
         """IDE launches and MainWindow is visible."""
         assert main_window.exists()
-        assert "WPF Test IDE" in main_window.window_text()
+        assert "WPF Test IDE" in main_window.name
 
 
 # ---------------------------------------------------------------------------
@@ -70,11 +57,10 @@ class TestUC002AttachToProcessDialog:
         click_by_auto_id(main_window, "btnAttach")
         time.sleep(2)
 
-        # The dialog should appear with a StatusText element
+        # The dialog should appear; if StatusText is found the dialog exists.
         try:
-            status = _find_by_auto_id(main_window, "StatusText")
-            # If we found it, the dialog exists; if not, app still running
-        except PywinautoTimeout:
+            _find = find_by_auto_id(main_window, "StatusText")
+        except TimeoutError:
             # Dialog may not appear if no app to attach — app must not crash
             pass
 
@@ -167,7 +153,7 @@ class TestUC008ToggleRecord:
         time.sleep(1)
         click_by_auto_id(main_window, "btnRecord")
         time.sleep(1)
-        assert _find_by_auto_id(main_window, "btnRecord", "Button")
+        assert find_by_auto_id(main_window, "btnRecord", "Button")
 
 
 # ---------------------------------------------------------------------------
@@ -273,9 +259,9 @@ class TestUC013ScriptGeneration:
             click_by_auto_id(main_window, "tabScripts")
             time.sleep(1)
 
-            script_tab = _find_by_auto_id(main_window, "tabRawScript")
+            script_tab = find_by_auto_id(main_window, "tabRawScript")
             if script_tab:
-                script_tab[0].click_input()
+                script_tab[0].click()
                 time.sleep(1)
                 script_text = get_text_by_auto_id(main_window, "txtGeneratedScript")
                 assert script_text != ""
@@ -415,9 +401,9 @@ class TestREG001LoadVerifyRun:
             time.sleep(1)
 
             try:
-                script_tab = _find_by_auto_id(main_window, "tabRawScript")
+                script_tab = find_by_auto_id(main_window, "tabRawScript")
                 if script_tab:
-                    script_tab[0].click_input()
+                    script_tab[0].click()
                     time.sleep(1)
                     script_text = get_text_by_auto_id(main_window, "txtGeneratedScript")
                     assert script_text != ""
@@ -555,7 +541,7 @@ class TestDebugPaths:
     def test_ide_app_path_exists(self, main_window):
         """IDE app should be running (debug path verification)."""
         assert main_window.exists()
-        assert main_window.is_visible()
+        assert main_window.is_visible
 
 
 # ---------------------------------------------------------------------------

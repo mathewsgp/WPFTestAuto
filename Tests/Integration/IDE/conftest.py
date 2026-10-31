@@ -1,7 +1,8 @@
 """Pytest fixtures for standalone IDE tests.
 
 Launches WpfTestIde.exe directly via flaui-uiautomation-wrapper UI Automation.
-Zero dependency on TestAutoLayer framework.
+Zero dependency on TestAutoLayer and no pywinauto compatibility shim — the
+fixtures use the flaui wrapper directly (see ide_flaui.py).
 """
 
 import os
@@ -10,11 +11,10 @@ import time
 
 import pytest
 
-# Make TestAutoLayer/api importable for the flaui adapter
-sys.path.insert(
-    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "TestAutoLayer", "api")
-)
-from flaui_adapter import Application  # noqa: E402
+# Make the IDE test helpers importable
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from ide_flaui import FlauiApp  # noqa: E402
 
 
 IDE_EXE = r"bin\Debug\net9.0-windows\WpfTestIde.exe"
@@ -22,12 +22,13 @@ IDE_EXE = r"bin\Debug\net9.0-windows\WpfTestIde.exe"
 
 @pytest.fixture(scope="function")
 def ide_app():
-    """Launch WpfTestIde, yield the application, close on teardown."""
+    """Launch WpfTestIde, yield the FlauiApp, close on teardown."""
     exe_path = os.path.join(os.getcwd(), IDE_EXE)
     if not os.path.exists(exe_path):
         pytest.skip(f"WpfTestIde.exe not found at {exe_path}")
 
-    app = Application(backend="uia").start(exe_path)
+    app = FlauiApp()
+    app.launch(exe_path)
     # Give the window time to render
     time.sleep(3)
 
@@ -41,9 +42,9 @@ def ide_app():
 
 
 def get_main_window(app):
-    """Return the main window handle, waiting for it to appear."""
-    win = app.window(title_re=".*WPF Test IDE.*")
-    win.wait("visible", timeout=30)
+    """Return the main window, waiting for it to appear."""
+    win = app.main_window(title_pattern=".*WPF Test IDE.*", timeout=30)
+    win.wait_visible(timeout=30)
     return win
 
 
