@@ -103,7 +103,7 @@ namespace WpfTestIde.Recording
                         sb.AppendLine($"    Wait Until Element Enabled    {step.Alias}    timeout={step.Value}{appIdArg}");
                         continue;
                     case StepKind.WaitTextContains:
-                        sb.AppendLine($"    Wait Until Text Contains    {step.Alias}    {step.Value}{appIdArg}");
+                        sb.AppendLine($"    Wait Until Element Text Contains    {step.Alias}    {step.Value}{appIdArg}");
                         continue;
                     case StepKind.CheckpointProperty:
                         sb.AppendLine($"    Property Checkpoint    {step.Alias}    {step.PropertyName}    {step.Value}{appIdArg}");
@@ -125,7 +125,7 @@ namespace WpfTestIde.Recording
                         continue;
                      case StepKind.LaunchApplication:
                      {
-                         // Layout: Launch Application    <app_path>    [app_id=<id>]    [start_in=...]    [args=...]    [attach=Yes/No]    [drivers=...]    [spy_agent=Yes/No]    [pipe_name=...]
+                         // Layout: Launch Application    <app_path>    [app_id=<id>]    [start_in=...]    [args=...]    [attach=Yes/No]    [timeout=...]    [drivers=...]    [spy_agent_enabled=Yes/No]    [pipe_name=...]
                          // The path is positional (must come first), then all named args.
                          // This avoids Robot Framework's "positional after named" error.
                          //
@@ -136,12 +136,14 @@ namespace WpfTestIde.Recording
                          // avoid the issue entirely.
                          var la = new List<string> { "    Launch Application" };
                          la.Add(NormalizePathForRobot(step.AppPath));
-                         if (!string.IsNullOrWhiteSpace(step.AppId))
-                             la.Add($"app_id={step.AppId}");
+                         if (!string.IsNullOrWhiteSpace(step.AppId ?? appId))
+                             la.Add($"app_id={step.AppId ?? appId}");
                          if (!string.IsNullOrWhiteSpace(step.StartIn))
                              la.Add($"start_in={NormalizePathForRobot(step.StartIn)}");
                          if (!string.IsNullOrWhiteSpace(step.Args))
                              la.Add($"args={step.Args}");
+                         if (!string.IsNullOrWhiteSpace(step.LaunchTimeout))
+                             la.Add($"timeout={step.LaunchTimeout}");
                           la.Add($"attach={(step.AutoAttach ? "Yes" : "No")}");
                           // Emit driver priority list when available; fall back to single driver.
                           if (step.LaunchDriverList != null && step.LaunchDriverList.Any())
@@ -154,7 +156,9 @@ namespace WpfTestIde.Recording
                           }
                            // Spy Agent options
                           if (!step.SpyAgentEnabled)
-                              la.Add("spy_agent=No");
+                              la.Add("spy_agent_enabled=No");
+                          if (!string.IsNullOrWhiteSpace(step.PipeName))
+                              la.Add($"pipe_name={step.PipeName}");
                           sb.AppendLine(string.Join("    ", la));
                          continue;
                      }
@@ -162,8 +166,8 @@ namespace WpfTestIde.Recording
                     {
                         // Layout: Terminate Application    [app_id=...]    [window_title=...]    [process_name=...]    [force=Yes/No]
                         var ta = new List<string> { "    Terminate Application" };
-                        if (!string.IsNullOrWhiteSpace(step.AppId))
-                            ta.Add($"app_id={step.AppId}");
+                        if (!string.IsNullOrWhiteSpace(step.AppId ?? appId))
+                            ta.Add($"app_id={step.AppId ?? appId}");
                         if (!string.IsNullOrWhiteSpace(step.WindowTitle))
                             ta.Add($"window_title={step.WindowTitle}");
                         if (!string.IsNullOrWhiteSpace(step.ProcessName))
@@ -205,10 +209,10 @@ namespace WpfTestIde.Recording
                         sb.AppendLine($"    Scroll    {step.Alias}    {step.Value}{appIdArg}");
                         break;
                     case ActionKind.SikuliClick:
-                        sb.AppendLine($"    OculiX Click    {step.Alias}    {step.Value}{appIdArg}");
+                        sb.AppendLine($"    Sikuli Click    {step.Alias}    {step.Value}{appIdArg}");
                         break;
                     case ActionKind.SikuliType:
-                        sb.AppendLine($"    OculiX Type    {step.Alias}    {step.Value}{appIdArg}");
+                        sb.AppendLine($"    Sikuli Type    {step.Alias}    {step.Value}{appIdArg}");
                         break;
                 }
             }
@@ -229,195 +233,147 @@ namespace WpfTestIde.Recording
             List<string>? recordingModes = null,
             string? appId = null)
         {
+            string Quote(string? value) => System.Text.Json.JsonSerializer.Serialize(value ?? "");
             var sb = new StringBuilder();
             sb.AppendLine("# AUTO-GENERATED by WpfTestIde — raw Layer 3 calls.");
             sb.AppendLine("# Functionally accurate but NOT YET production quality:");
             sb.AppendLine("# refactor repeated sequences into Layer 2 reusable modules");
             sb.AppendLine("# before committing to the suite (see docs/RECORDER_GUIDE.md).");
             if (recordingModes != null && recordingModes.Count > 0)
-            {
                 sb.AppendLine("# Recording modes: " + string.Join(", ", recordingModes));
-            }
+            sb.AppendLine("import os");
             sb.AppendLine("from TestAutoLayer.api.DriverAgnosticApi import DriverAgnosticApi");
-            sb.AppendLine("");
+            sb.AppendLine();
             sb.AppendLine("api = DriverAgnosticApi()");
-            sb.AppendLine("");
+            sb.AppendLine();
 
-            // Combine mode and driver setup
-            var setupParts = new List<string>();
-            if (!string.IsNullOrEmpty(mode))
-                setupParts.Add(mode);
-            if (!string.IsNullOrEmpty(driver))
-                setupParts.Add(driver);
+            if (!string.IsNullOrEmpty(mode) && !string.IsNullOrEmpty(driver))
+                sb.AppendLine("api.set_mode_and_driver(" + Quote(mode) + ", " + Quote(driver) + ")");
+            else if (!string.IsNullOrEmpty(mode))
+                sb.AppendLine("api.set_mode(" + Quote(mode) + ")");
+            else if (!string.IsNullOrEmpty(driver))
+                sb.AppendLine("api.set_driver(" + Quote(driver) + ")");
 
-            if (setupParts.Count == 2)
-            {
-                sb.AppendLine("api.set_mode_and_driver('" + setupParts[0] + "', '" + setupParts[1] + "')");
-            }
-            else if (setupParts.Count == 1)
-            {
-                if (!string.IsNullOrEmpty(mode))
-                    sb.AppendLine("api.set_mode('" + mode + "')");
-                if (!string.IsNullOrEmpty(driver))
-                    sb.AppendLine("api.set_driver('" + driver + "')");
-            }
-
-            // Multi-app: register the attached app if app_id is known
             if (!string.IsNullOrEmpty(appId))
             {
-                sb.AppendLine("api.attach_to_application('" + appId + "', %{{WPFSPY_PROCESS_ID}}, 'WPFSpy', %{{WPFSPY_PIPE_NAME}})");
+                sb.AppendLine("api.attach_to_application(" + Quote(appId)
+                    + ", os.environ.get('WPFSPY_PROCESS_ID', '0'), 'WPFSpy', os.environ.get('WPFSPY_PIPE_NAME'))");
             }
 
-            sb.AppendLine("");
+            sb.AppendLine();
             sb.AppendLine("def " + testCaseName + "():");
             sb.AppendLine("    \"\"\"Auto-generated from a recorded session.\"\"\"");
 
             foreach (var step in steps)
             {
                 string stepAppId = step.AppId ?? appId ?? "";
-                string appIdArg = string.IsNullOrEmpty(stepAppId) ? "" : ", app_id='" + stepAppId + "'";
+                string appIdArg = string.IsNullOrEmpty(stepAppId) ? "" : ", app_id=" + Quote(stepAppId);
+                string alias = Quote(step.Alias);
+                string value = Quote(step.Value);
 
                 switch (step.Kind)
                 {
                     case StepKind.Verify:
-                        sb.AppendLine("    api.verify_element_text('" + step.Alias + "', '" + step.Value + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.verify_element_text(" + alias + ", " + value + appIdArg + ")");
                         continue;
                     case StepKind.VerifyOcr:
-                        sb.AppendLine("    api.get_data_grid_content_ocr('" + step.Alias + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.get_data_grid_content_ocr(" + alias + appIdArg + ")");
                         continue;
                     case StepKind.VerifyEnabled:
-                        sb.AppendLine("    api.verify_element_enabled('" + step.Alias + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.verify_element_enabled(" + alias + appIdArg + ")");
                         continue;
                     case StepKind.VerifyVisible:
-                        sb.AppendLine("    api.verify_element_visible('" + step.Alias + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.verify_element_visible(" + alias + appIdArg + ")");
                         continue;
                     case StepKind.VerifyContains:
-                        sb.AppendLine("    api.verify_element_contains_text('" + step.Alias + "', '" + step.Value + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.verify_element_contains_text(" + alias + ", " + value + appIdArg + ")");
                         continue;
                     case StepKind.VerifyRegex:
-                        sb.AppendLine("    api.verify_element_text_matches_regex('" + step.Alias + "', '" + step.Value + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.verify_element_text_matches_regex(" + alias + ", " + value + appIdArg + ")");
                         continue;
                     case StepKind.VerifyAttribute:
-                        sb.AppendLine("    api.verify_element_attribute('" + step.Alias + "', '" + step.AttributeName + "', '" + step.Value + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.verify_element_attribute(" + alias + ", " + Quote(step.AttributeName) + ", " + value + appIdArg + ")");
                         continue;
                     case StepKind.WaitExists:
-                        sb.AppendLine("    api.wait_until_element_exists('" + step.Alias + "', timeout=" + step.Value + appIdArg + ")");
+                        sb.AppendLine("    api.wait_until_element_exists(" + alias + ", timeout=" + (step.Value ?? "5") + appIdArg + ")");
                         continue;
                     case StepKind.WaitVisible:
-                        sb.AppendLine("    api.wait_until_element_visible('" + step.Alias + "', timeout=" + step.Value + appIdArg + ")");
+                        sb.AppendLine("    api.wait_until_element_visible(" + alias + ", timeout=" + (step.Value ?? "5") + appIdArg + ")");
                         continue;
                     case StepKind.WaitEnabled:
-                        sb.AppendLine("    api.wait_until_element_enabled('" + step.Alias + "', timeout=" + step.Value + appIdArg + ")");
+                        sb.AppendLine("    api.wait_until_element_enabled(" + alias + ", timeout=" + (step.Value ?? "5") + appIdArg + ")");
                         continue;
                     case StepKind.WaitTextContains:
-                        sb.AppendLine("    api.wait_until_element_text_contains('" + step.Alias + "', '" + step.Value + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.wait_until_element_text_contains(" + alias + ", " + value + appIdArg + ")");
                         continue;
                     case StepKind.CheckpointProperty:
-                        sb.AppendLine("    api.property_checkpoint('" + step.Alias + "', '" + step.PropertyName + "', '" + step.Value + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.property_checkpoint(" + alias + ", " + Quote(step.PropertyName) + ", " + value + appIdArg + ")");
                         continue;
                     case StepKind.CheckpointArea:
-                        sb.AppendLine("    api.area_checkpoint('" + step.Alias + "', '" + step.Value + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.area_checkpoint(" + alias + ", " + value + appIdArg + ")");
                         continue;
                     case StepKind.CheckpointImage:
-                        sb.AppendLine("    api.image_checkpoint('" + step.Alias + "', '" + step.Value + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.image_checkpoint(" + alias + ", " + value + appIdArg + ")");
                         continue;
                     case StepKind.CheckpointDataGrid:
-                        sb.AppendLine("    api.data_grid_checkpoint('" + step.Alias + "', '" + step.Value + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.data_grid_checkpoint(" + alias + ", " + value + appIdArg + ")");
                         continue;
                     case StepKind.CheckpointCount:
-                        sb.AppendLine("    api.count_checkpoint('" + step.Alias + "', '" + step.ExpectedCount + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.count_checkpoint(" + alias + ", " + Quote(step.ExpectedCount) + appIdArg + ")");
                         continue;
                     case StepKind.CheckpointAttribute:
-                        sb.AppendLine("    api.verify_element_attribute('" + step.Alias + "', '" + step.AttributeName + "', '" + step.Value + "'" + appIdArg + ")");
+                        sb.AppendLine("    api.attribute_checkpoint(" + alias + ", " + Quote(step.AttributeName) + ", " + value + appIdArg + ")");
                         continue;
                     case StepKind.LaunchApplication:
                     {
-                        var la = new List<string> { "    api.launch_application(" };
-                        la.Add("'" + NormalizePathForPython(step.AppPath) + "'");
-                        if (!string.IsNullOrWhiteSpace(step.AppId))
-                            la.Add(", app_id='" + step.AppId + "'");
-                        if (!string.IsNullOrWhiteSpace(step.StartIn))
-                            la.Add(", start_in='" + NormalizePathForPython(step.StartIn) + "'");
-                        if (!string.IsNullOrWhiteSpace(step.Args))
-                            la.Add(", args='" + step.Args + "'");
-                        la.Add(", attach=" + (step.AutoAttach ? "True" : "False") + ")");
-                        sb.AppendLine(string.Join("", la));
+                        var launchArgs = new List<string> { Quote(NormalizePathForPython(step.AppPath)) };
+                        if (!string.IsNullOrWhiteSpace(step.AppId ?? appId)) launchArgs.Add("app_id=" + Quote(step.AppId ?? appId));
+                        if (!string.IsNullOrWhiteSpace(step.StartIn)) launchArgs.Add("start_in=" + Quote(NormalizePathForPython(step.StartIn)));
+                        if (!string.IsNullOrWhiteSpace(step.Args)) launchArgs.Add("args=" + Quote(step.Args));
+                        if (!string.IsNullOrWhiteSpace(step.LaunchTimeout)) launchArgs.Add("timeout=" + step.LaunchTimeout);
+                        var drivers = step.LaunchDriverList?.Count > 0
+                            ? step.LaunchDriverList
+                            : new List<string> { step.LaunchDriver };
+                        launchArgs.Add("drivers=[" + string.Join(", ", drivers.Select(Quote)) + "]");
+                        launchArgs.Add("attach=" + (step.AutoAttach ? "True" : "False"));
+                        launchArgs.Add("spy_agent_enabled=" + (step.SpyAgentEnabled ? "True" : "False"));
+                        if (!string.IsNullOrWhiteSpace(step.PipeName)) launchArgs.Add("pipe_name=" + Quote(step.PipeName));
+                        sb.AppendLine("    api.launch_application(" + string.Join(", ", launchArgs) + ")");
                         continue;
                     }
                     case StepKind.TerminateApplication:
                     {
-                        var ta = new List<string> { "    api.terminate_application(" };
-                        bool first = true;
-                        if (!string.IsNullOrWhiteSpace(step.AppId))
-                        {
-                            ta.Add("app_id='" + step.AppId + "'");
-                            first = false;
-                        }
-                        if (!string.IsNullOrWhiteSpace(step.WindowTitle))
-                        {
-                            ta.Add((first ? "" : ", ") + "window_title='" + step.WindowTitle + "'");
-                            first = false;
-                        }
-                        if (!string.IsNullOrWhiteSpace(step.ProcessName))
-                        {
-                            ta.Add((first ? "" : ", ") + "process_name='" + step.ProcessName + "'");
-                            first = false;
-                        }
-                        if (step.ForceTerminate)
-                        {
-                            ta.Add((first ? "" : ", ") + "force=True");
-                        }
-                        ta.Add(")");
-                        sb.AppendLine(string.Join("", ta));
+                        var terminateArgs = new List<string>();
+                        if (!string.IsNullOrWhiteSpace(step.AppId ?? appId)) terminateArgs.Add("app_id=" + Quote(step.AppId ?? appId));
+                        if (!string.IsNullOrWhiteSpace(step.WindowTitle)) terminateArgs.Add("window_title=" + Quote(step.WindowTitle));
+                        if (!string.IsNullOrWhiteSpace(step.ProcessName)) terminateArgs.Add("process_name=" + Quote(step.ProcessName));
+                        if (step.ForceTerminate) terminateArgs.Add("force=True");
+                        sb.AppendLine("    api.terminate_application(" + string.Join(", ", terminateArgs) + ")");
                         continue;
                     }
                 }
 
                 switch (step.Action)
                 {
-                    case ActionKind.Invoke:
-                        sb.AppendLine("    api.click_element('" + step.Alias + "'" + appIdArg + ")");
-                        break;
-                    case ActionKind.SetValue:
-                        sb.AppendLine("    api.set_element_value('" + step.Alias + "', '" + step.Value + "'" + appIdArg + ")");
-                        break;
-                    case ActionKind.Toggle:
-                        sb.AppendLine("    api.toggle_element('" + step.Alias + "'" + appIdArg + ")");
-                        break;
-                    case ActionKind.DoubleClick:
-                        sb.AppendLine("    api.double_click_element('" + step.Alias + "'" + appIdArg + ")");
-                        break;
-                    case ActionKind.RightClick:
-                        sb.AppendLine("    api.right_click_element('" + step.Alias + "'" + appIdArg + ")");
-                        break;
-                    case ActionKind.DragDrop:
-                        sb.AppendLine("    api.drag_and_drop('" + step.Alias + "', '" + step.TargetAlias + "'" + appIdArg + ")");
-                        break;
-                    case ActionKind.Hover:
-                        sb.AppendLine("    api.hover_over_element('" + step.Alias + "'" + appIdArg + ")");
-                        break;
-                    case ActionKind.PressKeys:
-                        sb.AppendLine("    api.press_keys('" + step.Alias + "', '" + step.Value + "'" + appIdArg + ")");
-                        break;
-                    case ActionKind.Scroll:
-                        sb.AppendLine("    api.scroll('" + step.Alias + "', '" + step.Value + "'" + appIdArg + ")");
-                        break;
-                    case ActionKind.SikuliClick:
-                        sb.AppendLine("    api.sikuli_click('" + step.Alias + "'" + appIdArg + ")");
-                        break;
-                    case ActionKind.SikuliType:
-                        sb.AppendLine("    api.sikuli_type('" + step.Alias + "', '" + step.Value + "'" + appIdArg + ")");
-                        break;
+                    case ActionKind.Invoke: sb.AppendLine("    api.click_element(" + alias + appIdArg + ")"); break;
+                    case ActionKind.SetValue: sb.AppendLine("    api.set_element_value(" + alias + ", " + value + appIdArg + ")"); break;
+                    case ActionKind.Toggle: sb.AppendLine("    api.toggle_element(" + alias + appIdArg + ")"); break;
+                    case ActionKind.DoubleClick: sb.AppendLine("    api.double_click_element(" + alias + appIdArg + ")"); break;
+                    case ActionKind.RightClick: sb.AppendLine("    api.right_click_element(" + alias + appIdArg + ")"); break;
+                    case ActionKind.DragDrop: sb.AppendLine("    api.drag_and_drop(" + alias + ", " + Quote(step.TargetAlias) + appIdArg + ")"); break;
+                    case ActionKind.Hover: sb.AppendLine("    api.hover_over_element(" + alias + appIdArg + ")"); break;
+                    case ActionKind.PressKeys: sb.AppendLine("    api.press_keys(" + alias + ", " + value + appIdArg + ")"); break;
+                    case ActionKind.Scroll: sb.AppendLine("    api.scroll(" + alias + ", " + value + appIdArg + ")"); break;
+                    case ActionKind.SikuliClick: sb.AppendLine("    api.sikuli_click(" + alias + ", " + value + appIdArg + ")"); break;
+                    case ActionKind.SikuliType: sb.AppendLine("    api.sikuli_type(" + alias + ", " + value + appIdArg + ")"); break;
                 }
             }
 
-            sb.AppendLine("");
+            sb.AppendLine();
             sb.AppendLine("if __name__ == '__main__':");
             sb.AppendLine("    " + testCaseName + "()");
-
             return sb.ToString();
         }
-
         /// <summary>
         /// Convert a Windows path (with backslashes) to a Python-safe
         /// form. Python interprets backslashes as escape sequences in

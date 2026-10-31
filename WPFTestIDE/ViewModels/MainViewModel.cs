@@ -25,6 +25,9 @@ namespace WpfTestIde.ViewModels
     {
         private RecordingSession? _session;
         private GlobalMouseHook? _pickMouseHook;
+        private readonly IScriptExecutionService _scriptExecutionService = new ScriptExecutionService();
+        private CancellationTokenSource? _runCancellation;
+        private string? _importedAppId;
 
         public ObservableCollection<RecordedStep> Steps { get; } = new();
         public ObservableCollection<ElementEntry> Elements { get; } = new();
@@ -220,29 +223,37 @@ namespace WpfTestIde.ViewModels
         public string JsonScriptContent
         {
             get => _jsonScriptContent;
-            set { _jsonScriptContent = value; OnPropertyChanged(); }
+            set { _jsonScriptContent = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); }
         }
 
         private string _pythonScriptContent = "";
         public string PythonScriptContent
         {
             get => _pythonScriptContent;
-            set { _pythonScriptContent = value; OnPropertyChanged(); }
+            set { _pythonScriptContent = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); }
         }
 
         private string _robotScriptContent = "";
         public string RobotScriptContent
         {
             get => _robotScriptContent;
-            set { _robotScriptContent = value; OnPropertyChanged(); }
+            set { _robotScriptContent = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); }
         }
 
-        private string _currentScriptFormat = "Robot";
+        private string _currentScriptFormat = "Steps";
         public string CurrentScriptFormat
         {
             get => _currentScriptFormat;
-            set { _currentScriptFormat = value; OnPropertyChanged(); }
+            set
+            {
+                if (_currentScriptFormat == value) return;
+                _currentScriptFormat = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
+
+        public bool IsScriptRunInProgress => _runCancellation != null;
 
         private string _repositoryJson = "{ \"elements\": {} }";
         public string RepositoryJson { get => _repositoryJson; set { _repositoryJson = value; OnPropertyChanged(); } }
@@ -418,12 +429,16 @@ private FolderTreeItem? _workingFolderSelectedItem;
             set
             {
                 _selectedApp = value;
+                if (value != null && !string.IsNullOrEmpty(_importedAppId)
+                    && !string.Equals(value.AppId, _importedAppId, StringComparison.OrdinalIgnoreCase))
+                    _importedAppId = null;
                 OnPropertyChanged();
                 if (value != null)
                 {
                     PipeName = value.PipeName;
                     SelectedProcessId = value.ProcessId;
                 }
+                RegenerateScript();
             }
         }
 
@@ -520,6 +535,7 @@ private string _ocrResultText = "";
         public ICommand MoveStepUpCommand { get; }
         public ICommand MoveStepDownCommand { get; }
         public ICommand RunCommand { get; }
+        public ICommand CancelRunCommand { get; }
         public ICommand ExportRepositoryCommand { get; }
         public ICommand SaveExportScriptCommand { get; }
         public ICommand ApplyScriptCommand { get; }
@@ -559,7 +575,8 @@ private string _ocrResultText = "";
             DeleteStepCommand = new RelayCommand(param => DeleteStep(param as RecordedStep));
             MoveStepUpCommand = new RelayCommand(param => MoveStep(param as RecordedStep, -1));
             MoveStepDownCommand = new RelayCommand(param => MoveStep(param as RecordedStep, +1));
-            RunCommand = new AsyncRelayCommand(_ => RunAsync(), _ => Steps.Count > 0);
+            RunCommand = new AsyncRelayCommand(_ => RunAsync(), _ => CanRunCurrentScript());
+            CancelRunCommand = new RelayCommand(_ => _runCancellation?.Cancel(), _ => _runCancellation != null);
             ExportRepositoryCommand = new RelayCommand(_ => ExportRepository());
             SaveExportScriptCommand = new RelayCommand(_ => SaveExportScript());
             ApplyScriptCommand = new RelayCommand(_ => ApplyScript());
@@ -622,7 +639,11 @@ private string _ocrResultText = "";
             RedoCommand = new RelayCommand(_ => { /* TODO: implement redo */ });
             StopRecordingCommand = new RelayCommand(_ => ToggleRecording(), _ => IsAttached && IsRecording);
 
-            Steps.CollectionChanged += (_, __) => RegenerateScript();
+            Steps.CollectionChanged += (_, __) =>
+            {
+                RegenerateScript();
+                CommandManager.InvalidateRequerySuggested();
+            };
             Elements.CollectionChanged += (_, __) => { RegenerateRepository(); RefreshElementTree(); };
             RunOutputLines.CollectionChanged += (_, __) => OnPropertyChanged(nameof(RunOutputText));
             // D4: also parse each new raw line into RunOutputLog. Reset tag handler
@@ -1501,42 +1522,15 @@ private string _ocrResultText = "";
             var driver = _selectedDriver != "Auto" ? _selectedDriver : null;
             var mode = _selectedMode != "Auto" ? _selectedMode : null;
             var recordingModes = GetSelectedRecordingModes();
-            var appId = SelectedApp?.AppId;
+            var appId = _importedAppId ?? SelectedApp?.AppId;
 
-            // Robot Framework
             RobotScriptContent = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
 
             // Python
             PythonScriptContent = ScriptGenerator.GeneratePython(Steps, testCaseName: "test_recorded_session_playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
 
-            // JSON (steps only)
-            var jsonSteps = new List<object>();
-            foreach (var step in Steps)
-            {
-                var stepDict = new Dictionary<string, object>
-                {
-                    ["kind"] = step.Kind.ToString(),
-                    ["alias"] = step.Alias,
-                    ["action"] = step.Action.ToString(),
-                    ["nonStandard"] = step.NonStandard
-                };
-                if (!string.IsNullOrEmpty(step.Value))
-                    stepDict["value"] = step.Value;
-                if (!string.IsNullOrEmpty(step.AttributeName))
-                    stepDict["attributeName"] = step.AttributeName;
-                if (!string.IsNullOrEmpty(step.TargetAlias))
-                    stepDict["targetAlias"] = step.TargetAlias;
-                if (!string.IsNullOrEmpty(step.PropertyName))
-                    stepDict["propertyName"] = step.PropertyName;
-                if (!string.IsNullOrEmpty(step.ExpectedCount))
-                    stepDict["expectedCount"] = step.ExpectedCount;
-                if (!string.IsNullOrEmpty(step.AppId))
-                    stepDict["appId"] = step.AppId;
-                jsonSteps.Add(stepDict);
-            }
-            var jsonRoot = new Dictionary<string, object> { ["steps"] = jsonSteps };
-            var jsonOptions = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
-            JsonScriptContent = System.Text.Json.JsonSerializer.Serialize(jsonRoot, jsonOptions);
+            // JSON carries the same steps and script-level settings as the code views.
+            JsonScriptContent = JsonStepScript.Serialize(Steps, driver, mode, appId);
         }
 
         private List<string> GetSelectedRecordingModes()
@@ -1588,98 +1582,141 @@ private string _ocrResultText = "";
         // ------------------------------------------------------------
         // Run
         // ------------------------------------------------------------
-         private async System.Threading.Tasks.Task RunAsync()
-         {
-             RunOutputLines.Clear();
-             RunOutputLog.Clear();
-             RunSummaryText = "Running...";
-             // A5: pop open the bottom tail so the user sees the live stream as the
-             // run begins. Two-way binding honors manual collapse afterwards.
-             RunOutputPanelExpanded = true;
+        private bool CanRunCurrentScript() => CurrentScriptFormat switch
+        {
+            "Steps" => Steps.Count > 0,
+            "Json" => !string.IsNullOrWhiteSpace(JsonScriptContent),
+            "Python" => !string.IsNullOrWhiteSpace(PythonScriptContent),
+            "Robot" => !string.IsNullOrWhiteSpace(RobotScriptContent),
+            _ => false,
+        };
 
-             string testsDir = Path.Combine(FrameworkRoot, "tests");
-             Directory.CreateDirectory(testsDir);
-             string scriptPath = Path.Combine(testsDir, "ide_generated_test.robot");
-             
-             // For .NET Framework apps, the Python Launch Application keyword
-             // cannot inject the spy agent (DOTNET_STARTUP_HOOKS is .NET Core only).
-             // Pre-launch and inject them here, then rewrite the script to use
-             // Attach To Application instead of Launch Application.
-             var fwProcessIds = new List<int>();
-             var scriptContent = RobotScriptContent;
-             
-             if (scriptContent.Contains("Launch Application"))
-             {
-                 scriptContent = await PreLaunchFrameworkAppsAsync(scriptContent, fwProcessIds);
-             }
-             
-             File.WriteAllText(scriptPath, scriptContent);
+        private async System.Threading.Tasks.Task RunAsync()
+        {
+            var cancellation = new CancellationTokenSource();
+            _runCancellation = cancellation;
+            OnPropertyChanged(nameof(IsScriptRunInProgress));
+            CommandManager.InvalidateRequerySuggested();
 
-             // Write in-memory elements to repository so DriverAgnosticApi
-             // can resolve aliases for elements recorded in this session
-             // that may not yet exist in the static YAML files.
-             string elementsDir = Path.Combine(FrameworkRoot, "repository", "elements");
-             Directory.CreateDirectory(elementsDir);
-             string ideElementsPath = Path.Combine(elementsDir, "_ide_recorded.json");
-             File.WriteAllText(ideElementsPath, RepositoryJson);
+            try
+            {
+                RunOutputLines.Clear();
+                RunOutputLog.Clear();
+                RunSummaryText = "Running...";
+                RunOutputPanelExpanded = true;
 
-             string outputDir = Path.Combine(FrameworkRoot, "results", "ide_run");
+                string outputDir = Path.Combine(FrameworkRoot, "results", "ide_run");
+                string elementsDir = Path.Combine(FrameworkRoot, "repository", "elements");
+                Directory.CreateDirectory(elementsDir);
+                File.WriteAllText(Path.Combine(elementsDir, "_ide_recorded.json"), RepositoryJson);
 
-              var env = new System.Collections.Generic.Dictionary<string, string>
-              {
-                  ["WPFSPY_MODE"] = "real",
-                  ["WPFSPY_IDE_RUN"] = "1",
-                  ["WPFSPY_RUN_MODES"] = string.Join(",", GetSelectedRunModes()),
-                  ["WPFSPY_LOG_FILE"] = Path.Combine(FrameworkRoot, "results", "ide_run", "framework_persistent_log.txt"),
-              };
+                var environment = new Dictionary<string, string>
+                {
+                    ["WPFSPY_MODE"] = "real",
+                    ["WPFSPY_IDE_RUN"] = "1",
+                    ["WPFSPY_RUN_MODES"] = string.Join(",", GetSelectedRunModes()),
+                    ["WPFSPY_LOG_FILE"] = Path.Combine(outputDir, "framework_persistent_log.txt"),
+                };
 
-             // If we pre-launched any .NET Framework apps, pass their PIDs to the script
-             if (fwProcessIds.Count > 0)
-             {
-                 env["WPFSPY_PROCESS_IDS"] = string.Join(",", fwProcessIds);
-             }
+                string? runAppId = _importedAppId ?? SelectedApp?.AppId;
+                if (CurrentScriptFormat == "Json")
+                {
+                    var jsonDocument = JsonStepScript.DeserializeDocument(JsonScriptContent);
+                    runAppId = jsonDocument.AppId
+                        ?? jsonDocument.Steps.Select(step => step.AppId).FirstOrDefault(id => !string.IsNullOrWhiteSpace(id))
+                        ?? runAppId;
+                }
 
-             // Register the selected app with the Python framework for multi-app support
-             if (SelectedApp != null && !string.IsNullOrEmpty(SelectedApp.AppId))
-             {
-                 env["WPFSPY_APP_ID"] = SelectedApp.AppId;
-                 env["WPFSPY_APP_NAME"] = SelectedApp.AppName;
-                 env["WPFSPY_PIPE_NAME"] = SelectedApp.PipeName;
-                 env["WPFSPY_PROCESS_ID"] = SelectedApp.ProcessId.ToString();
-             }
-             else if (!string.IsNullOrEmpty(PipeName) && SelectedProcessId > 0)
-             {
-                 env["WPFSPY_PIPE_NAME"] = PipeName;
-                 env["WPFSPY_PROCESS_ID"] = SelectedProcessId.ToString();
-             }
+                var runApp = !string.IsNullOrEmpty(runAppId)
+                    ? AttachedApps.FirstOrDefault(app => string.Equals(app.AppId, runAppId, StringComparison.OrdinalIgnoreCase))
+                    : SelectedApp;
+                if (runApp != null && !string.IsNullOrEmpty(runApp.AppId))
+                {
+                    environment["WPFSPY_APP_ID"] = runApp.AppId;
+                    environment["WPFSPY_APP_NAME"] = runApp.AppName;
+                    environment["WPFSPY_PIPE_NAME"] = runApp.PipeName;
+                    environment["WPFSPY_PROCESS_ID"] = runApp.ProcessId.ToString();
+                }
+                else if (!string.IsNullOrEmpty(PipeName) && SelectedProcessId > 0)
+                {
+                    environment["WPFSPY_PIPE_NAME"] = PipeName;
+                    environment["WPFSPY_PROCESS_ID"] = SelectedProcessId.ToString();
+                }
 
-             var summary = await RobotRunner.RunAsync(
-                 scriptPath,
-                 outputDir,
-                 FrameworkRoot,
-                 line => Application.Current.Dispatcher.Invoke(() => RunOutputLines.Add(line)),
-                 env);
+                if (!Enum.TryParse<ScriptFormat>(CurrentScriptFormat, ignoreCase: true, out var format))
+                    throw new InvalidOperationException($"Unsupported script tab '{CurrentScriptFormat}'.");
 
-             LastRunSuccess = summary.Success;
-             RunSummaryText = summary.Total > 0
-                 ? $"{summary.Total} tests, {summary.Passed} passed, {summary.Failed} failed"
-                 : "No summary line found � check the output above for errors.";
+                var request = new ScriptExecutionRequest
+                {
+                    Format = format,
+                    SourceText = CurrentScriptFormat switch
+                    {
+                        "Json" => JsonScriptContent,
+                        "Python" => PythonScriptContent,
+                        "Robot" => RobotScriptContent,
+                        _ => "",
+                    },
+                    SourcePath = null,
+                    Steps = Steps.ToArray(),
+                    FrameworkRoot = FrameworkRoot,
+                    WorkingDirectory = FrameworkRoot,
+                    OutputDirectory = outputDir,
+                    Driver = _selectedDriver != "Auto" ? _selectedDriver : null,
+                    Mode = _selectedMode != "Auto" ? _selectedMode : null,
+                    AppId = CurrentScriptFormat == "Json" ? null : runAppId,
+                    RecordingModes = GetSelectedRecordingModes(),
+                    Environment = environment,
+                };
 
-             // E3: amplify the run result with a transient toast. Suppress on
-             // the "no test summary line" branch (the operator needs to read the
-             // log to diagnose those) � the banner RunSummaryText above stays
-             // the authoritative read for everyone, the toast only mirrors the
-             // pass/fail outcome for glancability when the operator is on a
-             // different tab.
-              if (summary.Total > 0)
-              {
-                  EnqueueToast(
-                      $"Run finished � {summary.Passed} passed, {summary.Failed} failed",
-                      summary.Success ? ToastKind.Success : ToastKind.Error);
-              }
-          }
+                var result = await _scriptExecutionService.RunAsync(
+                    request,
+                    line => Application.Current?.Dispatcher.BeginInvoke(new Action(() => RunOutputLines.Add(line))),
+                    PrepareRobotScriptAsync,
+                    cancellation.Token);
 
-        // ------------------------------------------------------------
+                LastRunSuccess = result.Success;
+                RunSummaryText = result.TotalTests > 0
+                    ? $"{result.TotalTests} tests, {result.PassedTests} passed, {result.FailedTests} failed"
+                    : result.Format == ScriptFormat.Python
+                        ? result.ExitCode == 0
+                            ? $"Python script completed successfully in {result.Duration.TotalSeconds:F1}s."
+                            : $"Python script failed with exit code {result.ExitCode}."
+                        : $"Robot exited with code {result.ExitCode}; no test summary was found. Check the output above.";
+                EnqueueToast(
+                    result.Success ? "Script run completed successfully." : "Script run failed. See Run Output for details.",
+                    result.Success ? ToastKind.Success : ToastKind.Error);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                LastRunSuccess = false;
+                RunSummaryText = "Run cancelled.";
+                EnqueueToast("Script run cancelled.", ToastKind.Warning);
+            }
+            catch (Exception ex)
+            {
+                LastRunSuccess = false;
+                RunSummaryText = $"Run failed: {ex.Message}";
+                StatusText = RunSummaryText;
+                EnqueueToast(RunSummaryText, ToastKind.Error);
+            }
+            finally
+            {
+                if (ReferenceEquals(_runCancellation, cancellation))
+                    _runCancellation = null;
+                cancellation.Dispose();
+                OnPropertyChanged(nameof(IsScriptRunInProgress));
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private async Task<RobotScriptPreparation> PrepareRobotScriptAsync(string scriptContent, CancellationToken cancellationToken)
+        {
+            var processIds = new List<int>();
+            if (scriptContent.Contains("Launch Application", StringComparison.Ordinal))
+                scriptContent = await PreLaunchFrameworkAppsAsync(scriptContent, processIds);
+            cancellationToken.ThrowIfCancellationRequested();
+            return new RobotScriptPreparation(scriptContent, processIds);
+        }
         // Pre-launch / inject .NET Framework apps before script run
         // ------------------------------------------------------------
         private async System.Threading.Tasks.Task<string> PreLaunchFrameworkAppsAsync(string scriptContent, List<int> fwProcessIds)
@@ -1921,38 +1958,52 @@ private string _ocrResultText = "";
         /// collection so all views reflect the change when switching tabs.</summary>
         private void ApplyScript()
         {
-            var text = _currentScriptFormat switch
+            if (CurrentScriptFormat == "Steps")
+            {
+                EnqueueToast("The Visual tab already edits the recorded steps.", ToastKind.Info);
+                return;
+            }
+
+            string text = CurrentScriptFormat switch
             {
                 "Json" => JsonScriptContent,
                 "Python" => PythonScriptContent,
-                _ => RobotScriptContent
+                "Robot" => RobotScriptContent,
+                _ => "",
             };
-
             if (string.IsNullOrWhiteSpace(text))
             {
                 EnqueueToast("Nothing to apply.", ToastKind.Warning);
                 return;
             }
 
-            bool ok = _currentScriptFormat switch
+            try
             {
-                "Json" => ParseJsonScript(text),
-                "Python" => ParsePythonScript(text),
-                _ => ParseRobotScript(text)
-            };
-
-            if (ok)
-            {
-                RegenerateScript();
-                EnqueueToast($"Applied {_currentScriptFormat} script ({Steps.Count} steps).", ToastKind.Success);
+                var format = Enum.Parse<ScriptFormat>(CurrentScriptFormat, ignoreCase: true);
+                var imported = ScriptInterop.Parse(format, text);
+                ApplyImportedScript(imported);
+                EnqueueToast($"Applied {CurrentScriptFormat} script ({Steps.Count} steps) to all views.", ToastKind.Success);
             }
-            else
+            catch (Exception ex)
             {
-                EnqueueToast("Apply failed � could not parse the script.", ToastKind.Error);
+                EnqueueToast($"Apply failed: {ex.Message}", ToastKind.Error);
             }
         }
 
-        /// <summary>Import a script from .json, .py, or .robot and populate Steps.</summary>
+        private void ApplyImportedScript(ScriptImportResult imported)
+        {
+            _importedAppId = imported.AppId;
+            _selectedDriver = string.IsNullOrWhiteSpace(imported.Driver) ? "Auto" : imported.Driver;
+            _selectedMode = string.IsNullOrWhiteSpace(imported.Mode) ? "Auto" : imported.Mode;
+            OnPropertyChanged(nameof(SelectedDriver));
+            OnPropertyChanged(nameof(SelectedMode));
+
+            Steps.Clear();
+            foreach (var step in imported.Steps)
+                Steps.Add(step);
+            RegenerateScript();
+        }
+
         private void ImportScript()
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
@@ -1961,250 +2012,9 @@ private string _ocrResultText = "";
                 InitialDirectory = Path.Combine(FrameworkRoot, "tests"),
                 Multiselect = false
             };
-            if (dialog.ShowDialog() != true) return;
-
-            try
-            {
-                string ext = System.IO.Path.GetExtension(dialog.FileName).ToLowerInvariant();
-                string text = File.ReadAllText(dialog.FileName);
-
-                bool ok = ext switch
-                {
-                    ".json" => ParseJsonScript(text),
-                    ".py" => ParsePythonScript(text),
-                    ".robot" => ParseRobotScript(text),
-                    _ => false
-                };
-
-                if (ok)
-                {
-                    RegenerateScript();
-                    EnqueueToast($"Imported {Steps.Count} step(s) from {System.IO.Path.GetFileName(dialog.FileName)}.", ToastKind.Success);
-                }
-                else
-                {
-                    EnqueueToast("Import failed � could not parse the file.", ToastKind.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                EnqueueToast($"Import failed: {ex.Message}", ToastKind.Error);
-            }
+            if (dialog.ShowDialog() == true)
+                ImportScriptFile(dialog.FileName);
         }
-
-        // ------------------------------------------------------------
-        // Script parsing (Apply / Import round-trip)
-        // ------------------------------------------------------------
-
-        /// <summary>Parse JSON script text into Steps.</summary>
-        private bool ParseJsonScript(string text)
-        {
-            try
-            {
-                using var doc = System.Text.Json.JsonDocument.Parse(text);
-                var root = doc.RootElement;
-
-                if (!root.TryGetProperty("steps", out var stepsObj))
-                    return false;
-
-                Steps.Clear();
-                foreach (var stepObj in stepsObj.EnumerateArray())
-                {
-                    if (!stepObj.TryGetProperty("kind", out var kindProp) ||
-                        !stepObj.TryGetProperty("alias", out var aliasProp) ||
-                        !stepObj.TryGetProperty("action", out var actionProp))
-                        continue;
-
-                    if (!Enum.TryParse<StepKind>(kindProp.GetString(), out var kind)) continue;
-                    if (!Enum.TryParse<ActionKind>(actionProp.GetString(), out var action)) continue;
-
-                    var step = new RecordedStep
-                    {
-                        Kind = kind,
-                        Alias = aliasProp.GetString() ?? "",
-                        Action = action,
-                        NonStandard = stepObj.TryGetProperty("nonStandard", out var nsProp) && nsProp.GetBoolean(),
-                        Value = GetOptionalString(stepObj, "value"),
-                        AttributeName = GetOptionalString(stepObj, "attributeName"),
-                        TargetAlias = GetOptionalString(stepObj, "targetAlias"),
-                        PropertyName = GetOptionalString(stepObj, "propertyName"),
-                        ExpectedCount = GetOptionalString(stepObj, "expectedCount"),
-                        AppId = GetOptionalString(stepObj, "appId"),
-                    };
-                    Steps.Add(step);
-                }
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>Parse Python script text (DriverAgnosticApi calls) into Steps.</summary>
-        private bool ParsePythonScript(string text)
-        {
-            try
-            {
-                Steps.Clear();
-                var lines = text.Split('\n');
-                foreach (var rawLine in lines)
-                {
-                    var line = rawLine.Trim();
-                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#") || line.StartsWith("api =") || line.StartsWith("api.set_") || line.StartsWith("def ") || line.StartsWith("if __"))
-                        continue;
-
-                    // Match: api.click_element('alias'[, app_id='...'])
-                    var m = System.Text.RegularExpressions.Regex.Match(line, @"api\.(\w+)\(['""](?<alias>[^'""]+)['""]");
-                    if (!m.Success) continue;
-
-                    var call = m.Groups[1].Value;
-                    var alias = m.Groups["alias"].Value;
-
-                    var step = new RecordedStep { Kind = StepKind.Action, Alias = alias };
-
-                    switch (call)
-                    {
-                        case "click_element": step.Action = ActionKind.Invoke; break;
-                        case "double_click_element": step.Action = ActionKind.DoubleClick; break;
-                        case "right_click_element": step.Action = ActionKind.RightClick; break;
-                        case "toggle_element": step.Action = ActionKind.Toggle; break;
-                        case "hover_over_element": step.Action = ActionKind.Hover; break;
-                        case "press_keys":
-                            step.Action = ActionKind.PressKeys;
-                            step.Value = ExtractQuotedArg(line, 1);
-                            break;
-                        case "scroll":
-                            step.Action = ActionKind.Scroll;
-                            step.Value = ExtractQuotedArg(line, 1);
-                            break;
-                        case "drag_and_drop":
-                            step.Action = ActionKind.DragDrop;
-                            step.TargetAlias = ExtractQuotedArg(line, 1);
-                            break;
-                        case "set_element_value":
-                            step.Action = ActionKind.SetValue;
-                            step.Value = ExtractQuotedArg(line, 1);
-                            break;
-                        case "sikuli_click": step.Action = ActionKind.SikuliClick; break;
-                        case "sikuli_type":
-                            step.Action = ActionKind.SikuliType;
-                            step.Value = ExtractQuotedArg(line, 1);
-                            break;
-                        default: continue;
-                    }
-
-                    Steps.Add(step);
-                }
-                return Steps.Count > 0;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>Parse Robot Framework script text into Steps.</summary>
-        private bool ParseRobotScript(string text)
-        {
-            try
-            {
-                Steps.Clear();
-                var lines = text.Split('\n');
-                foreach (var rawLine in lines)
-                {
-                    var line = rawLine.Trim();
-                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#") || line.StartsWith("***") || line.StartsWith("Library") || line.StartsWith("Test Setup"))
-                        continue;
-
-                    // Robot format: Keyword    arg1    arg2    ... (split on 2+ whitespace)
-                    var parts = System.Text.RegularExpressions.Regex.Split(line, @"\s{2,}|\t");
-                    if (parts.Length == 0) continue;
-
-                    var keyword = parts[0].Trim();
-                    var step = new RecordedStep { Kind = StepKind.Action };
-
-                    switch (keyword)
-                    {
-                        case "Click Element":
-                            step.Action = ActionKind.Invoke;
-                            step.Alias = parts.Length > 1 ? parts[1] : "";
-                            break;
-                        case "Double Click Element":
-                            step.Action = ActionKind.DoubleClick;
-                            step.Alias = parts.Length > 1 ? parts[1] : "";
-                            break;
-                        case "Right Click Element":
-                            step.Action = ActionKind.RightClick;
-                            step.Alias = parts.Length > 1 ? parts[1] : "";
-                            break;
-                        case "Toggle Element":
-                            step.Action = ActionKind.Toggle;
-                            step.Alias = parts.Length > 1 ? parts[1] : "";
-                            break;
-                        case "Hover Over Element":
-                            step.Action = ActionKind.Hover;
-                            step.Alias = parts.Length > 1 ? parts[1] : "";
-                            break;
-                        case "Press Keys":
-                            step.Action = ActionKind.PressKeys;
-                            step.Alias = parts.Length > 1 ? parts[1] : "";
-                            step.Value = parts.Length > 2 ? parts[2] : "";
-                            break;
-                        case "Scroll":
-                            step.Action = ActionKind.Scroll;
-                            step.Alias = parts.Length > 1 ? parts[1] : "";
-                            step.Value = parts.Length > 2 ? parts[2] : "";
-                            break;
-                        case "Drag And Drop":
-                            step.Action = ActionKind.DragDrop;
-                            step.Alias = parts.Length > 1 ? parts[1] : "";
-                            step.TargetAlias = parts.Length > 2 ? parts[2] : "";
-                            break;
-                        case "Set Element Value":
-                            step.Action = ActionKind.SetValue;
-                            step.Alias = parts.Length > 1 ? parts[1] : "";
-                            step.Value = parts.Length > 2 ? parts[2] : "";
-                            break;
-                        case "OculiX Click":
-                            step.Action = ActionKind.SikuliClick;
-                            step.Alias = parts.Length > 1 ? parts[1] : "";
-                            break;
-                        case "OculiX Type":
-                            step.Action = ActionKind.SikuliType;
-                            step.Alias = parts.Length > 1 ? parts[1] : "";
-                            step.Value = parts.Length > 2 ? parts[2] : "";
-                            break;
-                        default: continue;
-                    }
-
-                    Steps.Add(step);
-                }
-                return Steps.Count > 0;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>Extract the Nth quoted string argument from a Python call.</summary>
-        private static string? ExtractQuotedArg(string line, int argIndex)
-        {
-            var matches = System.Text.RegularExpressions.Regex.Matches(line, @"['""](?<val>[^'""]+)['""]");
-            if (matches.Count > argIndex)
-                return matches[argIndex].Groups["val"].Value;
-            return null;
-        }
-
-        private static string? GetOptionalString(System.Text.Json.JsonElement obj, string propName)
-        {
-            if (obj.TryGetProperty(propName, out var prop) && prop.ValueKind == System.Text.Json.JsonValueKind.String)
-                return prop.GetString();
-            return null;
-        }
-
-        // ------------------------------------------------------------
         // Working Folder (B3)
         // ------------------------------------------------------------
         private void OpenWorkingFolder()
@@ -2330,32 +2140,28 @@ private string _ocrResultText = "";
         {
             try
             {
-                string ext = Path.GetExtension(path).ToLowerInvariant();
-                string text = File.ReadAllText(path);
-                bool ok = ext switch
+                string extension = Path.GetExtension(path).ToLowerInvariant();
+                ScriptFormat format = extension switch
                 {
-                    ".json" => ParseJsonScript(text),
-                    ".py" => ParsePythonScript(text),
-                    ".robot" => ParseRobotScript(text),
-                    _ => false
+                    ".json" => ScriptFormat.Json,
+                    ".py" => ScriptFormat.Python,
+                    ".robot" => ScriptFormat.Robot,
+                    _ => throw new FormatException($"Unsupported script type: {extension}"),
                 };
-                if (ok)
-                {
-                    RegenerateScript();
-                    StatusText = $"Imported {Steps.Count} step(s) from {Path.GetFileName(path)}.";
-                    EnqueueToast($"Imported script: {Path.GetFileName(path)}", ToastKind.Success);
-                }
-                else
-                {
-                    EnqueueToast($"Could not parse script: {Path.GetFileName(path)}", ToastKind.Error);
-                }
+
+                string text = File.ReadAllText(path);
+                var imported = ScriptInterop.Parse(format, text);
+                ApplyImportedScript(imported);
+                CurrentScriptFormat = format.ToString();
+                StatusText = $"Imported {Steps.Count} step(s) from {Path.GetFileName(path)} and refreshed all script views.";
+                EnqueueToast($"Imported {Path.GetFileName(path)} as {Steps.Count} step(s).", ToastKind.Success);
             }
             catch (Exception ex)
             {
-                EnqueueToast($"Script import failed: {ex.Message}", ToastKind.Error);
+                StatusText = $"Script import failed: {ex.Message}";
+                EnqueueToast(StatusText, ToastKind.Error);
             }
         }
-
         private void ImportElementsFromJson(string path)
         {
             try
@@ -2625,6 +2431,13 @@ private string _ocrResultText = "";
         private void Reset()
         {
             Steps.Clear();
+            _importedAppId = null;
+            _selectedDriver = "Auto";
+            _selectedMode = "Auto";
+            OnPropertyChanged(nameof(SelectedDriver));
+            OnPropertyChanged(nameof(SelectedMode));
+            CurrentScriptFormat = "Steps";
+            RegenerateScript();
             Elements.Clear();
             RunOutputLines.Clear();
             RunOutputLog.Clear();

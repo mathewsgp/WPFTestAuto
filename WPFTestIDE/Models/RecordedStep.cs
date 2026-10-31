@@ -51,6 +51,9 @@ namespace WpfTestIde.Models
         /// <summary>Command-line arguments for the launched process. Optional.</summary>
         public string? Args { get; set; }
 
+        /// <summary>Launch wait timeout. Optional; null uses the framework default.</summary>
+        public string? LaunchTimeout { get; set; }
+
         /// <summary>True to automatically attach the framework to the spawned process.</summary>
         public bool AutoAttach { get; set; }
 
@@ -138,6 +141,10 @@ namespace WpfTestIde.Models
                 TargetAlias = TargetAlias,
                 PropertyName = PropertyName,
                 ExpectedCount = ExpectedCount,
+                AppPath = AppPath,
+                StartIn = StartIn,
+                Args = Args,
+                LaunchTimeout = LaunchTimeout,
                 AutoAttach = AutoAttach,
                 LaunchDriver = LaunchDriver,
                 LaunchDriverList = LaunchDriverList != null ? new List<string>(LaunchDriverList) : null,

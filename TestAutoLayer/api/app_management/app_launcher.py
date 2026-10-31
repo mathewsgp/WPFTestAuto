@@ -107,6 +107,8 @@ def launch_application(
     drivers: Optional[List[str]] = None,
     attach: bool = False,
     timeout: float = 30.0,
+    spy_agent_enabled: Optional[bool] = None,
+    pipe_name: Optional[str] = None,
 ) -> str:
     """Launch an application and register it in the multi-app context.
     
@@ -186,6 +188,8 @@ def launch_application(
         app_path=norm_path,
         launch_args=launch_args,
         start_in=norm_start_in,
+        pipe_name=pipe_name,
+        inject_spy_agent=spy_agent_enabled,
         attach=attach,
     )
     logger.info(

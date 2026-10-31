@@ -294,6 +294,8 @@ class UtilityKeywords:
         drivers: Optional[Union[str, List[str]]] = None,
         attach: bool = False,
         timeout: float = 30.0,
+        spy_agent_enabled: Optional[bool] = None,
+        pipe_name: Optional[str] = None,
     ) -> str:
         """Launch an application and register it."""
         return launch_application(
@@ -304,6 +306,8 @@ class UtilityKeywords:
             drivers=drivers,
             attach=attach,
             timeout=timeout,
+            spy_agent_enabled=spy_agent_enabled,
+            pipe_name=pipe_name,
         )
     
     def attach_to_application(self, app_id: str, process_id: Union[int, str], driver_list: Optional[Union[str, List[str]]] = None, pipe_name: Optional[str] = None) -> str:

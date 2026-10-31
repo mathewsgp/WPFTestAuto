@@ -8,6 +8,8 @@
             <StackPanel Orientation="Horizontal">
                 <Button x:Name="btnRunScript" Style="{DynamicResource ToolbarButton}" Content="Run Script" ToolTip="Run the current script (F5)"
                         Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnRunScript"/>
+                <Button x:Name="btnStopScript" Style="{DynamicResource ToolbarButton}" Content="Stop" ToolTip="Stop the current script run"
+                        Command="{Binding CancelRunCommand}" AutomationProperties.AutomationId="btnStopScript"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnSaveExportScript" Style="{DynamicResource ToolbarButton}" Content="Save / Export Script" ToolTip="Save or export the current script (JSON / Python / Robot)"
                         Command="{Binding SaveExportScriptCommand}" AutomationProperties.AutomationId="btnSaveExportScript"/>
@@ -22,9 +24,10 @@
             </StackPanel>
         </Border>
 
-        <TabControl>
+        <TabControl SelectedValuePath="Tag"
+                    SelectedValue="{Binding CurrentScriptFormat, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
             <!-- Tab 1: Visual (recorded steps list) -->
-            <TabItem x:Name="tabVisualSteps" Header="Visual" AutomationProperties.AutomationId="tabVisualSteps">
+            <TabItem x:Name="tabVisualSteps" Header="Visual" Tag="Steps" AutomationProperties.AutomationId="tabVisualSteps">
                 <ListBox x:Name="StepsListBox" ItemsSource="{Binding Steps}" ItemTemplate="{DynamicResource StepTemplate}"
                          BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          Margin="0,6,0,0" AutomationProperties.AutomationId="StepsListBox"
@@ -44,7 +47,7 @@
             </TabItem>
 
             <!-- Tab 2: JSON Script -->
-            <TabItem x:Name="tabJsonScript" Header="JSON" AutomationProperties.AutomationId="tabJsonScript">
+            <TabItem x:Name="tabJsonScript" Header="JSON" Tag="Json" AutomationProperties.AutomationId="tabJsonScript">
                 <DockPanel Margin="0,6,0,0">
                     <TextBlock DockPanel.Dock="Top" Text="JSON step list — edit and click Apply to sync across all views."
                                FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
@@ -56,7 +59,7 @@
             </TabItem>
 
             <!-- Tab 3: Python Script -->
-            <TabItem x:Name="tabPythonScript" Header="Python Script" AutomationProperties.AutomationId="tabPythonScript">
+            <TabItem x:Name="tabPythonScript" Header="Python Script" Tag="Python" AutomationProperties.AutomationId="tabPythonScript">
                 <DockPanel Margin="0,6,0,0">
                     <TextBlock DockPanel.Dock="Top" Text="Python script using DriverAgnosticApi — edit and click Apply to sync across all views."
                                FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
@@ -68,7 +71,7 @@
             </TabItem>
 
             <!-- Tab 4: Robot Script -->
-            <TabItem x:Name="tabRobotScript" Header="Robot Script" AutomationProperties.AutomationId="tabRobotScript">
+            <TabItem x:Name="tabRobotScript" Header="Robot Script" Tag="Robot" AutomationProperties.AutomationId="tabRobotScript">
                 <DockPanel Margin="0,6,0,0">
                     <TextBlock DockPanel.Dock="Top" Text="Robot Framework script using DriverAgnosticApi — edit and click Apply to sync across all views."
                                FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>

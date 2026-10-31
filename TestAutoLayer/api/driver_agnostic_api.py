@@ -550,9 +550,11 @@ class DriverAgnosticApi:
         drivers: Optional[Union[str, List[str]]] = None,
         attach: bool = False,
         timeout: float = 30.0,
+        spy_agent_enabled: Optional[bool] = None,
+        pipe_name: Optional[str] = None,
     ) -> str:
         return self._utility.launch_application(
-            app_path, app_id, args, start_in, drivers, attach, timeout
+            app_path, app_id, args, start_in, drivers, attach, timeout, spy_agent_enabled, pipe_name
         )
     
     def attach_to_application(self, app_id: str, process_id: Union[int, str], driver_list: Optional[Union[str, List[str]]] = None, pipe_name: Optional[str] = None) -> str:
