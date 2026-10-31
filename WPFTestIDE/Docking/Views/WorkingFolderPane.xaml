@@ -37,7 +37,7 @@
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                         <StackPanel Orientation="Horizontal" Margin="2">
-                            <TextBlock Text="{Binding Extension, Converter={StaticResource FolderItemIconConverter}}" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="{Binding Converter={StaticResource FolderItemIconConverter}}" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
                             <TextBlock VerticalAlignment="Center" FontSize="12">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
