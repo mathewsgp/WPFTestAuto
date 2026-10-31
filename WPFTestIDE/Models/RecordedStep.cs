@@ -124,5 +124,32 @@ namespace WpfTestIde.Models
                 _ => "Unknown",
             },
         };
+
+        /// <summary>Create a deep copy of this step for editing.</summary>
+        public RecordedStep Clone()
+        {
+            return new RecordedStep
+            {
+                Kind = Kind,
+                Alias = Alias,
+                Action = Action,
+                Value = Value,
+                AttributeName = AttributeName,
+                TargetAlias = TargetAlias,
+                PropertyName = PropertyName,
+                ExpectedCount = ExpectedCount,
+                AutoAttach = AutoAttach,
+                LaunchDriver = LaunchDriver,
+                LaunchDriverList = LaunchDriverList != null ? new List<string>(LaunchDriverList) : null,
+                SpyAgentEnabled = SpyAgentEnabled,
+                PipeName = PipeName,
+                WindowTitle = WindowTitle,
+                ProcessName = ProcessName,
+                ForceTerminate = ForceTerminate,
+                Timestamp = Timestamp,
+                NonStandard = NonStandard,
+                AppId = AppId,
+            };
+        }
     }
 }

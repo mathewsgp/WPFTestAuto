@@ -213,8 +213,29 @@ namespace WpfTestIde.ViewModels
         // Element Tree ViewModel
         public ElementTreeViewModel ElementTree { get; } = new();
 
+        // Script format selection (JSON / Python / Robot Framework)
+        public enum ScriptFormat { Json, Python, Robot }
+
+        private ScriptFormat _currentScriptFormat = ScriptFormat.Robot;
+        public ScriptFormat CurrentScriptFormat
+        {
+            get => _currentScriptFormat;
+            set { _currentScriptFormat = value; OnPropertyChanged(); UpdateScriptContent(); }
+        }
+
+        private string _scriptContent = "";
+        public string ScriptContent
+        {
+            get => _scriptContent;
+            set { _scriptContent = value; OnPropertyChanged(); }
+        }
+
         private string _generatedScript = "";
-        public string GeneratedScript { get => _generatedScript; set { _generatedScript = value; OnPropertyChanged(); } }
+        public string GeneratedScript
+        {
+            get => _generatedScript;
+            set { _generatedScript = value; OnPropertyChanged(); }
+        }
 
         private string _repositoryJson = "{ \"elements\": {} }";
         public string RepositoryJson { get => _repositoryJson; set { _repositoryJson = value; OnPropertyChanged(); } }
@@ -484,6 +505,7 @@ namespace WpfTestIde.ViewModels
         public ICommand AddVerificationCommand { get; }
         public ICommand AddStepCommand { get; }
         public ICommand DeleteStepCommand { get; }
+        public ICommand EditStepCommand { get; }
         // D3: re-order recorded steps. Two explicit commands (up/down buttons) plus
         // a drag-drop path that calls MoveStep directly from MainWindow code-behind.
         public ICommand MoveStepUpCommand { get; }
@@ -521,6 +543,7 @@ namespace WpfTestIde.ViewModels
             AddVerificationCommand = new RelayCommand(param => AddVerification(param as RecordedStep));
             AddStepCommand = new RelayCommand(param => AddStep(param as RecordedStep));
             DeleteStepCommand = new RelayCommand(param => DeleteStep(param as RecordedStep));
+            EditStepCommand = new RelayCommand(param => EditStep(param as RecordedStep));
             MoveStepUpCommand = new RelayCommand(param => MoveStep(param as RecordedStep, -1));
             MoveStepDownCommand = new RelayCommand(param => MoveStep(param as RecordedStep, +1));
             RunCommand = new AsyncRelayCommand(_ => RunAsync(), _ => Steps.Count > 0);
@@ -1425,6 +1448,26 @@ namespace WpfTestIde.ViewModels
             }
         }
 
+        private void EditStep(RecordedStep? step)
+        {
+            if (step == null) return;
+            // Open a step editor dialog for visual editing of the selected step.
+            var dlg = new Dialogs.StepEditorDialog(step);
+            if (dlg.ShowDialog() == true)
+            {
+                // Update the step from the dialog's result
+                step.Alias = dlg.ResultStep.Alias;
+                step.Value = dlg.ResultStep.Value;
+                step.AttributeName = dlg.ResultStep.AttributeName;
+                step.TargetAlias = dlg.ResultStep.TargetAlias;
+                step.PropertyName = dlg.ResultStep.PropertyName;
+                step.ExpectedCount = dlg.ResultStep.ExpectedCount;
+                step.AppId = dlg.ResultStep.AppId;
+                step.NonStandard = dlg.ResultStep.NonStandard;
+                RegenerateScript();
+            }
+        }
+
         /// <summary>D3: move a step by a relative delta (±1) from the up/down buttons.</summary>
         private void MoveStep(RecordedStep? step, int delta)
         {
@@ -1450,14 +1493,70 @@ namespace WpfTestIde.ViewModels
         // ------------------------------------------------------------
         // Generation
         // ------------------------------------------------------------
-         private void RegenerateScript()
-         {
-             var driver = _selectedDriver != "Auto" ? _selectedDriver : null;
-             var mode = _selectedMode != "Auto" ? _selectedMode : null;
-             var recordingModes = GetSelectedRecordingModes();
-             var appId = SelectedApp?.AppId;
-             GeneratedScript = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
-         }
+        private void RegenerateScript()
+        {
+            UpdateScriptContent();
+        }
+
+        /// <summary>Regenerate all three script formats (JSON, Python, Robot)
+        /// from the current Steps collection and refresh ScriptContent.</summary>
+        private void UpdateScriptContent()
+        {
+            var driver = _selectedDriver != "Auto" ? _selectedDriver : null;
+            var mode = _selectedMode != "Auto" ? _selectedMode : null;
+            var recordingModes = GetSelectedRecordingModes();
+            var appId = SelectedApp?.AppId;
+
+            // Robot Framework (already bound to GeneratedScript)
+            GeneratedScript = ScriptGenerator.Generate(Steps, testCaseName: "Recorded Session Playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
+
+            // Python
+            var pythonScript = ScriptGenerator.GeneratePython(Steps, testCaseName: "test_recorded_session_playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
+
+            // JSON (steps only)
+            var jsonSteps = new List<object>();
+            foreach (var step in Steps)
+            {
+                var stepDict = new Dictionary<string, object>
+                {
+                    ["kind"] = step.Kind.ToString(),
+                    ["alias"] = step.Alias,
+                    ["action"] = step.Action.ToString(),
+                    ["nonStandard"] = step.NonStandard
+                };
+                if (!string.IsNullOrEmpty(step.Value))
+                    stepDict["value"] = step.Value;
+                if (!string.IsNullOrEmpty(step.AttributeName))
+                    stepDict["attributeName"] = step.AttributeName;
+                if (!string.IsNullOrEmpty(step.TargetAlias))
+                    stepDict["targetAlias"] = step.TargetAlias;
+                if (!string.IsNullOrEmpty(step.PropertyName))
+                    stepDict["propertyName"] = step.PropertyName;
+                if (!string.IsNullOrEmpty(step.ExpectedCount))
+                    stepDict["expectedCount"] = step.ExpectedCount;
+                if (!string.IsNullOrEmpty(step.AppId))
+                    stepDict["appId"] = step.AppId;
+                jsonSteps.Add(stepDict);
+            }
+            var jsonRoot = new Dictionary<string, object> { ["steps"] = jsonSteps };
+            var jsonOptions = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+            var jsonScript = System.Text.Json.JsonSerializer.Serialize(jsonRoot, jsonOptions);
+
+            // Select the active format's content
+            switch (_currentScriptFormat)
+            {
+                case ScriptFormat.Json:
+                    ScriptContent = jsonScript;
+                    break;
+                case ScriptFormat.Python:
+                    ScriptContent = pythonScript;
+                    break;
+                case ScriptFormat.Robot:
+                default:
+                    ScriptContent = GeneratedScript;
+                    break;
+            }
+        }
 
         private List<string> GetSelectedRecordingModes()
         {
@@ -1853,15 +1952,36 @@ namespace WpfTestIde.ViewModels
 
         private void SaveScript()
         {
+            string fileName, filter, content;
+            switch (_currentScriptFormat)
+            {
+                case ScriptFormat.Json:
+                    fileName = "recorded_steps.json";
+                    filter = "JSON files (*.json)|*.json";
+                    content = ScriptContent;
+                    break;
+                case ScriptFormat.Python:
+                    fileName = "recorded_test.py";
+                    filter = "Python files (*.py)|*.py";
+                    content = ScriptContent;
+                    break;
+                case ScriptFormat.Robot:
+                default:
+                    fileName = "recorded_test.robot";
+                    filter = "Robot files (*.robot)|*.robot";
+                    content = GeneratedScript;
+                    break;
+            }
+
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
-                FileName = "recorded_test.robot",
-                Filter = "Robot files (*.robot)|*.robot",
+                FileName = fileName,
+                Filter = filter,
                 InitialDirectory = Path.Combine(FrameworkRoot, "tests"),
             };
             if (dialog.ShowDialog() == true)
             {
-                File.WriteAllText(dialog.FileName, GeneratedScript);
+                File.WriteAllText(dialog.FileName, content);
                 StatusText = $"Script saved to {dialog.FileName}";
                 // E3: mirror the StatusText line with a green Success toast so
                 // a save from a different tab is still noticed at a glance.

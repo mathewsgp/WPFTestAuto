@@ -22,10 +22,16 @@
                 <Button x:Name="btnExportScript" Style="{DynamicResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
                 <Button x:Name="btnExportScriptPy" Style="{DynamicResource ToolbarButton}" Content="Export Script (.py)" Command="{Binding ExportScriptAsPyCommand}" AutomationProperties.AutomationId="btnExportScriptPy"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
+                <TextBlock Text="View:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <RadioButton Content="JSON" IsChecked="{Binding CurrentScriptFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Json}" VerticalAlignment="Center" FontSize="11" Margin="0,0,4,0" AutomationProperties.AutomationId="rbViewJson"/>
+                <RadioButton Content="Python" IsChecked="{Binding CurrentScriptFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Python}" VerticalAlignment="Center" FontSize="11" Margin="0,0,4,0" AutomationProperties.AutomationId="rbViewPython"/>
+                <RadioButton Content="Robot" IsChecked="{Binding CurrentScriptFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Robot}" VerticalAlignment="Center" FontSize="11" Margin="0,0,8,0" AutomationProperties.AutomationId="rbViewRobot"/>
+                <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnExportStepsJson" Style="{DynamicResource ToolbarButton}" Content="Export Steps (.json)" Command="{Binding ExportStepsAsJsonCommand}" AutomationProperties.AutomationId="btnExportStepsJson"/>
                 <Button x:Name="btnImportSteps" Style="{DynamicResource ToolbarButton}" Content="Import Steps (.json)" Command="{Binding ImportStepsCommand}" AutomationProperties.AutomationId="btnImportSteps"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnAddStep" Style="{DynamicResource ToolbarButton}" Content="Add Step" Command="{Binding AddStepCommand}" AutomationProperties.AutomationId="btnAddStep"/>
+                <Button x:Name="btnEditStep" Style="{DynamicResource ToolbarButton}" Content="Edit Step" Command="{Binding EditStepCommand}" AutomationProperties.AutomationId="btnEditStep"/>
                 <Button x:Name="btnCheckpointWizard" Style="{DynamicResource ToolbarButton}" Content="Checkpoint Wizard" Command="{Binding OpenCheckpointWizardCommand}" AutomationProperties.AutomationId="btnCheckpointWizard"/>
             </StackPanel>
         </Border>
@@ -72,7 +78,7 @@
                          etc.) have been removed - they duplicated the
                          canonical StatusBar ones (chkRecordFlaUI / chkRun*
                          in the status bar) and were unused by tests. -->
-                    <TextBox x:Name="txtGeneratedScript" Text="{Binding GeneratedScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
+                    <TextBox x:Name="txtGeneratedScript" Text="{Binding ScriptContent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="12"
                              TextWrapping="NoWrap" AcceptsReturn="True"
                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                              Style="{DynamicResource VsCodeEditor}" AutomationProperties.AutomationId="txtGeneratedScript"/>
