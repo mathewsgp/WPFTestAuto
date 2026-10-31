@@ -23,9 +23,13 @@
                 <Button x:Name="btnExportScriptPy" Style="{DynamicResource ToolbarButton}" Content="Export Script (.py)" Command="{Binding ExportScriptAsPyCommand}" AutomationProperties.AutomationId="btnExportScriptPy"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <TextBlock Text="View:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                <RadioButton Content="JSON" IsChecked="{Binding CurrentScriptFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Json}" VerticalAlignment="Center" FontSize="11" Margin="0,0,4,0" AutomationProperties.AutomationId="rbViewJson"/>
-                <RadioButton Content="Python" IsChecked="{Binding CurrentScriptFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Python}" VerticalAlignment="Center" FontSize="11" Margin="0,0,4,0" AutomationProperties.AutomationId="rbViewPython"/>
-                <RadioButton Content="Robot" IsChecked="{Binding CurrentScriptFormat, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Robot}" VerticalAlignment="Center" FontSize="11" Margin="0,0,8,0" AutomationProperties.AutomationId="rbViewRobot"/>
+                <ComboBox x:Name="cmbScriptFormat" Width="90" VerticalAlignment="Center" FontSize="11"
+                          SelectedValue="{Binding CurrentScriptFormat}" SelectedValuePath="Content"
+                          AutomationProperties.AutomationId="cmbScriptFormat">
+                    <ComboBoxItem Content="JSON"/>
+                    <ComboBoxItem Content="Python"/>
+                    <ComboBoxItem Content="Robot"/>
+                </ComboBox>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnExportStepsJson" Style="{DynamicResource ToolbarButton}" Content="Export Steps (.json)" Command="{Binding ExportStepsAsJsonCommand}" AutomationProperties.AutomationId="btnExportStepsJson"/>
                 <Button x:Name="btnImportSteps" Style="{DynamicResource ToolbarButton}" Content="Import Steps (.json)" Command="{Binding ImportStepsCommand}" AutomationProperties.AutomationId="btnImportSteps"/>

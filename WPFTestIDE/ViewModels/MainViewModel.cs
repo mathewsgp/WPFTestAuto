@@ -216,8 +216,8 @@ namespace WpfTestIde.ViewModels
         // Script format selection (JSON / Python / Robot Framework)
         public enum ScriptFormat { Json, Python, Robot }
 
-        private ScriptFormat _currentScriptFormat = ScriptFormat.Robot;
-        public ScriptFormat CurrentScriptFormat
+        private string _currentScriptFormat = "Robot";
+        public string CurrentScriptFormat
         {
             get => _currentScriptFormat;
             set { _currentScriptFormat = value; OnPropertyChanged(); UpdateScriptContent(); }
@@ -1545,13 +1545,13 @@ namespace WpfTestIde.ViewModels
             // Select the active format's content
             switch (_currentScriptFormat)
             {
-                case ScriptFormat.Json:
+                case "Json":
                     ScriptContent = jsonScript;
                     break;
-                case ScriptFormat.Python:
+                case "Python":
                     ScriptContent = pythonScript;
                     break;
-                case ScriptFormat.Robot:
+                case "Robot":
                 default:
                     ScriptContent = GeneratedScript;
                     break;
@@ -1955,17 +1955,17 @@ namespace WpfTestIde.ViewModels
             string fileName, filter, content;
             switch (_currentScriptFormat)
             {
-                case ScriptFormat.Json:
+                case "Json":
                     fileName = "recorded_steps.json";
                     filter = "JSON files (*.json)|*.json";
                     content = ScriptContent;
                     break;
-                case ScriptFormat.Python:
+                case "Python":
                     fileName = "recorded_test.py";
                     filter = "Python files (*.py)|*.py";
                     content = ScriptContent;
                     break;
-                case ScriptFormat.Robot:
+                case "Robot":
                 default:
                     fileName = "recorded_test.robot";
                     filter = "Robot files (*.robot)|*.robot";
