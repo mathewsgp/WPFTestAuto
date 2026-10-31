@@ -302,12 +302,12 @@
                     <TextBlock Text="Record:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     <CheckBox x:Name="chkRecordFlaUI" Content="FlaUI" IsChecked="{Binding RecordFlaUI}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRecordFlaUI"/>
                     <CheckBox x:Name="chkRecordWPFSpy" Content="WPFSpy" IsChecked="{Binding RecordWPFSpy}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRecordWPFSpy"/>
-                    <CheckBox x:Name="chkRecordSikuli" Content="Sikuli" IsChecked="{Binding RecordSikuli}" Margin="0,0,12,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRecordSikuli"/>
+                    <CheckBox x:Name="chkRecordSikuli" Content="OculiX" IsChecked="{Binding RecordSikuli}" Margin="0,0,12,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRecordSikuli"/>
                     <!-- Run driver checkboxes -->
                     <TextBlock Text="Run:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     <CheckBox x:Name="chkRunFlaUI" Content="FlaUI" IsChecked="{Binding RunFlaUI}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRunFlaUI"/>
                     <CheckBox x:Name="chkRunWPFSpy" Content="WPFSpy" IsChecked="{Binding RunWPFSpy}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRunWPFSpy"/>
-                    <CheckBox x:Name="chkRunSikuli" Content="Sikuli" IsChecked="{Binding RunSikuli}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRunSikuli"/>
+                    <CheckBox x:Name="chkRunSikuli" Content="OculiX" IsChecked="{Binding RunSikuli}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRunSikuli"/>
                 </StackPanel>
             </StatusBarItem>
         </StatusBar>

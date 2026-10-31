@@ -119,8 +119,8 @@ namespace WpfTestIde.Models
                 ActionKind.Hover => "Hover Over Element",
                 ActionKind.PressKeys => "Press Keys",
                 ActionKind.Scroll => "Scroll",
-                ActionKind.SikuliClick => "Sikuli Click (Image)",
-                ActionKind.SikuliType => "Sikuli Type (Image)",
+                ActionKind.SikuliClick => "OculiX Click (Image)",
+                ActionKind.SikuliType => "OculiX Type (Image)",
                 _ => "Unknown",
             },
         };

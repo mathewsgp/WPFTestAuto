@@ -20,6 +20,7 @@
                 <Button x:Name="btnSaveScript" Style="{DynamicResource ToolbarButton}" Content="Save Script" ToolTip="Save the generated script (Ctrl+S)"
                         Command="{Binding SaveScriptCommand}" AutomationProperties.AutomationId="btnSaveScript"/>
                 <Button x:Name="btnExportScript" Style="{DynamicResource ToolbarButton}" Content="Export Script (.robot)" Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnExportScript"/>
+                <Button x:Name="btnExportScriptPy" Style="{DynamicResource ToolbarButton}" Content="Export Script (.py)" Command="{Binding ExportScriptAsPyCommand}" AutomationProperties.AutomationId="btnExportScriptPy"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnExportStepsJson" Style="{DynamicResource ToolbarButton}" Content="Export Steps (.json)" Command="{Binding ExportStepsAsJsonCommand}" AutomationProperties.AutomationId="btnExportStepsJson"/>
                 <Button x:Name="btnImportSteps" Style="{DynamicResource ToolbarButton}" Content="Import Steps (.json)" Command="{Binding ImportStepsCommand}" AutomationProperties.AutomationId="btnImportSteps"/>

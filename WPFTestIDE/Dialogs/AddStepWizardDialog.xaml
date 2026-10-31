@@ -34,8 +34,8 @@
             <ComboBoxItem Content="Hover Over Element"/>
             <ComboBoxItem Content="Press Keys"/>
             <ComboBoxItem Content="Scroll"/>
-            <ComboBoxItem Content="Sikuli Click (Image)"/>
-            <ComboBoxItem Content="Sikuli Type (Image)"/>
+            <ComboBoxItem Content="OculiX Click (Image)"/>
+            <ComboBoxItem Content="OculiX Type (Image)"/>
             <Separator/>
             <ComboBoxItem Content="Verify Element Text"/>
             <ComboBoxItem Content="Verify Element Enabled"/>

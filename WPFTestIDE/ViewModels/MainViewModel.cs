@@ -242,7 +242,7 @@ namespace WpfTestIde.ViewModels
             get => _selectedDriver;
             set { _selectedDriver = value; OnPropertyChanged(); RegenerateScript(); }
         }
-        public string[] AvailableDrivers { get; } = { "Auto", "FlaUI", "WPFSpy", "Sikuli" };
+        public string[] AvailableDrivers { get; } = { "Auto", "FlaUI", "WPFSpy", "OculiX" };
 
          // Mode selection for test execution
         private string _selectedMode = "Auto";
@@ -491,6 +491,7 @@ namespace WpfTestIde.ViewModels
         public ICommand RunCommand { get; }
         public ICommand ExportRepositoryCommand { get; }
         public ICommand ExportScriptCommand { get; }
+        public ICommand ExportScriptAsPyCommand { get; }
         public ICommand SaveScriptCommand { get; }
         public ICommand LoadSampleCommand { get; }
         public ICommand ImportElementsCommand { get; }
@@ -525,6 +526,7 @@ namespace WpfTestIde.ViewModels
             RunCommand = new AsyncRelayCommand(_ => RunAsync(), _ => Steps.Count > 0);
             ExportRepositoryCommand = new RelayCommand(_ => ExportRepository());
             ExportScriptCommand = new RelayCommand(_ => ExportScript());
+            ExportScriptAsPyCommand = new RelayCommand(_ => ExportScriptAsPy());
             SaveScriptCommand = new RelayCommand(_ => SaveScript());
             LoadSampleCommand = new RelayCommand(_ => LoadSample());
             ImportElementsCommand = new RelayCommand(_ => ImportElements());
@@ -1825,6 +1827,27 @@ namespace WpfTestIde.ViewModels
                 // may be on a different tab when the Save dialog closes, and the
                 // toast is independent of the active tab.
                 EnqueueToast($"Exported script: {dialog.FileName}", ToastKind.Info);
+            }
+        }
+
+        private void ExportScriptAsPy()
+        {
+            var driver = _selectedDriver != "Auto" ? _selectedDriver : null;
+            var mode = _selectedMode != "Auto" ? _selectedMode : null;
+            var recordingModes = GetSelectedRecordingModes();
+            var appId = SelectedApp?.AppId;
+            var pyScript = ScriptGenerator.GeneratePython(Steps, testCaseName: "test_recorded_session_playback", driver: driver, mode: mode, recordingModes: recordingModes, appId: appId);
+
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = "draft_recorded_test.py",
+                Filter = "Python files (*.py)|*.py",
+                InitialDirectory = Path.Combine(FrameworkRoot, "tests"),
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                File.WriteAllText(dialog.FileName, pyScript);
+                EnqueueToast($"Exported Python script: {dialog.FileName}", ToastKind.Info);
             }
         }
 

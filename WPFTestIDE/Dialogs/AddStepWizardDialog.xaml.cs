@@ -50,7 +50,7 @@ namespace WpfTestIde.Dialogs
 
             bool showValue = text is "Set Element Value" or "Verify Element Text" or "Verify Element Contains Text"
                              or "Verify Element Text Matches Regex" or "Press Keys"
-                             or "Scroll" or "Sikuli Click (Image)" or "Sikuli Type (Image)";
+                             or "Scroll" or "OculiX Click (Image)" or "OculiX Type (Image)";
             bool showTimeout = text is "Wait Until Element Exists" or "Wait Until Element Visible"
                                or "Wait Until Element Enabled" or "Wait Until Text Contains";
             bool showAttributeName = text is "Verify Element Attribute";
@@ -297,13 +297,13 @@ namespace WpfTestIde.Dialogs
                         step.Action = ActionKind.Scroll;
                         step.Value = ValueBox.Text;
                         break;
-                    case "Sikuli Click (Image)":
+                    case "OculiX Click (Image)":
                         if (string.IsNullOrEmpty(step.Alias)) { ShowElementRequired(); return; }
                         step.Kind = StepKind.Action;
                         step.Action = ActionKind.SikuliClick;
                         step.Value = ValueBox.Text;
                         break;
-                    case "Sikuli Type (Image)":
+                    case "OculiX Type (Image)":
                         if (string.IsNullOrEmpty(step.Alias)) { ShowElementRequired(); return; }
                         step.Kind = StepKind.Action;
                         step.Action = ActionKind.SikuliType;
