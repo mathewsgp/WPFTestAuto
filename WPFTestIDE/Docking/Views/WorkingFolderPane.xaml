@@ -53,6 +53,8 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
+                            <TextBlock Text="{Binding FileType}" FontSize="10" Margin="6,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
@@ -61,9 +63,12 @@
 
         <!-- Selection hint -->
         <Border DockPanel.Dock="Bottom" Padding="8" Background="{DynamicResource PanelBrush}" CornerRadius="3">
-            <TextBlock x:Name="txtSelectionHint" Text="Open a folder, then select an element JSON (.json) to add to Elements, or a script (.json/.py/.robot) to import into Scripts."
-                       FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
-                       AutomationProperties.AutomationId="txtSelectionHint"/>
+            <TextBlock x:Name="txtSelectionHint" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
+                       AutomationProperties.AutomationId="txtSelectionHint">
+                <Run Text="Open a folder, then select a file. "/>
+                <Run Text="{Binding SelectedFileType, StringFormat='{}{0}'}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
+                <Run Text=" selected — click Import to add it to Elements or Scripts."/>
+            </TextBlock>
         </Border>
     </DockPanel>
 </UserControl>

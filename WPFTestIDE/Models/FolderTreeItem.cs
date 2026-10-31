@@ -20,6 +20,61 @@ namespace WpfTestIde.Models
         public bool IsDirectory { get; }
         public string? Extension => IsDirectory ? null : Path.GetExtension(FullPath);
 
+        /// <summary>Human-readable file category shown in the tree view:
+        /// "Element JSON", "Script JSON", "Python", "Robot", "Directory", or
+        /// "File". Computed lazily from the extension and, for .json files,
+        /// the file's parent directory name so element vs. script JSONs are
+        /// visually distinct before the user clicks Import.</summary>
+        public string FileType
+        {
+            get
+            {
+                if (IsDirectory) return "Directory";
+                var ext = (Extension ?? "").ToLowerInvariant();
+                return ext switch
+                {
+                    ".json" => IsScriptJson() ? "Script JSON" : "Element JSON",
+                    ".py" => "Python",
+                    ".robot" => "Robot",
+                    _ => "File",
+                };
+            }
+        }
+
+        /// <summary>Heuristic: a .json file is treated as a *script* JSON when
+        /// its parent directory name contains "script" or "step", or when the
+        /// file's own root key is "steps". Otherwise it is an *element* JSON
+        /// (root key "elements"). Falls back to extension-only detection if
+        /// the file can't be read or parsed.</summary>
+        public bool IsScriptJson()
+        {
+            var parentDir = Path.GetFileName(Path.GetDirectoryName(FullPath) ?? "");
+            if (!string.IsNullOrEmpty(parentDir) &&
+                (parentDir.Contains("script", StringComparison.OrdinalIgnoreCase) ||
+                 parentDir.Contains("step", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            try
+            {
+                string json = File.ReadAllText(FullPath);
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                // A script JSON has a top-level "steps" array; an element JSON
+                // has a top-level "elements" object. If both are present (unlikely),
+                // prefer "steps" because that is the file the user most likely
+                // intended to import as a script.
+                if (root.TryGetProperty("steps", out _)) return true;
+                if (root.TryGetProperty("elements", out _)) return false;
+            }
+            catch
+            {
+                // Unreadable / unparseable — fall back to extension-only.
+            }
+            return false;
+        }
+
         public ObservableCollection<FolderTreeItem> Children { get; } = new();
         public bool ChildrenLoaded { get; private set; }
 

@@ -300,13 +300,21 @@ namespace WpfTestIde.ViewModels
             set { _workingFolderRoot = value; OnPropertyChanged(); }
         }
 
-        private FolderTreeItem? _workingFolderSelectedItem;
+private FolderTreeItem? _workingFolderSelectedItem;
         public FolderTreeItem? WorkingFolderSelectedItem
         {
             get => _workingFolderSelectedItem;
-            set { _workingFolderSelectedItem = value; OnPropertyChanged(); OnPropertyChanged(nameof(CanImportSelected)); }
+            set
+            {
+                _workingFolderSelectedItem = value;
+                // CanImportSelected and SelectedFileType are computed from this
+                // property, so raise their change notifications explicitly.
+                foreach (var name in new[] { nameof(WorkingFolderSelectedItem), nameof(CanImportSelected), nameof(SelectedFileType) })
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+            }
         }
         public bool CanImportSelected => WorkingFolderSelectedItem != null && !WorkingFolderSelectedItem.IsDirectory;
+        public string? SelectedFileType => WorkingFolderSelectedItem?.FileType;
 
         // Recording mode checkboxes (FlaUI, WPFSpy, Sikuli)
         private bool _recordFlaUI = true;
@@ -2275,85 +2283,140 @@ namespace WpfTestIde.ViewModels
             string path = WorkingFolderSelectedItem.FullPath;
             string ext = Path.GetExtension(path).ToLowerInvariant();
 
-            // Element JSON files go into Elements.
+            // .py and .robot are unambiguously scripts.
+            if (ext == ".py" || ext == ".robot")
+            {
+                ImportScriptFile(path);
+                return;
+            }
+
+            // .json files are ambiguous: both element repositories and script
+            // JSONs use the .json extension. Disambiguate by inspecting the
+            // file's root JSON key ("elements" → Elements pane, "steps" →
+            // Scripts pane). Fall back to the parent-directory name heuristic
+            // (FolderTreeItem.IsScriptJson) when the file can't be parsed.
             if (ext == ".json")
             {
                 try
                 {
                     string json = File.ReadAllText(path);
                     using var doc = System.Text.Json.JsonDocument.Parse(json);
-                    var rootElement = doc.RootElement;
+                    var root = doc.RootElement;
 
-                    if (!rootElement.TryGetProperty("elements", out var elementsObj))
+                    bool hasElements = root.TryGetProperty("elements", out _);
+                    bool hasSteps = root.TryGetProperty("steps", out _);
+
+                    if (hasSteps && !hasElements)
                     {
-                        EnqueueToast($"Not an element JSON file: missing 'elements' root.", ToastKind.Warning);
+                        ImportScriptFile(path);
                         return;
                     }
 
-                    int imported = 0;
-                    foreach (var kv in elementsObj.EnumerateObject())
+                    if (hasElements && !hasSteps)
                     {
-                        string alias = kv.Name;
-                        if (string.IsNullOrEmpty(alias)) continue;
-                        if (Elements.Any(e => e.Alias == alias)) continue;
-
-                        var entry = kv.Value;
-                        var element = new ElementEntry
-                        {
-                            Alias = alias,
-                            DisplayName = entry.TryGetProperty("displayName", out var dnProp) ? dnProp.GetString() ?? "" : "",
-                            ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
-                            AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
-                            Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
-                            XPath = entry.TryGetProperty("relativeXPath", out var xpProp) ? xpProp.GetString() : null,
-                        };
-                        Elements.Add(element);
-                        imported++;
+                        ImportElementsFromJson(path);
+                        return;
                     }
 
-                    RefreshElementTree();
-                    StatusText = $"Imported {imported} element(s) from {Path.GetFileName(path)}.";
-                    EnqueueToast($"Imported {imported} elements", ToastKind.Success);
-                }
-                catch (Exception ex)
-                {
-                    EnqueueToast($"Element import failed: {ex.Message}", ToastKind.Error);
-                }
-                return;
-            }
-
-            // Script files (.py, .robot, .json) go into Steps via the shared parsers.
-            if (ext == ".py" || ext == ".robot" || ext == ".json")
-            {
-                try
-                {
-                    string text = File.ReadAllText(path);
-                    bool ok = ext switch
+                    // Both present or neither present — fall back to the
+                    // parent-directory heuristic used by FolderTreeItem.FileType.
+                    if (WorkingFolderSelectedItem.IsScriptJson())
                     {
-                        ".json" => ParseJsonScript(text),
-                        ".py" => ParsePythonScript(text),
-                        ".robot" => ParseRobotScript(text),
-                        _ => false
-                    };
-                    if (ok)
-                    {
-                        RegenerateScript();
-                        StatusText = $"Imported {Steps.Count} step(s) from {Path.GetFileName(path)}.";
-                        EnqueueToast($"Imported script: {Path.GetFileName(path)}", ToastKind.Success);
+                        ImportScriptFile(path);
+                        return;
                     }
-                    else
-                    {
-                        EnqueueToast($"Could not parse script: {Path.GetFileName(path)}", ToastKind.Error);
-                    }
+                    ImportElementsFromJson(path);
+                    return;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    EnqueueToast($"Script import failed: {ex.Message}", ToastKind.Error);
+                    // Unparseable — fall back to the directory heuristic.
+                    if (WorkingFolderSelectedItem.IsScriptJson())
+                    {
+                        ImportScriptFile(path);
+                        return;
+                    }
+                    ImportElementsFromJson(path);
+                    return;
                 }
-                return;
             }
 
             EnqueueToast($"Unsupported file type: {ext}", ToastKind.Warning);
+        }
+
+        private void ImportScriptFile(string path)
+        {
+            try
+            {
+                string ext = Path.GetExtension(path).ToLowerInvariant();
+                string text = File.ReadAllText(path);
+                bool ok = ext switch
+                {
+                    ".json" => ParseJsonScript(text),
+                    ".py" => ParsePythonScript(text),
+                    ".robot" => ParseRobotScript(text),
+                    _ => false
+                };
+                if (ok)
+                {
+                    RegenerateScript();
+                    StatusText = $"Imported {Steps.Count} step(s) from {Path.GetFileName(path)}.";
+                    EnqueueToast($"Imported script: {Path.GetFileName(path)}", ToastKind.Success);
+                }
+                else
+                {
+                    EnqueueToast($"Could not parse script: {Path.GetFileName(path)}", ToastKind.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                EnqueueToast($"Script import failed: {ex.Message}", ToastKind.Error);
+            }
+        }
+
+        private void ImportElementsFromJson(string path)
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                var rootElement = doc.RootElement;
+
+                if (!rootElement.TryGetProperty("elements", out var elementsObj))
+                {
+                    EnqueueToast($"Not an element JSON file: missing 'elements' root.", ToastKind.Warning);
+                    return;
+                }
+
+                int imported = 0;
+                foreach (var kv in elementsObj.EnumerateObject())
+                {
+                    string alias = kv.Name;
+                    if (string.IsNullOrEmpty(alias)) continue;
+                    if (Elements.Any(e => e.Alias == alias)) continue;
+
+                    var entry = kv.Value;
+                    var element = new ElementEntry
+                    {
+                        Alias = alias,
+                        DisplayName = entry.TryGetProperty("displayName", out var dnProp) ? dnProp.GetString() ?? "" : "",
+                        ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
+                        AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
+                        Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
+                        XPath = entry.TryGetProperty("relativeXPath", out var xpProp) ? xpProp.GetString() : null,
+                    };
+                    Elements.Add(element);
+                    imported++;
+                }
+
+                RefreshElementTree();
+                StatusText = $"Imported {imported} element(s) from {Path.GetFileName(path)}.";
+                EnqueueToast($"Imported {imported} elements", ToastKind.Success);
+            }
+            catch (Exception ex)
+            {
+                EnqueueToast($"Element import failed: {ex.Message}", ToastKind.Error);
+            }
         }
 
         private void ImportElements()
