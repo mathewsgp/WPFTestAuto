@@ -342,8 +342,18 @@ namespace WpfTestIde.Recording
             RecordingTarget? target = FindOwningTarget(x, y);
             if (target is null)
             {
-                Log($"[OnClick] rejected: point ({x},{y}) not in any target app");
-                return;
+                // Auto-register the process under the cursor if it isn't
+                // already tracked (supports "launch app manually, then press
+                // Record" without a prior explicit attach step).
+                target = TryAutoRegisterTargetAtPoint(x, y);
+                if (target is null)
+                {
+                    Log($"[OnClick] rejected: point ({x},{y}) not in any target app");
+                    return;
+                }
+                // Re-run ownership resolution now that we have a target.
+                target = FindOwningTarget(x, y);
+                if (target is null) return;
             }
 
             ProbedElement? probed = target.Mode == ProbeMode.WPFSpy
@@ -519,6 +529,119 @@ namespace WpfTestIde.Recording
                 Log($"[ResolveLivePidForTarget] appId={target.AppId} exception: {ex.GetType().Name}: {ex.Message}");
             }
             return 0;
+        }
+
+        /// <summary>
+        /// Checks whether the WpfSpyAgent is alive on the given named pipe by
+        /// sending a lightweight <c>GetMainWindow</c> command. Used to decide
+        /// between WPFSpy and FlaUI probing when auto-registering a running app.
+        /// </summary>
+        private bool IsSpyPipeAlive(string pipeName)
+        {
+            try
+            {
+                var client = new SpyAgentClient(pipeName);
+                var response = client.Send("GetMainWindow", timeoutMs: 1000);
+                return response.Success;
+            }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// Resolves the executable name and a stable app id for a process.
+        /// </summary>
+        private static bool TryResolveAppIdentity(int processId, out string? exeName, out string appId)
+        {
+            exeName = null;
+            appId = $"app_{processId}";
+            try
+            {
+                using var p = Process.GetProcessById(processId);
+                try
+                {
+                    string? modulePath = p.MainModule?.FileName;
+                    if (!string.IsNullOrEmpty(modulePath))
+                    {
+                        exeName = modulePath;
+                        appId = System.IO.Path.GetFileNameWithoutExtension(modulePath);
+                    }
+                }
+                catch { }
+                if (string.IsNullOrEmpty(appId)) appId = p.ProcessName;
+                if (string.IsNullOrEmpty(appId)) appId = $"app_{processId}";
+                return true;
+            }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// Attempts to auto-register the application window at screen point
+        /// (x, y) as a new recording target. WPFSpy is used when the target's
+        /// spy agent pipe is alive, otherwise FlaUI/UIA. Returns the
+        /// registered target, or null if no suitable process was found.
+        /// </summary>
+        public RecordingTarget? TryAutoRegisterTargetAtPoint(int x, int y)
+        {
+            IntPtr hwnd = WindowFromPoint(x, y);
+            if (hwnd == IntPtr.Zero) return null;
+
+            GetWindowThreadProcessId(hwnd, out uint pid);
+            int processId = (int)pid;
+            if (processId == 0) return null;
+
+            // Don't re-register a pid we already track.
+            foreach (var t in Targets)
+            {
+                if (t.ProcessId == processId) return t;
+            }
+
+            if (!TryResolveAppIdentity(processId, out string? exeName, out string appId))
+                return null;
+
+            // Derive the spy pipe name from the app id (mirrors AppContext in app_registry.py).
+            string pipeName = $"WPFSpyAgentPipe_{appId}";
+            bool spyAlive = IsSpyPipeAlive(pipeName);
+
+            var mode = spyAlive ? ProbeMode.WPFSpy : ProbeMode.FlaUI;
+            var target = new RecordingTarget(appId, pipeName, processId, exeName, mode, priority: Targets.Count);
+            AddTarget(target);
+            Log($"[AutoRegister] appId={appId} pid={processId} mode={mode} spyAlive={spyAlive}");
+            return target;
+        }
+
+        /// <summary>
+        /// Scans all running processes with visible windows and registers each
+        /// un-tracked one as a recording target (WPFSpy if its spy pipe is
+        /// alive, otherwise FlaUI/UIA). Returns the newly registered targets.
+        /// </summary>
+        public List<RecordingTarget> TryAutoRegisterRunningApps()
+        {
+            var registered = new List<RecordingTarget>();
+            foreach (var p in Process.GetProcesses())
+            {
+                try
+                {
+                    if (p.MainWindowHandle == IntPtr.Zero) continue;
+                    string title = GetWindowTitle(p.MainWindowHandle);
+                    if (string.IsNullOrEmpty(title)) continue;
+
+                    int processId = p.Id;
+                    if (Targets.Any(t => t.ProcessId == processId)) continue;
+
+                    if (!TryResolveAppIdentity(processId, out string? exeName, out string appId))
+                        continue;
+
+                    string pipeName = $"WPFSpyAgentPipe_{appId}";
+                    bool spyAlive = IsSpyPipeAlive(pipeName);
+                    var mode = spyAlive ? ProbeMode.WPFSpy : ProbeMode.FlaUI;
+                    var target = new RecordingTarget(appId, pipeName, processId, exeName, mode, priority: Targets.Count);
+                    AddTarget(target);
+                    registered.Add(target);
+                    Log($"[AutoRegister] appId={appId} pid={processId} mode={mode} spyAlive={spyAlive}");
+                }
+                catch { }
+            }
+            return registered;
         }
 
         private ProbedElement? CreateWindowLevelElement(RecordingTarget target)
