@@ -17,7 +17,7 @@
                 <Button x:Name="btnPreviewElement" Content="👁 Preview" ToolTip="Preview selected element" Padding="6,2" FontSize="11" Margin="4,0,0,0"
                         Command="{Binding PreviewElementCommand}" Background="{DynamicResource WarningBrush}" Foreground="{DynamicResource StatusBarTextBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnPreviewElement"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                <Button x:Name="btnImportElements" Content="📥 Import YAML" ToolTip="Import elements from repository YAML" Padding="6,2" FontSize="11"
+                <Button x:Name="btnImportElements" Content="Import" ToolTip="Import elements from repository" Padding="6,2" FontSize="11"
                         Command="{Binding ImportElementsCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnImportElements"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnExportRepo" Content="Export Repository (.yaml)" ToolTip="Export element repository YAML" Padding="6,2" FontSize="11"
