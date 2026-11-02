@@ -3,12 +3,25 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Windows;
+using System.Windows.Automation;
 using WpfTestIde.Models;
 
 namespace WpfTestIde.Recording
 {
     /// <summary>Which element-resolution strategy a target uses.</summary>
     public enum ProbeMode { WPFSpy, FlaUI }
+
+    /// <summary>Candidate window discovered by one hit-testing strategy at a screen point.</summary>
+    sealed class WindowCandidate
+    {
+        public string Strategy { get; set; } = "";
+        public IntPtr Hwnd { get; set; }
+        public int ProcessId { get; set; }
+        public string? Title { get; set; }
+        public string? ExeName { get; set; }
+    }
 
     /// <summary>
     /// Per-app configuration for a recording session. A single session can
@@ -340,32 +353,45 @@ namespace WpfTestIde.Recording
         {
             CommitPendingValueIfAny();
 
-            // RealWindowFromPoint returns the topmost HWND at the screen
-            // coordinates respecting z-order, including transparent and
-            // disabled layered windows (AllowTransparency, adorner/ghost
-            // overlays) that WindowFromPoint may skip. Walk up to the root
-            // owner so we associate the click with the actual application
-            // window that owns it, not a transient overlay.
-            IntPtr topHwnd = RealWindowFromPoint(x, y);
-            if (topHwnd == IntPtr.Zero)
+            // Gather candidate windows from multiple hit-testing strategies so
+            // we can pick the correct root window even when transparent /
+            // AllowTransparency / adorner / ghost layers sit on top.
+            var candidates = GetCandidateWindowsAtPoint(x, y);
+            if (candidates.Count == 0)
             {
                 Log($"[OnClick] rejected: no window at point ({x},{y})");
                 return;
             }
 
-            IntPtr rootHwnd = GetAncestor(topHwnd, GA_ROOTOWNER);
-            if (rootHwnd == IntPtr.Zero)
+            // When multiple distinct strategies disagree, surface a message so
+            // the operator can see which window each strategy resolved to.
+            if (candidates.Count > 1)
             {
-                rootHwnd = topHwnd;
+                var sb = new StringBuilder();
+                sb.AppendLine($"Click at ({x},{y}) - window candidates:");
+                foreach (var c in candidates)
+                {
+                    sb.AppendLine($"  {c.Strategy,-18} pid={c.ProcessId,-6} hwnd=0x{c.Hwnd:X8} title='{c.Title}' exe='{c.ExeName}'");
+                }
+                sb.AppendLine();
+                sb.AppendLine("Using the first candidate (root-owner of RealWindowFromPoint).");
+                sb.AppendLine("Check the recording log (WpfTestIde_recording_log.txt) for all candidates.");
+
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    System.Windows.MessageBox.Show(
+                        sb.ToString(),
+                        "Recording - Window Detection",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                });
             }
 
-            GetWindowThreadProcessId(rootHwnd, out uint pid);
-            int processId = (int)pid;
-            if (processId == 0)
-            {
-                Log($"[OnClick] rejected: no process at point ({x},{y}) (topHwnd={topHwnd}, rootHwnd={rootHwnd})");
-                return;
-            }
+            // Preference order: root-owner of RealWindowFromPoint first, then
+            // the remaining strategies in discovery order.
+            var chosen = candidates[0];
+            int processId = chosen.ProcessId;
+            IntPtr rootHwnd = chosen.Hwnd;
 
             // Find the target that owns this process, or auto-register it
             // (WPFSpy if the spy agent pipe is alive, else FlaUI/UIA).
@@ -396,7 +422,7 @@ namespace WpfTestIde.Recording
                 Log($"[OnClick] using window-level fallback for appId={target.AppId}: {probed.ControlType} name={probed.Name}");
             }
 
-            Log($"[OnClick] accepted for appId={target.AppId}: {probed.ControlType} name={probed.Name} automationId={probed.AutomationId}");
+            Log($"[OnClick] accepted for appId={target.AppId} via {chosen.Strategy} (pid={processId}, hwnd=0x{rootHwnd:X8}): {probed.ControlType} name={probed.Name} automationId={probed.AutomationId}");
 
             string processName = ResolveProcessName(target);
             string windowSegment;
@@ -464,6 +490,89 @@ namespace WpfTestIde.Recording
             };
             Log($"[OnClick] firing StepCaptured: appId={target.AppId} alias={alias} action={step.Action}");
             StepCaptured?.Invoke(step, entry);
+        }
+
+        /// <summary>
+        /// Discovers candidate root windows at a screen point using multiple
+        /// hit-testing strategies, so the correct app can be identified even
+        /// when transparent / AllowTransparency / adorner / ghost layers sit
+        /// on top of the real content window.
+        /// </summary>
+        private List<WindowCandidate> GetCandidateWindowsAtPoint(int x, int y)
+        {
+            var candidates = new List<WindowCandidate>();
+            var seenPids = new HashSet<int>();
+
+            void Add(string strategy, IntPtr hwnd)
+            {
+                if (hwnd == IntPtr.Zero) return;
+                try
+                {
+                    GetWindowThreadProcessId(hwnd, out uint pid);
+                    int processId = (int)pid;
+                    if (processId == 0) return;
+                    if (!seenPids.Add(processId)) return;
+                    string title = GetWindowTitle(hwnd);
+                    string? exeName = null;
+                    try
+                    {
+                        using var p = Process.GetProcessById(processId);
+                        exeName = System.IO.Path.GetFileNameWithoutExtension(p.MainModule?.FileName ?? p.ProcessName);
+                    }
+                    catch { }
+                    candidates.Add(new WindowCandidate
+                    {
+                        Strategy = strategy,
+                        Hwnd = hwnd,
+                        ProcessId = processId,
+                        Title = title,
+                        ExeName = exeName
+                    });
+                }
+                catch { }
+            }
+
+            // Strategy 1: RealWindowFromPoint — topmost HWND respecting z-order,
+            // including transparent/disabled layered windows.
+            Add("RealWindowFromPoint", RealWindowFromPoint(x, y));
+
+            // Strategy 2: WindowFromPoint — standard hit test (may skip some
+            // transparent/disabled layers).
+            Add("WindowFromPoint", WindowFromPoint(x, y));
+
+            // Strategy 3: UIA3 AutomationElement.FromPoint — root window of the
+            // element at the point (works across process boundaries).
+            try
+            {
+                var uiaElement = AutomationElement.FromPoint(new System.Windows.Point(x, y));
+                if (uiaElement != null && uiaElement != AutomationElement.RootElement)
+                {
+                    IntPtr uiaHwnd = new IntPtr(uiaElement.Current.NativeWindowHandle);
+                    Add("UIA3.FromPoint", uiaHwnd);
+
+                    // Walk up to the root window via ControlViewWalker
+                    var walker = uiaElement;
+                    while (walker != null && walker != AutomationElement.RootElement)
+                    {
+                        uiaElement = walker;
+                        walker = TreeWalker.ControlViewWalker.GetParent(uiaElement);
+                    }
+                    IntPtr rootHwnd = new IntPtr(uiaElement.Current.NativeWindowHandle);
+                    Add("UIA3.RootWindow", rootHwnd);
+                }
+            }
+            catch { }
+
+            // Strategy 4: Root owner of RealWindowFromPoint (resolves adorner /
+            // ghost overlay layers back to the owning app window).
+            IntPtr topHwnd = RealWindowFromPoint(x, y);
+            if (topHwnd != IntPtr.Zero)
+            {
+                IntPtr rootOwner = GetAncestor(topHwnd, GA_ROOTOWNER);
+                Add("RootOwner", rootOwner == IntPtr.Zero ? topHwnd : rootOwner);
+            }
+
+            return candidates;
         }
 
         private void CommitPendingValueIfAny()
