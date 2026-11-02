@@ -386,7 +386,7 @@ namespace WpfTestIde.Recording
                     sb.AppendLine($"       title='{c.Title}' exe='{c.ExeName}'");
                 }
                 sb.AppendLine();
-                sb.AppendLine("Press OK to record against candidate [1] (RealWindowFromPoint root owner).");
+                sb.AppendLine("Press OK to record against candidate [1] (WindowFromPoint root owner).");
                 sb.AppendLine("Press Cancel to abort this click.");
                 sb.AppendLine();
                 sb.AppendLine("Full candidate list is in WpfTestIde_recording_log.txt");
@@ -428,7 +428,7 @@ namespace WpfTestIde.Recording
                 }
             }
 
-            // Preference order: root-owner of RealWindowFromPoint first, then
+            // Preference order: root-owner of WindowFromPoint first, then
             // the remaining strategies in discovery order.
             var chosen = candidates[0];
             int processId = chosen.ProcessId;
@@ -573,9 +573,9 @@ namespace WpfTestIde.Recording
                 catch { }
             }
 
-            // Strategy 1: RealWindowFromPoint — topmost HWND respecting z-order,
+            // Strategy 1: WindowFromPoint — topmost HWND respecting z-order,
             // including transparent/disabled layered windows.
-            Add("RealWindowFromPoint", RealWindowFromPoint(x, y));
+            Add("WindowFromPoint", WindowFromPoint(x, y));
 
             // Strategy 2: WindowFromPoint — standard hit test (may skip some
             // transparent/disabled layers).
@@ -604,9 +604,9 @@ namespace WpfTestIde.Recording
             }
             catch { }
 
-            // Strategy 4: Root owner of RealWindowFromPoint (resolves adorner /
+            // Strategy 4: Root owner of WindowFromPoint (resolves adorner /
             // ghost overlay layers back to the owning app window).
-            IntPtr topHwnd = RealWindowFromPoint(x, y);
+            IntPtr topHwnd = WindowFromPoint(x, y);
             if (topHwnd != IntPtr.Zero)
             {
                 IntPtr rootOwner = GetAncestor(topHwnd, GA_ROOTOWNER);
@@ -867,9 +867,6 @@ namespace WpfTestIde.Recording
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern IntPtr WindowFromPoint(int xPoint, int yPoint);
-
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern IntPtr RealWindowFromPoint(int xPoint, int yPoint);
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
