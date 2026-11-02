@@ -2197,6 +2197,18 @@ private string _ocrResultText = "";
                 var format = Enum.Parse<ScriptFormat>(CurrentScriptFormat, ignoreCase: true);
                 var imported = ScriptInterop.Parse(format, text);
                 ApplyImportedScript(imported);
+
+                // Preserve the edited content of the tab the user is applying from.
+                // RegenerateScript() rewrites all three formats from Steps, which is
+                // lossy for hand-edited script (regex parse -> standardized generation).
+                // Restore the source tab so the user's edits are not lost.
+                switch (CurrentScriptFormat)
+                {
+                    case "Json": JsonScriptContent = text; break;
+                    case "Python": PythonScriptContent = text; break;
+                    case "Robot": RobotScriptContent = text; break;
+                }
+
                 EnqueueToast($"Applied {CurrentScriptFormat} script ({Steps.Count} steps) to all views.", ToastKind.Success);
             }
             catch (Exception ex)
