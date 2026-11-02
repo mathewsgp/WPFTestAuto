@@ -188,9 +188,9 @@
 
         <!-- Buttons -->
         <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" 
-                    HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button x:Name="btnStepCancel" Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click" AutomationProperties.AutomationId="btnStepCancel"/>
-            <Button x:Name="btnStepAdd" Content="Add" Width="80" Click="Add_Click" IsDefault="True" AutomationProperties.AutomationId="btnStepAdd"/>
+                    HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="btnStepCancel" Content="Cancel" Width="80" Height="28" Padding="8,2" Margin="0,0,8,0" Click="Cancel_Click" AutomationProperties.AutomationId="btnStepCancel"/>
+            <Button x:Name="btnStepAdd" Content="Add" Width="80" Height="28" Padding="8,2" Click="Add_Click" IsDefault="True" AutomationProperties.AutomationId="btnStepAdd"/>
         </StackPanel>
     </Grid>
     </ScrollViewer>
