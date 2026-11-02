@@ -386,7 +386,7 @@ namespace WpfTestIde.Recording
                     sb.AppendLine($"       title='{c.Title}' exe='{c.ExeName}'");
                 }
                 sb.AppendLine();
-                sb.AppendLine("Press OK to record against candidate [1] (WindowFromPoint root owner).");
+                sb.AppendLine("Press OK to record against the preferred candidate (UIA3 first, then WindowFromPoint).");
                 sb.AppendLine("Press Cancel to abort this click.");
                 sb.AppendLine();
                 sb.AppendLine("Full candidate list is in WpfTestIde_recording_log.txt");
@@ -428,9 +428,14 @@ namespace WpfTestIde.Recording
                 }
             }
 
-            // Preference order: root-owner of WindowFromPoint first, then
-            // the remaining strategies in discovery order.
-            var chosen = candidates[0];
+            // Preference order: UIA3 results first (reliable for transparent /
+            // AllowTransparency WPF windows that Win32 WindowFromPoint skips),
+            // then WindowFromPoint, then RootOwner.
+            var chosen = candidates
+                .OrderByDescending(c => c.Strategy.StartsWith("UIA3"))
+                .ThenBy(c => c.Strategy == "WindowFromPoint" ? 0 : 1)
+                .ThenBy(c => c.Strategy == "RootOwner" ? 1 : 0)
+                .First();
             int processId = chosen.ProcessId;
             IntPtr rootHwnd = chosen.Hwnd;
 
