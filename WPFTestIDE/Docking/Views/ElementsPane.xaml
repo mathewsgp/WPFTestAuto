@@ -20,7 +20,7 @@
                 <Button x:Name="btnImportElements" Content="Import" ToolTip="Import elements from repository" Padding="6,2" FontSize="11"
                         Command="{Binding ImportElementsCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnImportElements"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                <Button x:Name="btnExportRepo" Content="Export Repository (.yaml)" ToolTip="Export element repository YAML" Padding="6,2" FontSize="11"
+                <Button x:Name="btnExportRepo" Content="Export Repository (.json)" ToolTip="Export element repository JSON" Padding="6,2" FontSize="11"
                         Command="{Binding ExportRepositoryCommand}" Background="{DynamicResource ButtonBackgroundBrush}" BorderThickness="0" Cursor="Hand" AutomationProperties.AutomationId="btnExportRepo"/>
                 <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                 <Button x:Name="btnSpyTool" Style="{DynamicResource ToolbarButton}" Content="Spy Tool" Command="{Binding OpenSpyToolCommand}" AutomationProperties.AutomationId="btnSpyTool"/>
@@ -35,11 +35,9 @@
         <!-- ================= Raw JSON / Repository (A4: collapsible bottom panel) =================
              Previously an inner TabControl+TabItem locked at Height=200 inside the
              ELEMENTS tab. Now a bottom-docked Expander collapsed by default so the
-              tree+properties above get all the vertical space. The user expands to
-              inspect the live-generated JSON. AutomationId tabRawJson is preserved
-              (now on the Expander, see repository/elements/wpf_test_ide.json which
-              has been updated to controlType=Expander + Expander XPath); the YAML
-              TextBox AutomationId txtRepositoryYaml is unchanged. -->
+             tree+properties above get all the vertical space. The user expands to
+             inspect the live-generated JSON. AutomationId tabRawJson is preserved
+             (now on the Expander). -->
         <Expander DockPanel.Dock="Bottom"
                   IsExpanded="{Binding RepositoryPanelExpanded, Mode=TwoWay}"
                   Padding="8,4"
@@ -48,16 +46,16 @@
                   AutomationProperties.AutomationId="tabRawJson">
             <Expander.Header>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Repository (YAML)" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="Repository (JSON)" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                     <TextBlock Text="read-only - regenerates live as elements are added" FontSize="10" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </StackPanel>
             </Expander.Header>
-            <TextBox x:Name="txtRepositoryYaml" Text="{Binding RepositoryYaml, Mode=OneWay}" FontFamily="Consolas" FontSize="11"
+            <TextBox x:Name="txtRepositoryJson" Text="{Binding RepositoryJson, Mode=OneWay}" FontFamily="Consolas" FontSize="11"
                      IsReadOnly="True" TextWrapping="NoWrap" AcceptsReturn="True"
                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                      Style="{DynamicResource VsCodeEditor}"
                      MinHeight="120" MaxHeight="280"
-                     AutomationProperties.AutomationId="txtRepositoryYaml"/>
+                      AutomationProperties.AutomationId="txtRepositoryJson"/>
         </Expander>
 
         <!-- Tree + Properties side by side (resizable). -->
