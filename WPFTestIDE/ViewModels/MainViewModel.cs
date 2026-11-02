@@ -1819,6 +1819,7 @@ private string _ocrResultText = "";
             var cancellation = new CancellationTokenSource();
             _runCancellation = cancellation;
             OnPropertyChanged(nameof(IsScriptRunInProgress));
+            OnPropertyChanged(nameof(RunStopButtonLabel));
             CommandManager.InvalidateRequerySuggested();
 
             try
@@ -1929,6 +1930,7 @@ private string _ocrResultText = "";
                     _runCancellation = null;
                 cancellation.Dispose();
                 OnPropertyChanged(nameof(IsScriptRunInProgress));
+                OnPropertyChanged(nameof(RunStopButtonLabel));
                 CommandManager.InvalidateRequerySuggested();
             }
         }
