@@ -340,13 +340,12 @@ namespace WpfTestIde.Recording
         {
             CommitPendingValueIfAny();
 
-            // ChildWindowFromPointEx with CWP_ALL returns the absolute topmost
-            // window at the screen coordinates regardless of whether it is
-            // disabled, transparent, or hidden — unlike WindowFromPoint which
-            // skips those. This ensures we target the window the user actually
-            // clicked on (e.g. Sample WPF on top), not an underlying app whose
-            // rect merely contains the point (e.g. a maximized VS/IDE).
-            IntPtr hwnd = ChildWindowFromPointEx(IntPtr.Zero, new POINT { x = x, y = y }, CWP_ALL);
+            // WindowFromPoint returns the topmost HWND at the screen coordinates
+            // (respecting z-order), so clicks land on the app physically on top
+            // (e.g. Sample WPF) rather than an underlying app like VS/IDE whose
+            // rect merely contains the point. The old FindOwningTarget bounds
+            // scan caused that mis-match.
+            IntPtr hwnd = WindowFromPoint(x, y);
             if (hwnd == IntPtr.Zero)
             {
                 Log($"[OnClick] rejected: no window at point ({x},{y})");
@@ -1265,14 +1264,6 @@ namespace WpfTestIde.Recording
             }
             catch { }
         }
-
-        private const uint CWP_ALL = 0x0000; // include disabled, invisible, transparent windows
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr ChildWindowFromPointEx(IntPtr hwndParent, POINT pt, uint uFlags);
-
-        [StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        private struct POINT { public int x; public int y; }
 
         public void Dispose()
         {
