@@ -17,6 +17,7 @@ This is a thin facade (~200 lines) that delegates to:
 import os
 import re
 import sys
+import csv
 from typing import Optional, Union, List, Any
 
 # Framework modules
@@ -305,7 +306,196 @@ class DriverAgnosticApi:
             )
             get_multi_app_context().register_app(app_context)
             logger.info("Auto-registered app from IDE env vars", app_id=app_id, process_id=process_id)
-    
+
+    def _auto_attach_running_apps(self):
+        """Auto-attach to running applications when no apps are registered.
+
+        Supports the playback scenario where the user launches an app
+        manually (not from the IDE) and then runs a script. The API
+        detects running processes and registers them as attached apps
+        so playback can find and interact with them.
+
+        Controlled by the OCULIX_AUTO_ATTACH env var (default "1").
+        """
+        if os.environ.get("OCULIX_AUTO_ATTACH", "1") != "1":
+            return
+
+        ctx = get_multi_app_context()
+        if ctx.apps:
+            # Apps already registered (e.g. from env vars or explicit attach)
+            return
+
+        try:
+            from app_management.app_launcher import attach_to_application
+        except ImportError:
+            logger.debug("Auto-attach: app_launcher not available")
+            return
+
+        skip_names = {
+            "explorer.exe", "svchost.exe", "csrss.exe", "wininit.exe",
+            "services.exe", "lsass.exe", "smss.exe", "winlogon.exe",
+            "dwm.exe", "ctfmon.exe", "conhost.exe", "taskhostw.exe",
+            "runtimebroker.exe", "searchindexer.exe", "spoolsv.exe",
+        }
+
+        detected = self._detect_running_processes(skip_names)
+        for proc_info in detected:
+            pid = proc_info["pid"]
+            name = proc_info["name"]
+
+            # Skip if PID already tracked by any registered app
+            if any(c.process_id == pid for c in ctx.apps.values()):
+                continue
+
+            # Derive app_id from process name
+            stem = os.path.splitext(name)[0].lower()
+            app_id = stem
+            if app_id in ctx.apps:
+                app_id = f"{stem}_{pid}"
+
+            # Check if WPFSpy agent pipe is alive
+            pipe_name = f"WPFSpyAgentPipe_{app_id}"
+            spy_alive = self._is_spy_pipe_alive(pipe_name)
+            driver_list = ["WPFSpy", "FlaUI"] if spy_alive else ["FlaUI"]
+
+            try:
+                attach_to_application(
+                    app_id, pid,
+                    driver_list=driver_list,
+                    pipe_name=pipe_name if spy_alive else None,
+                )
+                logger.info(
+                    "Auto-attached to running app",
+                    app_id=app_id, pid=pid, name=name,
+                    driver_list=driver_list, spy_alive=spy_alive,
+                )
+            except Exception as e:
+                logger.debug("Auto-attach failed for pid=%d (%s): %s", pid, name, e)
+
+    def _ensure_app_attached(self, app_id: str) -> bool:
+        """Lazy per-step auto-attach: if `app_id` is not already registered,
+        scan running processes for one whose name matches `app_id` and attach
+        it on demand. Returns True if the app is now registered (either
+        already was, or just attached), False otherwise.
+
+        This supports the playback scenario where the user launches an app
+        manually (not from the IDE) and then runs a script — the first step
+        that references the app triggers its attachment.
+        """
+        ctx = get_multi_app_context()
+        if app_id in ctx.apps:
+            return True
+
+        # Find a running process whose name matches app_id (e.g. "SampleWpfApp").
+        target_name = app_id if app_id.lower().endswith(".exe") else app_id + ".exe"
+        for proc_info in self._detect_running_processes(set()):
+            if proc_info["name"].lower() != target_name.lower():
+                continue
+            pid = proc_info["pid"]
+
+            # Skip if this PID is already tracked under a different app_id
+            if any(c.process_id == pid for c in ctx.apps.values()):
+                continue
+
+            # Check if WPFSpy agent pipe is alive
+            pipe_name = f"WPFSpyAgentPipe_{app_id}"
+            spy_alive = self._is_spy_pipe_alive(pipe_name)
+            driver_list = ["WPFSpy", "FlaUI"] if spy_alive else ["FlaUI"]
+
+            try:
+                from app_management.app_launcher import attach_to_application
+                attach_to_application(
+                    app_id, pid,
+                    driver_list=driver_list,
+                    pipe_name=pipe_name if spy_alive else None,
+                )
+                logger.info(
+                    "Lazy auto-attached to running app",
+                    app_id=app_id, pid=pid, name=proc_info["name"],
+                    driver_list=driver_list, spy_alive=spy_alive,
+                )
+                return True
+            except Exception as e:
+                logger.debug("Lazy auto-attach failed for app_id=%s pid=%d: %s", app_id, pid, e)
+                return False
+
+        logger.debug("Lazy auto-attach: no running process found for app_id=%s", app_id)
+        return False
+
+    def _detect_running_processes(self, skip_names: set) -> list:
+        """Detect running processes that could be automation targets.
+
+        Returns a list of dicts with 'pid' and 'name' keys.
+        """
+        processes = []
+
+        # Try psutil first (most reliable)
+        try:
+            import psutil  # type: ignore
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    info = proc.info
+                    name = info.get('name') or ''
+                    pid = info.get('pid')
+                    if not name or not pid:
+                        continue
+                    if name.lower() in skip_names:
+                        continue
+                    if not name.lower().endswith('.exe'):
+                        continue
+                    processes.append({'pid': pid, 'name': name})
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+            return processes
+        except ImportError:
+            pass
+
+        # Fallback: tasklist /v /fo csv
+        try:
+            import subprocess
+            result = subprocess.run(
+                ['tasklist', '/v', '/fo', 'csv'],
+                capture_output=True, text=True, timeout=10,
+            )
+            for line in result.stdout.splitlines()[1:]:
+                line = line.strip()
+                if not line:
+                    continue
+                parts = next(csv.reader([line]), None)
+                if not parts or len(parts) < 2:
+                    continue
+                name = parts[0].strip('" ')
+                try:
+                    pid = int(parts[1].strip('" '))
+                except (ValueError, TypeError):
+                    continue
+                if not name or name.lower() in skip_names:
+                    continue
+                if not name.lower().endswith('.exe'):
+                    continue
+                processes.append({'pid': pid, 'name': name})
+        except Exception:
+            pass
+
+        return processes
+
+    def _is_spy_pipe_alive(self, pipe_name: str) -> bool:
+        """Check if the WPFSpy agent is alive on the named pipe."""
+        try:
+            import win32file  # type: ignore
+            pipe_path = r"\\.\pipe\\" + pipe_name
+            win32file.CreateFile(
+                pipe_path,
+                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                0, None, win32file.OPEN_EXISTING, 0, None,
+            )
+            return True
+        except ImportError:
+            # pywin32 not installed — cannot check pipe, assume not alive
+            return False
+        except Exception:
+            return False
+
     def _get_default_app_id(self) -> Optional[str]:
         """Get the default app ID."""
         return self._app_id or get_multi_app_context().default_app_id
@@ -318,6 +508,10 @@ class DriverAgnosticApi:
         """Provider function for driver instances."""
         if app_id is not None or get_multi_app_context().apps:
             # Multi-app mode: get driver from app context
+            if app_id is not None and app_id not in get_multi_app_context().apps:
+                # Lazy per-step auto-attach: attach to a running app matching
+                # the requested app_id before resolving the driver.
+                self._ensure_app_attached(app_id)
             try:
                 app_context = get_multi_app_context().get_app(app_id)
                 return app_context.get_driver(driver_name)
@@ -332,6 +526,9 @@ class DriverAgnosticApi:
         # Get element_repo_path from app context if available
         element_repo_path = None
         if app_id:
+            if app_id not in get_multi_app_context().apps:
+                # Lazy per-step auto-attach for strategy resolution.
+                self._ensure_app_attached(app_id)
             try:
                 app_ctx = get_multi_app_context().get_app(app_id)
                 element_repo_path = app_ctx.element_repo_path
