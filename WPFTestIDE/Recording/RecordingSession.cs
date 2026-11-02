@@ -339,19 +339,25 @@ namespace WpfTestIde.Recording
         {
             CommitPendingValueIfAny();
 
-            RecordingTarget? target = FindOwningTarget(x, y);
+            // Register the window directly under the cursor first. This ensures
+            // the topmost app the user actually clicked on becomes the target,
+            // even if other apps (e.g. Visual Studio, the IDE itself) were
+            // auto-registered by TryAutoRegisterRunningApps and sit underneath.
+            RecordingTarget? target = TryAutoRegisterTargetAtPoint(x, y);
             if (target is null)
             {
-                // Auto-register the process under the cursor if it isn't
-                // already tracked (supports "launch app manually, then press
-                // Record" without a prior explicit attach step).
-                target = TryAutoRegisterTargetAtPoint(x, y);
+                // No window at this point could be registered; fall back to
+                // ownership resolution against already-registered targets.
+                target = FindOwningTarget(x, y);
                 if (target is null)
                 {
                     Log($"[OnClick] rejected: point ({x},{y}) not in any target app");
                     return;
                 }
-                // Re-run ownership resolution now that we have a target.
+            }
+            else
+            {
+                // Confirm the newly registered target actually owns this point.
                 target = FindOwningTarget(x, y);
                 if (target is null) return;
             }
