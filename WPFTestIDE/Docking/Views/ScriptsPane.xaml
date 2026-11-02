@@ -8,7 +8,7 @@
             <StackPanel Orientation="Horizontal">
                 <Button x:Name="btnRunStopScript" Content="{Binding RunStopButtonLabel}" Command="{Binding RunStopCommand}" AutomationProperties.AutomationId="btnRunStopScript">
                     <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
+                        <Style TargetType="Button" BasedOn="{DynamicResource ToolbarButton}">
                             <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
                             <Setter Property="Foreground" Value="{DynamicResource StatusBarTextBrush}"/>
                             <Style.Triggers>
