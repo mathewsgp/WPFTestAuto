@@ -1813,6 +1813,8 @@ private string _ocrResultText = "";
             if (IsScriptRunInProgress)
             {
                 _runCancellation?.Cancel();
+                OnPropertyChanged(nameof(RunStopButtonLabel));
+                CommandManager.InvalidateRequerySuggested();
                 return;
             }
 
