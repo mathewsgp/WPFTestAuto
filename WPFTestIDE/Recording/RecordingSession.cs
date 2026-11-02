@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using WpfTestIde.Models;
 
 namespace WpfTestIde.Recording
@@ -339,11 +340,13 @@ namespace WpfTestIde.Recording
         {
             CommitPendingValueIfAny();
 
-            // Always target the window directly under the cursor (topmost per
-            // Windows hit testing). WindowFromPoint returns the topmost HWND
-            // at the screen coordinates — never an underlying app like
-            // Visual Studio or the IDE when Sample WPF is physically on top.
-            IntPtr hwnd = WindowFromPoint(x, y);
+            // ChildWindowFromPointEx with CWP_ALL returns the absolute topmost
+            // window at the screen coordinates regardless of whether it is
+            // disabled, transparent, or hidden — unlike WindowFromPoint which
+            // skips those. This ensures we target the window the user actually
+            // clicked on (e.g. Sample WPF on top), not an underlying app whose
+            // rect merely contains the point (e.g. a maximized VS/IDE).
+            IntPtr hwnd = ChildWindowFromPointEx(IntPtr.Zero, new POINT { x = x, y = y }, CWP_ALL);
             if (hwnd == IntPtr.Zero)
             {
                 Log($"[OnClick] rejected: no window at point ({x},{y})");
@@ -1262,6 +1265,14 @@ namespace WpfTestIde.Recording
             }
             catch { }
         }
+
+        private const uint CWP_ALL = 0x0000; // include disabled, invisible, transparent windows
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr ChildWindowFromPointEx(IntPtr hwndParent, POINT pt, uint uFlags);
+
+        [StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct POINT { public int x; public int y; }
 
         public void Dispose()
         {
