@@ -339,27 +339,36 @@ namespace WpfTestIde.Recording
         {
             CommitPendingValueIfAny();
 
-            // Register the window directly under the cursor first. This ensures
-            // the topmost app the user actually clicked on becomes the target,
-            // even if other apps (e.g. Visual Studio, the IDE itself) were
-            // auto-registered by TryAutoRegisterRunningApps and sit underneath.
-            RecordingTarget? target = TryAutoRegisterTargetAtPoint(x, y);
+            // Always target the window directly under the cursor (topmost per
+            // Windows hit testing). WindowFromPoint returns the topmost HWND
+            // at the screen coordinates — never an underlying app like
+            // Visual Studio or the IDE when Sample WPF is physically on top.
+            IntPtr hwnd = WindowFromPoint(x, y);
+            if (hwnd == IntPtr.Zero)
+            {
+                Log($"[OnClick] rejected: no window at point ({x},{y})");
+                return;
+            }
+
+            GetWindowThreadProcessId(hwnd, out uint pid);
+            int processId = (int)pid;
+            if (processId == 0)
+            {
+                Log($"[OnClick] rejected: no process at point ({x},{y})");
+                return;
+            }
+
+            // Find the target that owns this process, or auto-register it
+            // (WPFSpy if the spy agent pipe is alive, else FlaUI/UIA).
+            RecordingTarget? target = Targets.FirstOrDefault(t => t.ProcessId == processId);
             if (target is null)
             {
-                // No window at this point could be registered; fall back to
-                // ownership resolution against already-registered targets.
-                target = FindOwningTarget(x, y);
+                target = TryAutoRegisterTargetAtPoint(x, y);
                 if (target is null)
                 {
-                    Log($"[OnClick] rejected: point ({x},{y}) not in any target app");
+                    Log($"[OnClick] rejected: could not register app at point ({x},{y})");
                     return;
                 }
-            }
-            else
-            {
-                // Confirm the newly registered target actually owns this point.
-                target = FindOwningTarget(x, y);
-                if (target is null) return;
             }
 
             ProbedElement? probed = target.Mode == ProbeMode.WPFSpy
