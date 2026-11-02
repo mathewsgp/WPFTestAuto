@@ -388,7 +388,10 @@ namespace WpfTestIde.Recording
             RecordingTarget? target = Targets.FirstOrDefault(t => t.ProcessId == processId);
             if (target is null)
             {
-                target = TryAutoRegisterTargetAtPoint(x, y);
+                // Pass the already-resolved rootHwnd so we don't re-query
+                // WindowFromPoint (which would return a different window for
+                // transparent/AllowTransparency WPF apps).
+                target = TryAutoRegisterTargetAtPoint(x, y, rootHwnd);
                 if (target is null)
                 {
                     Log($"[OnClick] rejected: could not register app at point ({x},{y})");
@@ -703,12 +706,13 @@ namespace WpfTestIde.Recording
         /// spy agent pipe is alive, otherwise FlaUI/UIA. Returns the
         /// registered target, or null if no suitable process was found.
         /// </summary>
-        public RecordingTarget? TryAutoRegisterTargetAtPoint(int x, int y)
+        public RecordingTarget? TryAutoRegisterTargetAtPoint(int x, int y, IntPtr? hwnd = null)
         {
-            IntPtr hwnd = WindowFromPoint(x, y);
+            if (hwnd is null || hwnd == IntPtr.Zero)
+                hwnd = WindowFromPoint(x, y);
             if (hwnd == IntPtr.Zero) return null;
 
-            GetWindowThreadProcessId(hwnd, out uint pid);
+            GetWindowThreadProcessId(hwnd.Value, out uint pid);
             int processId = (int)pid;
             if (processId == 0) return null;
 
