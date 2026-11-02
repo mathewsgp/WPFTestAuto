@@ -636,7 +636,7 @@ namespace WpfTestIde
         {
             if (DataContext is MainViewModel vm)
             {
-                vm.RunCommand.Execute(null);
+                vm.RunStopCommand.Execute(null);
             }
         }
 

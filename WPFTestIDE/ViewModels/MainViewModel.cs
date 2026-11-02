@@ -261,6 +261,7 @@ namespace WpfTestIde.ViewModels
         }
 
         public bool IsScriptRunInProgress => _runCancellation != null;
+        public string RunStopButtonLabel => IsScriptRunInProgress ? "Stop Script" : "Run Script";
 
         private string _repositoryJson = "{ \"elements\": {} }";
         public string RepositoryJson { get => _repositoryJson; set { _repositoryJson = value; OnPropertyChanged(); } }
@@ -555,8 +556,7 @@ private string _ocrResultText = "";
         public ICommand AddElseRepeatCommand { get; }
         public ICommand AddElseForEachCommand { get; }
         public ICommand EditDatasetsCommand { get; }
-        public ICommand RunCommand { get; }
-        public ICommand CancelRunCommand { get; }
+        public ICommand RunStopCommand { get; }
         public ICommand ExportRepositoryCommand { get; }
         public ICommand SaveExportScriptCommand { get; }
         public ICommand ApplyScriptCommand { get; }
@@ -619,8 +619,7 @@ private string _ocrResultText = "";
             AddElseRepeatCommand = new RelayCommand(param => AddNestedFlowNode(param as RecordedStep, StepKind.Repeat, elseBranch: true));
             AddElseForEachCommand = new RelayCommand(param => AddNestedFlowNode(param as RecordedStep, StepKind.ForEach, elseBranch: true));
             EditDatasetsCommand = new RelayCommand(_ => EditScriptDatasets());
-            RunCommand = new AsyncRelayCommand(_ => RunAsync(), _ => CanRunCurrentScript());
-            CancelRunCommand = new RelayCommand(_ => _runCancellation?.Cancel(), _ => _runCancellation != null);
+            RunStopCommand = new AsyncRelayCommand(_ => RunStopAsync(), _ => CanRunStopCurrentScript());
             ExportRepositoryCommand = new RelayCommand(_ => ExportRepository());
             SaveExportScriptCommand = new RelayCommand(_ => SaveExportScript());
             ApplyScriptCommand = new RelayCommand(_ => ApplyScript());
@@ -1805,8 +1804,18 @@ private string _ocrResultText = "";
             _ => false,
         };
 
-        private async System.Threading.Tasks.Task RunAsync()
+        private bool CanRunStopCurrentScript() => CanRunCurrentScript() || IsScriptRunInProgress;
+
+        private async System.Threading.Tasks.Task RunStopAsync()
         {
+            // If a run is already in progress, just cancel it (the running
+            // task handles its own cleanup in the finally block).
+            if (IsScriptRunInProgress)
+            {
+                _runCancellation?.Cancel();
+                return;
+            }
+
             var cancellation = new CancellationTokenSource();
             _runCancellation = cancellation;
             OnPropertyChanged(nameof(IsScriptRunInProgress));

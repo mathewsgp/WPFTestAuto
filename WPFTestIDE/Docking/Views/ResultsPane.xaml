@@ -21,7 +21,7 @@
                     <Border DockPanel.Dock="Top" Style="{DynamicResource TabToolbarBorder}">
                         <StackPanel Orientation="Horizontal">
                             <Button x:Name="btnResultsRerun" Style="{DynamicResource ToolbarButton}" Content="Run Again" ToolTip="Re-run the current script (F5)"
-                                    Command="{Binding RunCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnResultsRerun"/>
+                                    Command="{Binding RunStopCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnResultsRerun"/>
                             <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
                             <Button x:Name="btnResultsExportScript" Style="{DynamicResource ToolbarButton}" Content="Export Script (.robot)"
                                     Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnResultsExportScript"/>

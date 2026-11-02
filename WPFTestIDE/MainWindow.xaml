@@ -231,8 +231,8 @@
          Gestures also surfaced via InputGestureText on the MenuItem templates' reserved column. -->
     <Window.InputBindings>
         <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveScriptCommand}"/>
-        <KeyBinding Key="R" Modifiers="Control" Command="{Binding RunCommand}"/>
-        <KeyBinding Key="F5" Command="{Binding RunCommand}"/>
+        <KeyBinding Key="R" Modifiers="Control" Command="{Binding RunStopCommand}"/>
+        <KeyBinding Key="F5" Command="{Binding RunStopCommand}"/>
         <KeyBinding Key="R" Modifiers="Control+Shift" Command="{Binding ToggleRecordingCommand}"/>
         <KeyBinding Key="F12" Command="{Binding OpenSpyToolCommand}"/>
     </Window.InputBindings>
@@ -277,7 +277,7 @@
                 <MenuItem Header="_Reset Layout" Command="{Binding ResetLayoutCommand}"/>
             </MenuItem>
             <MenuItem Header="_Run">
-                <MenuItem Header="_Run Script" Command="{Binding RunCommand}" InputGestureText="Ctrl+R / F5"/>
+                <MenuItem Header="_Run / Stop Script" Command="{Binding RunStopCommand}" InputGestureText="Ctrl+R / F5"/>
                 <MenuItem Header="Record _Toggle" Command="{Binding ToggleRecordingCommand}" InputGestureText="Ctrl+Shift+R"/>
                 <MenuItem Header="_Stop Recording" Command="{Binding StopRecordingCommand}"/>
                 <Separator/>
