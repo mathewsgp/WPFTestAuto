@@ -1259,15 +1259,11 @@ private string _ocrResultText = "";
             }
             else
             {
-                if (_session.Targets.Count == 0)
-                {
-                    StatusText = "No running WPF application detected. Launch Sample WPF first, then press Record.";
-                    return;
-                }
-
                 _session.Start();
                 IsRecording = true;
-                StatusText = "Recording — interact with the application now.";
+                StatusText = _session.Targets.Count > 0
+                    ? "Recording — interact with the application now."
+                    : "Recording started — click in the application to auto-register it.";
             }
         }
 
