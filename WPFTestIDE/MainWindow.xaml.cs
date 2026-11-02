@@ -634,7 +634,12 @@ namespace WpfTestIde
 
         private void ActivityRun_Click(object sender, RoutedEventArgs e)
         {
-            if (DataContext is MainViewModel vm)
+            if (DataContext is not MainViewModel vm) return;
+            if (vm.IsScriptRunInProgress)
+            {
+                vm.CancelScriptRun();
+            }
+            else
             {
                 vm.RunStopCommand.Execute(null);
             }

@@ -263,6 +263,15 @@ namespace WpfTestIde.ViewModels
         public bool IsScriptRunInProgress => _runCancellation != null;
         public string RunStopButtonLabel => IsScriptRunInProgress ? "Stop Script" : "Run Script";
 
+        /// <summary>Cancel an in-progress script run. Can be called from outside
+        /// the command system (e.g. a button click handler) because
+        /// <see cref="AsyncRelayCommand.Execute"/> blocks re-entry while a task
+        /// is in flight.</summary>
+        public void CancelScriptRun()
+        {
+            _runCancellation?.Cancel();
+        }
+
         private string _repositoryJson = "{ \"elements\": {} }";
         public string RepositoryJson { get => _repositoryJson; set { _repositoryJson = value; OnPropertyChanged(); } }
 

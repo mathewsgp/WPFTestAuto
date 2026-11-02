@@ -14,6 +14,22 @@ namespace WpfTestIde.Docking.Views
             InitializeComponent();
         }
 
+        private void BtnRunStopScript_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainViewModel vm) return;
+            if (vm.IsScriptRunInProgress)
+            {
+                // Stop path: bypass AsyncRelayCommand re-entrancy guard
+                // (AsyncRelayCommand.Execute returns early if a task is in flight).
+                vm.CancelScriptRun();
+            }
+            else
+            {
+                // Run path: use the command so CanExecute/IsRunning tracking works.
+                vm.RunStopCommand.Execute(null);
+            }
+        }
+
         // D3: drag-to-reorder recorded steps in StepsListBox.
         // Strategy: capture the hit-tested RecordedStep on PreviewMouseLeftButtonDown
         // (only when the press is NOT on a Button, so ↑/↓/verify/X keep working),

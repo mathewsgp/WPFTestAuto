@@ -6,7 +6,7 @@
         <!-- Toolbar: Run, Save, Export, Apply, Import, Export Steps, Add Step, Checkpoint Wizard -->
         <Border DockPanel.Dock="Top" Style="{DynamicResource TabToolbarBorder}">
             <StackPanel Orientation="Horizontal">
-                <Button x:Name="btnRunStopScript" Content="{Binding RunStopButtonLabel}" Command="{Binding RunStopCommand}" AutomationProperties.AutomationId="btnRunStopScript">
+                <Button x:Name="btnRunStopScript" Content="{Binding RunStopButtonLabel}" Click="BtnRunStopScript_Click" AutomationProperties.AutomationId="btnRunStopScript">
                     <Button.Style>
                         <Style TargetType="Button">
                             <Setter Property="Padding" Value="10,5"/>
