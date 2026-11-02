@@ -372,62 +372,6 @@ namespace WpfTestIde.Recording
             }
             Log(candLog.ToString().TrimEnd());
 
-            // When multiple distinct windows are detected, surface a chooser
-            // message box so the operator can confirm which window to record.
-            if (candidates.Count > 1)
-            {
-                var sb = new StringBuilder();
-                sb.AppendLine($"Click at ({x},{y}) - {candidates.Count} window(s) detected:");
-                sb.AppendLine();
-                for (int i = 0; i < candidates.Count; i++)
-                {
-                    var c = candidates[i];
-                    sb.AppendLine($"  [{i + 1}] {c.Strategy,-18} pid={c.ProcessId,-6} hwnd=0x{c.Hwnd:X8}");
-                    sb.AppendLine($"       title='{c.Title}' exe='{c.ExeName}'");
-                }
-                sb.AppendLine();
-                sb.AppendLine("Press OK to record against the preferred candidate (UIA3 first, then WindowFromPoint).");
-                sb.AppendLine("Press Cancel to abort this click.");
-                sb.AppendLine();
-                sb.AppendLine("Full candidate list is in WpfTestIde_recording_log.txt");
-
-                System.Windows.MessageBoxResult? showResult = null;
-                try
-                {
-                    var dispatcher = Application.Current?.Dispatcher;
-                    if (dispatcher != null)
-                    {
-                        dispatcher.Invoke(() =>
-                        {
-                            showResult = System.Windows.MessageBox.Show(
-                                sb.ToString(),
-                                "Recording - Choose Window",
-                                System.Windows.MessageBoxButton.OKCancel,
-                                System.Windows.MessageBoxImage.Question);
-                        });
-                    }
-                    else
-                    {
-                        showResult = System.Windows.MessageBox.Show(
-                            sb.ToString(),
-                            "Recording - Choose Window",
-                            System.Windows.MessageBoxButton.OKCancel,
-                            System.Windows.MessageBoxImage.Question);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log($"[OnClick] message box failed: {ex.GetType().Name}: {ex.Message}");
-                    showResult = System.Windows.MessageBoxResult.OK; // proceed with first candidate
-                }
-
-                if (showResult != System.Windows.MessageBoxResult.OK)
-                {
-                    Log($"[OnClick] aborted by user at point ({x},{y})");
-                    return;
-                }
-            }
-
             // Preference order: UIA3 results first (reliable for transparent /
             // AllowTransparency WPF windows that Win32 WindowFromPoint skips),
             // then WindowFromPoint, then RootOwner.

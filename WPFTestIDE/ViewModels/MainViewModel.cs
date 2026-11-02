@@ -1259,67 +1259,10 @@ private string _ocrResultText = "";
             }
             else
             {
-                // Auto-register any running target apps if none are attached
-                // yet. This supports "launch the app manually, open the IDE,
-                // press Record" without a prior explicit Attach step.
-                if (_session.Targets.Count == 0 && !IsAttached)
-                {
-                    var registered = _session.TryAutoRegisterRunningApps();
-                    if (registered.Count > 0)
-                    {
-                        foreach (var target in registered)
-                        {
-                            var appContext = new WpfTestIde.Models.AppContext
-                            {
-                                AppId = target.AppId,
-                                AppName = Path.GetFileNameWithoutExtension(target.ExeName) ?? target.AppId,
-                                Driver = target.Mode == ProbeMode.WPFSpy ? "WPFSpy" : "FlaUI",
-                                DriverList = target.Mode == ProbeMode.WPFSpy
-                                    ? new List<string> { "WPFSpy", "FlaUI" }
-                                    : new List<string> { "FlaUI" },
-                                ProcessId = target.ProcessId,
-                                PipeName = target.PipeName,
-                                AppPath = target.ExeName ?? "",
-                                IsAttached = true,
-                                IsDefault = AttachedApps.Count == 0,
-                            };
-                            AttachedApps.Add(appContext);
-                        }
-
-                        IsAttached = true;
-                        SelectedApp = AttachedApps.FirstOrDefault();
-                        if (SelectedApp != null)
-                        {
-                            PipeName = SelectedApp.PipeName;
-                            SelectedProcessId = SelectedApp.ProcessId;
-                        }
-
-                        bool allSpy = registered.All(t => t.Mode == ProbeMode.WPFSpy);
-                        string modeLabel = allSpy ? "WPFSpy"
-                            : registered.Any(t => t.Mode == ProbeMode.WPFSpy)
-                                ? "WPFSpy + FlaUI"
-                                : "FlaUI/UIA";
-                        StatusText = $"Auto-attached to {registered.Count} application(s) ({modeLabel}). Ready to record.";
-                    }
-                }
-
                 if (_session.Targets.Count == 0)
                 {
                     StatusText = "No running WPF application detected. Launch Sample WPF first, then press Record.";
                     return;
-                }
-
-                // Ensure IsAttached reflects the session state when targets
-                // were auto-registered via a click before Record was pressed.
-                if (!IsAttached)
-                {
-                    IsAttached = true;
-                    SelectedApp = AttachedApps.FirstOrDefault();
-                    if (SelectedApp != null)
-                    {
-                        PipeName = SelectedApp.PipeName;
-                        SelectedProcessId = SelectedApp.ProcessId;
-                    }
                 }
 
                 _session.Start();
