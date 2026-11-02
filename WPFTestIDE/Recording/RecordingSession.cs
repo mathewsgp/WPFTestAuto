@@ -341,22 +341,29 @@ namespace WpfTestIde.Recording
             CommitPendingValueIfAny();
 
             // WindowFromPoint returns the topmost HWND at the screen coordinates
-            // (respecting z-order), so clicks land on the app physically on top
-            // (e.g. Sample WPF) rather than an underlying app like VS/IDE whose
-            // rect merely contains the point. The old FindOwningTarget bounds
-            // scan caused that mis-match.
-            IntPtr hwnd = WindowFromPoint(x, y);
-            if (hwnd == IntPtr.Zero)
+            // (respecting z-order). For WPF apps this can be a transparent
+            // adorner/ghost layer or a AllowTransparency layered window that
+            // sits on top of the real content. Walk up to the root owner so
+            // we associate the click with the actual application window that
+            // owns it, not a transient overlay.
+            IntPtr topHwnd = WindowFromPoint(x, y);
+            if (topHwnd == IntPtr.Zero)
             {
                 Log($"[OnClick] rejected: no window at point ({x},{y})");
                 return;
             }
 
-            GetWindowThreadProcessId(hwnd, out uint pid);
+            IntPtr rootHwnd = GetAncestor(topHwnd, GA_ROOTOWNER);
+            if (rootHwnd == IntPtr.Zero)
+            {
+                rootHwnd = topHwnd;
+            }
+
+            GetWindowThreadProcessId(rootHwnd, out uint pid);
             int processId = (int)pid;
             if (processId == 0)
             {
-                Log($"[OnClick] rejected: no process at point ({x},{y})");
+                Log($"[OnClick] rejected: no process at point ({x},{y}) (topHwnd={topHwnd}, rootHwnd={rootHwnd})");
                 return;
             }
 
