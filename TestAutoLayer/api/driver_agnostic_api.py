@@ -317,7 +317,7 @@ class DriverAgnosticApi:
 
         Controlled by the OCULIX_AUTO_ATTACH env var (default "1").
         """
-        if os.environ.get("OCULIX_AUTO_ATTACH", "1") != "1":
+        if os.environ.get("AUTO_ATTACH", "1") != "1":
             return
 
         ctx = get_multi_app_context()
