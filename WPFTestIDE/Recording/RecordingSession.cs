@@ -363,28 +363,69 @@ namespace WpfTestIde.Recording
                 return;
             }
 
-            // When multiple distinct strategies disagree, surface a message so
-            // the operator can see which window each strategy resolved to.
+            // Log all candidates for debugging / post-click review.
+            var candLog = new StringBuilder();
+            candLog.AppendLine($"[OnClick] {candidates.Count} candidate(s) at ({x},{y}):");
+            foreach (var c in candidates)
+            {
+                candLog.AppendLine($"  {c.Strategy,-18} pid={c.ProcessId,-6} hwnd=0x{c.Hwnd:X8} title='{c.Title}' exe='{c.ExeName}'");
+            }
+            Log(candLog.ToString().TrimEnd());
+
+            // When multiple distinct windows are detected, surface a chooser
+            // message box so the operator can confirm which window to record.
             if (candidates.Count > 1)
             {
                 var sb = new StringBuilder();
-                sb.AppendLine($"Click at ({x},{y}) - window candidates:");
-                foreach (var c in candidates)
+                sb.AppendLine($"Click at ({x},{y}) - {candidates.Count} window(s) detected:");
+                sb.AppendLine();
+                for (int i = 0; i < candidates.Count; i++)
                 {
-                    sb.AppendLine($"  {c.Strategy,-18} pid={c.ProcessId,-6} hwnd=0x{c.Hwnd:X8} title='{c.Title}' exe='{c.ExeName}'");
+                    var c = candidates[i];
+                    sb.AppendLine($"  [{i + 1}] {c.Strategy,-18} pid={c.ProcessId,-6} hwnd=0x{c.Hwnd:X8}");
+                    sb.AppendLine($"       title='{c.Title}' exe='{c.ExeName}'");
                 }
                 sb.AppendLine();
-                sb.AppendLine("Using the first candidate (root-owner of RealWindowFromPoint).");
-                sb.AppendLine("Check the recording log (WpfTestIde_recording_log.txt) for all candidates.");
+                sb.AppendLine("Press OK to record against candidate [1] (RealWindowFromPoint root owner).");
+                sb.AppendLine("Press Cancel to abort this click.");
+                sb.AppendLine();
+                sb.AppendLine("Full candidate list is in WpfTestIde_recording_log.txt");
 
-                Application.Current?.Dispatcher.Invoke(() =>
+                System.Windows.MessageBoxResult? showResult = null;
+                try
                 {
-                    System.Windows.MessageBox.Show(
-                        sb.ToString(),
-                        "Recording - Window Detection",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Information);
-                });
+                    var dispatcher = Application.Current?.Dispatcher;
+                    if (dispatcher != null)
+                    {
+                        dispatcher.Invoke(() =>
+                        {
+                            showResult = System.Windows.MessageBox.Show(
+                                sb.ToString(),
+                                "Recording - Choose Window",
+                                System.Windows.MessageBoxButton.OKCancel,
+                                System.Windows.MessageBoxImage.Question);
+                        });
+                    }
+                    else
+                    {
+                        showResult = System.Windows.MessageBox.Show(
+                            sb.ToString(),
+                            "Recording - Choose Window",
+                            System.Windows.MessageBoxButton.OKCancel,
+                            System.Windows.MessageBoxImage.Question);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"[OnClick] message box failed: {ex.GetType().Name}: {ex.Message}");
+                    showResult = System.Windows.MessageBoxResult.OK; // proceed with first candidate
+                }
+
+                if (showResult != System.Windows.MessageBoxResult.OK)
+                {
+                    Log($"[OnClick] aborted by user at point ({x},{y})");
+                    return;
+                }
             }
 
             // Preference order: root-owner of RealWindowFromPoint first, then
@@ -501,17 +542,17 @@ namespace WpfTestIde.Recording
         private List<WindowCandidate> GetCandidateWindowsAtPoint(int x, int y)
         {
             var candidates = new List<WindowCandidate>();
-            var seenPids = new HashSet<int>();
+            var seenHwnds = new HashSet<IntPtr>();
 
             void Add(string strategy, IntPtr hwnd)
             {
                 if (hwnd == IntPtr.Zero) return;
+                if (!seenHwnds.Add(hwnd)) return;
                 try
                 {
                     GetWindowThreadProcessId(hwnd, out uint pid);
                     int processId = (int)pid;
                     if (processId == 0) return;
-                    if (!seenPids.Add(processId)) return;
                     string title = GetWindowTitle(hwnd);
                     string? exeName = null;
                     try
