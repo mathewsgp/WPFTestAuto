@@ -331,7 +331,12 @@
                     <StackPanel Style="{StaticResource ToolbarBand}">
                         <TextBlock Style="{StaticResource ToolbarBandLabel}" Text="Record"/>
                         <StackPanel Orientation="Horizontal">
-                            <Button x:Name="btnRecord" Style="{StaticResource ToolbarButton}" Content="{Binding RecordButtonLabel}" Command="{Binding ToggleRecordingCommand}" AutomationProperties.AutomationId="btnRecord"/>
+                            <Button x:Name="btnRecord" Style="{StaticResource ToolbarButton}" Command="{Binding ToggleRecordingCommand}" AutomationProperties.AutomationId="btnRecord">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding RecordIcon}" Foreground="Red" FontFamily="Segoe UI Symbol" FontSize="14" Margin="0,0,4,0"/>
+                                    <TextBlock Text="{Binding RecordButtonLabel}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                             <Button x:Name="btnLoadSample" Style="{StaticResource ToolbarButton}" Content="Load Sample" Command="{Binding LoadSampleCommand}" AutomationProperties.AutomationId="btnLoadSample"/>
                             <Button x:Name="btnReset" Style="{StaticResource ToolbarButton}" Content="Reset" Command="{Binding ResetCommand}" AutomationProperties.AutomationId="btnReset"/>
                             <Button x:Name="btnEnableLaunchAttach" Style="{StaticResource ToolbarButton}" Content="Enable Launch+Attach" Command="{Binding EnableLaunchAttachRecordingCommand}" ToolTip="Enable recording for applications launched with attach=Yes" AutomationProperties.AutomationId="btnEnableLaunchAttach"/>

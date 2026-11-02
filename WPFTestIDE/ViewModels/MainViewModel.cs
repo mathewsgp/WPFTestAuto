@@ -266,8 +266,9 @@ namespace WpfTestIde.ViewModels
         public string RepositoryJson { get => _repositoryJson; set { _repositoryJson = value; OnPropertyChanged(); } }
 
         private bool _isRecording;
-        public bool IsRecording { get => _isRecording; set { _isRecording = value; OnPropertyChanged(); OnPropertyChanged(nameof(RecordButtonLabel)); } }
+        public bool IsRecording { get => _isRecording; set { _isRecording = value; OnPropertyChanged(); OnPropertyChanged(nameof(RecordButtonLabel)); OnPropertyChanged(nameof(RecordIcon)); } }
         public string RecordButtonLabel => IsRecording ? "Stop Recording" : "Record";
+        public string RecordIcon => IsRecording ? "\u25A0" : "\u25CF"; // ■ stop, ● record
 
         private bool _isAttached;
         public bool IsAttached { get => _isAttached; set { _isAttached = value; OnPropertyChanged(); } }
