@@ -45,7 +45,7 @@ class ScreenshotManager:
     - Automatic screenshot on element operation failures
     - Configurable output directory
     - Metadata tracking in JSON
-    - Multiple driver support (FlaUI, WPFSpy, Sikuli)
+    - Multiple driver support (FlaUI, WPFSpy, OculiX)
     - Full screen and region capture
     - Configurable capture triggers
     

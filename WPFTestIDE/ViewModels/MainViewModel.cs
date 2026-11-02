@@ -349,18 +349,18 @@ private FolderTreeItem? _workingFolderSelectedItem;
             set { _recordWPFSpy = value; OnPropertyChanged(); RegenerateScript(); }
         }
 
-        private bool _recordSikuli = false;
-        public bool RecordSikuli
+        private bool _recordOculiX = false;
+        public bool RecordOculiX
         {
-            get => _recordSikuli;
+            get => _recordOculiX;
             set
             {
-                _recordSikuli = value;
+                _recordOculiX = value;
                 OnPropertyChanged();
                 RegenerateScript();
                 if (_session != null)
                 {
-                    _session.RecordSikuli = _recordSikuli;
+                    _session.RecordOculiX = _recordOculiX;
                 }
             }
         }
@@ -380,39 +380,39 @@ private FolderTreeItem? _workingFolderSelectedItem;
             set { _runWPFSpy = value; OnPropertyChanged(); RegenerateScript(); }
         }
 
-        private bool _runSikuli = false;
-        public bool RunSikuli
+        private bool _runOculiX = false;
+        public bool RunOculiX
         {
-            get => _runSikuli;
-            set { _runSikuli = value; OnPropertyChanged(); RegenerateScript(); }
+            get => _runOculiX;
+            set { _runOculiX = value; OnPropertyChanged(); RegenerateScript(); }
         }
 
-        private double _sikuliSimilarity = 0.85;
-        public double SikuliSimilarity
+        private double _oculixSimilarity = 0.85;
+        public double OculiXSimilarity
         {
-            get => _sikuliSimilarity;
-            set { _sikuliSimilarity = value; OnPropertyChanged(); }
+            get => _oculixSimilarity;
+            set { _oculixSimilarity = value; OnPropertyChanged(); }
         }
 
-        private int _sikuliCapturePadding = 4;
-        public int SikuliCapturePadding
+        private int _oculixCapturePadding = 4;
+        public int OculiXCapturePadding
         {
-            get => _sikuliCapturePadding;
-            set { _sikuliCapturePadding = value; OnPropertyChanged(); }
+            get => _oculixCapturePadding;
+            set { _oculixCapturePadding = value; OnPropertyChanged(); }
         }
 
-        private string _sikuliMatcher = "multi";
-        public string SikuliMatcher
+        private string _oculixMatcher = "multi";
+        public string OculiXMatcher
         {
-            get => _sikuliMatcher;
-            set { _sikuliMatcher = value; OnPropertyChanged(); }
+            get => _oculixMatcher;
+            set { _oculixMatcher = value; OnPropertyChanged(); }
         }
 
-        private string _sikuliScreenCapture = "mss";
-        public string SikuliScreenCapture
+        private string _oculixScreenCapture = "mss";
+        public string OculiXScreenCapture
         {
-            get => _sikuliScreenCapture;
-            set { _sikuliScreenCapture = value; OnPropertyChanged(); }
+            get => _oculixScreenCapture;
+            set { _oculixScreenCapture = value; OnPropertyChanged(); }
         }
 
         public ICommand MoveElementPriorityUpCommand { get; }
@@ -658,20 +658,20 @@ private string _ocrResultText = "";
             ShowSearchCommand = new RelayCommand(_ => { /* TODO: implement search */ });
             OpenSettingsCommand = new RelayCommand(_ =>
             {
-                var dlg = new Dialogs.SikuliSettingsDialog
+                var dlg = new Dialogs.OculiXSettingsDialog
                 {
                     Owner = Application.Current.MainWindow,
-                    Similarity = SikuliSimilarity,
-                    CapturePaddingPx = SikuliCapturePadding,
-                    Matcher = SikuliMatcher,
-                    ScreenCapture = SikuliScreenCapture,
+                    Similarity = OculiXSimilarity,
+                    CapturePaddingPx = OculiXCapturePadding,
+                    Matcher = OculiXMatcher,
+                    ScreenCapture = OculiXScreenCapture,
                 };
                 if (dlg.ShowDialog() == true)
                 {
-                    SikuliSimilarity = dlg.Similarity;
-                    SikuliCapturePadding = dlg.CapturePaddingPx;
-                    SikuliMatcher = dlg.Matcher;
-                    SikuliScreenCapture = dlg.ScreenCapture;
+                    OculiXSimilarity = dlg.Similarity;
+                    OculiXCapturePadding = dlg.CapturePaddingPx;
+                    OculiXMatcher = dlg.Matcher;
+                    OculiXScreenCapture = dlg.ScreenCapture;
                 }
             });
             ExitCommand = new RelayCommand(_ => Application.Current.Shutdown());
@@ -812,7 +812,7 @@ private string _ocrResultText = "";
             {
                 _session = new RecordingSession();
                 _session.StepCaptured += OnStepCaptured;
-                _session.RecordSikuli = RecordSikuli;
+                _session.RecordOculiX = RecordOculiX;
             }
             _session.RemoveTarget(appId);
             var attachMode = dialog.SpyAgentEnabled ? ProbeMode.WPFSpy : ProbeMode.FlaUI;
@@ -938,7 +938,7 @@ private string _ocrResultText = "";
             {
                 _session = new RecordingSession();
                 _session.StepCaptured += OnStepCaptured;
-                _session.RecordSikuli = RecordSikuli;
+                _session.RecordOculiX = RecordOculiX;
             }
             else
             {
@@ -1248,7 +1248,7 @@ private string _ocrResultText = "";
             {
                 _session = new RecordingSession();
                 _session.StepCaptured += OnStepCaptured;
-                _session.RecordSikuli = RecordSikuli;
+                _session.RecordOculiX = RecordOculiX;
             }
 
             if (IsRecording)
@@ -1301,7 +1301,7 @@ private string _ocrResultText = "";
 
                 // Choose driver priority based on which probe mode the session is using.
                 // For FlaUI-resolved elements, WPFSpy is meaningless (no spy agent in the app).
-                // For WPFSpy-resolved elements, the full [FlaUI, WPFSpy, Sikuli] priority applies.
+                // For WPFSpy-resolved elements, the full [FlaUI, WPFSpy, OculiX] priority applies.
                 List<string> driverPriority;
                 List<string>? recordingModes = entry.RecordingModes;
                 if (recordingModes != null && recordingModes.Count > 0)
@@ -1314,7 +1314,7 @@ private string _ocrResultText = "";
                     driverPriority = new List<string>(GetSelectedRecordingModes());
                     if (driverPriority.Count == 0)
                     {
-                        driverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" };
+                        driverPriority = new List<string> { "FlaUI", "WPFSpy", "OculiX" };
                     }
                 }
 
@@ -1657,7 +1657,7 @@ private string _ocrResultText = "";
                         Name = name ?? "",
                         XPath = xpath ?? "",
                         RecordingModes = dialog.SelectedRecordingModes,
-                        DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" }
+                        DriverPriority = new List<string> { "FlaUI", "WPFSpy", "OculiX" }
                     };
                     Elements.Add(newElement);
                     StatusText = $"Added element: {alias}";
@@ -1751,7 +1751,7 @@ private string _ocrResultText = "";
             var modes = new List<string>();
             if (RecordFlaUI) modes.Add("FlaUI");
             if (RecordWPFSpy) modes.Add("WPFSpy");
-            if (RecordSikuli) modes.Add("Sikuli");
+            if (RecordOculiX) modes.Add("OculiX");
             return modes;
         }
 
@@ -1760,7 +1760,7 @@ private string _ocrResultText = "";
             var modes = new List<string>();
             if (RunFlaUI) modes.Add("FlaUI");
             if (RunWPFSpy) modes.Add("WPFSpy");
-            if (RunSikuli) modes.Add("Sikuli");
+            if (RunOculiX) modes.Add("OculiX");
             return modes;
         }
 
@@ -2583,7 +2583,7 @@ private string _ocrResultText = "";
                             ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
                             AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
                             Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
-                            DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" }
+                            DriverPriority = new List<string> { "FlaUI", "WPFSpy", "OculiX" }
                         };
 
                         loadedAliases.Add(alias);
@@ -2691,7 +2691,7 @@ private string _ocrResultText = "";
                 AutomationId = "",
                 Name = "",
                 XPath = "",
-                DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" }
+                DriverPriority = new List<string> { "FlaUI", "WPFSpy", "OculiX" }
             };
             Elements.Add(newElement);
             SelectedElement = newElement;
@@ -2979,7 +2979,7 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                             AutomationId = probe.AutomationId,
                             Name = probe.Name,
                             XPath = probe.XPath,
-                            DriverPriority = new List<string> { "FlaUI", "WPFSpy", "Sikuli" }
+                            DriverPriority = new List<string> { "FlaUI", "WPFSpy", "OculiX" }
                         };
 
                         // Marshaling to UI thread because mouse hook raises events on a background thread

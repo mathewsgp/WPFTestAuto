@@ -14,7 +14,7 @@ namespace WpfTestIde.Dialogs
 {
     public partial class AttachToProcessDialog : Window
     {
-        private readonly List<string> _allDrivers = new() { "WPFSpy", "FlaUI", "Sikuli" };
+        private readonly List<string> _allDrivers = new() { "WPFSpy", "FlaUI", "OculiX" };
         private List<string> _selectedDrivers = new() { "WPFSpy", "FlaUI" };
 
         public int? SelectedProcessId { get; private set; }

@@ -1,4 +1,4 @@
-<Window x:Class="WpfTestIde.Dialogs.SikuliSettingsDialog"
+<Window x:Class="WpfTestIde.Dialogs.OculiXSettingsDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="OculiX Settings" Height="320" Width="440"

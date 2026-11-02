@@ -134,25 +134,25 @@ class InteractionKeywords:
         app_id = self._resolve_app_id(app_id)
         self._executor.execute(alias, "scroll", app_id, direction)
     
-    def sikuli_click(self, alias: str, image_tag: str, app_id: Optional[str] = None):
-        """Clicks an element identified by a Sikuli image tag."""
+    def oculix_click(self, alias: str, image_tag: str, app_id: Optional[str] = None):
+        """Clicks an element identified by an OculiX image tag."""
         app_id = self._resolve_app_id(app_id)
-        driver = self._executor._driver_provider("Sikuli", app_id)
+        driver = self._executor._driver_provider("OculiX", app_id)
         if driver is None:
-            raise RuntimeError("Sikuli driver not available")
+            raise RuntimeError("OculiX driver not available")
         element = driver.find_element({"searchBy": "Image", "value": image_tag})
         driver.invoke(element)
     
-    def sikuli_type(self, alias: str, text: str, app_id: Optional[str] = None):
-        """Types text into an element identified by a Sikuli image tag."""
+    def oculix_type(self, alias: str, text: str, app_id: Optional[str] = None):
+        """Types text into an element identified by an OculiX image tag."""
         app_id = self._resolve_app_id(app_id)
-        driver = self._executor._driver_provider("Sikuli", app_id)
+        driver = self._executor._driver_provider("OculiX", app_id)
         if driver is None:
-            raise RuntimeError("Sikuli driver not available")
+            raise RuntimeError("OculiX driver not available")
         strategies = repo.get_strategies(alias, app_id=app_id)
         image_tag = None
         for driver_name, strats in strategies.items():
-            if driver_name == "Sikuli" and strats:
+            if driver_name == "OculiX" and strats:
                 image_tag = strats[0].get("value")
                 break
         if not image_tag:
@@ -160,7 +160,7 @@ class InteractionKeywords:
             raise AllStrategiesFailedError(
                 alias=alias,
                 attempts=[],
-                details={"reason": "No Sikuli image tag configured"}
+                details={"reason": "No OculiX image tag configured"}
             )
         element = driver.find_element({"searchBy": "Image", "value": image_tag})
         driver.set_value(element, text)

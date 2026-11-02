@@ -251,7 +251,7 @@ def get_strategies(alias: str, driver: str = None, app_id: str = None, element_r
     
     Args:
         alias: Element alias in repository
-        driver: Driver name (FlaUI, WPFSpy, Sikuli). If None, returns all.
+        driver: Driver name (FlaUI, WPFSpy, OculiX). If None, returns all.
         app_id: Optional app context ID to filter elements.
         element_repo_path: Optional app-specific element repository path.
     
@@ -274,7 +274,7 @@ def get_driver_strategies_sorted(alias: str, driver: str, app_id: str = None, el
     
     Args:
         alias: Element alias in repository
-        driver: Driver name (FlaUI, WPFSpy, Sikuli)
+        driver: Driver name (FlaUI, WPFSpy, OculiX)
         app_id: Optional app context ID to filter elements.
         element_repo_path: Optional app-specific element repository path.
     
@@ -344,7 +344,7 @@ SUPPORTED_SEARCH_METHODS = {
         "ClassName",
         "Index",
     ],
-    "Sikuli": [
+    "OculiX": [
         "ImageTag",       # Image-based fallback
         "Name",           # Name-based as alternative
     ]

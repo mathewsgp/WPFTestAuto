@@ -55,7 +55,7 @@ class UtilityKeywords:
         """Set the active driver for subsequent element operations."""
         from TestAutoLayer.api.DriverAgnosticApi import _ACTIVE_DRIVER, set_run_modes
         global _ACTIVE_DRIVER
-        valid_drivers = {"FlaUI", "WPFSpy", "Sikuli"}
+        valid_drivers = {"FlaUI", "WPFSpy", "OculiX"}
         normalized = driver_name.strip()
         if normalized.lower() not in {d.lower() for d in valid_drivers}:
             raise ValueError(
@@ -68,7 +68,7 @@ class UtilityKeywords:
         set_run_modes([normalized])
     
     def reset_drivers(self):
-        """Reset to default driver order (FlaUI -> WPFSpy -> Sikuli)."""
+        """Reset to default driver order (FlaUI -> WPFSpy -> OculiX)."""
         from TestAutoLayer.api.DriverAgnosticApi import _ACTIVE_DRIVER, set_run_modes
         global _ACTIVE_DRIVER
         _ACTIVE_DRIVER = None

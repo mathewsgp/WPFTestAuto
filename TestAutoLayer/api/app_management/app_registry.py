@@ -74,12 +74,12 @@ def _create_driver_for_app(driver_name: str, app_context: 'AppContext') -> Any:
             except ImportError:
                 raise ImportError("WPFSpy mock driver not available")
 
-    if driver_name == "Sikuli":
+    if driver_name == "OculiX":
         try:
-            from SikuliLibrary import SikuliDriver
-            return SikuliDriver()
+            from OkulixLibrary import OculiXDriver
+            return OculiXDriver()
         except ImportError:
-            raise ImportError("Sikuli driver not available. Install: pip install robotframework-sikuli")
+            raise ImportError("OculiX driver not available")
 
     raise ValueError(f"Unknown driver: {driver_name}")
 

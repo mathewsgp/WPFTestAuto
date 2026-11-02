@@ -1,13 +1,13 @@
 """
-Sikuli screen-capture backends.
+OculiX screen-capture backends.
 
   MssScreenCapture        — full-desktop capture using the `mss` library.
                             Cross-platform, no native deps beyond libffi.
   PrintWindowScreenCapture — per-window capture via Win32 PrintWindow.
-                            Stable even when the window is occluded,
-                            Windows-only.
+                             Stable even when the window is occluded,
+                             Windows-only.
 
-The env var SIKULI_SCREEN_CAPTURE selects the backend:
+The env var OCULIX_SCREEN_CAPTURE selects the backend:
   "mss"        -> MssScreenCapture (default if available)
   "printwindow" -> PrintWindowScreenCapture (Windows only)
   "stub"       -> NullScreenCapture (returns a fixed-size black BGR
@@ -204,8 +204,8 @@ class PrintWindowScreenCapture(ScreenCapture):
 
 
 def create_capture() -> ScreenCapture:
-    """Factory honouring the SIKULI_SCREEN_CAPTURE env var."""
-    choice = (os.environ.get("SIKULI_SCREEN_CAPTURE", "") or "").strip().lower()
+    """Factory honouring the OCULIX_SCREEN_CAPTURE env var."""
+    choice = (os.environ.get("OCULIX_SCREEN_CAPTURE", "") or "").strip().lower()
     if choice == "stub":
         return StubScreenCapture()
     if choice == "printwindow":

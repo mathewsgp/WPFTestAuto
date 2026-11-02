@@ -241,11 +241,11 @@ namespace WpfTestIde.Recording
                     case ActionKind.Scroll:
                         sb.AppendLine($"    Scroll    {step.Alias}    {step.Value}{appIdArg}");
                         break;
-                    case ActionKind.SikuliClick:
-                        sb.AppendLine($"    Sikuli Click    {step.Alias}    {step.Value}{appIdArg}");
+                    case ActionKind.OculiXClick:
+                        sb.AppendLine($"    OculiX Click    {step.Alias}    {step.Value}{appIdArg}");
                         break;
-                    case ActionKind.SikuliType:
-                        sb.AppendLine($"    Sikuli Type    {step.Alias}    {step.Value}{appIdArg}");
+                    case ActionKind.OculiXType:
+                        sb.AppendLine($"    OculiX Type    {step.Alias}    {step.Value}{appIdArg}");
                         break;
                 }
             }
@@ -557,8 +557,8 @@ namespace WpfTestIde.Recording
                     case ActionKind.Hover: sb.AppendLine("    api.hover_over_element(" + alias + appIdArg + ")"); break;
                     case ActionKind.PressKeys: sb.AppendLine("    api.press_keys(" + alias + ", " + value + appIdArg + ")"); break;
                     case ActionKind.Scroll: sb.AppendLine("    api.scroll(" + alias + ", " + value + appIdArg + ")"); break;
-                    case ActionKind.SikuliClick: sb.AppendLine("    api.sikuli_click(" + alias + ", " + value + appIdArg + ")"); break;
-                    case ActionKind.SikuliType: sb.AppendLine("    api.sikuli_type(" + alias + ", " + value + appIdArg + ")"); break;
+                    case ActionKind.OculiXClick: sb.AppendLine("    api.oculix_click(" + alias + ", " + value + appIdArg + ")"); break;
+                    case ActionKind.OculiXType: sb.AppendLine("    api.oculix_type(" + alias + ", " + value + appIdArg + ")"); break;
                 }
             }
 

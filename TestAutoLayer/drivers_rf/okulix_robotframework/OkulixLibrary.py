@@ -1,5 +1,5 @@
 """
-Sikuli.RobotFramework — Layer 4 driver wrapper for Sikuli.
+OculiX.RobotFramework — Layer 4 driver wrapper for OculiX.
 
 Production driver
 -----------------
@@ -12,10 +12,10 @@ rest of the framework can treat the three backends interchangeably.
 
 Mock-app fallback
 -----------------
-When SIKULI_USE_MOCK=1 (default when no real capture backend is
+When OCULIX_USE_MOCK=1 (default when no real capture backend is
 available) the driver falls back to the in-repo mock_app tag-based
 lookup so the existing headless self-tests keep passing. Set
-SIKULI_USE_MOCK=0 to force the real driver.
+OCULIX_USE_MOCK=0 to force the real driver.
 """
 
 from __future__ import annotations
@@ -32,9 +32,9 @@ from screen_capture import ScreenCapture, create_capture
 # Use absolute import to avoid ambiguity with api/wait_utils
 import sys
 import os
-_sikuli_dir = os.path.dirname(os.path.abspath(__file__))
-if _sikuli_dir not in sys.path:
-    sys.path.insert(0, _sikuli_dir)
+_okulix_dir = os.path.dirname(os.path.abspath(__file__))
+if _okulix_dir not in sys.path:
+    sys.path.insert(0, _okulix_dir)
 from wait_utils import retry_match, wait_until_stable
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "mock_wpf_app"))
@@ -46,8 +46,8 @@ _logger = logging.getLogger(__name__)
 
 def _resolve_template_path(value: str, image_path: Optional[str]) -> str:
     """Strategy.value may be the tag, the image filename, or a full path.
-    The recorded YAML uses an imagePath-relative form like
-    'sikuli/SampleWpfApp.OrdersWindow.btnLogout.png' — turn that into an
+    The recorded JSON uses an imagePath-relative form like
+    'okulix/SampleWpfApp.OrdersWindow.btnLogout.png' — turn that into an
     absolute path relative to the repository root if it exists.
     """
     candidate = value
@@ -90,7 +90,7 @@ def _load_template_bgr(path: str):
         raise RuntimeError("opencv-python is required to load templates") from e
     img = cv2.imread(path, cv2.IMREAD_COLOR)
     if img is None:
-        raise ElementNotFoundError(f"Sikuli: template not found or unreadable: {path}")
+        raise ElementNotFoundError(f"OculiX: template not found or unreadable: {path}")
     return img
 
 
@@ -109,16 +109,16 @@ class _RegionHandle:
         return f"RegionHandle({self.alias or self.template_path} @ {self.match.rect}, score={self.match.score:.2f})"
 
 
-class SikuliDriver:
-    """Sikuli driver — locates elements by template image match.
+class OculiXDriver:
+    """OculiX driver — locates elements by template image match.
 
     Resolution order:
       1. Real driver (matcher + capture) when both backends are usable
-         and SIKULI_USE_MOCK != '1'.
+         and OCULIX_USE_MOCK != '1'.
       2. Mock-app fallback for headless self-tests.
     """
 
-    name = "Sikuli"
+    name = "OculiX"
 
     def __init__(
         self,
@@ -132,7 +132,7 @@ class SikuliDriver:
         self._capture: ScreenCapture = capture or create_capture()
 
         if use_mock is None:
-            use_mock = os.environ.get("SIKULI_USE_MOCK", "")
+            use_mock = os.environ.get("OCULIX_USE_MOCK", "")
             if use_mock == "":
                 use_mock = not (self._matcher.is_available() and self._capture.is_available())
             else:
@@ -190,7 +190,7 @@ class SikuliDriver:
             alias = getattr(element, "alias", "") or ""
             sink(img, alias, ok, action)
         except Exception:
-            _logger.debug("Sikuli screenshot sink failed", exc_info=True)
+            _logger.debug("OculiX screenshot sink failed", exc_info=True)
 
     # ---------- mock-app helpers ----------
     def _use_real(self) -> bool:
@@ -199,7 +199,7 @@ class SikuliDriver:
     def _mock_handle(self, tag: str):
         ctrl = APP_INSTANCE.find_by_image_tag(tag)
         if ctrl is None:
-            raise ElementNotFoundError(f"Sikuli: no on-screen match for image '{tag}'")
+            raise ElementNotFoundError(f"OculiX: no on-screen match for image '{tag}'")
         return ctrl
 
     # ---------- low-level match ----------
@@ -214,7 +214,7 @@ class SikuliDriver:
         m = self._matcher.match(screen, template, region=region, threshold=threshold or self._default_similarity)
         if m is None:
             raise ElementNotFoundError(
-                f"Sikuli: no on-screen match for template '{template_path}' "
+                f"OculiX: no on-screen match for template '{template_path}' "
                 f"(threshold={threshold or self._default_similarity})"
             )
         return m
@@ -223,7 +223,7 @@ class SikuliDriver:
     def find_element(self, strategy: dict):
         search_by = strategy.get("searchBy", "Image")
         if search_by != "Image":
-            raise ElementNotFoundError(f"Sikuli: only Image search supported, got {search_by}")
+            raise ElementNotFoundError(f"OculiX: only Image search supported, got {search_by}")
 
         tag = strategy.get("value") or strategy.get("imagePath")
         similarity = float(strategy.get("similarity", self._default_similarity))
@@ -232,7 +232,7 @@ class SikuliDriver:
         alias = strategy.get("alias", "")
 
         if not tag:
-            raise ElementNotFoundError("Sikuli: Image strategy requires 'value' or 'imagePath'")
+            raise ElementNotFoundError("OculiX: Image strategy requires 'value' or 'imagePath'")
 
         if self._use_real():
             template_path = _resolve_template_path(str(tag), strategy.get("imagePath"))
@@ -248,7 +248,7 @@ class SikuliDriver:
                 m = self._matcher.match(screen, template, threshold=similarity)
                 if m is None:
                     raise ElementNotFoundError(
-                        f"Sikuli: no on-screen match for template '{template_path}' in hwnd={hwnd}"
+                        f"OculiX: no on-screen match for template '{template_path}' in hwnd={hwnd}"
                     )
             else:
                 m = retry_match(
@@ -261,7 +261,7 @@ class SikuliDriver:
                 )
                 if m is None:
                     raise ElementNotFoundError(
-                        f"Sikuli: no on-screen match for template '{template_path}' "
+                        f"OculiX: no on-screen match for template '{template_path}' "
                         f"(thresholds down to {max(0.0, similarity - 0.10):.2f})"
                     )
             self._last_match_score = m.score
@@ -331,7 +331,7 @@ class SikuliDriver:
             import pyautogui  # type: ignore
         except ImportError as e:  # pragma: no cover
             raise RuntimeError(
-                "pyautogui is required for real Sikuli clicks; install with: pip install pyautogui"
+                "pyautogui is required for real OculiX clicks; install with: pip install pyautogui"
             ) from e
 
         # Wait for the element's region to settle before clicking so we
@@ -357,7 +357,7 @@ class SikuliDriver:
             import pyautogui  # type: ignore
         except ImportError as e:  # pragma: no cover
             raise RuntimeError(
-                "pyperclip + pyautogui are required for real Sikuli text entry; install both"
+                "pyperclip + pyautogui are required for real OculiX text entry; install both"
             ) from e
         if region is not None:
             cx, cy = region.match.center
@@ -461,7 +461,7 @@ class SikuliDriver:
         try:
             import pyautogui  # type: ignore
         except ImportError as e:  # pragma: no cover
-            raise RuntimeError("pyautogui is required for real Sikuli key press") from e
+            raise RuntimeError("pyautogui is required for real OculiX key press") from e
         if element is not None and getattr(element, "match", None) is not None:
             cx, cy = element.match.center
             pyautogui.click(cx, cy)
@@ -474,7 +474,7 @@ class SikuliDriver:
         try:
             import pyautogui  # type: ignore
         except ImportError as e:  # pragma: no cover
-            raise RuntimeError("pyautogui is required for real Sikuli drag/drop") from e
+            raise RuntimeError("pyautogui is required for real OculiX drag/drop") from e
         sx, sy = element.match.center
         tx, ty = (
             target_element.match.center
@@ -491,7 +491,7 @@ class SikuliDriver:
         try:
             import pyautogui  # type: ignore
         except ImportError as e:  # pragma: no cover
-            raise RuntimeError("pyautogui is required for real Sikuli hover") from e
+            raise RuntimeError("pyautogui is required for real OculiX hover") from e
         cx, cy = element.match.center
         pyautogui.moveTo(cx, cy, duration=0.1)
 
@@ -502,7 +502,7 @@ class SikuliDriver:
         try:
             import pyautogui  # type: ignore
         except ImportError as e:  # pragma: no cover
-            raise RuntimeError("pyautogui is required for real Sikuli scroll") from e
+            raise RuntimeError("pyautogui is required for real OculiX scroll") from e
         cx, cy = element.match.center
         clicks = 5 if direction.lower() in ("down", "pagedown") else -5
         pyautogui.scroll(clicks, x=cx, y=cy)
@@ -531,30 +531,30 @@ class SikuliDriver:
         return None
 
 
-class SikuliLibrary:
-    """Robot Framework library exposing Sikuli keywords directly (rarely
+class OculiXLibrary:
+    """Robot Framework library exposing OculiX keywords directly (rarely
     used directly by test authors — Layer 3 is the normal entry point).
     """
 
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
 
     def __init__(self, similarity: float = 0.85, padding_px: int = 4):
-        self.driver = SikuliDriver(similarity=similarity, padding_px=padding_px)
+        self.driver = OculiXDriver(similarity=similarity, padding_px=padding_px)
 
-    def sikuli_find_element(self, image_tag, similarity: float = None):
+    def oculix_find_element(self, image_tag, similarity: float = None):
         strategy = {"searchBy": "Image", "value": image_tag}
         if similarity is not None:
             strategy["similarity"] = float(similarity)
         return self.driver.find_element(strategy)
 
-    def sikuli_invoke(self, image_tag, similarity: float = None):
-        el = self.sikuli_find_element(image_tag, similarity=similarity)
+    def oculix_invoke(self, image_tag, similarity: float = None):
+        el = self.oculix_find_element(image_tag, similarity=similarity)
         self.driver.invoke(el)
 
-    def sikuli_set_value(self, image_tag, value, similarity: float = None):
-        el = self.sikuli_find_element(image_tag, similarity=similarity)
+    def oculix_set_value(self, image_tag, value, similarity: float = None):
+        el = self.oculix_find_element(image_tag, similarity=similarity)
         self.driver.set_value(el, value)
 
-    def sikuli_get_text(self, image_tag, similarity: float = None):
-        el = self.sikuli_find_element(image_tag, similarity=similarity)
+    def oculix_get_text(self, image_tag, similarity: float = None):
+        el = self.oculix_find_element(image_tag, similarity=similarity)
         return self.driver.get_text(el)

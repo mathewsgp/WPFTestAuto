@@ -28,22 +28,22 @@ namespace WpfTestIde.Models
 
         public bool NonStandard => string.IsNullOrEmpty(AutomationId);
 
-        /// <summary>Per-element recording modes (FlaUI, WPFSpy, Sikuli).
+        /// <summary>Per-element recording modes (FlaUI, WPFSpy, OculiX).
         /// If null or empty, the global recording modes from the ViewModel are used.</summary>
         public List<string>? RecordingModes { get; set; }
 
         /// <summary>Per-element driver priority order for element identification.
-        /// Example: ["FlaUI", "WPFSpy", "Sikuli"]
+        /// Example: ["FlaUI", "WPFSpy", "OculiX"]
         /// If null or empty, the global driver order from config is used.</summary>
         public List<string>? DriverPriority { get; set; }
 
         /// <summary>App context ID for multi-app support. Null/empty means global element.</summary>
         public string? AppId { get; set; }
 
-        /// <summary>Path to a reference image under repository/sikuli/
+        /// <summary>Path to a reference image under repository/okulix/
         /// captured by the WpfSpyAgent at recording time. When set, the
-        /// emitted Sikuli strategy uses this image instead of a derived
-        /// file name. Stored as a repository-relative path so the YAML
+        /// emitted OculiX strategy uses this image instead of a derived
+        /// file name. Stored as a repository-relative path so the JSON
         /// stays portable across machines.</summary>
         public string? ImagePath { get; set; }
 

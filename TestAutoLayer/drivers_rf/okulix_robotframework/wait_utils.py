@@ -1,5 +1,5 @@
 """
-Pre-click stability check + retry helpers for the real Sikuli driver.
+Pre-click stability check + retry helpers for the real OculiX driver.
 
 `wait_until_stable(grab_fn, region, max_ms=250, threshold=2.0)` grabs
 the given region twice in quick succession and returns True if the

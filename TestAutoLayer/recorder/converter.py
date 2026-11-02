@@ -43,7 +43,7 @@ def generate_element_repository(recorded_elements: dict, out_file="recorded_draf
                     "value": meta["automationId"],
                     "scope": "Descendant",
                 },
-                # WPFSpy / Sikuli strategies intentionally omitted — a
+                # WPFSpy / OculiX strategies intentionally omitted — a
                 # human reviewer adds these if the control turns out to
                 # need a fallback (see docs/RECORDER_GUIDE.md).
             },

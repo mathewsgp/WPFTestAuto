@@ -79,7 +79,7 @@ class StrategyStats:
     last_failure: Optional[str] = None
     avg_duration_ms: float = 0.0
     # Phase 3.4: most-recent similarity score for image-based
-    # strategies (Sikuli). None when the strategy doesn't produce one
+    # strategies (OculiX). None when the strategy doesn't produce one
     # (FlaUI/WPFSpy) or the driver hasn't reported one yet.
     last_image_match_score: Optional[float] = None
     min_image_match_score: Optional[float] = None
@@ -317,7 +317,7 @@ class HealingMetadataStore:
                 - position: Dict with x, y, width, height
                 - is_visible: Visibility state
                 - is_enabled: Enabled state
-            driver: Driver used to find element (FlaUI, WPFSpy, Sikuli)
+            driver: Driver used to find element (FlaUI, WPFSpy, OculiX)
             search_method: Method used to locate (AutomationId, XPath, Name, etc.)
             search_value: Value used in the search
         """
@@ -432,7 +432,7 @@ class HealingMetadataStore:
             success: Whether the attempt succeeded
             duration_ms: How long the attempt took
             image_match_score: Phase 3.4 - similarity score for image-
-                based strategies (Sikuli). Forwarded to StrategyStats so
+                based strategies (OculiX). Forwarded to StrategyStats so
                 regressions are diagnosable from the healing metadata.
         """
         metadata = self._get_or_create_metadata(alias)

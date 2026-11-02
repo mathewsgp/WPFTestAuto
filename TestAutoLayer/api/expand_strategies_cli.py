@@ -321,7 +321,7 @@ Examples:
     
     parser.add_argument(
         "--driver", "-d",
-        choices=["FlaUI", "WPFSpy", "Sikuli"],
+        choices=["FlaUI", "WPFSpy", "OculiX"],
         help="Driver for the strategy"
     )
     

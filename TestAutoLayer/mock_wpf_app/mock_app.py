@@ -21,7 +21,7 @@ Path Priority per Level:
 2. Name (second choice)
 3. Type + Index/Siblings (fallback when no unique identifier)
 
-Fallback Chain: FlaUI -> WPFSpy -> Sikuli
+Fallback Chain: FlaUI -> WPFSpy -> OculiX
 """
 
 import threading
@@ -46,7 +46,7 @@ class Control:
     text: str = ""                     # Current text content
     visible: bool = True
     enabled: bool = True
-    image_tag: Optional[str] = None    # Sikuli image match target
+    image_tag: Optional[str] = None    # OculiX image match target
     # Multi-format paths for different drivers
     flaui_paths: List[str] = field(default_factory=list)  # FlaUI XPath variants
     wpfspy_paths: List[str] = field(default_factory=list) # WPFSpy XPath variants
@@ -96,7 +96,7 @@ class MockWpfApp:
     Driver path formats:
     - FlaUI: UIAutomation XPath with full hierarchy
     - WPFSpy: XPath with @AutomationId/@Name
-    - Sikuli: Image-based matching
+    - OculiX: Image-based matching
     """
 
     def __init__(self):

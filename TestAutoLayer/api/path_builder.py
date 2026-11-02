@@ -8,7 +8,7 @@ for use in IDE recording/playback scenarios.
 Features:
 - Build full hierarchical XPath from container chain
 - Parse XPath into container chain and control locator
-- Generate locators for all drivers (FlaUI, WPFSpy, Sikuli)
+- Generate locators for all drivers (FlaUI, WPFSpy, OculiX)
 - Validate paths against the element hierarchy
 """
 
@@ -243,7 +243,7 @@ class PathBuilder:
             control_type: Type of the control
             automation_id: AutomationId (if available)
             name: Name (if available)
-            image_path: Image path for Sikuli fallback
+            image_path: Image path for OculiX fallback
         
         Returns:
             Dict mapping driver name to list of strategies
@@ -320,9 +320,9 @@ class PathBuilder:
         if wpfspy_strategies:
             strategies["WPFSpy"] = wpfspy_strategies
         
-        # Sikuli fallback
+        # OculiX fallback
         if image_path:
-            strategies["Sikuli"] = [{
+            strategies["OculiX"] = [{
                 "searchBy": "Image",
                 "value": image_path,
                 "priority": 99  # Lowest priority
@@ -377,7 +377,7 @@ def record_element(
         automation_id: AutomationId from UIA
         name: Name from UIA
         container_chain: List of {type, automationId, name} for containers
-        image_path: Path to reference image for Sikuli
+        image_path: Path to reference image for OculiX
     
     Returns:
         JSON-formatted repository entry

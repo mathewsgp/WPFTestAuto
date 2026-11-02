@@ -63,7 +63,7 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 # Add driver directories to path for driver module imports
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "flaui_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "wpfspy_robotframework"))
-sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "sikuli_robotframework"))
+sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "okulix_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "mock_wpf_app"))
 # Add TestAutoLayer root so that `from TestAutoLayer.api.xxx` imports resolve
 sys.path.insert(0, os.path.join(_THIS_DIR, ".."))
@@ -71,7 +71,7 @@ sys.path.insert(0, os.path.join(_THIS_DIR, ".."))
 # Driver imports (need path for relative imports within driver modules)
 from flaui_driver import FlaUIDriver          # noqa: E402
 from WPFSpyLibrary import WPFSpyDriver        # noqa: E402
-from SikuliLibrary import SikuliDriver        # noqa: E402
+from OkulixLibrary import OculiXDriver        # noqa: E402
 from mock_app import (                        # noqa: E402
     ElementNotFoundError as MockElementNotFoundError,
     ElementNotInteractableError as MockElementNotInteractableError,
@@ -130,7 +130,7 @@ def _get_drivers() -> dict:
         driver_factories = {
             "FlaUI": lambda: FlaUIDriver(),
             "WPFSpy": _create_wpfspy_driver,
-            "Sikuli": lambda: SikuliDriver(),
+            "OculiX": lambda: OculiXDriver(),
         }
         for name, factory in driver_factories.items():
             try:
@@ -386,11 +386,11 @@ class DriverAgnosticApi:
     def scroll(self, alias: str, direction: str, app_id: Optional[str] = None):
         self._interaction.scroll(alias, direction, app_id)
     
-    def sikuli_click(self, alias: str, image_tag: str, app_id: Optional[str] = None):
-        self._interaction.sikuli_click(alias, image_tag, app_id)
+    def oculix_click(self, alias: str, image_tag: str, app_id: Optional[str] = None):
+        self._interaction.oculix_click(alias, image_tag, app_id)
     
-    def sikuli_type(self, alias: str, text: str, app_id: Optional[str] = None):
-        self._interaction.sikuli_type(alias, text, app_id)
+    def oculix_type(self, alias: str, text: str, app_id: Optional[str] = None):
+        self._interaction.oculix_type(alias, text, app_id)
     
     # Verification keywords
     def verify_element_text(self, alias: str, expected: str, app_id: Optional[str] = None):

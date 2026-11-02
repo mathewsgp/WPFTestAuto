@@ -165,11 +165,11 @@ namespace WpfTestIde.Recording
 
         /// <summary>When true, OnClick calls the agent's CaptureElement
         /// command for every accepted step and writes a template PNG
-        /// under repository/sikuli/. The recorded element's ImagePath is
-        /// then propagated through to the emitted YAML so the Sikuli
+        /// under repository/okulix/. The recorded element's ImagePath is
+        /// then propagated through to the emitted JSON so the OculiX
         /// strategy uses the captured image rather than a placeholder.
         /// Default is false so existing self-tests are unaffected.</summary>
-        public bool RecordSikuli { get; set; }
+        public bool RecordOculiX { get; set; }
 
         /// <summary>Add a target to this session. Idempotent on AppId.</summary>
         public void AddTarget(RecordingTarget target)
@@ -461,13 +461,13 @@ namespace WpfTestIde.Recording
             bool isToggle = probed.ControlType == "CheckBox" || probed.ControlType.Contains("Toggle");
             var entry = BuildEntry(alias, probed, target);
 
-            // Phase 2.3: when the operator has Sikuli recording turned on
+            // Phase 2.3: when the operator has OculiX recording turned on
             // and the agent can see the element, capture a template PNG of
-            // its on-screen rect and write it to repository/sikuli/. The
+            // its on-screen rect and write it to repository/okulix/. The
             // resulting imagePath is propagated through BuildEntry -> step
-            // -> RepositoryWriter so the emitted YAML uses a real image
+            // -> RepositoryWriter so the emitted JSON uses a real image
             // instead of the placeholder name.
-            if (RecordSikuli)
+            if (RecordOculiX)
             {
                 TryCaptureElementImage(entry, target);
             }
@@ -1245,9 +1245,9 @@ namespace WpfTestIde.Recording
                 ? new List<string> { "FlaUI" }
                 : new List<string> { "FlaUI", "WPFSpy" };
 
-            if (RecordSikuli)
+            if (RecordOculiX)
             {
-                modes.Add("Sikuli");
+                modes.Add("OculiX");
             }
 
             return new ElementEntry
@@ -1265,10 +1265,10 @@ namespace WpfTestIde.Recording
         /// <summary>
         /// Phase 2.3: ask the WpfSpyAgent to capture a template PNG of the
         /// element's on-screen rect and save it to
-        /// repository/sikuli/&lt;safe-alias&gt;.png. The agent's
+        /// repository/okulix/&lt;safe-alias&gt;.png. The agent's
         /// CaptureElement command returns the PNG as base64 plus the rect;
         /// we set entry.ImagePath on success so RepositoryWriter emits
-        /// a Sikuli strategy that points at the captured template.
+        /// an OculiX strategy that points at the captured template.
         /// </summary>
         private void TryCaptureElementImage(ElementEntry entry, RecordingTarget target)
         {
@@ -1322,13 +1322,13 @@ namespace WpfTestIde.Recording
                     Log("[CaptureElementImage] skipped: could not resolve repository root");
                     return;
                 }
-                string sikuliDir = System.IO.Path.Combine(repoRoot, "repository", "sikuli");
-                System.IO.Directory.CreateDirectory(sikuliDir);
+                string oculixDir = System.IO.Path.Combine(repoRoot, "repository", "okulix");
+                System.IO.Directory.CreateDirectory(oculixDir);
                 string fileName = SafeFileName(entry.Alias) + ".png";
-                string fullPath = System.IO.Path.Combine(sikuliDir, fileName);
+                string fullPath = System.IO.Path.Combine(oculixDir, fileName);
                 System.IO.File.WriteAllBytes(fullPath, png);
 
-                entry.ImagePath = $"sikuli/{fileName}";
+                entry.ImagePath = $"okulix/{fileName}";
                 Log($"[CaptureElementImage] saved {fullPath} ({png.Length} bytes) for {entry.Alias}");
             }
             catch (Exception ex)

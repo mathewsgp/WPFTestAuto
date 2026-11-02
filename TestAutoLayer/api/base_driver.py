@@ -57,7 +57,7 @@ class BaseDriver(ABC):
     @property
     @abstractmethod
     def name(self) -> str:
-        """Return the driver's name (e.g., 'FlaUI', 'WPFSpy', 'Sikuli')."""
+        """Return the driver's name (e.g., 'FlaUI', 'WPFSpy', 'OculiX')."""
         pass
     
     @abstractmethod

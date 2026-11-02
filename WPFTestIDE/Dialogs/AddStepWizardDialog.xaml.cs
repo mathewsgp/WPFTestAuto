@@ -13,7 +13,7 @@ namespace WpfTestIde.Dialogs
     {
         private readonly List<ElementEntry> _elements;
         private readonly string _pipeName;
-        private readonly List<string> _allDrivers = new() { "WPFSpy", "FlaUI", "Sikuli" };
+        private readonly List<string> _allDrivers = new() { "WPFSpy", "FlaUI", "OculiX" };
         private List<string> _selectedDrivers = new() { "WPFSpy", "FlaUI" };
 
         public RecordedStep? CreatedStep { get; private set; }
@@ -300,13 +300,13 @@ namespace WpfTestIde.Dialogs
                     case "OculiX Click (Image)":
                         if (string.IsNullOrEmpty(step.Alias)) { ShowElementRequired(); return; }
                         step.Kind = StepKind.Action;
-                        step.Action = ActionKind.SikuliClick;
+                        step.Action = ActionKind.OculiXClick;
                         step.Value = ValueBox.Text;
                         break;
                     case "OculiX Type (Image)":
                         if (string.IsNullOrEmpty(step.Alias)) { ShowElementRequired(); return; }
                         step.Kind = StepKind.Action;
-                        step.Action = ActionKind.SikuliType;
+                        step.Action = ActionKind.OculiXType;
                         step.Value = ValueBox.Text;
                         break;
                     case "Verify Element Text":

@@ -17,7 +17,7 @@ namespace WpfTestIde.Models
         LaunchApplication, TerminateApplication,
         If, Repeat, ForEach,
     }
-    public enum ActionKind { Invoke, SetValue, Toggle, DoubleClick, RightClick, DragDrop, Hover, PressKeys, Scroll, SikuliClick, SikuliType }
+    public enum ActionKind { Invoke, SetValue, Toggle, DoubleClick, RightClick, DragDrop, Hover, PressKeys, Scroll, OculiXClick, OculiXType }
     public enum FlowConditionKind { ElementExists, ElementVisible, ElementEnabled, TextEquals, TextContains }
     public enum FlowLoopSourceKind { LiteralValues, NamedDataset }
 
@@ -259,8 +259,8 @@ namespace WpfTestIde.Models
                 ActionKind.Hover => "Hover Over Element",
                 ActionKind.PressKeys => "Press Keys",
                 ActionKind.Scroll => "Scroll",
-                ActionKind.SikuliClick => "OculiX Click (Image)",
-                ActionKind.SikuliType => "OculiX Type (Image)",
+                ActionKind.OculiXClick => "OculiX Click (Image)",
+                ActionKind.OculiXType => "OculiX Type (Image)",
                 _ => "Unknown",
             },
         };

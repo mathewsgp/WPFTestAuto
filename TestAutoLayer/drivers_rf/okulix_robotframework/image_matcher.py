@@ -1,5 +1,5 @@
 """
-Sikuli image-matching backends.
+OculiX image-matching backends.
 
 Three implementations behind a small interface so the framework can run
 with or without a desktop / OpenCV:
@@ -11,7 +11,7 @@ with or without a desktop / OpenCV:
   MultiScaleImageMatcher  — wraps another matcher and retries at 0.9x and
                             1.1x to absorb DPI / OS scaling variance.
 
-The env var SIKULI_MATCHER selects the matcher:
+The env var OCULIX_MATCHER selects the matcher:
   "stub"   -> StubImageMatcher
   "opencv" -> OpenCvImageMatcher (default if available)
   "multi"  -> MultiScaleImageMatcher around OpenCv
@@ -149,7 +149,7 @@ class MultiScaleImageMatcher(ImageMatcher):
     variance between recorded and replayed sessions doesn't break the
     match.
 
-    Scales: 0.9x, 1.0x, 1.1x by default; can be tuned via the SIKULI_SCALES
+    Scales: 0.9x, 1.0x, 1.1x by default; can be tuned via the OCULIX_SCALES
     env var (comma-separated floats).
     """
 
@@ -157,7 +157,7 @@ class MultiScaleImageMatcher(ImageMatcher):
 
     def __init__(self, inner: Optional[ImageMatcher] = None, scales=None):
         self._inner = inner or OpenCvImageMatcher()
-        env = os.environ.get("SIKULI_SCALES", "")
+        env = os.environ.get("OCULIX_SCALES", "")
         if scales is None:
             if env:
                 scales = [float(s) for s in env.split(",") if s.strip()]
@@ -192,8 +192,8 @@ class MultiScaleImageMatcher(ImageMatcher):
 
 
 def create_matcher() -> ImageMatcher:
-    """Factory honouring the SIKULI_MATCHER env var."""
-    choice = (os.environ.get("SIKULI_MATCHER", "") or "").strip().lower()
+    """Factory honouring the OCULIX_MATCHER env var."""
+    choice = (os.environ.get("OCULIX_MATCHER", "") or "").strip().lower()
     if choice == "stub":
         return StubImageMatcher()
     opencv = OpenCvImageMatcher()

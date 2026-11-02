@@ -1,5 +1,5 @@
 """
-OCR helpers for the real Sikuli driver.
+OCR helpers for the real OculiX driver.
 
 Primary backend is pytesseract; the alternative `easyocr` backend is
 detected on import but not required. When neither is available, the
