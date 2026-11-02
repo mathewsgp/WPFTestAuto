@@ -340,13 +340,13 @@ namespace WpfTestIde.Recording
         {
             CommitPendingValueIfAny();
 
-            // WindowFromPoint returns the topmost HWND at the screen coordinates
-            // (respecting z-order). For WPF apps this can be a transparent
-            // adorner/ghost layer or a AllowTransparency layered window that
-            // sits on top of the real content. Walk up to the root owner so
-            // we associate the click with the actual application window that
-            // owns it, not a transient overlay.
-            IntPtr topHwnd = WindowFromPoint(x, y);
+            // RealWindowFromPoint returns the topmost HWND at the screen
+            // coordinates respecting z-order, including transparent and
+            // disabled layered windows (AllowTransparency, adorner/ghost
+            // overlays) that WindowFromPoint may skip. Walk up to the root
+            // owner so we associate the click with the actual application
+            // window that owns it, not a transient overlay.
+            IntPtr topHwnd = RealWindowFromPoint(x, y);
             if (topHwnd == IntPtr.Zero)
             {
                 Log($"[OnClick] rejected: no window at point ({x},{y})");
@@ -717,6 +717,9 @@ namespace WpfTestIde.Recording
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern IntPtr WindowFromPoint(int xPoint, int yPoint);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr RealWindowFromPoint(int xPoint, int yPoint);
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
