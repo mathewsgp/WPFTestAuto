@@ -340,12 +340,12 @@ namespace WpfTestIde.Recording
         {
             CommitPendingValueIfAny();
 
-            // WindowFromPoint returns the topmost HWND at the screen coordinates
-            // (respecting z-order), so clicks land on the app physically on top
-            // (e.g. Sample WPF) rather than an underlying app like VS/IDE whose
-            // rect merely contains the point. The old FindOwningTarget bounds
-            // scan caused that mis-match.
-            IntPtr hwnd = WindowFromPoint(x, y);
+            // RealChildWindowFromPoint returns the deepest visible child
+            // window under the cursor across all top-level windows (NULL
+            // parent searches everything). This reliably hits the app
+            // physically on top (e.g. Sample WPF) rather than an underlying
+            // app like VS/IDE whose rect merely contains the point.
+            IntPtr hwnd = RealChildWindowFromPoint(IntPtr.Zero, new POINT { x = x, y = y });
             if (hwnd == IntPtr.Zero)
             {
                 Log($"[OnClick] rejected: no window at point ({x},{y})");
@@ -710,6 +710,12 @@ namespace WpfTestIde.Recording
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern IntPtr WindowFromPoint(int xPoint, int yPoint);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr RealChildWindowFromPoint(IntPtr hWndParent, POINT pt);
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct POINT { public int x; public int y; }
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
