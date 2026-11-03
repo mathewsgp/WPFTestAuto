@@ -7,6 +7,7 @@ Handles application launching and attachment for multi-app automation.
 import os
 import time
 import subprocess
+import csv
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
@@ -229,6 +230,84 @@ def launch_application(
     return app_id
 
 
+def _detect_running_processes(skip_names: set) -> list:
+    """Detect running processes that could be automation targets.
+
+    Returns a list of dicts with 'pid' and 'name' keys. Duplicated here
+    (mirrors DriverAgnosticApi._detect_running_processes) because
+    app_launcher.py must not import DriverAgnosticApi (circular import).
+    """
+    processes = []
+
+    # Try psutil first (most reliable)
+    try:
+        import psutil  # type: ignore
+        for proc in psutil.process_iter(['pid', 'name']):
+            try:
+                info = proc.info
+                name = info.get('name') or ''
+                pid = info.get('pid')
+                if not name or not pid:
+                    continue
+                if name.lower() in skip_names:
+                    continue
+                if not name.lower().endswith('.exe'):
+                    continue
+                processes.append({'pid': pid, 'name': name})
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        return processes
+    except ImportError:
+        pass
+
+    # Fallback: tasklist /v /fo csv
+    try:
+        import subprocess
+        result = subprocess.run(
+            ['tasklist', '/v', '/fo', 'csv'],
+            capture_output=True, text=True, timeout=10,
+        )
+        for line in result.stdout.splitlines()[1:]:
+            line = line.strip()
+            if not line:
+                continue
+            parts = next(csv.reader([line]), None)
+            if not parts or len(parts) < 2:
+                continue
+            name = parts[0].strip('" ')
+            try:
+                pid = int(parts[1].strip('" '))
+            except (ValueError, TypeError):
+                continue
+            if not name or name.lower() in skip_names:
+                continue
+            if not name.lower().endswith('.exe'):
+                continue
+            processes.append({'pid': pid, 'name': name})
+    except Exception:
+        pass
+
+    return processes
+
+
+def _is_spy_pipe_alive(pipe_name: str) -> bool:
+    """Check if the WPFSpy agent is alive on the named pipe."""
+    try:
+        import win32file  # type: ignore
+        pipe_path = r"\\.\pipe\\" + pipe_name
+        win32file.CreateFile(
+            pipe_path,
+            win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+            0, None, win32file.OPEN_EXISTING, 0, None,
+        )
+        return True
+    except ImportError:
+        # pywin32 not installed — cannot check pipe, assume not alive
+        return False
+    except Exception:
+        return False
+
+
 def attach_to_application(
     app_id: str,
     process_id: int,
@@ -236,25 +315,72 @@ def attach_to_application(
     pipe_name: Optional[str] = None,
 ) -> str:
     """Attach to a running application and register it.
-    
+
+    When ``process_id`` is ``None`` or ``0`` (playback of generated scripts
+    passes ``0`` because the ``WPFSPY_*`` env vars are unavailable outside
+    the IDE recording session), the running process is auto-detected by name
+    (``{app_id}.exe``). If a matching process is found, it is attached to
+    with the appropriate driver list and spy-agent pipe. If no matching
+    process is running, a ``RuntimeError`` is raised.
+
     Args:
         app_id: Logical ID for this app.
-        process_id: OS process ID.
+        process_id: OS process ID. Pass 0/None to auto-detect.
         driver_list: Ordered list of drivers for this app. Default: ["FlaUI"].
         pipe_name: Named pipe for WPFSpy agent.
-        
+
     Returns:
         The registered app_id.
+
+    Raises:
+        RuntimeError: If auto-detection is triggered and no matching process
+            is found running.
     """
     from .app_registry import get_multi_app_context, AppContext
-    
+
     if driver_list is None:
         driver_list = None
     elif isinstance(driver_list, str):
         driver_list = [d.strip() for d in driver_list.split(",") if d.strip()]
     else:
         driver_list = [str(d).strip() for d in driver_list if str(d).strip()]
-    
+
+    # Auto-detect the running process when no concrete pid was supplied.
+    # Generated playback scripts pass PID=0 because WPFSPY_PROCESS_ID is not
+    # available outside the IDE recording session.
+    if not process_id:
+        target_name = app_id if app_id.lower().endswith(".exe") else app_id + ".exe"
+        detected_pid = None
+        spy_pipe = None
+        ctx = get_multi_app_context()
+        for proc_info in _detect_running_processes(set()):
+            if proc_info["name"].lower() != target_name.lower():
+                continue
+            pid = proc_info["pid"]
+            # Skip PIDs already tracked under a different app_id.
+            if any(c.process_id == pid for c in ctx.apps.values()):
+                continue
+            candidate_pipe = f"WPFSpyAgentPipe_{app_id}"
+            if _is_spy_pipe_alive(candidate_pipe):
+                detected_pid = pid
+                spy_pipe = candidate_pipe
+                break
+            # Remember the first name match even without a live spy pipe.
+            if detected_pid is None:
+                detected_pid = pid
+        if detected_pid is None:
+            raise RuntimeError(
+                f"Application '{app_id}' is not running. "
+                f"Launch it first or add a 'Launch Application' step."
+            )
+        process_id = detected_pid
+        if spy_pipe:
+            pipe_name = spy_pipe
+            if driver_list is None:
+                driver_list = ["WPFSpy", "FlaUI"]
+        elif driver_list is None:
+            driver_list = ["FlaUI"]
+
     app_context = AppContext(
         app_id=app_id,
         app_name=f"Process-{process_id}" if process_id else app_id,

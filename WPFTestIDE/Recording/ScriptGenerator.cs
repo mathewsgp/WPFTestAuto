@@ -88,10 +88,10 @@ namespace WpfTestIde.Recording
              }
 
              // Multi-app: register the attached app if app_id is known
-             if (!string.IsNullOrEmpty(appId))
-             {
-                 sb.AppendLine($"Test Setup       Attach To Application    {appId}    %{{WPFSPY_PROCESS_ID}}    WPFSpy    %{{WPFSPY_PIPE_NAME}}");
-             }
+              if (!string.IsNullOrEmpty(appId))
+              {
+                  sb.AppendLine($"Test Setup       Attach To Application    {appId}    0    WPFSpy");
+              }
 
              sb.AppendLine();
             sb.AppendLine("*** Test Cases ***");
@@ -452,8 +452,7 @@ namespace WpfTestIde.Recording
 
             if (!string.IsNullOrEmpty(appId))
             {
-                sb.AppendLine("api.attach_to_application(" + Quote(appId)
-                    + ", os.environ.get('WPFSPY_PROCESS_ID', '0'), 'WPFSpy', os.environ.get('WPFSPY_PIPE_NAME'))");
+                sb.AppendLine("api.attach_to_application(" + Quote(appId) + ", 0, 'WPFSpy')");
             }
 
             sb.AppendLine();

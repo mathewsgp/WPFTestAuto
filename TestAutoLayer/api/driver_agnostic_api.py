@@ -277,6 +277,10 @@ class DriverAgnosticApi:
         
         # Auto-register app from IDE environment variables if present
         self._auto_register_from_env()
+
+        import debugpy
+        debugpy.listen(("127.0.0.1", 5678))
+        debugpy.wait_for_client()   # blocks here until a debugger attaches
     
     def _auto_register_from_env(self):
         """Auto-register app context from WPFSPY_* environment variables."""
@@ -383,7 +387,9 @@ class DriverAgnosticApi:
         that references the app triggers its attachment.
         """
         ctx = get_multi_app_context()
-        if app_id in ctx.apps:
+        app_context = ctx.apps.get(app_id)
+        if app_context is not None and app_context.process_id:
+            # Already attached with a concrete process id.
             return True
 
         # Find a running process whose name matches app_id (e.g. "SampleWpfApp").
@@ -508,12 +514,18 @@ class DriverAgnosticApi:
         """Provider function for driver instances."""
         if app_id is not None or get_multi_app_context().apps:
             # Multi-app mode: get driver from app context
-            if app_id is not None and app_id not in get_multi_app_context().apps:
-                # Lazy per-step auto-attach: attach to a running app matching
-                # the requested app_id before resolving the driver.
-                self._ensure_app_attached(app_id)
+            ctx = get_multi_app_context()
+            if app_id is not None:
+                if app_id not in ctx.apps:
+                    # Lazy per-step auto-attach: attach to a running app matching
+                    # the requested app_id before resolving the driver.
+                    self._ensure_app_attached(app_id)
+                elif ctx.apps[app_id].process_id is None:
+                    # Registered but unattached (e.g. playback with PID=0):
+                    # recover via lazy auto-attach before resolving the driver.
+                    self._ensure_app_attached(app_id)
             try:
-                app_context = get_multi_app_context().get_app(app_id)
+                app_context = ctx.get_app(app_id)
                 return app_context.get_driver(driver_name)
             except ValueError:
                 return None
@@ -526,11 +538,15 @@ class DriverAgnosticApi:
         # Get element_repo_path from app context if available
         element_repo_path = None
         if app_id:
-            if app_id not in get_multi_app_context().apps:
+            ctx = get_multi_app_context()
+            if app_id not in ctx.apps:
                 # Lazy per-step auto-attach for strategy resolution.
                 self._ensure_app_attached(app_id)
+            elif ctx.apps[app_id].process_id is None:
+                # Registered but unattached: recover via lazy auto-attach.
+                self._ensure_app_attached(app_id)
             try:
-                app_ctx = get_multi_app_context().get_app(app_id)
+                app_ctx = ctx.get_app(app_id)
                 element_repo_path = app_ctx.element_repo_path
             except ValueError:
                 pass
