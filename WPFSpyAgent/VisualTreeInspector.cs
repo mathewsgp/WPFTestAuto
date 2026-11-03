@@ -857,11 +857,11 @@ namespace WpfSpyAgent
         // they sit inside a repeating container or not.
         private static bool IsLikelyTemplatePartName(string name)
         {
-            return name.StartsWith("PART_", StringComparison.Ordinal)
-                || name == "AdornerLayer"
-                || name == "border"
-                || name == "Background"
-                || name == "contentPresenter";
+            return name.StartsWith("PART_") || name == "AdornerLayer"
+                // || name == "border"
+                // || name == "Background"
+                // || name == "contentPresenter"
+                ;
         }
 
         /// <summary>
@@ -960,19 +960,25 @@ namespace WpfSpyAgent
         /// </summary>
         private static string ExtractIdentifier(string segment)
         {
-            int at = segment.IndexOf("@Name='", StringComparison.Ordinal);
-            if (at >= 0)
-            {
-                int start = at + "@Name='".Length;
-                int end = segment.IndexOf("'", start, StringComparison.Ordinal);
-                if (end > start) return segment.Substring(start, end - start);
-            }
-            at = segment.IndexOf("@AutomationId='", StringComparison.Ordinal);
+            // AutomationId first (never a template part).
+            int at = segment.IndexOf("@AutomationId='", StringComparison.Ordinal);
             if (at >= 0)
             {
                 int start = at + "@AutomationId='".Length;
                 int end = segment.IndexOf("'", start, StringComparison.Ordinal);
                 if (end > start) return segment.Substring(start, end - start);
+            }
+            // Name: only if present and not a template part name.
+            at = segment.IndexOf("@Name='", StringComparison.Ordinal);
+            if (at >= 0)
+            {
+                int start = at + "@Name='".Length;
+                int end = segment.IndexOf("'", start, StringComparison.Ordinal);
+                if (end > start)
+                {
+                    string name = segment.Substring(start, end - start);
+                    if (!IsLikelyTemplatePartName(name)) return name;
+                }
             }
             return string.Empty;
         }

@@ -3061,14 +3061,19 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                     if (end > start)
                     {
                         string name = predicate.Substring(start, end - start);
-                        // Skip WPF template parts (PART_*) and Adorner layers ï¿½                        // they are internal visuals, not user-facing elements.
-                        if (name.StartsWith("PART_") || name == "AdornerLayer")
+                        if (IsLikelyTemplatePartName(name))
                             return null;
                         return name;
                     }
                 }
             }
             return null;
+        }
+
+        private static bool IsLikelyTemplatePartName(string name)
+        {
+            return name.StartsWith("PART_")
+                || name == "AdornerLayer";
         }
 
 
@@ -3095,6 +3100,50 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                             XPath = probe.XPath,
                         });
                         string idOrName = string.IsNullOrEmpty(probe.AutomationId) ? probe.Name : probe.AutomationId!;
+
+                        string? xpath = probe.XPath;
+                        if (IsLikelyTemplatePartName(idOrName) && !string.IsNullOrEmpty(xpath))
+                        {
+                            string? parentId = null;
+                            var segments = xpath.Split('/');
+                            for (int i = segments.Length - 2; i >= 0; i--)
+                            {
+                                string? candidate = ExtractIdentifier(segments[i]);
+                                if (!string.IsNullOrEmpty(candidate))
+                                {
+                                    parentId = candidate;
+                                    break;
+                                }
+                            }
+                            idOrName = parentId ?? string.Empty;
+                        }
+
+                        // The element identifier (idOrName) must not be duplicated in
+                        // ancestorPath. BuildAncestorPath includes the parent segment that
+                        // the template-part walk-up promotes to idOrName. Strip idOrName
+                        // (always the last segment of ancestorPath) so the alias is
+                        // "Page.Ancestors.Element" not "Page.Ancestors.Element.Element".
+                        if (!string.IsNullOrEmpty(ancestorPath) && !string.IsNullOrEmpty(idOrName))
+                        {
+                            var ancestorSegments = ancestorPath.Split('.');
+                            var kept = new List<string>(ancestorSegments.Length);
+                            bool removed = false;
+                            for (int i = ancestorSegments.Length - 1; i >= 0; i--)
+                            {
+                                if (!removed && ancestorSegments[i] == idOrName)
+                                {
+                                    removed = true;
+                                    continue;
+                                }
+                                kept.Add(ancestorSegments[i]);
+                            }
+                            if (removed)
+                            {
+                                kept.Reverse();
+                                ancestorPath = string.Join(".", kept);
+                            }
+                        }
+
                         string alias = string.IsNullOrEmpty(ancestorPath)
                             ? $"{page}.{idOrName}"
                             : $"{page}.{ancestorPath}.{idOrName}";

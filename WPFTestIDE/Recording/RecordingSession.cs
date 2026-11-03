@@ -422,6 +422,23 @@ namespace WpfTestIde.Recording
             string ancestorPath;
             string idOrName = string.IsNullOrEmpty(probed.AutomationId) ? probed.Name : probed.AutomationId!;
 
+            string? xpath = probed.XPath;
+            if (IsLikelyTemplatePartName(idOrName) && !string.IsNullOrEmpty(xpath))
+            {
+                string? parentId = null;
+                var segments = xpath.Split('/');
+                for (int i = segments.Length - 2; i >= 0; i--)
+                {
+                    string? candidate = ExtractIdentifier(segments[i]);
+                    if (!string.IsNullOrEmpty(candidate))
+                    {
+                        parentId = candidate;
+                        break;
+                    }
+                }
+                idOrName = parentId ?? string.Empty;
+            }
+
             if (!string.IsNullOrEmpty(probed.XPath))
             {
                 var (xpathWindow, xpathAncestor) = SplitXPathForAlias(probed.XPath);
@@ -440,6 +457,32 @@ namespace WpfTestIde.Recording
             {
                 windowSegment = ResolveWindowSegment(x, y, target);
                 ancestorPath = BuildAncestorPath(probed);
+            }
+
+            // The element identifier (idOrName) must not be duplicated in ancestorPath.
+            // SplitXPathForAlias includes the innermost segment in ancestorPath; the
+            // template-part walk-up can promote a parent already present in ancestorPath.
+            // Strip idOrName (always the last segment of ancestorPath) so the alias is
+            // "...Window.Ancestors.Element" not "...Window.Ancestors.Element.Element".
+            if (!string.IsNullOrEmpty(ancestorPath) && !string.IsNullOrEmpty(idOrName))
+            {
+                var ancestorSegments = ancestorPath.Split('.');
+                var kept = new List<string>(ancestorSegments.Length);
+                bool removed = false;
+                for (int i = ancestorSegments.Length - 1; i >= 0; i--)
+                {
+                    if (!removed && ancestorSegments[i] == idOrName)
+                    {
+                        removed = true;
+                        continue;
+                    }
+                    kept.Add(ancestorSegments[i]);
+                }
+                if (removed)
+                {
+                    kept.Reverse();
+                    ancestorPath = string.Join(".", kept);
+                }
             }
 
             // Alias format: <ProcessName>.<WindowSegment>[.<AncestorPath>].<Element>
@@ -1234,22 +1277,22 @@ namespace WpfTestIde.Recording
 
         private static bool IsLikelyTemplatePartName(string name)
         {
-            return name.StartsWith("PART_", StringComparison.Ordinal)
-                || name == "AdornerLayer"
-                || name == "border"
-                || name == "Background"
-                || name == "contentPresenter"
-                || name == "templateRoot"
-                || name == "splitBorder"
-                || name == "dropDownButton"
-                || name == "popup"
-                || name == "scrollViewer"
-                || name == "itemsPresenter"
-                || name == "grid"
-                || name == "stackPanel"
-                || name == "dockPanel"
-                || name == "wrapPanel"
-                || name == "uniformGrid";
+            return name.StartsWith("PART_") || name == "AdornerLayer"
+                // || name == "border"
+                // || name == "Background"
+                // || name == "contentPresenter"
+                // || name == "templateRoot"
+                // || name == "splitBorder"
+                // || name == "dropDownButton"
+                // || name == "popup"
+                // || name == "scrollViewer"
+                // || name == "itemsPresenter"
+                // || name == "grid"
+                // || name == "stackPanel"
+                // || name == "dockPanel"
+                // || name == "wrapPanel"
+                // || name == "uniformGrid"
+                ;
         }
 
         private ElementEntry BuildEntry(string alias, ProbedElement probed, RecordingTarget target)
