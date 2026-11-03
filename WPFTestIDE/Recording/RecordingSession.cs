@@ -1153,26 +1153,39 @@ namespace WpfTestIde.Recording
         }
 
         /// <summary>
-        /// Returns the @Name='...' value if present, otherwise the
-        /// @AutomationId='...' value. Both are meaningful identifiers for
+        /// Returns the @AutomationId='...' value if present (preferred: stable,
+        /// never a template part), otherwise the @Name='...' value only if it is
+        /// not a likely template part name. Both are meaningful identifiers for
         /// the alias path; the agent prefers AutomationId when naming the
         /// Window segment, so this must accept both.
+        ///
+        /// NOTE: only the alias is modified here — the element's XPath segment
+        /// is left untouched.
         /// </summary>
         private static string ExtractAliasName(string segment)
         {
-            int at = segment.IndexOf("@Name='", StringComparison.Ordinal);
-            if (at >= 0)
-            {
-                int start = at + "@Name='".Length;
-                int end = segment.IndexOf("'", start, StringComparison.Ordinal);
-                if (end > start) return segment.Substring(start, end - start);
-            }
-            at = segment.IndexOf("@AutomationId='", StringComparison.Ordinal);
+            // Prefer AutomationId: it is deliberately assigned, never scoped to
+            // a repeating template, and never a template part name.
+            int at = segment.IndexOf("@AutomationId='", StringComparison.Ordinal);
             if (at >= 0)
             {
                 int start = at + "@AutomationId='".Length;
                 int end = segment.IndexOf("'", start, StringComparison.Ordinal);
                 if (end > start) return segment.Substring(start, end - start);
+            }
+
+            // Fall back to Name, but skip template part names (PART_*, border,
+            // contentPresenter, etc.) that are scoped to a control template.
+            at = segment.IndexOf("@Name='", StringComparison.Ordinal);
+            if (at >= 0)
+            {
+                int start = at + "@Name='".Length;
+                int end = segment.IndexOf("'", start, StringComparison.Ordinal);
+                if (end > start)
+                {
+                    string name = segment.Substring(start, end - start);
+                    if (!IsLikelyTemplatePartName(name)) return name;
+                }
             }
             return string.Empty;
         }
