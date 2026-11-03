@@ -86,6 +86,10 @@ namespace WpfTestIde.Execution
                         }
                         ValidateNodes(node.BodySteps, datasets, depth + 1, ref total);
                         break;
+                    case StepKind.InvokeScript:
+                        if (string.IsNullOrWhiteSpace(node.ScriptPath))
+                            throw new FormatException("Invoke Script step requires a ScriptPath.");
+                        break;
                     default:
                         if (!Enum.IsDefined(node.Kind) || !Enum.IsDefined(node.Action))
                             throw new FormatException("The script contains an unknown node kind or action.");

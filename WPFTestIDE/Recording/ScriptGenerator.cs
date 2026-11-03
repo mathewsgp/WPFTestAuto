@@ -210,7 +210,10 @@ namespace WpfTestIde.Recording
                         sb.AppendLine(string.Join("    ", ta));
                         continue;
                     }
-                }
+                    case StepKind.InvokeScript:
+                        sb.AppendLine($"    Invoke Script    {NormalizePathForRobot(step.ScriptPath ?? "")}");
+                        continue;
+                    }
 
                 switch (step.Action)
                 {
@@ -544,7 +547,10 @@ namespace WpfTestIde.Recording
                         sb.AppendLine("    api.terminate_application(" + string.Join(", ", terminateArgs) + ")");
                         continue;
                     }
-                }
+                    case StepKind.InvokeScript:
+                        sb.AppendLine("    api.invoke_script(" + PythonValue(NormalizePathForPython(step.ScriptPath ?? "")) + ")");
+                        continue;
+                    }
 
                 switch (step.Action)
                 {

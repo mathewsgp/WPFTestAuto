@@ -24,10 +24,12 @@ namespace WpfTestIde.Converters
         {
             if (IsDark)
             {
-                return value is StepKind.VerifyOcr ? DarkVerifyOcrBrush :
+                return value is StepKind.InvokeScript ? DarkActionBrush :
+                       value is StepKind.VerifyOcr ? DarkVerifyOcrBrush :
                        value is StepKind.Verify ? DarkVerifyBrush : DarkActionBrush;
             }
-            return value is StepKind.VerifyOcr ? LightVerifyOcrBrush :
+            return value is StepKind.InvokeScript ? LightActionBrush :
+                   value is StepKind.VerifyOcr ? LightVerifyOcrBrush :
                    value is StepKind.Verify ? LightVerifyBrush : LightActionBrush;
         }
 
@@ -177,6 +179,30 @@ namespace WpfTestIde.Converters
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+
+    /// <summary>IMultiValueConverter that returns <see cref="Visibility.Visible"/>
+    /// only when <c>values[0]</c> (the current step, bound via <c>{Binding}</c>)
+    /// is reference-equal to <c>values[1]</c> (the window's
+    /// <c>DataContext.SelectedStep</c>). An optional <see cref="MultiBinding.ConverterParameter"/>
+    /// of type <see cref="StepKind"/> additionally gates visibility so an editor
+    /// only shows for its matching kind — this keeps the direct Visibility
+    /// binding (local value, wins over DataTemplate.Triggers DataTriggers) from
+    /// leaking the wrong editor into a non-matching step.</summary>
+    public class IsSelectedStepConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values == null || values.Length < 2) return Visibility.Collapsed;
+            if (values[0] is not RecordedStep step) return Visibility.Collapsed;
+            if (values[1] is not RecordedStep selected) return Visibility.Collapsed;
+            if (!ReferenceEquals(step, selected)) return Visibility.Collapsed;
+            if (parameter is StepKind kind && step.Kind != kind) return Visibility.Collapsed;
+            return Visibility.Visible;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture) =>
             throw new NotSupportedException();
     }
 

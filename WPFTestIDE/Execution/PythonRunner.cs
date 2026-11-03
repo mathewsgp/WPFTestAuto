@@ -23,6 +23,7 @@ namespace WpfTestIde.Execution
             };
             startInfo.ArgumentList.Add("-u");
             startInfo.ArgumentList.Add(scriptPath);
+            startInfo.Environment["DEBUG_WAIT"] = "1";
 
             if (extraEnv != null)
             {

@@ -15,6 +15,7 @@ namespace WpfTestIde.Models
         CheckpointProperty, CheckpointArea, CheckpointImage, CheckpointDataGrid,
         CheckpointCount, CheckpointAttribute,
         LaunchApplication, TerminateApplication,
+        InvokeScript,
         If, Repeat, ForEach,
     }
     public enum ActionKind { Invoke, SetValue, Toggle, DoubleClick, RightClick, DragDrop, Hover, PressKeys, Scroll, OculiXClick, OculiXType }
@@ -93,6 +94,9 @@ namespace WpfTestIde.Models
         // ----- Launch Application parameters (StepKind.LaunchApplication) -----
         /// <summary>Path to the executable to launch. Required for LaunchApplication.</summary>
         public string? AppPath { get; set; }
+
+        /// <summary>Path to a script file (.json / .py / .robot) to invoke at runtime. Required for InvokeScript.</summary>
+        public string? ScriptPath { get; set; }
 
         /// <summary>Working directory for the launched process. Optional.</summary>
         public string? StartIn { get; set; }
@@ -243,6 +247,7 @@ namespace WpfTestIde.Models
             StepKind.CheckpointAttribute => "Attribute Checkpoint",
             StepKind.LaunchApplication => "Launch Application",
             StepKind.TerminateApplication => "Terminate Application",
+            StepKind.InvokeScript => "Invoke Script",
             StepKind.If => "If / Else",
             StepKind.Repeat => $"Repeat {RepeatCount} time(s)",
             StepKind.ForEach => LoopSourceKind == FlowLoopSourceKind.NamedDataset
@@ -279,6 +284,7 @@ namespace WpfTestIde.Models
                 PropertyName = PropertyName,
                 ExpectedCount = ExpectedCount,
                 AppPath = AppPath,
+                ScriptPath = ScriptPath,
                 StartIn = StartIn,
                 Args = Args,
                 LaunchTimeout = LaunchTimeout,

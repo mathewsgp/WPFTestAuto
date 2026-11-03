@@ -80,12 +80,30 @@
                                 ToolTip="Move up"
                                 Command="{Binding DataContext.MoveStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 CommandParameter="{Binding}"
-                                AutomationProperties.AutomationId="btnStepUp"/>
+                                AutomationProperties.AutomationId="btnStepUp">
+                            <Button.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.Visibility>
+                        </Button>
                         <Button Content="&#x25BC;" FontSize="9" Padding="4,2" Margin="1,0" VerticalAlignment="Center"
                                 ToolTip="Move down"
                                 Command="{Binding DataContext.MoveStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 CommandParameter="{Binding}"
-                                AutomationProperties.AutomationId="btnStepDown"/>
+                                AutomationProperties.AutomationId="btnStepDown">
+                            <Button.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.Visibility>
+                        </Button>
                     </StackPanel>
 
                     <StackPanel Grid.Row="0" Grid.Column="1">
@@ -104,14 +122,40 @@
                             Command="{Binding DataContext.AddStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"
                             FontSize="10" Padding="4,2" Margin="4,0" VerticalAlignment="Center"
-                            AutomationProperties.AutomationId="btnAddStep"/>
+                            AutomationProperties.AutomationId="btnAddStep">
+                        <Button.Visibility>
+                            <MultiBinding Converter="{StaticResource IsSelectedStepConverter}">
+                                <MultiBinding.Bindings>
+                                    <Binding/>
+                                    <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                </MultiBinding.Bindings>
+                            </MultiBinding>
+                        </Button.Visibility>
+                    </Button>
                     <Button Grid.Row="0" Grid.Column="3" Content="X"
                             Command="{Binding DataContext.DeleteStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"
-                            FontSize="10" Padding="4,2" VerticalAlignment="Center"/>
+                            FontSize="10" Padding="4,2" VerticalAlignment="Center">
+                        <Button.Visibility>
+                            <MultiBinding Converter="{StaticResource IsSelectedStepConverter}">
+                                <MultiBinding.Bindings>
+                                    <Binding/>
+                                    <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                </MultiBinding.Bindings>
+                            </MultiBinding>
+                        </Button.Visibility>
+                    </Button>
 
                     <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,8,0,0">
                         <WrapPanel x:Name="GenericEditor">
+                            <WrapPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}" ConverterParameter="{x:Static models:StepKind.Action}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </WrapPanel.Visibility>
                             <TextBox Width="165" Margin="0,0,6,4" Text="{Binding Alias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Element alias"/>
                             <TextBox Width="210" Margin="0,0,6,4" Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Value or expected result"/>
                             <ComboBox Width="145" Margin="0,0,6,4" ItemsSource="{Binding DataContext.ActionKinds, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -128,7 +172,15 @@
                                 </ComboBox.Style>
                             </ComboBox>
                         </WrapPanel>
-                        <StackPanel x:Name="IfEditor" Visibility="Collapsed">
+                        <StackPanel x:Name="IfEditor">
+                            <StackPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}" ConverterParameter="{x:Static models:StepKind.If}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </StackPanel.Visibility>
                             <TextBlock Text="IF CONDITION" FontSize="10" FontWeight="Bold" Margin="0,0,0,4"
                                        Foreground="{DynamicResource TextSecondaryBrush}"/>
                             <WrapPanel>
@@ -161,7 +213,15 @@
                             <ItemsControl ItemsSource="{Binding ElseSteps}" ItemTemplate="{DynamicResource StepTemplate}" Margin="12,4,0,4"
                                           Visibility="{Binding HasElse, Converter={StaticResource BoolToVisibilityConverter}}"/>
                         </StackPanel>
-                        <StackPanel x:Name="RepeatEditor" Visibility="Collapsed">
+                        <StackPanel x:Name="RepeatEditor">
+                            <StackPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}" ConverterParameter="{x:Static models:StepKind.Repeat}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </StackPanel.Visibility>
                             <WrapPanel>
                                 <TextBlock Text="Repeat count (max 1000):" VerticalAlignment="Center" Margin="0,0,6,4"/>
                                 <TextBox Width="80" Text="{Binding RepeatCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
@@ -177,7 +237,15 @@
                             </DockPanel>
                             <ItemsControl ItemsSource="{Binding BodySteps}" ItemTemplate="{DynamicResource StepTemplate}" Margin="12,4,0,4"/>
                         </StackPanel>
-                        <StackPanel x:Name="ForEachEditor" Visibility="Collapsed">
+                        <StackPanel x:Name="ForEachEditor">
+                            <StackPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}" ConverterParameter="{x:Static models:StepKind.ForEach}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </StackPanel.Visibility>
                             <WrapPanel>
                                 <TextBlock Text="For each" VerticalAlignment="Center" Margin="0,0,6,4"/>
                                 <TextBox Width="90" Margin="0,0,6,4" Text="{Binding LoopVariable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Loop variable"/>
@@ -201,6 +269,23 @@
                             </DockPanel>
                             <ItemsControl ItemsSource="{Binding BodySteps}" ItemTemplate="{DynamicResource StepTemplate}" Margin="12,4,0,4"/>
                         </StackPanel>
+                        <StackPanel x:Name="InvokeScriptEditor">
+                            <StackPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}" ConverterParameter="{x:Static models:StepKind.InvokeScript}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </StackPanel.Visibility>
+                            <WrapPanel>
+                                <TextBlock Text="Script path:" VerticalAlignment="Center" Margin="0,0,6,4"/>
+                                <TextBox Width="300" Margin="0,0,6,4" Text="{Binding ScriptPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Path to a .json / .py / .robot script to invoke"/>
+                                <Button Content="Browse..." Padding="6,2" FontSize="10" Margin="0,0,0,4"
+                                        Command="{Binding DataContext.BrowseScriptCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"/>
+                            </WrapPanel>
+                        </StackPanel>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -222,6 +307,12 @@
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.ForEach}">
                     <Setter TargetName="ForEachEditor" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.InvokeScript}">
+                    <Setter TargetName="GenericEditor" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.InvokeScript}">
+                    <Setter TargetName="InvokeScriptEditor" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>

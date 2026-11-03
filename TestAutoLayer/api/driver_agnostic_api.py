@@ -818,6 +818,9 @@ class DriverAgnosticApi:
     def activate_window(self, app_id: Optional[str] = None, window_title: Optional[str] = None):
         self._utility.activate_window(app_id, window_title)
     
+    def invoke_script(self, script_path: str, app_id: Optional[str] = None):
+        self._utility.invoke_script(script_path, app_id)
+    
     def is_pipe_ready(self, pipe_name: str = "WPFSpyAgentPipe") -> bool:
         return self._utility.is_pipe_ready(pipe_name)
     

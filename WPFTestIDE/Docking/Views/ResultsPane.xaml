@@ -2,33 +2,11 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              DataContext="{Binding DataContext, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}">
-    <!-- A6+E4 Step 3: extracted verbatim from MainWindow.xaml tabResults body (lines 533-630). 
-         All AutomationIds and bindings preserved. -->
-                <DockPanel Margin="6">
-                    <!-- A7: per-tab toolbar for RESULTS. Re-runs / re-exports without
-                         switching tabs. RESULTS deliberately uses DISTINCT AutomationIds
-                         (btnResultsRerun / btnResultsExportScript / btnResultsReset) -
-                         not the SCRIPTS-tab IDs (btnRunScript / btnExportScript /
-                         btnSaveScript). Cross-tab AutomationId reuse would be unsafe:
-                         WPF TabControls (no virtualization here) keep every TabItem's
-                         content in the visual tree, so a reused AutomationId would
-                          resolve ambiguously when repository/elements/wpf_test_ide.json
-                         searches by relativeXPath="Button[@AutomationId='...']".
-                         The commands themselves (RunCommand / ExportScriptCommand /
-                         ResetCommand) are intentionally bound to multiple buttons -
-                         that's safe because the AutomationIds, not the commands, are
-                         the locators. -->
-                    <Border DockPanel.Dock="Top" Style="{DynamicResource TabToolbarBorder}">
-                        <StackPanel Orientation="Horizontal">
-                            <Button x:Name="btnResultsRerun" Style="{DynamicResource ToolbarButton}" Content="Run Again" ToolTip="Re-run the current script (F5)"
-                                    Command="{Binding RunStopCommand}" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnResultsRerun"/>
-                            <Separator Margin="8,0,4,0" VerticalAlignment="Center"/>
-                            <Button x:Name="btnResultsExportScript" Style="{DynamicResource ToolbarButton}" Content="Export Script (.robot)"
-                                    Command="{Binding ExportScriptCommand}" AutomationProperties.AutomationId="btnResultsExportScript"/>
-                            <Button x:Name="btnResultsReset" Style="{DynamicResource ToolbarButton}" Content="Reset" ToolTip="Reload a fresh sample"
-                                    Command="{Binding ResetCommand}" AutomationProperties.AutomationId="btnResultsReset"/>
-                        </StackPanel>
-                    </Border>
+    <!-- RESULTS pane is a read-only results viewer (output log + summary +
+         log filters). All script actions (Run/Save/Export/Load/Apply) live in
+         the ScriptsPane toolbar; the per-tab Run Again / Export / Reset buttons
+         were removed (see D5 in the ScriptsPane button UX plan). -->
+    <DockPanel Margin="6">
                     <Border DockPanel.Dock="Top" Padding="8" Margin="0,6,0,6" CornerRadius="3"
                              Background="{Binding LastRunSuccess, Converter={StaticResource BoolToStatusBrushConverter}}">
                         <TextBlock x:Name="txtRunSummary" Text="{Binding RunSummaryText}" FontFamily="Consolas" FontWeight="Bold" AutomationProperties.AutomationId="txtRunSummary"/>

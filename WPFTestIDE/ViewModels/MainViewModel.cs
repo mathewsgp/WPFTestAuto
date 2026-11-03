@@ -33,6 +33,12 @@ namespace WpfTestIde.ViewModels
         private readonly HashSet<ObservableCollection<RecordedStep>> _observedStepCollections = new();
 
         public ObservableCollection<RecordedStep> Steps { get; } = new();
+        private RecordedStep? _selectedStep;
+        public RecordedStep? SelectedStep
+        {
+            get => _selectedStep;
+            set { _selectedStep = value; OnPropertyChanged(); }
+        }
         public ObservableCollection<string> ScriptDatasetNames { get; } = new();
         public IReadOnlyList<FlowConditionKind> FlowConditionKinds { get; } = Enum.GetValues<FlowConditionKind>();
         public IReadOnlyList<FlowLoopSourceKind> FlowLoopSourceKinds { get; } = Enum.GetValues<FlowLoopSourceKind>();
@@ -247,6 +253,13 @@ namespace WpfTestIde.ViewModels
             set { _robotScriptContent = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); }
         }
 
+        // Save/export location memory + last-generated snapshots used to compute
+        // HasUnsavedChanges / CanApplyScript (current tab text vs last-generated).
+        private string _lastSavedScriptPath = "";
+        private string _lastGeneratedJson = "";
+        private string _lastGeneratedPython = "";
+        private string _lastGeneratedRobot = "";
+
         private string _currentScriptFormat = "Steps";
         public string CurrentScriptFormat
         {
@@ -262,6 +275,21 @@ namespace WpfTestIde.ViewModels
 
         public bool IsScriptRunInProgress => _runCancellation != null;
         public string RunStopButtonLabel => IsScriptRunInProgress ? "Stop Script" : "Run Script";
+
+        /// <summary>True when the active non-Steps script tab holds edits that
+        /// have not yet been applied back to the Steps collection.</summary>
+        public bool HasUnsavedChanges => CurrentScriptFormat switch
+        {
+            "Json" => JsonScriptContent != _lastGeneratedJson,
+            "Python" => PythonScriptContent != _lastGeneratedPython,
+            "Robot" => RobotScriptContent != _lastGeneratedRobot,
+            _ => false,
+        };
+
+        /// <summary>Enablement for "Apply to Steps": only meaningful off the
+        /// Visual tab and only when that tab's text differs from the last
+        /// generated content.</summary>
+        public bool CanApplyScript => CurrentScriptFormat != "Steps" && HasUnsavedChanges;
 
         /// <summary>Cancel an in-progress script run. Can be called from outside
         /// the command system (e.g. a button click handler) because
@@ -567,7 +595,8 @@ private string _ocrResultText = "";
         public ICommand EditDatasetsCommand { get; }
         public ICommand RunStopCommand { get; }
         public ICommand ExportRepositoryCommand { get; }
-        public ICommand SaveExportScriptCommand { get; }
+        public ICommand SaveScriptCommand { get; }
+        public ICommand ExportScriptAsCommand { get; }
         public ICommand ApplyScriptCommand { get; }
         public ICommand ImportScriptCommand { get; }
         public ICommand LoadSampleCommand { get; }
@@ -588,6 +617,7 @@ private string _ocrResultText = "";
         public ICommand OpenSpyToolCommand { get; }            
         public ICommand OpenVisualTestBuilderCommand { get; }  
         public ICommand OpenMultiAppDialogCommand { get; }
+        public ICommand BrowseScriptCommand { get; }
             public ICommand EnableLaunchAttachRecordingCommand { get; }
 
         // Working Folder commands
@@ -630,8 +660,9 @@ private string _ocrResultText = "";
             EditDatasetsCommand = new RelayCommand(_ => EditScriptDatasets());
             RunStopCommand = new AsyncRelayCommand(_ => RunStopAsync(), _ => CanRunStopCurrentScript());
             ExportRepositoryCommand = new RelayCommand(_ => ExportRepository());
-            SaveExportScriptCommand = new RelayCommand(_ => SaveExportScript());
-            ApplyScriptCommand = new RelayCommand(_ => ApplyScript());
+            SaveScriptCommand = new RelayCommand(_ => SaveScript());
+            ExportScriptAsCommand = new RelayCommand(_ => ExportScriptAs());
+            ApplyScriptCommand = new RelayCommand(_ => ApplyScript(), _ => CanApplyScript);
             ImportScriptCommand = new RelayCommand(_ => ImportScript());
             LoadSampleCommand = new RelayCommand(_ => LoadSample());
             ImportElementsCommand = new RelayCommand(_ => ImportElements());
@@ -656,6 +687,7 @@ private string _ocrResultText = "";
             ImportWorkingFolderSelectedCommand = new RelayCommand(_ => ImportWorkingFolderSelected(), _ => CanImportSelected);
             ShowWorkingFolderCommand = new RelayCommand(_ => ShowWorkingFolder());
             RefreshWorkingFolderCommand = new RelayCommand(_ => RefreshWorkingFolder());
+            BrowseScriptCommand = new RelayCommand(param => BrowseScript(param as RecordedStep));
             MoveElementPriorityUpCommand = new RelayCommand(_ => MoveElementPriorityUp(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
             MoveElementPriorityDownCommand = new RelayCommand(_ => MoveElementPriorityDown(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
 
@@ -1753,6 +1785,12 @@ private string _ocrResultText = "";
             {
                 StatusText = $"Script flow: {ex.Message}";
             }
+
+            // Record the just-generated content as the baseline so
+            // HasUnsavedChanges / CanApplyScript reflect "in sync with Steps".
+            _lastGeneratedJson = JsonScriptContent;
+            _lastGeneratedPython = PythonScriptContent;
+            _lastGeneratedRobot = RobotScriptContent;
         }
 
         private List<string> GetSelectedRecordingModes()
@@ -2166,10 +2204,43 @@ private string _ocrResultText = "";
             }
         }
 
-        /// <summary>Save or export the current script. Opens a SaveFileDialog
-        /// with filters for JSON, Python, and Robot Framework formats so the
-        /// user can choose the target format regardless of the active view tab.</summary>
-        private void SaveExportScript()
+        /// <summary>Save the current script to its file. Prompts for a location
+        /// on first save and remembers it; subsequent saves overwrite in-place
+        /// without re-prompting. Saves the content of the active script tab.</summary>
+        private void SaveScript()
+        {
+            string path = _lastSavedScriptPath;
+            if (string.IsNullOrEmpty(path))
+            {
+                string ext = CurrentScriptFormat switch
+                {
+                    "Json" => ".json",
+                    "Python" => ".py",
+                    _ => ".robot",
+                };
+                var dialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    FileName = "recorded_test" + ext,
+                    Filter = "Script files (*.json;*.py;*.robot)|*.json;*.py;*.robot|JSON files (*.json)|*.json|Python files (*.py)|*.py|Robot files (*.robot)|*.robot",
+                    InitialDirectory = Path.Combine(FrameworkRoot, "tests"),
+                };
+                if (dialog.ShowDialog() != true) return;
+                path = dialog.FileName;
+                _lastSavedScriptPath = path;
+            }
+            string content = CurrentScriptFormat switch
+            {
+                "Json" => JsonScriptContent,
+                "Python" => PythonScriptContent,
+                _ => RobotScriptContent,
+            };
+            File.WriteAllText(path, content);
+            EnqueueToast($"Saved script: {path}", ToastKind.Info);
+        }
+
+        /// <summary>Export the current script to a new file. Always prompts for
+        /// a location; the target format is chosen by the file extension.</summary>
+        private void ExportScriptAs()
         {
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
@@ -2177,18 +2248,16 @@ private string _ocrResultText = "";
                 Filter = "Script files (*.json;*.py;*.robot)|*.json;*.py;*.robot|JSON files (*.json)|*.json|Python files (*.py)|*.py|Robot files (*.robot)|*.robot",
                 InitialDirectory = Path.Combine(FrameworkRoot, "tests"),
             };
-            if (dialog.ShowDialog() == true)
+            if (dialog.ShowDialog() != true) return;
+            string ext = System.IO.Path.GetExtension(dialog.FileName).ToLowerInvariant();
+            string content = ext switch
             {
-                string ext = System.IO.Path.GetExtension(dialog.FileName).ToLowerInvariant();
-                string content = ext switch
-                {
-                    ".json" => JsonScriptContent,
-                    ".py" => PythonScriptContent,
-                    _ => RobotScriptContent
-                };
-                File.WriteAllText(dialog.FileName, content);
-                EnqueueToast($"Saved/exported script: {dialog.FileName}", ToastKind.Info);
-            }
+                ".json" => JsonScriptContent,
+                ".py" => PythonScriptContent,
+                _ => RobotScriptContent
+            };
+            File.WriteAllText(dialog.FileName, content);
+            EnqueueToast($"Exported script: {dialog.FileName}", ToastKind.Info);
         }
 
         /// <summary>Apply edits from the current view back to the Steps
@@ -2226,9 +2295,9 @@ private string _ocrResultText = "";
                 // Restore the source tab so the user's edits are not lost.
                 switch (CurrentScriptFormat)
                 {
-                    case "Json": JsonScriptContent = text; break;
-                    case "Python": PythonScriptContent = text; break;
-                    case "Robot": RobotScriptContent = text; break;
+                    case "Json": JsonScriptContent = text; _lastGeneratedJson = text; break;
+                    case "Python": PythonScriptContent = text; _lastGeneratedPython = text; break;
+                    case "Robot": RobotScriptContent = text; _lastGeneratedRobot = text; break;
                 }
 
                 EnqueueToast($"Applied {CurrentScriptFormat} script ({Steps.Count} steps) to all views.", ToastKind.Success);
@@ -2262,6 +2331,15 @@ private string _ocrResultText = "";
 
         private void ImportScript()
         {
+            if (HasUnsavedChanges)
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "The current script tab has unsaved changes. Loading a file will replace the step list. Continue?",
+                    "Unsaved changes",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Warning);
+                if (result != MessageBoxResult.OK) return;
+            }
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
                 Filter = "Script files (*.json;*.py;*.robot)|*.json;*.py;*.robot|JSON files (*.json)|*.json|Python files (*.py)|*.py|Robot files (*.robot)|*.robot",
@@ -2271,7 +2349,22 @@ private string _ocrResultText = "";
             if (dialog.ShowDialog() == true)
                 ImportScriptFile(dialog.FileName);
         }
-        // Working Folder (B3)
+
+        private void BrowseScript(RecordedStep? step)
+        {
+            if (step == null) return;
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Script/JSON files (*.json;*.py;*.robot)|*.json;*.py;*.robot|All files (*.*)|*.*",
+                InitialDirectory = string.IsNullOrWhiteSpace(WorkingFolderPath)
+                    ? Path.Combine(FrameworkRoot, "tests")
+                    : WorkingFolderPath,
+                Multiselect = false,
+                Title = "Select Script File"
+            };
+            if (dialog.ShowDialog() == true)
+                step.ScriptPath = dialog.FileName;
+        }
         // ------------------------------------------------------------
         private void OpenWorkingFolder()
         {

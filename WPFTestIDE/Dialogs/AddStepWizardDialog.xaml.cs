@@ -59,10 +59,11 @@ namespace WpfTestIde.Dialogs
             bool showCountPanel = text is "Count Checkpoint";
             bool showLaunchAppPanel = text is "Launch Application";
             bool showTerminateAppPanel = text is "Terminate Application";
+            bool showInvokeScriptPanel = text is "Invoke Script";
 
-            // Launch / Terminate Application steps do NOT operate on a UI element
+            // Launch / Terminate / Invoke Script steps do NOT operate on a UI element
             // and have no timeout / value / attribute / target — hide those rows.
-            bool isAppLifecycleStep = showLaunchAppPanel || showTerminateAppPanel;
+            bool isAppLifecycleStep = showLaunchAppPanel || showTerminateAppPanel || showInvokeScriptPanel;
             var elementRowVisibility = isAppLifecycleStep ? Visibility.Collapsed : Visibility.Visible;
             var descriptionRowVisibility = isAppLifecycleStep ? Visibility.Collapsed : Visibility.Visible;
             var valueRowVisibility = isAppLifecycleStep ? Visibility.Collapsed : (showValue ? Visibility.Visible : Visibility.Collapsed);
@@ -83,6 +84,7 @@ namespace WpfTestIde.Dialogs
             CountPanel.Visibility = isAppLifecycleStep ? Visibility.Collapsed : (showCountPanel ? Visibility.Visible : Visibility.Collapsed);
             LaunchAppPanel.Visibility = showLaunchAppPanel ? Visibility.Visible : Visibility.Collapsed;
             TerminateAppPanel.Visibility = showTerminateAppPanel ? Visibility.Visible : Visibility.Collapsed;
+            InvokeScriptPanel.Visibility = showInvokeScriptPanel ? Visibility.Visible : Visibility.Collapsed;
 
             // Description row: hide for launch/terminate (their own panels self-document).
             if (DescriptionLabel != null) DescriptionLabel.Visibility = descriptionRowVisibility;
@@ -157,6 +159,20 @@ namespace WpfTestIde.Dialogs
                 }
                 // Suggest pipe name based on app id
                 UpdatePipeNameSuggestion();
+            }
+        }
+
+        private void BrowseInvokeScriptPath_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog
+            {
+                Title = "Select script file",
+                Filter = "Script/JSON files (*.json;*.py;*.robot)|*.json;*.py;*.robot|All files (*.*)|*.*",
+                CheckFileExists = true,
+            };
+            if (dlg.ShowDialog(this) == true)
+            {
+                InvokeScriptPathBox.Text = dlg.FileName;
             }
         }
 
@@ -431,6 +447,19 @@ namespace WpfTestIde.Dialogs
                         step.WindowTitle = title;
                         step.ProcessName = proc;
                         step.ForceTerminate = TerminateForceCheck.IsChecked == true;
+                        break;
+                    }
+                    case "Invoke Script":
+                    {
+                        var path = InvokeScriptPathBox.Text?.Trim() ?? "";
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            MessageBox.Show(this, "Please provide a script path (.json / .py / .robot).",
+                                "Add Step", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
+                        step.Kind = StepKind.InvokeScript;
+                        step.ScriptPath = path;
                         break;
                     }
                 }

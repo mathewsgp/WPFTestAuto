@@ -58,6 +58,7 @@
             <Separator/>
             <ComboBoxItem Content="Launch Application"/>
             <ComboBoxItem Content="Terminate Application"/>
+            <ComboBoxItem Content="Invoke Script"/>
         </ComboBox>
 
         <!-- Element -->
@@ -185,6 +186,19 @@
             <CheckBox x:Name="TerminateForceCheck" Content="Force terminate" Margin="0,4,0,0"
                       AutomationProperties.AutomationId="TerminateForceCheck"
                       ToolTip="Use taskkill /F instead of a graceful close."/>
+        </StackPanel>
+
+        <!-- Invoke Script Options (for Invoke Script step) -->
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" x:Name="InvokeScriptPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Script path (.json / .py / .robot):" Margin="0,0,0,4"/>
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" x:Name="InvokeScriptPathBox" Height="28" Margin="0,0,8,0" AutomationProperties.AutomationId="InvokeScriptPathBox"/>
+                <Button Grid.Column="1" x:Name="btnBrowseInvokeScriptPath" Content="Browse..." Width="80" Click="BrowseInvokeScriptPath_Click" AutomationProperties.AutomationId="btnBrowseInvokeScriptPath"/>
+            </Grid>
         </StackPanel>
 
         <!-- Buttons -->

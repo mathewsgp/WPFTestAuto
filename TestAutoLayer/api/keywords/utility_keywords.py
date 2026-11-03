@@ -355,7 +355,62 @@ class UtilityKeywords:
     def activate_window(self, app_id: Optional[str] = None, window_title: Optional[str] = None):
         """Activates (brings to front and focuses) a window by app_id or title."""
         activate_window(app_id, window_title)
-    
+
+    # ------------------------------------------------------------------
+    # Script invocation (Invoke Script step)
+    # ------------------------------------------------------------------
+    def invoke_script(self, script_path: str, app_id: Optional[str] = None):
+        """Invoke another script file (.py / .robot / .json) at runtime.
+
+        Dispatches by extension: .py via subprocess python, .robot via the
+        robot CLI, .json best-effort by parsing IDE step JSON and executing
+        each step through the strategy executor.
+        """
+        self._resolve_app_id(app_id)
+        if not script_path or not os.path.isfile(script_path):
+            raise RuntimeError(f"Script file not found: {script_path}")
+        logger.info("Invoke script", script_path=script_path, app_id=app_id)
+
+        ext = os.path.splitext(script_path)[1].lower()
+        if ext == ".py":
+            result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
+            if result.stdout:
+                logger.info("Invoke script stdout", script_path=script_path, output=result.stdout)
+            if result.stderr:
+                logger.warn("Invoke script stderr", script_path=script_path, output=result.stderr)
+            if result.returncode != 0:
+                raise RuntimeError(f"Python script exited with code {result.returncode}: {script_path}")
+            logger.info("Invoke script completed", script_path=script_path)
+            return
+        if ext == ".robot":
+            result = subprocess.run(["robot", script_path], capture_output=True, text=True)
+            if result.stdout:
+                logger.info("Invoke script stdout", script_path=script_path, output=result.stdout)
+            if result.stderr:
+                logger.warn("Invoke script stderr", script_path=script_path, output=result.stderr)
+            if result.returncode != 0:
+                raise RuntimeError(f"Robot script exited with code {result.returncode}: {script_path}")
+            logger.info("Invoke script completed", script_path=script_path)
+            return
+        if ext == ".json":
+            try:
+                import json
+                with open(script_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                steps = data.get("steps") if isinstance(data, dict) else None
+                if not isinstance(steps, list):
+                    raise ValueError("JSON script has no 'steps' array")
+                for step in steps:
+                    alias = step.get("alias") or step.get("Alias") or ""
+                    action = step.get("action") or step.get("Action") or "invoke"
+                    value = step.get("value") or step.get("Value")
+                    self._executor.execute(alias, action, app_id, value)
+                logger.info("Invoke JSON script completed", script_path=script_path, step_count=len(steps))
+                return
+            except Exception as ex:
+                raise RuntimeError(f"Failed to execute JSON script '{script_path}': {ex}") from ex
+        raise RuntimeError(f"Unsupported script extension '{ext}' for: {script_path}")
+
     # ------------------------------------------------------------------
     # Status/Debug
     # ------------------------------------------------------------------
