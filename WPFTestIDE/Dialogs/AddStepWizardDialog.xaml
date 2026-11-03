@@ -125,7 +125,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox Grid.Column="0" x:Name="LaunchAppPathBox" Height="28" MinWidth="150" Margin="0,0,8,0" AutomationProperties.AutomationId="LaunchAppPathBox"/>
+                <TextBox Grid.Column="0" x:Name="LaunchAppPathBox" Height="28" MinWidth="150" Margin="0,0,8,0" VerticalContentAlignment="Center" AutomationProperties.AutomationId="LaunchAppPathBox"/>
                 <Button Grid.Column="1" x:Name="btnBrowseAppPath" Content="Browse..." Width="80" Click="BrowseAppPath_Click" AutomationProperties.AutomationId="btnBrowseAppPath"/>
             </Grid>
             <TextBlock Text="Start in (working directory, optional):" Margin="0,0,0,4"/>
@@ -196,7 +196,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox Grid.Column="0" x:Name="InvokeScriptPathBox" Height="28" MinWidth="150" Margin="0,0,8,0" AutomationProperties.AutomationId="InvokeScriptPathBox"/>
+                <TextBox Grid.Column="0" x:Name="InvokeScriptPathBox" Height="28" MinWidth="150" Margin="0,0,8,0" VerticalContentAlignment="Center" AutomationProperties.AutomationId="InvokeScriptPathBox"/>
                 <Button Grid.Column="1" x:Name="btnBrowseInvokeScriptPath" Content="Browse..." Width="80" Click="BrowseInvokeScriptPath_Click" AutomationProperties.AutomationId="btnBrowseInvokeScriptPath"/>
             </Grid>
         </StackPanel>
