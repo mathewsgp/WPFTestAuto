@@ -24,7 +24,8 @@ namespace WpfTestIde.Dialogs
         public string? Arguments { get; private set; }
         public string? StartIn { get; private set; }
         public List<string>? DriverList { get; private set; }
-        public bool InjectSpyAgentOnAttach { get; private set; } = true;
+        public bool SpyAgentEnabled { get; private set; } = true;
+        public AttachMode Mode { get; private set; } = AttachMode.RuntimeAttach;
 
         public AttachToProcessDialog()
         {
@@ -193,12 +194,18 @@ namespace WpfTestIde.Dialogs
             return false;
         }
 
-        private void Attach_Click(object sender, RoutedEventArgs e)
+        private async void Attach_Click(object sender, RoutedEventArgs e)
         {
             AppId = string.IsNullOrWhiteSpace(AppIdBox.Text) ? "" : AppIdBox.Text.Trim();
             DriverList = _selectedDrivers != null && _selectedDrivers.Any() ? new List<string>(_selectedDrivers) : null;
-            SpyAgentEnabled = EnableSpyAgentCheck.IsChecked == true;
-            InjectSpyAgentOnAttach = InjectSpyAgentRuntimeCheck?.IsChecked == true;
+            if (EnableSpyAgentCheck != null)
+                SpyAgentEnabled = EnableSpyAgentCheck.IsChecked == true;
+            else
+                SpyAgentEnabled = true;
+            if (InjectSpyAgentRuntimeCheck != null)
+                InjectSpyAgentOnAttach = InjectSpyAgentRuntimeCheck.IsChecked == true;
+            else
+                InjectSpyAgentOnAttach = true;
 
             if (!string.IsNullOrWhiteSpace(PipeNameBox.Text))
             {
