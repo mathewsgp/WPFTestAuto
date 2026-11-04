@@ -46,7 +46,7 @@
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Text="Select the target application's process:" 
-                      Style="{StaticResource SectionHeader}"/>
+                       Style="{StaticResource SectionHeader}"/>
 
             <ListView Grid.Row="1" x:Name="ProcessListView" Margin="0,0,0,8" AutomationProperties.AutomationId="ProcessListView">
                 <ListView.View>
@@ -58,13 +58,19 @@
                 </ListView.View>
             </ListView>
 
-            <StackPanel Grid.Row="2" Orientation="Horizontal">
-                <Button x:Name="btnRefreshProcessList" Content="Refresh List" Click="RefreshProcessList_Click" 
-                       Width="100" Margin="0,0,8,0" AutomationProperties.AutomationId="btnRefreshProcessList"/>
-                <CheckBox x:Name="ShowAllProcessesCheck" Content="Show all processes" 
-                         VerticalAlignment="Center" Margin="8,0,0,0"
-                         Checked="ShowAllProcessesCheck_Changed"
-                         Unchecked="ShowAllProcessesCheck_Changed" AutomationProperties.AutomationId="ShowAllProcessesCheck"/>
+            <StackPanel Grid.Row="2" Orientation="Vertical">
+                <CheckBox x:Name="InjectSpyAgentRuntimeCheck" Content="Inject Spy Agent" 
+                          IsChecked="True" Margin="0,0,0,4" VerticalAlignment="Center"
+                          AutomationProperties.AutomationId="InjectSpyAgentRuntimeCheck"
+                          ToolTip="Inject WpfSpyAgent into the running process via native DLL injection."/>
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="btnRefreshProcessList" Content="Refresh List" Click="RefreshProcessList_Click" 
+                           Width="100" Margin="0,0,8,0" AutomationProperties.AutomationId="btnRefreshProcessList"/>
+                    <CheckBox x:Name="ShowAllProcessesCheck" Content="Show all processes" 
+                              VerticalAlignment="Center" Margin="8,0,0,0"
+                              Checked="ShowAllProcessesCheck_Changed"
+                              Unchecked="ShowAllProcessesCheck_Changed" AutomationProperties.AutomationId="ShowAllProcessesCheck"/>
+                </StackPanel>
             </StackPanel>
         </Grid>
 

@@ -24,8 +24,7 @@ namespace WpfTestIde.Dialogs
         public string? Arguments { get; private set; }
         public string? StartIn { get; private set; }
         public List<string>? DriverList { get; private set; }
-        public bool SpyAgentEnabled { get; private set; } = true;
-        public AttachMode Mode { get; private set; } = AttachMode.RuntimeAttach;
+        public bool InjectSpyAgentOnAttach { get; private set; } = true;
 
         public AttachToProcessDialog()
         {
@@ -194,11 +193,12 @@ namespace WpfTestIde.Dialogs
             return false;
         }
 
-        private async void Attach_Click(object sender, RoutedEventArgs e)
+        private void Attach_Click(object sender, RoutedEventArgs e)
         {
             AppId = string.IsNullOrWhiteSpace(AppIdBox.Text) ? "" : AppIdBox.Text.Trim();
             DriverList = _selectedDrivers != null && _selectedDrivers.Any() ? new List<string>(_selectedDrivers) : null;
             SpyAgentEnabled = EnableSpyAgentCheck.IsChecked == true;
+            InjectSpyAgentOnAttach = InjectSpyAgentRuntimeCheck?.IsChecked == true;
 
             if (!string.IsNullOrWhiteSpace(PipeNameBox.Text))
             {
@@ -233,7 +233,9 @@ namespace WpfTestIde.Dialogs
 
                 StatusText.Text = $"Attempting to attach to PID {SelectedProcessId}...";
 
-                var result = await TryRuntimeAttachAsync(SelectedProcessId.Value, PipeName);
+                var result = InjectSpyAgentOnAttach 
+                    ? await TryRuntimeAttachAsync(SelectedProcessId.Value, PipeName)
+                    : true;
 
                 if (result)
                 {
