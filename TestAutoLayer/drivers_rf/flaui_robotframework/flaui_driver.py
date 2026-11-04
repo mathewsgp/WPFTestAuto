@@ -99,15 +99,7 @@ def _control_type_from_name(name: str) -> ControlType:
 # position() predicates other than simple [N], union (|), etc.
 
 _SEGMENT_RE = re.compile(
-    r"""^
-    (?P<type>\w+|\*)?          # optional element type (Window, Button, *, etc.)
-    \[
-        (?P<attr>\w+)          # attribute name (AutomationId, Name, Text, ControlType)
-        =
-        ['\"](?P<value>.*?)['\"]  # attribute value
-    \]
-    (?P<index>\[\d+\])?        # optional [N] index
-    $""",
+    r"""^(?P<type>\w+|\*)?\[@?(?P<attr>\w+)=['\"](?P<value>.*?)['\"]\](?P<index>\[\d+\])?$""",
     re.VERBOSE,
 )
 

@@ -155,13 +155,13 @@ namespace WpfTestIde.Recording
                     string? segmentAutomationId = null;
                     try { segmentAutomationId = current.Current.AutomationId; } catch { }
                     string? segmentName = null;
-                    try { segmentName = current.Current.Name; } catch { }
+                try { segmentName = current.Current.Name; } catch { }
 
-                    string segment;
-                    if (!string.IsNullOrEmpty(segmentAutomationId))
-                    {
-                        segment = $"{segmentControlType}[@AutomationId='{segmentAutomationId}']";
-                    }
+                string segment;
+                if (!string.IsNullOrEmpty(segmentAutomationId) && current.Current.ControlType != ControlType.Window)
+                {
+                    segment = $"{segmentControlType}[@AutomationId='{segmentAutomationId}']";
+                }
                     else if (!string.IsNullOrEmpty(segmentName))
                     {
                         segment = $"{segmentControlType}[@Name='{segmentName}']";
