@@ -263,6 +263,34 @@ _MULTI_APP_CONTEXT = MultiAppContext()
 
 def get_multi_app_context() -> MultiAppContext:
     """Get the global multi-app context registry."""
+    import sys
+    # Check if any other module instance has a populated context (due to
+    # different import paths creating separate module instances).
+    global _MULTI_APP_CONTEXT
+    for _mod_name in list(sys.modules.keys()):
+        if _mod_name.endswith('.app_registry') and _mod_name != __name__:
+            _mod = sys.modules.get(_mod_name)
+            if _mod is not None and hasattr(_mod, '_MULTI_APP_CONTEXT'):
+                _other_ctx = _mod._MULTI_APP_CONTEXT
+                if _other_ctx is not None and len(getattr(_other_ctx, 'apps', {})) > 0:
+                    # Merge other context into current if current is empty
+                    if len(getattr(_MULTI_APP_CONTEXT, 'apps', {})) == 0:
+                        _MULTI_APP_CONTEXT = _other_ctx
+                    # Also update the other module to point to the same instance
+                    try:
+                        _mod._MULTI_APP_CONTEXT = _MULTI_APP_CONTEXT
+                    except Exception:
+                        pass
+                    break
+    # Also update other modules to use this instance
+    for _mod_name in list(sys.modules.keys()):
+        if _mod_name.endswith('.app_registry'):
+            _mod = sys.modules.get(_mod_name)
+            if _mod is not None and hasattr(_mod, '_MULTI_APP_CONTEXT'):
+                try:
+                    _mod._MULTI_APP_CONTEXT = _MULTI_APP_CONTEXT
+                except Exception:
+                    pass
     return _MULTI_APP_CONTEXT
 
 

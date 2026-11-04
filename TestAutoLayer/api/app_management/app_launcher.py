@@ -395,7 +395,21 @@ def attach_to_application(
         driver_list=driver_list,
         pipe_name=pipe_name,
     )
-    get_multi_app_context().register_app(app_context)
+    ctx = get_multi_app_context()
+    ctx.register_app(app_context)
+    # Ensure singleton consistency across import paths
+    try:
+        import sys
+        for _mod_name in list(sys.modules.keys()):
+            if _mod_name.endswith('.app_registry'):
+                _mod = sys.modules.get(_mod_name)
+                if _mod is not None and hasattr(_mod, '_MULTI_APP_CONTEXT'):
+                    try:
+                        _mod._MULTI_APP_CONTEXT = ctx
+                    except Exception:
+                        pass
+    except Exception:
+        pass
     logger.info("Attached to application", app_id=app_id, process_id=process_id)
     return app_id
 

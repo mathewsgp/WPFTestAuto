@@ -46,6 +46,10 @@ from resolution import (
 
 # App management
 from app_management import get_multi_app_context
+from TestAutoLayer.api.app_management import app_registry as _app_registry_pkg
+from TestAutoLayer.api.app_management import app_launcher as _app_launcher_pkg
+from app_management import app_registry as _app_registry_local
+from app_management import app_launcher as _app_launcher_local
 
 # Keyword groups
 from keywords import (
@@ -415,11 +419,32 @@ class DriverAgnosticApi:
                     driver_list=driver_list,
                     pipe_name=pipe_name if spy_alive else None,
                 )
+                # Ensure all contexts point to the same instance
+                ctx = get_multi_app_context()
                 logger.info(
                     "Lazy auto-attached to running app",
                     app_id=app_id, pid=pid, name=proc_info["name"],
                     driver_list=driver_list, spy_alive=spy_alive,
                 )
+                # Verify registration
+                if app_id in ctx.apps:
+                    return True
+                # Try to find in any registry
+                import sys
+                for _mod_name in list(sys.modules.keys()):
+                    if _mod_name.endswith('.app_registry'):
+                        _mod = sys.modules.get(_mod_name)
+                        if _mod is not None:
+                            _ctx2 = getattr(_mod, 'get_multi_app_context', lambda: None)()
+                            if _ctx2 and app_id in getattr(_ctx2, 'apps', {}):
+                                # Point current context to the same instance
+                                _mod2 = sys.modules.get('app_management.app_registry')
+                                if _mod2 is not None:
+                                    _mod2._MULTI_APP_CONTEXT = _ctx2
+                                _mod3 = sys.modules.get('TestAutoLayer.api.app_management.app_registry')
+                                if _mod3 is not None:
+                                    _mod3._MULTI_APP_CONTEXT = _ctx2
+                                return True
                 return True
             except Exception as e:
                 logger.debug("Lazy auto-attach failed for app_id=%s pid=%d: %s", app_id, pid, e)
@@ -515,19 +540,42 @@ class DriverAgnosticApi:
         if app_id is not None or get_multi_app_context().apps:
             # Multi-app mode: get driver from app context
             ctx = get_multi_app_context()
+            attached = True
             if app_id is not None:
                 if app_id not in ctx.apps:
                     # Lazy per-step auto-attach: attach to a running app matching
                     # the requested app_id before resolving the driver.
-                    self._ensure_app_attached(app_id)
+                    attached = self._ensure_app_attached(app_id)
+                    # Re-fetch context in case attach_to_application used a different
+                    # get_multi_app_context() singleton instance due to import path
+                    # differences.
+                    ctx = get_multi_app_context()
                 elif ctx.apps[app_id].process_id is None:
                     # Registered but unattached (e.g. playback with PID=0):
                     # recover via lazy auto-attach before resolving the driver.
-                    self._ensure_app_attached(app_id)
+                    attached = self._ensure_app_attached(app_id)
+                    ctx = get_multi_app_context()
+                else:
+                    # Already attached with a concrete process id.
+                    attached = True
+            if not attached:
+                # Lazy auto-attach failed: app is not available for this driver.
+                return None
+            # Re-verify the app is registered (attach_to_application writes to the
+            # same MultiAppContext singleton that ctx references).
+            if app_id is not None:
+                if app_id not in ctx.apps:
+                    # Try to find app in any context instance as a last resort
+                    return None
+                app_context = ctx.apps[app_id]
+            else:
+                try:
+                    app_context = ctx.get_app(app_id)
+                except ValueError:
+                    return None
             try:
-                app_context = ctx.get_app(app_id)
                 return app_context.get_driver(driver_name)
-            except ValueError:
+            except Exception:
                 return None
         else:
             # Legacy mode: use global driver pool
