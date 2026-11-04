@@ -145,13 +145,27 @@ namespace WpfTestIde.Recording
                 {
                     ["displayName"] = entry.DisplayName,
                     ["controlType"] = entry.ControlType,
-                    ["parentAlias"] = parentAlias,
-                    ["defaultTimeout"] = 10,
-                    ["tags"] = entry.NonStandard
-                        ? new List<string> { "recorded", "self-healing-demo" }
-                        : new List<string> { "recorded" },
-                    ["strategies"] = strategies,
                 };
+
+                if (!string.IsNullOrEmpty(entry.AutomationId))
+                {
+                    elementDef["automationId"] = entry.AutomationId!;
+                }
+                if (!string.IsNullOrEmpty(entry.Name))
+                {
+                    elementDef["name"] = entry.Name;
+                }
+                if (!string.IsNullOrEmpty(entry.XPath))
+                {
+                    elementDef["relativeXPath"] = entry.XPath!;
+                }
+
+                elementDef["parentAlias"] = parentAlias;
+                elementDef["defaultTimeout"] = 10;
+                elementDef["tags"] = entry.NonStandard
+                    ? new List<string> { "recorded", "self-healing-demo" }
+                    : new List<string> { "recorded" };
+                elementDef["strategies"] = strategies;
 
                 // Include per-element driver priority if set
                 if (entry.DriverPriority != null && entry.DriverPriority.Any())
