@@ -27,9 +27,9 @@ namespace WpfTestIde.Dialogs
         public string? SelectedXPath { get; private set; }
         public Dictionary<string, string> SelectedProperties { get; private set; } = new();
         public List<string> SelectedRecordingModes { get; private set; }
-        public string SelectedMode { get; private set; } = "WPFSpy";
+        public string SelectedMode { get; private set; } = "UIA3";
 
-        public SpyToolDialog(string pipeName = "WPFSpyAgentPipe", List<string>? recordingModes = null, string selectedMode = "WPFSpy", int targetProcessId = 0, string? appId = null, List<WpfTestIde.Models.AppContext>? attachedApps = null)
+        public SpyToolDialog(string pipeName = "WPFSpyAgentPipe", List<string>? recordingModes = null, string selectedMode = "UIA3", int targetProcessId = 0, string? appId = null, List<WpfTestIde.Models.AppContext>? attachedApps = null)
         {
             InitializeComponent();
             _pipeName = pipeName;
@@ -204,7 +204,7 @@ namespace WpfTestIde.Dialogs
         {
             try
             {
-                if (SelectedMode == "UIA3")
+                if (SelectedMode == "UIA3" || SelectedMode == "Auto")
                 {
                     LoadUia3Tree();
                 }

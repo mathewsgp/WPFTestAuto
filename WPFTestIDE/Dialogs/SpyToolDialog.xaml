@@ -28,7 +28,7 @@
             <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <ComboBox x:Name="ModeSelector" Width="160" Margin="0,0,8,0" FontSize="11" SelectedIndex="0" AutomationProperties.AutomationId="ModeSelector">
                 <ComboBoxItem Content="WPFSpy Visual Tree" Tag="WPFSpy"/>
-                <ComboBoxItem Content="FlaUI Automation Tree" Tag="FlaUI"/>
+                <ComboBoxItem Content="UIA3 Automation Tree" Tag="UIA3"/>
             </ComboBox>
             
             <TextBlock Text="Search:" VerticalAlignment="Center" Margin="8,0,8,0"/>
