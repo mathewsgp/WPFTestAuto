@@ -178,7 +178,7 @@ class Uia3Driver(BaseDriver):
     def _send(self, command: str, **params) -> dict:
         """Send a command to the worker, restarting on broken pipe."""
         if self._pipe is None:
-            raise ElementNotInteractableError("Uia3Driver: worker not connected")
+            raise ElementNotInteractableError("Uia3Driver", "worker not connected")
         try:
             return self._pipe.send(command, **params)
         except Exception:
@@ -195,7 +195,8 @@ class Uia3Driver(BaseDriver):
         eid = locator.get("elementId")
         if eid is None:
             raise ElementNotInteractableError(
-                f"Uia3Driver: element handle has no elementId: {locator}"
+                "Uia3Driver:element_handle",
+                f"element handle has no elementId: {locator}"
             )
         return int(eid)
 
@@ -262,7 +263,8 @@ class Uia3Driver(BaseDriver):
         resp = self._send("invoke", elementId=eid)
         if not resp.get("success"):
             raise ElementNotInteractableError(
-                f"UIA3: cannot invoke element id={eid} — {resp.get('error')}"
+                f"UIA3:element_{eid}",
+                f"cannot invoke element id={eid} — {resp.get('error')}"
             )
 
     def set_value(self, element: ElementHandle, value: str) -> None:
@@ -270,7 +272,8 @@ class Uia3Driver(BaseDriver):
         resp = self._send("set_value", elementId=eid, value=value)
         if not resp.get("success"):
             raise ElementNotInteractableError(
-                f"UIA3: cannot set value on element id={eid} — {resp.get('error')}"
+                f"UIA3:element_{eid}",
+                f"cannot set value on element id={eid} — {resp.get('error')}"
             )
 
     def get_text(self, element: ElementHandle) -> str:
@@ -306,7 +309,8 @@ class Uia3Driver(BaseDriver):
         resp = self._send("double_click", elementId=eid)
         if not resp.get("success"):
             raise ElementNotInteractableError(
-                f"UIA3: cannot double-click element id={eid} — {resp.get('error')}"
+                f"UIA3:element_{eid}",
+                f"cannot double-click element id={eid} — {resp.get('error')}"
             )
 
     def right_click(self, element: ElementHandle) -> None:
@@ -314,7 +318,8 @@ class Uia3Driver(BaseDriver):
         resp = self._send("right_click", elementId=eid)
         if not resp.get("success"):
             raise ElementNotInteractableError(
-                f"UIA3: cannot right-click element id={eid} — {resp.get('error')}"
+                f"UIA3:element_{eid}",
+                f"cannot right-click element id={eid} — {resp.get('error')}"
             )
 
     def press_keys(self, element: ElementHandle, keys: str) -> None:
@@ -322,7 +327,8 @@ class Uia3Driver(BaseDriver):
         resp = self._send("press_keys", elementId=eid, keys=keys)
         if not resp.get("success"):
             raise ElementNotInteractableError(
-                f"UIA3: cannot press keys on element id={eid} — {resp.get('error')}"
+                f"UIA3:element_{eid}",
+                f"cannot press keys on element id={eid} — {resp.get('error')}"
             )
 
     def drag_drop(self, element: ElementHandle, target_element: ElementHandle) -> None:
@@ -331,7 +337,8 @@ class Uia3Driver(BaseDriver):
         resp = self._send("drag_drop", srcElementId=src_id, dstElementId=dst_id)
         if not resp.get("success"):
             raise ElementNotInteractableError(
-                f"UIA3: cannot drag-drop id={src_id} -> id={dst_id} — {resp.get('error')}"
+                f"UIA3:element_{src_id}",
+                f"cannot drag-drop id={src_id} -> id={dst_id} — {resp.get('error')}"
             )
 
     def hover(self, element: ElementHandle) -> None:
@@ -339,7 +346,8 @@ class Uia3Driver(BaseDriver):
         resp = self._send("hover", elementId=eid)
         if not resp.get("success"):
             raise ElementNotInteractableError(
-                f"UIA3: cannot hover element id={eid} — {resp.get('error')}"
+                f"UIA3:element_{eid}",
+                f"cannot hover element id={eid} — {resp.get('error')}"
             )
 
     def scroll(self, element: ElementHandle, direction: str) -> None:
@@ -347,7 +355,8 @@ class Uia3Driver(BaseDriver):
         resp = self._send("scroll", elementId=eid, direction=direction)
         if not resp.get("success"):
             raise ElementNotInteractableError(
-                f"UIA3: cannot scroll element id={eid} — {resp.get('error')}"
+                f"UIA3:element_{eid}",
+                f"cannot scroll element id={eid} — {resp.get('error')}"
             )
 
     def get_attribute(
