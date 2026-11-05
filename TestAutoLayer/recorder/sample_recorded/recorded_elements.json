@@ -1,0 +1,20 @@
+{
+  "LoginPage.txtUsername": {
+    "automationId": "txtUsername",
+    "name": "UsernameInput",
+    "controlType": "TextBox",
+    "xpath": "/Window[@Name='WPF Test IDE']/TextBox[@AutomationId='txtUsername']"
+  },
+  "LoginPage.txtPassword": {
+    "automationId": "txtPassword",
+    "name": "PasswordInput",
+    "controlType": "TextBox",
+    "xpath": "/Window[@Name='WPF Test IDE']/TextBox[@AutomationId='txtPassword']"
+  },
+  "LoginPage.btnSubmit": {
+    "automationId": "btnSubmit",
+    "name": "SubmitBtn",
+    "controlType": "Button",
+    "xpath": "/Window[@Name='WPF Test IDE']/Button[@AutomationId='btnSubmit']"
+  }
+}

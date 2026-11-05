@@ -1,0 +1,619 @@
+<Window x:Class="WpfTestIde.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:WpfTestIde.Models"
+        xmlns:views="clr-namespace:WpfTestIde.Views"
+        xmlns:avalonDock="https://github.com/Dirkster99/AvalonDock"
+        xmlns:dockViews="clr-namespace:WpfTestIde.Docking.Views"
+        Title="WPF Test IDE" Height="760" Width="1400"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BackgroundBrush}"
+        AutomationProperties.AutomationId="MainWindow"
+        WindowStyle="None"
+        ResizeMode="CanResize">
+
+    <Window.Resources>
+        <Style x:Key="ToolbarButton" TargetType="Button" BasedOn="{StaticResource VsButton}">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+        <Style TargetType="TabItem" BasedOn="{StaticResource VsTabItem}">
+            <Setter Property="Padding" Value="10,5"/>
+        </Style>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <!-- B2: thin label shown above each toolbar band (Session/Record/Run/Export/Tools) -->
+        <Style x:Key="ToolbarBandLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,2"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <!-- B2: vertical container for one band = a small label + a horizontal row of buttons -->
+        <Style x:Key="ToolbarBand" TargetType="StackPanel">
+            <Setter Property="Orientation" Value="Vertical"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- A7: per-tab toolbar Border (sits at the top of each TabItem content).
+             Themed identically to the global toolbar for visual consistency. -->
+        <Style x:Key="TabToolbarBorder" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="0,6,0,6"/>
+            <Setter Property="CornerRadius" Value="3"/>
+        </Style>
+
+        <!-- One recorded/verify step row.
+             D3: added a drag-handle column (column 0) with a ☰ glyph as a visual
+             affordance for re-ordering. The entire row is the drag source; the
+             handle just signals it. Up/Down buttons (btnStepUp/btnStepDown) give
+             an explicit reorder path for users who don't discover drag. Existing
+             btnAddVerification + the X delete button are moved to columns 3/4. -->
+        <DataTemplate x:Key="StepTemplate" DataType="{x:Type models:RecordedStep}">
+            <Border Padding="8" Margin="0,0,0,4" CornerRadius="3"
+                    Background="{Binding Kind, Converter={StaticResource StepKindToBrushConverter}}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- D3: drag handle + explicit up/down reorder buttons.
+                         The handle is the visual cue; the whole Border above is
+                         the actual drag source (wired in StepsListBox handlers). -->
+                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                        <TextBlock Text="&#x2630;" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,2,0" ToolTip="Drag to reorder"/>
+                        <Button Content="&#x25B2;" FontSize="9" Padding="4,2" Margin="1,0" VerticalAlignment="Center"
+                                ToolTip="Move up"
+                                Command="{Binding DataContext.MoveStepUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"
+                                AutomationProperties.AutomationId="btnStepUp">
+                            <Button.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.Visibility>
+                        </Button>
+                        <Button Content="&#x25BC;" FontSize="9" Padding="4,2" Margin="1,0" VerticalAlignment="Center"
+                                ToolTip="Move down"
+                                Command="{Binding DataContext.MoveStepDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"
+                                AutomationProperties.AutomationId="btnStepDown">
+                            <Button.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.Visibility>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="0" Grid.Column="1">
+                        <TextBlock FontFamily="Consolas" FontSize="12">
+                            <Run Text="{Binding DisplayVerb, Mode=OneWay}" FontWeight="Bold"/>
+                            <Run Text="  "/>
+                            <Run Text="{Binding Alias, Mode=OneWay}" Foreground="{DynamicResource AccentBrush}"/>
+                        </TextBlock>
+                        <TextBlock FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Text="{Binding Value, StringFormat='value: {0}'}"
+                                   Visibility="{Binding Value, Converter={StaticResource NullToCollapsedConverter}}"/>
+                        <TextBlock FontSize="10" Foreground="{DynamicResource WarningBrush}" Text="Warning: custom control - resolved via WPFSpy"
+                                   Visibility="{Binding NonStandard, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    </StackPanel>
+                    <Button Grid.Row="0" Grid.Column="2" Content="+ add step"
+                            Command="{Binding DataContext.AddStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            CommandParameter="{Binding}"
+                            FontSize="10" Padding="4,2" Margin="4,0" VerticalAlignment="Center"
+                            AutomationProperties.AutomationId="btnAddStep">
+                        <Button.Visibility>
+                            <MultiBinding Converter="{StaticResource IsSelectedStepConverter}">
+                                <MultiBinding.Bindings>
+                                    <Binding/>
+                                    <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                </MultiBinding.Bindings>
+                            </MultiBinding>
+                        </Button.Visibility>
+                    </Button>
+                    <Button Grid.Row="0" Grid.Column="3" Content="X"
+                            Command="{Binding DataContext.DeleteStepCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            CommandParameter="{Binding}"
+                            FontSize="10" Padding="4,2" VerticalAlignment="Center">
+                        <Button.Visibility>
+                            <MultiBinding Converter="{StaticResource IsSelectedStepConverter}">
+                                <MultiBinding.Bindings>
+                                    <Binding/>
+                                    <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                </MultiBinding.Bindings>
+                            </MultiBinding>
+                        </Button.Visibility>
+                    </Button>
+
+                    <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,8,0,0">
+                        <WrapPanel x:Name="GenericEditor">
+                            <WrapPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}" ConverterParameter="{x:Static models:StepKind.Action}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </WrapPanel.Visibility>
+                            <TextBox Width="165" Margin="0,0,6,4" Text="{Binding Alias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Element alias"/>
+                            <TextBox Width="210" Margin="0,0,6,4" Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Value or expected result"/>
+                            <ComboBox Width="145" Margin="0,0,6,4" ItemsSource="{Binding DataContext.ActionKinds, RelativeSource={RelativeSource AncestorType=Window}}"
+                                      SelectedItem="{Binding Action, Mode=TwoWay}">
+                                <ComboBox.Style>
+                                    <Style TargetType="ComboBox">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.Action}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ComboBox.Style>
+                            </ComboBox>
+                        </WrapPanel>
+                        <StackPanel x:Name="IfEditor">
+                            <StackPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}" ConverterParameter="{x:Static models:StepKind.If}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </StackPanel.Visibility>
+                            <TextBlock Text="IF CONDITION" FontSize="10" FontWeight="Bold" Margin="0,0,0,4"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <WrapPanel>
+                                <ComboBox Width="145" Margin="0,0,6,4" ItemsSource="{Binding DataContext.FlowConditionKinds, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          SelectedItem="{Binding Condition.Kind, Mode=TwoWay}"/>
+                                <TextBox Width="140" Margin="0,0,6,4" Text="{Binding Condition.Alias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Element alias"/>
+                                <TextBox Width="150" Margin="0,0,6,4" Text="{Binding Condition.ExpectedValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Expected text for text conditions"/>
+                                <TextBox Width="110" Margin="0,0,6,4" Text="{Binding Condition.AppId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Optional app id"/>
+                                <CheckBox Content="Else branch" IsChecked="{Binding HasElse, Mode=TwoWay}" VerticalAlignment="Center" Margin="4,0,0,4"/>
+                            </WrapPanel>
+                            <DockPanel Margin="0,2,0,0">
+                                <TextBlock Text="THEN" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="+ action" Padding="5,2" FontSize="10" Command="{Binding DataContext.AddThenStepCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ If" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedIfCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ Repeat" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedRepeatCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ ForEach" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedForEachCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding ThenSteps}" ItemTemplate="{DynamicResource StepTemplate}" Margin="12,4,0,4"/>
+                            <DockPanel Visibility="{Binding HasElse, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="ELSE" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="+ action" Padding="5,2" FontSize="10" Command="{Binding DataContext.AddElseStepCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ If" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddElseIfCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ Repeat" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddElseRepeatCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ ForEach" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddElseForEachCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding ElseSteps}" ItemTemplate="{DynamicResource StepTemplate}" Margin="12,4,0,4"
+                                          Visibility="{Binding HasElse, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                        </StackPanel>
+                        <StackPanel x:Name="RepeatEditor">
+                            <StackPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}" ConverterParameter="{x:Static models:StepKind.Repeat}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </StackPanel.Visibility>
+                            <WrapPanel>
+                                <TextBlock Text="Repeat count (max 1000):" VerticalAlignment="Center" Margin="0,0,6,4"/>
+                                <TextBox Width="80" Text="{Binding RepeatCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            </WrapPanel>
+                            <DockPanel Margin="0,4,0,0">
+                                <TextBlock Text="BODY" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="+ action" Padding="5,2" FontSize="10" Command="{Binding DataContext.AddLoopStepCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ If" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedIfCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ Repeat" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedRepeatCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ ForEach" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedForEachCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding BodySteps}" ItemTemplate="{DynamicResource StepTemplate}" Margin="12,4,0,4"/>
+                        </StackPanel>
+                        <StackPanel x:Name="ForEachEditor">
+                            <StackPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}" ConverterParameter="{x:Static models:StepKind.ForEach}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </StackPanel.Visibility>
+                            <WrapPanel>
+                                <TextBlock Text="For each" VerticalAlignment="Center" Margin="0,0,6,4"/>
+                                <TextBox Width="90" Margin="0,0,6,4" Text="{Binding LoopVariable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Loop variable"/>
+                                <ComboBox Width="145" Margin="0,0,6,4" ItemsSource="{Binding DataContext.FlowLoopSourceKinds, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          SelectedItem="{Binding LoopSourceKind, Mode=TwoWay}"/>
+                                <ComboBox Width="150" Margin="0,0,6,4" ItemsSource="{Binding DataContext.ScriptDatasetNames, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          SelectedItem="{Binding DatasetName, Mode=TwoWay}"
+                                          Visibility="{Binding UsesNamedDataset, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                <TextBox Width="190" Height="48" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                         Text="{Binding LoopValuesText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                         ToolTip="One literal value per line"/>
+                            </WrapPanel>
+                            <DockPanel Margin="0,4,0,0">
+                                <TextBlock Text="BODY" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="+ action" Padding="5,2" FontSize="10" Command="{Binding DataContext.AddLoopStepCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ If" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedIfCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ Repeat" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedRepeatCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                    <Button Content="+ ForEach" Padding="5,2" FontSize="10" Margin="3,0,0,0" Command="{Binding DataContext.AddNestedForEachCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding BodySteps}" ItemTemplate="{DynamicResource StepTemplate}" Margin="12,4,0,4"/>
+                        </StackPanel>
+                        <StackPanel x:Name="InvokeScriptEditor">
+                            <StackPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource IsSelectedStepConverter}" ConverterParameter="{x:Static models:StepKind.InvokeScript}">
+                                    <MultiBinding.Bindings>
+                                        <Binding/>
+                                        <Binding Path="DataContext.SelectedStep" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </StackPanel.Visibility>
+                            <WrapPanel>
+                                <TextBlock Text="Script path:" VerticalAlignment="Center" Margin="0,0,6,4"/>
+                                <TextBox Width="300" Margin="0,0,6,4" Text="{Binding ScriptPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="Path to a .json / .py / .robot script to invoke"/>
+                                <Button Content="Browse..." Padding="6,2" FontSize="10" Margin="0,0,0,4"
+                                        Command="{Binding DataContext.BrowseScriptCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.If}">
+                    <Setter TargetName="GenericEditor" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.Repeat}">
+                    <Setter TargetName="GenericEditor" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.ForEach}">
+                    <Setter TargetName="GenericEditor" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.If}">
+                    <Setter TargetName="IfEditor" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.Repeat}">
+                    <Setter TargetName="RepeatEditor" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.ForEach}">
+                    <Setter TargetName="ForEachEditor" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.InvokeScript}">
+                    <Setter TargetName="GenericEditor" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static models:StepKind.InvokeScript}">
+                    <Setter TargetName="InvokeScriptEditor" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
+
+    <!-- E2: global keyboard shortcuts. Bound to the same VM commands as the menu/toolbar.
+         Gestures also surfaced via InputGestureText on the MenuItem templates' reserved column. -->
+    <Window.InputBindings>
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveScriptCommand}"/>
+        <KeyBinding Key="R" Modifiers="Control" Command="{Binding RunStopCommand}"/>
+        <KeyBinding Key="F5" Command="{Binding RunStopCommand}"/>
+        <KeyBinding Key="R" Modifiers="Control+Shift" Command="{Binding ToggleRecordingCommand}"/>
+        <KeyBinding Key="F12" Command="{Binding OpenSpyToolCommand}"/>
+    </Window.InputBindings>
+
+    <DockPanel>
+        <!-- ================= Frameless Title Bar ================= -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ToolbarBrush}" Height="32" MouseDown="TitleBar_MouseDown">
+            <DockPanel LastChildFill="False">
+                <TextBlock Text="WPF Test IDE" VerticalAlignment="Center" Margin="12,0" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold"/>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                    <Button Content="─" Width="46" Height="32" Background="Transparent" BorderThickness="0" Click="Minimize_Click" ToolTip="Minimize"/>
+                    <Button Content="☐" Width="46" Height="32" Background="Transparent" BorderThickness="0" Click="Maximize_Click" ToolTip="Maximize"/>
+                    <Button Content="✕" Width="46" Height="32" Background="Transparent" BorderThickness="0" Click="Close_Click" ToolTip="Close"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ================= Menu Bar ================= -->
+        <Menu DockPanel.Dock="Top" Background="{DynamicResource ToolbarBrush}" Height="26">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Open Script..." Command="{Binding OpenScriptCommand}"/>
+                <MenuItem Header="_Save Script" Command="{Binding SaveScriptCommand}" InputGestureText="Ctrl+S"/>
+                <Separator/>
+                <MenuItem Header="E_xit" Command="{Binding ExitCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Undo" Command="{Binding UndoCommand}"/>
+                <MenuItem Header="_Redo" Command="{Binding RedoCommand}"/>
+                <Separator/>
+                <MenuItem Header="Cu_t"/>
+                <MenuItem Header="_Copy"/>
+                <MenuItem Header="_Paste"/>
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="_Toggle Theme" Command="{Binding ToggleThemeCommand}"/>
+                <Separator/>
+                <MenuItem Header="E_lements" Command="{Binding ShowElementsCommand}"/>
+                <MenuItem Header="_Scripts" Command="{Binding ShowScriptsCommand}"/>
+                <MenuItem Header="_Results" Command="{Binding ShowResultsCommand}"/>
+                <MenuItem Header="_Working Folder" Command="{Binding ShowWorkingFolderCommand}"/>
+                <Separator/>
+                <MenuItem Header="_Reset Layout" Command="{Binding ResetLayoutCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Run">
+                <MenuItem Header="_Run / Stop Script" Command="{Binding RunStopCommand}" InputGestureText="Ctrl+R / F5"/>
+                <MenuItem Header="Record _Toggle" Command="{Binding ToggleRecordingCommand}" InputGestureText="Ctrl+Shift+R"/>
+                <MenuItem Header="_Stop Recording" Command="{Binding StopRecordingCommand}"/>
+                <Separator/>
+                <MenuItem Header="Spy _Tool" Command="{Binding OpenSpyToolCommand}" InputGestureText="F12"/>
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_About" Command="{Binding AboutCommand}"/>
+                <MenuItem Header="_Documentation" Command="{Binding DocumentationCommand}"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- ================= Left Activity Bar ================= -->
+        <Border DockPanel.Dock="Left" Width="48" Background="{DynamicResource SidebarBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+            <StackPanel>
+                <Button Content="📁" ToolTip="Elements" Background="Transparent" BorderThickness="0" Padding="10,8" Click="ActivityElements_Click"/>
+                <Button Content="📜" ToolTip="Scripts" Background="Transparent" BorderThickness="0" Padding="10,8" Click="ActivityScripts_Click"/>
+                <Button Content="▶️" ToolTip="Run" Background="Transparent" BorderThickness="0" Padding="10,8" Click="ActivityRun_Click"/>
+                <Button Content="🔎" ToolTip="Spy Tool" Background="Transparent" BorderThickness="0" Padding="10,8" Click="ActivitySpy_Click"/>
+                <Button Content="🧩" ToolTip="Visual Builder" Background="Transparent" BorderThickness="0" Padding="10,8" Click="ActivityBuilder_Click"/>
+                <Separator Margin="8,4" Background="{DynamicResource BorderBrush}"/>
+                <Button Content="⚙️" ToolTip="Settings" Background="Transparent" BorderThickness="0" Padding="10,8" Click="ActivitySettings_Click" AutomationProperties.AutomationId="btnSettings"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ================= Toolbar =================
+             B1: wrap the toolbar in a horizontal ScrollViewer so that when the
+             window narrows the buttons scroll instead of being silently clipped
+             (a StackPanel inside a Border just clips the right-hand buttons at
+             small widths). All AutomationIds/commands are preserved; the scroll
+             bar appears only when the content overflows. Vertical scrolling is
+             disabled to keep the toolbar a single-row strip. -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ToolbarBrush}" Padding="10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Padding="0">
+                <!-- B2: each toolbar band is a vertical StackPanel (label + horizontal button row),
+                     grouping the existing buttons with a small header for scannability.
+                     AutomationIds, commands, and order are unchanged. Inter-Tools Separators
+                     are preserved within the Tools band. -->
+                <StackPanel Orientation="Horizontal">
+
+                    <!-- Session -->
+                    <StackPanel Style="{StaticResource ToolbarBand}">
+                        <TextBlock Style="{StaticResource ToolbarBandLabel}" Text="Session"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="btnAttach" Style="{StaticResource ToolbarButton}" Content="Attach to Process..." Command="{Binding AttachCommand}" AutomationProperties.AutomationId="btnAttach"/>
+                            <Button x:Name="btnManageApps" Style="{StaticResource ToolbarButton}" Content="Manage Apps" Command="{Binding OpenMultiAppDialogCommand}" ToolTip="Manage attached applications" AutomationProperties.AutomationId="btnManageApps"/>
+                            <Button x:Name="btnCheckPipe" Style="{StaticResource ToolbarButton}" Content="Check Pipe" Command="{Binding CheckPipeConnectionCommand}" AutomationProperties.AutomationId="btnCheckPipe"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Record -->
+                    <StackPanel Style="{StaticResource ToolbarBand}">
+                        <TextBlock Style="{StaticResource ToolbarBandLabel}" Text="Record"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="btnRecord" Style="{StaticResource ToolbarButton}" Command="{Binding ToggleRecordingCommand}" AutomationProperties.AutomationId="btnRecord">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding RecordIcon}" Foreground="Red" FontFamily="Segoe UI Symbol" FontSize="14" Margin="0,0,4,0"/>
+                                    <TextBlock Text="{Binding RecordButtonLabel}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="btnLoadSample" Style="{StaticResource ToolbarButton}" Content="Load Sample" Command="{Binding LoadSampleCommand}" AutomationProperties.AutomationId="btnLoadSample"/>
+                            <Button x:Name="btnReset" Style="{StaticResource ToolbarButton}" Content="Reset" Command="{Binding ResetCommand}" AutomationProperties.AutomationId="btnReset"/>
+                            <Button x:Name="btnEnableLaunchAttach" Style="{StaticResource ToolbarButton}" Content="Enable Launch+Attach" Command="{Binding EnableLaunchAttachRecordingCommand}" ToolTip="Enable recording for applications launched with attach=Yes" AutomationProperties.AutomationId="btnEnableLaunchAttach"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- A7: Run + Export bands moved to the SCRIPTS per-tab toolbar
+                         (RunScript/Export Repo/Export Script/Save Script). Global
+                         toolbar now keeps only Session / Record / Tools per the
+                         user's A7 decision. AutomationIds on the moved buttons
+                         are preserved - they merely relocated. -->
+
+                    <!-- Tools -->
+                    <StackPanel Style="{StaticResource ToolbarBand}">
+                        <TextBlock Style="{StaticResource ToolbarBandLabel}" Text="Tools"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="btnVisualTestBuilder" Style="{StaticResource ToolbarButton}" Content="Visual Test Builder" Command="{Binding OpenVisualTestBuilderCommand}" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource StatusBarTextBrush}" AutomationProperties.AutomationId="btnVisualTestBuilder"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ================= Status bar (C1+C2: real StatusBar with slots) =================
+             Previously two stacked horizontal strips: a custom Border+StackPanel
+             for status text, and a separate Driver Settings Border with the
+             Record/Run checkboxes. Consolidated into one StatusBar:
+               left  : StatusText + PipeStatus
+               right : Record:* and Run:* driver checkboxes (preserved AutomationIds)
+             The AutomationIds chkRecordFlaUI / chkRecordWPFSpy / chkRecordSikuli
+             and chkRunFlaUI / chkRunWPFSpy / chkRunSikuli remain on CheckBoxes
+             under MainWindow so repository locators and Robot tests still find
+             them. StatusText / PipeStatusText AutomationIds also preserved. -->
+        <StatusBar DockPanel.Dock="Top"
+                    Background="{DynamicResource PanelBrush}"
+                    Foreground="{DynamicResource TextPrimaryBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1"
+                    Padding="8,2"
+                    AutomationProperties.AutomationId="MainStatusBar">
+            <StatusBarItem HorizontalAlignment="Left" Padding="0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="StatusText" Text="{Binding StatusText}" FontSize="12"
+                               Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"
+                               AutomationProperties.AutomationId="StatusText"/>
+                    <TextBlock Text="  |  " Foreground="{DynamicResource TextDisabledBrush}" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="PipeStatusText" Text="{Binding PipeStatusText}" FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"
+                               AutomationProperties.AutomationId="PipeStatusText"/>
+                </StackPanel>
+            </StatusBarItem>
+
+            <!-- ================= E3 Toast (single transient slot) =================
+                 One StatusBarItem between the left StatusText/PipeStatus slot and
+                 the right driver-checkboxes slot; HorizontalAlignment=Center so
+                 StatusBar lays it out naturally between them. The Border is
+                 Visibility=Collapsed when the toast queue is empty (gated by
+                 MainViewModel.IsToastVisible) so the existing strict left/right
+                 StatusBar slot layout is undisturbed and the Robot use-case
+                 tests (which read StatusText by AutomationId) are unaffected.
+                 Content is driven by ActiveToasts[0]; the VM's two-phase
+                 hide-then-dequeue keeps the [0] indexer binding from hitting the
+                 empty collection while the Border is still visible — see the E3
+                 risk register. Fade-in via the ToastBar Storyboard in
+                 Themes/Styles.xaml; no exit fade (out of scope, see plan). -->
+            <StatusBarItem HorizontalAlignment="Center" Padding="8,0">
+                <Border x:Name="ToastBar"
+                        Style="{StaticResource ToastBar}"
+                        Visibility="{Binding IsToastVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                        Background="{Binding ActiveToasts[0].Kind, Converter={StaticResource ToastKindToBrushConverter}}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="3" Padding="8,3"
+                        AutomationProperties.AutomationId="ToastBar">
+                    <TextBlock x:Name="ToastText"
+                               Text="{Binding ActiveToasts[0].Text, Mode=OneWay}"
+                               FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource StatusBarTextBrush}"
+                               AutomationProperties.AutomationId="ToastText"/>
+                </Border>
+            </StatusBarItem>
+
+            <!-- right-aligned driver settings slot -->
+            <StatusBarItem HorizontalAlignment="Right" Padding="8,0,0,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Record driver checkboxes -->
+                    <TextBlock Text="Record:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <CheckBox x:Name="chkRecordFlaUI" Content="FlaUI" IsChecked="{Binding RecordFlaUI}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRecordFlaUI"/>
+                    <CheckBox x:Name="chkRecordWPFSpy" Content="WPFSpy" IsChecked="{Binding RecordWPFSpy}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRecordWPFSpy"/>
+                    <CheckBox x:Name="chkRecordSikuli" Content="OculiX" IsChecked="{Binding RecordSikuli}" Margin="0,0,12,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRecordSikuli"/>
+                    <!-- Run driver checkboxes -->
+                    <TextBlock Text="Run:" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <CheckBox x:Name="chkRunFlaUI" Content="FlaUI" IsChecked="{Binding RunFlaUI}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRunFlaUI"/>
+                    <CheckBox x:Name="chkRunWPFSpy" Content="WPFSpy" IsChecked="{Binding RunWPFSpy}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRunWPFSpy"/>
+                    <CheckBox x:Name="chkRunSikuli" Content="OculiX" IsChecked="{Binding RunSikuli}" Margin="0,0,6,0" FontSize="11" VerticalContentAlignment="Center" AutomationProperties.AutomationId="chkRunSikuli"/>
+                </StackPanel>
+            </StatusBarItem>
+        </StatusBar>
+
+        <!-- ================= Run Output (collapsible bottom panel) =================
+             A5: a bottom-docked tail of RunOutputText so the live Robot log stream
+             is glanceable across any tab (ELEMENTS/SCRIPTS/RESULTS) without leaving
+             the current view. This DUPLICATES the RESULTS-tab txtRunOutput editor
+             (deliberate per the A5 design decision); both bind to RunOutputText
+             computed from RunOutputLines, so they stay in sync. Collapsed by
+             default; auto-expanded by RunViewModel.RunAsync when a run begins and
+             re-collapsed by Reset(). Honors manual collapse via two-way binding. -->
+        <Expander DockPanel.Dock="Bottom"
+                  IsExpanded="{Binding RunOutputPanelExpanded, Mode=TwoWay}"
+                  Padding="8,4"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="0,1,0,0"
+                  AutomationProperties.AutomationId="RunOutputTailExpander">
+            <Expander.Header>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Run Output" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <!-- "(empty)" badge when no run has produced output yet. Once the
+                         first line streams in, RunOutputText becomes non-empty and this
+                         badge hides while the TextBox below shows the live tail. -->
+                    <TextBlock Text="(empty)" FontSize="10" Margin="8,0,0,0" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               Visibility="{Binding RunOutputText, Converter={StaticResource EmptyStringToVisibleConverter}, Mode=OneWay}"/>
+                </StackPanel>
+            </Expander.Header>
+            <TextBox x:Name="txtRunOutputTail" Text="{Binding RunOutputText, Mode=OneWay}" FontFamily="Consolas" FontSize="11"
+                     IsReadOnly="True" IsReadOnlyCaretVisible="True"
+                     TextWrapping="NoWrap" AcceptsReturn="True"
+                     Style="{StaticResource VsCodeEditor}"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     MinHeight="100" MaxHeight="260"
+                     AutomationProperties.AutomationId="txtRunOutputTail"/>
+        </Expander>
+
+<!-- ================= Docked Panes (A6 Step 3) =================
+      Default layout:
+        - Left  : WORKING FOLDER (narrow, icon-only toolbar, 220px wide)
+        - Right : ELEMENTS / SCRIPTS / RESULTS as a single tabbed group
+        - Bottom: Run Output expander (outside the manager, docked bottom)
+      The OCR Result expander was removed entirely (A3) — it is no longer
+      surfaced in the default layout. The 3 legacy Main-Control TabItems have
+      been promoted to dockable LayoutAnchorable panes. Each keeps its
+      legacy tab-header AutomationId
+      (tabElements/tabScripts/tabResults/tabWorkingFolder) so UC-010/UC-014
+      `Click Element` locators still resolve. -->
+        <avalonDock:DockingManager x:Name="dockManager">
+            <avalonDock:DockingManager.Layout>
+                <avalonDock:LayoutRoot>
+                    <avalonDock:LayoutRoot.RootPanel>
+                        <avalonDock:LayoutPanel>
+                            <!-- Left: Working Folder (narrow, icon-only toolbar). The pane host is given
+      an explicit DockWidth so the tree view stays comfortably narrow regardless
+      of AvalonDock's default star sizing. Use star units (not pixels) because
+      LayoutPanelControl.OnFixChildrenDockLengths resets non-star DockWidths back
+      to 1* on every layout pass, which would otherwise make this pane take ~half
+      the screen instead of a narrow strip. -->
+                            <avalonDock:LayoutAnchorablePane DockWidth="0.2*">
+                                <avalonDock:LayoutAnchorable Title="WORKING FOLDER" IsActive="False">
+                                    <Grid AutomationProperties.AutomationId="tabWorkingFolder">
+                                        <dockViews:WorkingFolderPane/>
+                                    </Grid>
+                                </avalonDock:LayoutAnchorable>
+                            </avalonDock:LayoutAnchorablePane>
+                            <!-- Right: ELEMENTS / SCRIPTS / RESULTS as one tabbed group -->
+                            <avalonDock:LayoutPanel Orientation="Vertical" DockWidth="1*">
+                                <avalonDock:LayoutAnchorablePane>
+                                    <avalonDock:LayoutAnchorable Title="ELEMENTS" IsActive="True">
+                                        <Grid AutomationProperties.AutomationId="tabElements">
+                                            <dockViews:ElementsPane/>
+                                        </Grid>
+                                    </avalonDock:LayoutAnchorable>
+                                    <avalonDock:LayoutAnchorable Title="SCRIPTS">
+                                        <Grid AutomationProperties.AutomationId="tabScripts">
+                                            <dockViews:ScriptsPane/>
+                                        </Grid>
+                                    </avalonDock:LayoutAnchorable>
+                                    <avalonDock:LayoutAnchorable Title="RESULTS">
+                                        <Grid AutomationProperties.AutomationId="tabResults">
+                                            <dockViews:ResultsPane/>
+                                        </Grid>
+                                    </avalonDock:LayoutAnchorable>
+                                </avalonDock:LayoutAnchorablePane>
+                            </avalonDock:LayoutPanel>
+                        </avalonDock:LayoutPanel>
+                    </avalonDock:LayoutRoot.RootPanel>
+                </avalonDock:LayoutRoot>
+            </avalonDock:DockingManager.Layout>
+        </avalonDock:DockingManager>
+
+    </DockPanel>
+</Window>

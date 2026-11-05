@@ -1,0 +1,53 @@
+{
+  "alias": "SpyToolDialog.btnSpyClose",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T12:26:46.023390",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "Button[@AutomationId='btnSpyClose']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='SpyToolDialog']/Button[@AutomationId='btn",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T12:51:29.694379",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "//Button[@AutomationId='btnSpyClose']",
+      "failure_reason": "WPFSpy: no element found for XPath '//Button[@AutomationId='btnSpyClose']' after 15 attempts",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 0,
+      "failure_count": 4,
+      "total_duration_ms": 14156.13603591919,
+      "last_success": null,
+      "last_failure": "2026-08-09T12:51:29.694386",
+      "avg_duration_ms": 3539.0340089797974
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    }
+  },
+  "total_interactions": 4,
+  "first_seen": "2026-08-09T12:26:46.022239",
+  "last_interaction": "2026-08-09T12:51:29.694389",
+  "consecutive_failures": 4,
+  "consecutive_successes": 0
+}

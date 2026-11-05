@@ -1,0 +1,72 @@
+{
+  "alias": "SampleWpfApp.Sample WPF App \u2014 Login.txtUsername",
+  "baseline": {
+    "alias": "SampleWpfApp.Sample WPF App \u2014 Login.txtUsername",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "",
+    "position": null,
+    "is_visible": true,
+    "is_enabled": true,
+    "captured_at": "2026-11-04T21:08:27.783353",
+    "last_verified": "2026-11-04T21:08:27.783374",
+    "verification_count": 3,
+    "driver_used": "FlaUI",
+    "search_method": "XPath",
+    "search_value": "/Window[@Name='Sample WPF App \u2014 Login']/Edit[@AutomationId='txtUsername']"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-11-04T21:07:38.551958",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "XPath",
+      "primary_search_value": "/Window[@Name='Sample WPF App \u2014 Login']/Edit[@AutomationId='txtUsername']",
+      "failure_reason": "name 'searchBy' is not defined",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:XPath": {
+      "success_count": 3,
+      "failure_count": 2,
+      "total_duration_ms": 5335.495233535767,
+      "last_success": "2026-11-04T21:08:27.568776",
+      "last_failure": "2026-11-04T21:07:38.551997",
+      "avg_duration_ms": 1778.4984111785889,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "FlaUI:AutomationId": {
+      "success_count": 0,
+      "failure_count": 1,
+      "total_duration_ms": 804.3820858001709,
+      "last_success": null,
+      "last_failure": "2026-11-04T21:07:38.549542",
+      "avg_duration_ms": 804.3820858001709,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 9,
+  "first_seen": "2026-11-04T21:03:10.230855",
+  "last_interaction": "2026-11-04T21:08:27.783380",
+  "consecutive_failures": 0,
+  "consecutive_successes": 2
+}

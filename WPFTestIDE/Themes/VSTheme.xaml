@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- VS Code-like Theme -->
+    <!-- This dictionary merges all theme resources -->
+    <!-- Default theme is light; dark can be applied via ThemeManager -->
+
+    <!-- Light theme is the default -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="Colors.xaml"/>
+        <ResourceDictionary Source="Styles.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+</ResourceDictionary>

@@ -1,0 +1,84 @@
+{
+  "alias": "SampleWpfApp.OrdersWindow.Logout",
+  "baseline": {
+    "alias": "SampleWpfApp.OrdersWindow.Logout",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Logout",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-09-04T09:40:42.488458",
+    "last_verified": "2026-09-04T09:40:42.488460",
+    "verification_count": 1,
+    "driver_used": "FlaUI",
+    "search_method": "Name",
+    "search_value": "Logout"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-09-04T09:39:52.439282",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "XPath",
+      "primary_search_value": "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnLogout']/Text[@Name='Logout']",
+      "failure_reason": "Element not found: 'FlaUI: no element found for XPath '/Window[@AutomationId='OrdersWindow']/Button[",
+      "healing_driver": "FlaUI",
+      "healing_search_method": "Name",
+      "healing_search_value": "Logout",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Logout",
+        "is_visible": false,
+        "is_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-09-04T09:40:42.488430",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "XPath",
+      "primary_search_value": "/Window[@AutomationId='OrdersWindow']/Button[@AutomationId='btnLogout']/Text[@Name='Logout']",
+      "failure_reason": "Element not found: 'FlaUI: no element found for XPath '/Window[@AutomationId='OrdersWindow']/Button[",
+      "healing_driver": "FlaUI",
+      "healing_search_method": "Name",
+      "healing_search_value": "Logout",
+      "healing_successful": true,
+      "new_properties": {
+        "automation_id": null,
+        "name": null,
+        "control_type": null,
+        "text": "Logout",
+        "is_visible": false,
+        "is_enabled": true
+      }
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:XPath": {
+      "success_count": 0,
+      "failure_count": 2,
+      "total_duration_ms": 122.50018119812012,
+      "last_success": null,
+      "last_failure": "2026-09-04T09:40:39.240154",
+      "avg_duration_ms": 61.25009059906006
+    },
+    "FlaUI:Name": {
+      "success_count": 4,
+      "failure_count": 0,
+      "total_duration_ms": 2185.051679611206,
+      "last_success": "2026-09-04T09:40:42.488468",
+      "last_failure": null,
+      "avg_duration_ms": 546.2629199028015
+    }
+  },
+  "total_interactions": 6,
+  "first_seen": "2026-09-04T09:39:49.106557",
+  "last_interaction": "2026-09-04T09:40:42.488472",
+  "consecutive_failures": 0,
+  "consecutive_successes": 2
+}

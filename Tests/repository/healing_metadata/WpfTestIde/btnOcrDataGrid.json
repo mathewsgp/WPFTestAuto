@@ -1,0 +1,55 @@
+{
+  "alias": "WpfTestIde.MainWindow.btnOcrDataGrid",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-09-04T22:14:44.298608",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnOcrDataGrid",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnOcrDataGrid': Element from XPath '//*[@A",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 0,
+      "failure_count": 2,
+      "total_duration_ms": 1281.5637588500977,
+      "last_success": null,
+      "last_failure": "2026-09-04T22:14:44.298617",
+      "avg_duration_ms": 640.7818794250488,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "WPFSpy:XPath": {
+      "success_count": 0,
+      "failure_count": 1,
+      "total_duration_ms": 0.23508071899414062,
+      "last_success": null,
+      "last_failure": "2026-09-04T22:14:44.297960",
+      "avg_duration_ms": 0.23508071899414062,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 3,
+  "first_seen": "2026-09-04T22:14:44.296828",
+  "last_interaction": "2026-09-04T22:14:44.298619",
+  "consecutive_failures": 3,
+  "consecutive_successes": 0
+}

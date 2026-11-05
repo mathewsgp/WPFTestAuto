@@ -1,0 +1,290 @@
+{
+  "elements": {
+    "OrdersPage.OrdersWindow": {
+      "displayName": "Orders Window",
+      "controlType": "Window",
+      "windowAutomationId": "OrdersWindow",
+      "name": "Sample WPF App \u00e2\u20ac\u201d Orders",
+      "parentAlias": null,
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "Name",
+            "value": "Sample WPF App \u00e2\u20ac\u201d Orders",
+            "priority": 1
+          }
+        ]
+      }
+    },
+    "OrdersPage.OrdersWindow.cmbSku": {
+      "displayName": "SKU Combo Box",
+      "controlType": "ComboBox",
+      "automationId": "cmbSku",
+      "parentAlias": "OrdersPage.OrdersWindow",
+      "relativeXPath": "ComboBox[@AutomationId='cmbSku']",
+      "defaultTimeout": 10,
+      "tags": [
+        "orders",
+        "critical"
+      ],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "cmbSku",
+            "priority": 1
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "AutomationId",
+            "value": "cmbSku",
+            "priority": 1
+          },
+          {
+            "searchBy": "XPath",
+            "value": "ComboBox[@AutomationId='cmbSku']",
+            "priority": 2
+          }
+        ],
+        "Sikuli": [
+          {
+            "searchBy": "Image",
+            "value": "sku_combo.png",
+            "priority": 2
+          }
+        ]
+      }
+    },
+    "OrdersPage.OrdersWindow.txtQty": {
+      "displayName": "Quantity Text Box",
+      "controlType": "TextBox",
+      "automationId": "txtQty",
+      "parentAlias": "OrdersPage.OrdersWindow",
+      "relativeXPath": "TextBox[@AutomationId='txtQty']",
+      "defaultTimeout": 10,
+      "tags": [
+        "orders",
+        "critical"
+      ],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "txtQty",
+            "priority": 1
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "AutomationId",
+            "value": "txtQty",
+            "priority": 1
+          },
+          {
+            "searchBy": "XPath",
+            "value": "TextBox[@AutomationId='txtQty']",
+            "priority": 2
+          }
+        ],
+        "Sikuli": [
+          {
+            "searchBy": "Image",
+            "value": "qty_box.png",
+            "priority": 2
+          }
+        ]
+      }
+    },
+    "OrdersPage.OrdersWindow.chkPriority": {
+      "displayName": "Priority Checkbox",
+      "controlType": "CheckBox",
+      "name": "chkPriority",
+      "hasAutomationId": false,
+      "parentAlias": "OrdersPage.OrdersWindow",
+      "relativeXPath": "CheckBox[@Name='chkPriority']",
+      "defaultTimeout": 10,
+      "tags": [
+        "orders",
+        "non-standard",
+        "wpfspy-only"
+      ],
+      "strategies": {
+        "WPFSpy": [
+          {
+            "searchBy": "Name",
+            "value": "chkPriority",
+            "priority": 1
+          },
+          {
+            "searchBy": "XPath",
+            "value": "CheckBox[@Name='chkPriority']",
+            "priority": 2
+          }
+        ],
+        "Sikuli": [
+          {
+            "searchBy": "Image",
+            "value": "priority_checkbox.png",
+            "priority": 2
+          }
+        ]
+      }
+    },
+    "OrdersPage.OrdersWindow.btnCreateOrder": {
+      "displayName": "Create Order Button",
+      "controlType": "Button",
+      "automationId": "btnCreateOrder",
+      "parentAlias": "OrdersPage.OrdersWindow",
+      "relativeXPath": "Button[@AutomationId='btnCreateOrder']",
+      "defaultTimeout": 10,
+      "tags": [
+        "orders",
+        "critical"
+      ],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "btnCreateOrder",
+            "priority": 1
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "AutomationId",
+            "value": "btnCreateOrder",
+            "priority": 1
+          },
+          {
+            "searchBy": "XPath",
+            "value": "Button[@AutomationId='btnCreateOrder']",
+            "priority": 2
+          }
+        ],
+        "Sikuli": [
+          {
+            "searchBy": "Image",
+            "value": "create_order_button.png",
+            "priority": 2
+          }
+        ]
+      }
+    },
+    "OrdersPage.OrdersWindow.lblConfirmation": {
+      "displayName": "Confirmation Label",
+      "controlType": "Label",
+      "name": "lblConfirmation",
+      "parentAlias": "OrdersPage.OrdersWindow",
+      "relativeXPath": "Label[@Name='lblConfirmation']",
+      "defaultTimeout": 10,
+      "tags": [
+        "orders",
+        "verification"
+      ],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "Name",
+            "value": "lblConfirmation",
+            "priority": 1
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "XPath",
+            "value": "Label[@Name='lblConfirmation']",
+            "priority": 1
+          }
+        ],
+        "Sikuli": [
+          {
+            "searchBy": "Image",
+            "value": "confirmation_label.png",
+            "priority": 2
+          }
+        ]
+      }
+    },
+    "OrdersPage.OrdersWindow.gridOrders": {
+      "displayName": "Orders Grid",
+      "controlType": "DataGrid",
+      "automationId": "gridOrders",
+      "parentAlias": "OrdersPage.OrdersWindow",
+      "relativeXPath": "DataGrid[@AutomationId='gridOrders']",
+      "defaultTimeout": 10,
+      "tags": [
+        "orders",
+        "verification"
+      ],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "gridOrders",
+            "priority": 1
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "AutomationId",
+            "value": "gridOrders",
+            "priority": 1
+          },
+          {
+            "searchBy": "XPath",
+            "value": "DataGrid[@AutomationId='gridOrders']",
+            "priority": 2
+          }
+        ],
+        "Sikuli": [
+          {
+            "searchBy": "Image",
+            "value": "orders_grid.png",
+            "priority": 2
+          }
+        ]
+      }
+    },
+    "OrdersPage.OrdersWindow.btnLogout": {
+      "displayName": "Logout Button",
+      "controlType": "Button",
+      "automationId": "btnLogout",
+      "parentAlias": "OrdersPage.OrdersWindow",
+      "relativeXPath": "Button[@AutomationId='btnLogout']",
+      "defaultTimeout": 10,
+      "tags": [
+        "orders",
+        "navigation"
+      ],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "btnLogout",
+            "priority": 1
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "AutomationId",
+            "value": "btnLogout",
+            "priority": 1
+          },
+          {
+            "searchBy": "XPath",
+            "value": "Button[@AutomationId='btnLogout']",
+            "priority": 2
+          }
+        ],
+        "Sikuli": [
+          {
+            "searchBy": "Image",
+            "value": "logout_button.png",
+            "priority": 2
+          }
+        ]
+      }
+    }
+  }
+}

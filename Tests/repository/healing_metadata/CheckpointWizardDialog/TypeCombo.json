@@ -1,0 +1,109 @@
+{
+  "alias": "CheckpointWizardDialog.TypeCombo",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T13:00:24.540406",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "ComboBox[@AutomationId='TypeCombo']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='CheckpointWizardDialog']/ComboBox[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T13:03:33.403982",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "TypeCombo",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='TypeCombo': Element from XPath '//*[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T13:08:24.588106",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "ComboBox[@AutomationId='TypeCombo']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='CheckpointWizardDialog']/ComboBox[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T17:57:59.123456",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "ComboBox[@AutomationId='TypeCombo']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='CheckpointWizardDialog']/ComboBox[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T18:04:28.196031",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "ComboBox[@AutomationId='TypeCombo']",
+      "failure_reason": "WPFSpy: no element found for XPath '/Window[@AutomationId='CheckpointWizardDialog']/ComboBox[@Automa",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-08-09T18:06:55.970039",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "//ComboBox[@AutomationId='TypeCombo']",
+      "failure_reason": "WPFSpy: no element found for XPath '//ComboBox[@AutomationId='TypeCombo']' after 15 attempts",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 0,
+      "failure_count": 11,
+      "total_duration_ms": 42397.81451225281,
+      "last_success": null,
+      "last_failure": "2026-08-09T18:06:55.970052",
+      "avg_duration_ms": 3854.346773841164
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0
+    },
+    "FlaUI:AutomationId": {
+      "success_count": 0,
+      "failure_count": 2,
+      "total_duration_ms": 882.5361728668213,
+      "last_success": null,
+      "last_failure": "2026-08-09T13:03:33.403996",
+      "avg_duration_ms": 441.26808643341064
+    }
+  },
+  "total_interactions": 13,
+  "first_seen": "2026-08-09T13:00:24.539237",
+  "last_interaction": "2026-08-09T18:06:55.970057",
+  "consecutive_failures": 13,
+  "consecutive_successes": 0
+}

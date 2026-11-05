@@ -1,0 +1,73 @@
+{
+  "elements": {
+    "LoginPage.txtUsername": {
+      "displayName": "txtUsername",
+      "controlType": "TextBox",
+      "parentAlias": "LoginPage.MainWindow",
+      "defaultTimeout": 10,
+      "tags": ["recorded"],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "txtUsername",
+            "scope": "Descendant"
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "XPath",
+            "value": "/Window[@AutomationId='LoginPage']/TextBox[@AutomationId='txtUsername']"
+          }
+        ]
+      },
+      "driverPriority": ["FlaUI", "WPFSpy"]
+    },
+    "LoginPage.txtPassword": {
+      "displayName": "txtPassword",
+      "controlType": "PasswordBox",
+      "parentAlias": "LoginPage.MainWindow",
+      "defaultTimeout": 10,
+      "tags": ["recorded"],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "txtPassword",
+            "scope": "Descendant"
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "XPath",
+            "value": "/Window[@AutomationId='LoginPage']/PasswordBox[@AutomationId='txtPassword']"
+          }
+        ]
+      },
+      "driverPriority": ["FlaUI", "WPFSpy"]
+    },
+    "LoginPage.btnSubmit": {
+      "displayName": "btnSubmit",
+      "controlType": "Button",
+      "parentAlias": "LoginPage.MainWindow",
+      "defaultTimeout": 10,
+      "tags": ["recorded"],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "btnSubmit",
+            "scope": "Descendant"
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "XPath",
+            "value": "/Window[@AutomationId='LoginPage']/Button[@AutomationId='btnSubmit']"
+          }
+        ]
+      },
+      "driverPriority": ["FlaUI", "WPFSpy"]
+    }
+  }
+}

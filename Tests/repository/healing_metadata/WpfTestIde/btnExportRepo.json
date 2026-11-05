@@ -1,0 +1,39 @@
+{
+  "alias": "WpfTestIde.MainWindow.btnExportRepo",
+  "baseline": {
+    "alias": "WpfTestIde.MainWindow.btnExportRepo",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Export Repository (.yaml)",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-09-04T22:57:36.720401",
+    "last_verified": "2026-09-04T22:57:36.720411",
+    "verification_count": 6,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnExportRepo"
+  },
+  "healing_history": [],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 6,
+      "failure_count": 0,
+      "total_duration_ms": 3052.882194519043,
+      "last_success": "2026-09-04T22:57:34.536239",
+      "last_failure": null,
+      "avg_duration_ms": 508.81369908650714,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 12,
+  "first_seen": "2026-09-04T21:42:37.331889",
+  "last_interaction": "2026-09-04T22:57:36.720417",
+  "consecutive_failures": 0,
+  "consecutive_successes": 12
+}

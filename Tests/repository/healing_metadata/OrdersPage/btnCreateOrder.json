@@ -1,0 +1,37 @@
+{
+  "alias": "OrdersPage.OrdersWindow.btnCreateOrder",
+  "baseline": {
+    "alias": "OrdersPage.OrdersWindow.btnCreateOrder",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "Create Order",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": true,
+    "captured_at": "2026-09-03T09:59:59.826009",
+    "last_verified": "2026-09-03T09:59:59.826019",
+    "verification_count": 2,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnCreateOrder"
+  },
+  "healing_history": [],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 2,
+      "failure_count": 0,
+      "total_duration_ms": 1062.2913837432861,
+      "last_success": "2026-09-03T09:59:59.435868",
+      "last_failure": null,
+      "avg_duration_ms": 531.1456918716431
+    }
+  },
+  "total_interactions": 4,
+  "first_seen": "2026-09-03T09:58:27.200919",
+  "last_interaction": "2026-09-03T09:59:59.826025",
+  "consecutive_failures": 0,
+  "consecutive_successes": 4
+}

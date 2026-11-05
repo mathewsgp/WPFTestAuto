@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+  <assemblyIdentity version="1.0.0.0" name="WpfTestIde.app"/>
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
+    <security>
+      <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <!-- Windows 10/11 -->
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}" />
+    </application>
+  </compatibility>
+
+  <!-- Per-monitor DPI awareness: required so that screen-point recording
+       (WindowFromPoint, GetWindowRect, AutomationElement.FromPoint) returns
+       coordinates in the same virtualized space as the user's clicks. Without
+       this, the IDE is treated as System DPI Aware and high-DPI apps like
+       UWP Calculator run in a different coordinate space, causing all
+       recorded clicks to be rejected as "not in target process". -->
+  <asmv3:application>
+    <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/PM</dpiAware>
+    </asmv3:windowsSettings>
+  </asmv3:application>
+</assembly>

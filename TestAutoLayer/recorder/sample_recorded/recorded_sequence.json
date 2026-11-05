@@ -1,0 +1,29 @@
+[
+  {
+    "timestamp": "2025-01-01T10:00:00",
+    "eventType": "TextChanged",
+    "automationId": "txtUsername",
+    "name": "UsernameInput",
+    "controlType": "TextBox",
+    "value": "user1",
+    "pageName": "LoginPage"
+  },
+  {
+    "timestamp": "2025-01-01T10:00:01",
+    "eventType": "TextChanged",
+    "automationId": "txtPassword",
+    "name": "PasswordInput",
+    "controlType": "TextBox",
+    "value": "Pass@123",
+    "pageName": "LoginPage"
+  },
+  {
+    "timestamp": "2025-01-01T10:00:02",
+    "eventType": "Invoke",
+    "automationId": "btnSubmit",
+    "name": "SubmitBtn",
+    "controlType": "Button",
+    "value": null,
+    "pageName": "LoginPage"
+  }
+]

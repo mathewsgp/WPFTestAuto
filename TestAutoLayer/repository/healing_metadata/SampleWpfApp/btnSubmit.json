@@ -1,0 +1,39 @@
+{
+  "alias": "SampleWpfApp.Sample WPF App \u2014 Login.btnSubmit",
+  "baseline": {
+    "alias": "SampleWpfApp.Sample WPF App \u2014 Login.btnSubmit",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": false,
+    "captured_at": "2026-11-04T21:08:35.970877",
+    "last_verified": "2026-11-04T21:08:35.970885",
+    "verification_count": 3,
+    "driver_used": "FlaUI",
+    "search_method": "XPath",
+    "search_value": "/Window[@Name='Sample WPF App \u2014 Login']/Button[@AutomationId='btnSubmit']"
+  },
+  "healing_history": [],
+  "strategy_stats": {
+    "FlaUI:XPath": {
+      "success_count": 3,
+      "failure_count": 0,
+      "total_duration_ms": 600.4979610443115,
+      "last_success": "2026-11-04T21:08:28.638851",
+      "last_failure": null,
+      "avg_duration_ms": 200.1659870147705,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 6,
+  "first_seen": "2026-11-04T21:04:15.372964",
+  "last_interaction": "2026-11-04T21:08:35.970895",
+  "consecutive_failures": 0,
+  "consecutive_successes": 6
+}

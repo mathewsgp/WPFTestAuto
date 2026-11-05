@@ -1,0 +1,96 @@
+{
+  "elements": {
+    "OrdersPage.cmbSku": {
+      "displayName": "cmbSku",
+      "controlType": "ComboBox",
+      "parentAlias": "OrdersPage.MainWindow",
+      "defaultTimeout": 10,
+      "tags": ["recorded"],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "cmbSku",
+            "scope": "Descendant"
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "XPath",
+            "value": "/Window[@AutomationId='OrdersPage']/ComboBox[@AutomationId='cmbSku']"
+          }
+        ]
+      },
+      "driverPriority": ["FlaUI", "WPFSpy"]
+    },
+    "OrdersPage.txtQty": {
+      "displayName": "txtQty",
+      "controlType": "TextBox",
+      "parentAlias": "OrdersPage.MainWindow",
+      "defaultTimeout": 10,
+      "tags": ["recorded"],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "txtQty",
+            "scope": "Descendant"
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "XPath",
+            "value": "/Window[@AutomationId='OrdersPage']/TextBox[@AutomationId='txtQty']"
+          }
+        ]
+      },
+      "driverPriority": ["FlaUI", "WPFSpy"]
+    },
+    "OrdersPage.btnCreateOrder": {
+      "displayName": "btnCreateOrder",
+      "controlType": "Button",
+      "parentAlias": "OrdersPage.MainWindow",
+      "defaultTimeout": 10,
+      "tags": ["recorded"],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "btnCreateOrder",
+            "scope": "Descendant"
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "XPath",
+            "value": "/Window[@AutomationId='OrdersPage']/Button[@AutomationId='btnCreateOrder']"
+          }
+        ]
+      },
+      "driverPriority": ["FlaUI", "WPFSpy"]
+    },
+    "OrdersPage.lblConfirmation": {
+      "displayName": "lblConfirmation",
+      "controlType": "TextBlock",
+      "parentAlias": "OrdersPage.MainWindow",
+      "defaultTimeout": 10,
+      "tags": ["recorded"],
+      "strategies": {
+        "FlaUI": [
+          {
+            "searchBy": "AutomationId",
+            "value": "lblConfirmation",
+            "scope": "Descendant"
+          }
+        ],
+        "WPFSpy": [
+          {
+            "searchBy": "XPath",
+            "value": "/Window[@AutomationId='OrdersPage']/TextBlock[@AutomationId='lblConfirmation']"
+          }
+        ]
+      },
+      "driverPriority": ["FlaUI", "WPFSpy"]
+    }
+  }
+}

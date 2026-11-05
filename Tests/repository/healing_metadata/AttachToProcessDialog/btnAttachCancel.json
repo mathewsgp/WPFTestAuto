@@ -1,0 +1,72 @@
+{
+  "alias": "AttachToProcessDialog.btnAttachCancel",
+  "baseline": {
+    "alias": "AttachToProcessDialog.btnAttachCancel",
+    "automation_id": null,
+    "name": null,
+    "control_type": null,
+    "xpath": null,
+    "parent_xpath": null,
+    "text": "",
+    "position": null,
+    "is_visible": false,
+    "is_enabled": false,
+    "captured_at": "2026-09-04T23:08:33.433128",
+    "last_verified": "2026-09-04T23:08:33.433132",
+    "verification_count": 64,
+    "driver_used": "FlaUI",
+    "search_method": "AutomationId",
+    "search_value": "btnAttachCancel"
+  },
+  "healing_history": [
+    {
+      "timestamp": "2026-08-19T09:00:42.159401",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnAttachCancel",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnAttachCancel': Element from XPath '//*[@",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "FlaUI:AutomationId": {
+      "success_count": 24,
+      "failure_count": 2,
+      "total_duration_ms": 12722.807884216309,
+      "last_success": "2026-09-04T23:07:43.177730",
+      "last_failure": "2026-08-19T09:00:42.159417",
+      "avg_duration_ms": 530.1169951756796,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "WPFSpy:XPath": {
+      "success_count": 40,
+      "failure_count": 1,
+      "total_duration_ms": 10674.742937088013,
+      "last_success": "2026-08-16T00:30:00.188317",
+      "last_failure": "2026-08-19T09:00:42.157824",
+      "avg_duration_ms": 260.35958383141497,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 131,
+  "first_seen": "2026-08-09T01:56:35.609652",
+  "last_interaction": "2026-09-04T23:08:33.433136",
+  "consecutive_failures": 0,
+  "consecutive_successes": 14
+}

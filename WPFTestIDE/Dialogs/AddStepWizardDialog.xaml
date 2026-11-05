@@ -1,0 +1,212 @@
+<Window x:Class="WpfTestIde.Dialogs.AddStepWizardDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+         Title="Add Step" Width="520" MaxHeight="900"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        AutomationProperties.AutomationId="AddStepWizardDialog">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Step Type -->
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Step Type:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+        <ComboBox Grid.Row="0" Grid.Column="1" x:Name="StepTypeCombo" Margin="0,0,0,8" SelectionChanged="StepTypeCombo_SelectionChanged" AutomationProperties.AutomationId="StepTypeCombo">
+            <ComboBoxItem Content="Click Element" IsSelected="True"/>
+            <ComboBoxItem Content="Set Element Value"/>
+            <ComboBoxItem Content="Toggle Element"/>
+            <ComboBoxItem Content="Double Click Element"/>
+            <ComboBoxItem Content="Right Click Element"/>
+            <ComboBoxItem Content="Drag And Drop"/>
+            <ComboBoxItem Content="Hover Over Element"/>
+            <ComboBoxItem Content="Press Keys"/>
+            <ComboBoxItem Content="Scroll"/>
+            <ComboBoxItem Content="OculiX Click (Image)"/>
+            <ComboBoxItem Content="OculiX Type (Image)"/>
+            <Separator/>
+            <ComboBoxItem Content="Verify Element Text"/>
+            <ComboBoxItem Content="Verify Element Enabled"/>
+            <ComboBoxItem Content="Verify Element Visible"/>
+            <ComboBoxItem Content="Verify Element Contains Text"/>
+            <ComboBoxItem Content="Verify Element Text Matches Regex"/>
+            <ComboBoxItem Content="Verify Element Attribute"/>
+            <ComboBoxItem Content="Get Data Grid Content Ocr"/>
+            <Separator/>
+            <ComboBoxItem Content="Wait Until Element Exists"/>
+            <ComboBoxItem Content="Wait Until Element Visible"/>
+            <ComboBoxItem Content="Wait Until Element Enabled"/>
+            <ComboBoxItem Content="Wait Until Text Contains"/>
+            <Separator/>
+            <ComboBoxItem Content="Property Checkpoint"/>
+            <ComboBoxItem Content="DataGrid Checkpoint"/>
+            <ComboBoxItem Content="Count Checkpoint"/>
+            <ComboBoxItem Content="Attribute Checkpoint"/>
+            <Separator/>
+            <ComboBoxItem Content="Launch Application"/>
+            <ComboBoxItem Content="Terminate Application"/>
+            <ComboBoxItem Content="Invoke Script"/>
+        </ComboBox>
+
+        <!-- Element -->
+        <TextBlock Grid.Row="1" Grid.Column="0" x:Name="ElementLabel" Text="Element:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+        <ComboBox Grid.Row="1" Grid.Column="1" x:Name="AliasCombo" Margin="0,0,0,8" SelectionChanged="AliasCombo_SelectionChanged" AutomationProperties.AutomationId="AliasCombo"/>
+
+        <!-- Value / Expected Text / Attribute Name -->
+        <TextBlock Grid.Row="2" Grid.Column="0" x:Name="ValueLabel" Text="Value:" VerticalAlignment="Top" Margin="0,0,8,4"/>
+        <TextBox Grid.Row="2" Grid.Column="1" x:Name="ValueBox" Height="40" Margin="0,0,0,8" TextWrapping="Wrap" AcceptsReturn="False"
+                 VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="ValueBox"/>
+
+        <!-- Attribute Name (for Verify Element Attribute) -->
+        <TextBlock Grid.Row="2" Grid.Column="0" x:Name="AttributeNameLabel" Text="Attribute Name:" VerticalAlignment="Top" Margin="0,0,8,4" Visibility="Collapsed"/>
+        <TextBox Grid.Row="2" Grid.Column="1" x:Name="AttributeNameBox" Height="40" Margin="0,0,0,8" TextWrapping="Wrap" AcceptsReturn="False"
+                 VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="AttributeNameBox" Visibility="Collapsed"/>
+
+        <!-- Target Element (for Drag And Drop) -->
+        <TextBlock Grid.Row="2" Grid.Column="0" x:Name="TargetLabel" Text="Target Element:" VerticalAlignment="Top" Margin="0,0,8,4" Visibility="Collapsed"/>
+        <ComboBox Grid.Row="2" Grid.Column="1" x:Name="TargetCombo" Margin="0,0,0,8" Visibility="Collapsed" AutomationProperties.AutomationId="TargetCombo"/>
+
+        <!-- Timeout (for wait steps) -->
+        <TextBlock Grid.Row="2" Grid.Column="0" x:Name="TimeoutLabel" Text="Timeout (s):" VerticalAlignment="Top" Margin="0,0,8,4" Visibility="Collapsed"/>
+        <TextBox Grid.Row="2" Grid.Column="1" x:Name="TimeoutBox" Height="40" Margin="0,0,0,8" TextWrapping="Wrap" AcceptsReturn="False"
+                 VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="TimeoutBox" Visibility="Collapsed"/>
+
+        <!-- Description -->
+        <TextBlock Grid.Row="4" Grid.Column="0" x:Name="DescriptionLabel" Text="Description:" VerticalAlignment="Top" Margin="0,8,8,0"/>
+        <TextBox Grid.Row="4" Grid.Column="1" x:Name="DescriptionBox" Margin="0,8,0,0"
+                 Height="40" TextWrapping="Wrap" AcceptsReturn="False"
+                 AutomationProperties.AutomationId="DescriptionBox"/>
+
+        <!-- Property Options (for Property Checkpoint) -->
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" x:Name="PropertyPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Property Name:" Margin="0,0,0,4"/>
+            <ComboBox x:Name="PropertyNameCombo" Margin="0,0,0,8" AutomationProperties.AutomationId="PropertyNameCombo">
+                <ComboBoxItem Content="Text" IsSelected="True"/>
+                <ComboBoxItem Content="IsEnabled"/>
+                <ComboBoxItem Content="IsVisible"/>
+                <ComboBoxItem Content="AutomationId"/>
+                <ComboBoxItem Content="Name"/>
+                <ComboBoxItem Content="ControlType"/>
+            </ComboBox>
+            <TextBlock Text="Expected Value:" Margin="0,0,0,4"/>
+            <TextBox x:Name="PropertyExpectedBox" Height="40" TextWrapping="Wrap" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="PropertyExpectedBox"/>
+        </StackPanel>
+
+        <!-- Count Options (for Count Checkpoint) -->
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" x:Name="CountPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Expected Count:" Margin="0,0,0,4"/>
+            <TextBox x:Name="CountBox" Width="100" HorizontalAlignment="Left" AutomationProperties.AutomationId="CountBox"/>
+        </StackPanel>
+
+        <!-- Launch Application Options (for Launch Application step) -->
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" x:Name="LaunchAppPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Application ID (optional):" Margin="0,0,0,4"/>
+            <TextBox x:Name="LaunchAppIdBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="LaunchAppIdBox"
+                     ToolTip="Logical name used to refer to this app in subsequent steps. Used to derive pipe name if not specified."
+                     TextChanged="LaunchAppIdBox_TextChanged"/>
+            <TextBlock Text="Path to executable:" Margin="0,0,0,4"/>
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" x:Name="LaunchAppPathBox" Height="28" MinWidth="150" Margin="0,0,8,0" VerticalContentAlignment="Center" AutomationProperties.AutomationId="LaunchAppPathBox"/>
+                <Button Grid.Column="1" x:Name="btnBrowseAppPath" Content="Browse..." Width="80" Click="BrowseAppPath_Click" AutomationProperties.AutomationId="btnBrowseAppPath"/>
+            </Grid>
+            <TextBlock Text="Start in (working directory, optional):" Margin="0,0,0,4"/>
+            <TextBox x:Name="LaunchStartInBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="LaunchStartInBox"/>
+            <TextBlock Text="Command-line arguments (optional):" Margin="0,0,0,4"/>
+            <TextBox x:Name="LaunchArgsBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="LaunchArgsBox"/>
+            <CheckBox x:Name="LaunchAutoAttachCheck" Content="Automatically attach" Margin="0,0,0,4"
+                      AutomationProperties.AutomationId="LaunchAutoAttachCheck"
+                      ToolTip="After launching, wait for the Spy Agent / driver to be ready and register the app for subsequent keywords."/>
+            
+            <!-- Driver Selection -->
+            <StackPanel Margin="0,4,0,8">
+                <TextBlock Text="Available Drivers:" Margin="0,0,0,4"/>
+                <ListBox x:Name="AvailableDriversList" Height="60" FontSize="11" Margin="0,0,0,4" AutomationProperties.AutomationId="AvailableDriversList"/>
+
+                <TextBlock Text="Selected Drivers (priority order):" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,4">
+                    <ListBox x:Name="SelectedDriversList" Height="60" FontSize="11" Margin="0,0,4,0" AutomationProperties.AutomationId="SelectedDriversList"/>
+                    <StackPanel Orientation="Vertical" DockPanel.Dock="Right">
+                        <Button x:Name="btnAddDriver" Content="Add >" Padding="6,2" FontSize="10" Margin="0,0,0,1" AutomationProperties.AutomationId="btnAddDriver" Click="btnAddDriver_Click"/>
+                        <Button x:Name="btnRemoveDriver" Content="&lt; Remove" Padding="6,2" FontSize="10" Margin="0,0,0,1" AutomationProperties.AutomationId="btnRemoveDriver" Click="btnRemoveDriver_Click"/>
+                        <Button x:Name="btnDriverUp" Content="Up" Padding="6,2" FontSize="10" Margin="0,0,0,1" AutomationProperties.AutomationId="btnDriverUp" Click="btnDriverUp_Click"/>
+                        <Button x:Name="btnDriverDown" Content="Down" Padding="6,2" FontSize="10" AutomationProperties.AutomationId="btnDriverDown" Click="btnDriverDown_Click"/>
+                    </StackPanel>
+                </DockPanel>
+            </StackPanel>
+
+            <!-- Enable Spy Agent + conditional pipe name -->
+            <StackPanel Margin="0,0,0,8">
+                <CheckBox x:Name="LaunchSpyAgentCheck" Content="Enable Spy Agent" Margin="0,0,0,4" IsChecked="True"
+                          AutomationProperties.AutomationId="LaunchSpyAgentCheck"
+                          ToolTip="Enable the in-process Spy Agent for this application (sets DOTNET_STARTUP_HOOKS and WPFSPY_AGENT_ENABLED)."/>
+                <StackPanel x:Name="PipeNamePanel" Margin="0,4,0,0">
+                    <TextBlock Text="Pipe name (optional, for Spy Agent):" Margin="0,0,0,4"/>
+                    <TextBox x:Name="LaunchPipeNameBox" Height="28" Margin="0,0,0,8"
+                             AutomationProperties.AutomationId="LaunchPipeNameBox"
+                             ToolTip="Named pipe for Spy Agent communication. Leave empty to use default (WPFSpyAgentPipe_&lt;app_id&gt;)."/>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Terminate Application Options (for Terminate Application step) -->
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" x:Name="TerminateAppPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Application ID (logical name, optional):" Margin="0,0,0,4"/>
+            <TextBox x:Name="TerminateAppIdBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="TerminateAppIdBox"
+                     ToolTip="If set, the framework's known process for this app_id is terminated and the app is unregistered."/>
+            <TextBlock Text="OR — Main window title contains (case-insensitive, optional):" Margin="0,0,0,4"/>
+            <TextBox x:Name="TerminateWindowTitleBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="TerminateWindowTitleBox"
+                     ToolTip="Substring match against the main window title of running processes."/>
+            <TextBlock Text="OR — Process name (executable image, e.g. SampleWpfApp.exe, optional):" Margin="0,0,0,4"/>
+            <TextBox x:Name="TerminateProcessNameBox" Height="28" Margin="0,0,0,8"
+                     AutomationProperties.AutomationId="TerminateProcessNameBox"
+                     ToolTip="Exact match (case-insensitive) against the executable image name."/>
+            <CheckBox x:Name="TerminateForceCheck" Content="Force terminate" Margin="0,4,0,0"
+                      AutomationProperties.AutomationId="TerminateForceCheck"
+                      ToolTip="Use taskkill /F instead of a graceful close."/>
+        </StackPanel>
+
+        <!-- Invoke Script Options (for Invoke Script step) -->
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" x:Name="InvokeScriptPanel" Visibility="Collapsed" Margin="0,8,0,8">
+            <TextBlock Text="Script path (.json / .py / .robot):" Margin="0,0,0,4"/>
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" x:Name="InvokeScriptPathBox" Height="28" MinWidth="150" Margin="0,0,8,0" VerticalContentAlignment="Center" AutomationProperties.AutomationId="InvokeScriptPathBox"/>
+                <Button Grid.Column="1" x:Name="btnBrowseInvokeScriptPath" Content="Browse..." Width="80" Click="BrowseInvokeScriptPath_Click" AutomationProperties.AutomationId="btnBrowseInvokeScriptPath"/>
+            </Grid>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="7" Grid.ColumnSpan="2" Orientation="Horizontal" 
+                    HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="btnStepCancel" Content="Cancel" Width="80" Height="28" Padding="8,2" Margin="0,0,8,0" Click="Cancel_Click" AutomationProperties.AutomationId="btnStepCancel"/>
+            <Button x:Name="btnStepAdd" Content="Add" Width="80" Height="28" Padding="8,2" Click="Add_Click" IsDefault="True" AutomationProperties.AutomationId="btnStepAdd"/>
+        </StackPanel>
+    </Grid>
+    </ScrollViewer>
+</Window>

@@ -1,0 +1,79 @@
+{
+  "alias": "WpfTestIde.MainWindow.btnAddFolder",
+  "baseline": null,
+  "healing_history": [
+    {
+      "timestamp": "2026-08-09T17:58:04.699250",
+      "primary_driver": "WPFSpy",
+      "primary_search_method": "XPath",
+      "primary_search_value": "//Button[@AutomationId='btnAddFolder']",
+      "failure_reason": "No element found for XPath: //Button[@AutomationId='btnAddFolder']",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-09-04T21:42:21.563651",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnAddFolder",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnAddFolder': Element from XPath '//*[@Aut",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    },
+    {
+      "timestamp": "2026-09-04T22:02:28.595065",
+      "primary_driver": "FlaUI",
+      "primary_search_method": "AutomationId",
+      "primary_search_value": "btnAddFolder",
+      "failure_reason": "Element not found: 'FlaUI: no element with AutomationId='btnAddFolder': Element from XPath '//*[@Aut",
+      "healing_driver": "None",
+      "healing_search_method": "N/A",
+      "healing_search_value": "N/A",
+      "healing_successful": false,
+      "new_properties": null
+    }
+  ],
+  "strategy_stats": {
+    "WPFSpy:XPath": {
+      "success_count": 11,
+      "failure_count": 4,
+      "total_duration_ms": 67.98791885375977,
+      "last_success": "2026-08-09T21:50:06.901506",
+      "last_failure": "2026-09-04T22:02:28.594261",
+      "avg_duration_ms": 4.532527923583984,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "None:N/A": {
+      "success_count": 0,
+      "failure_count": 0,
+      "total_duration_ms": 0.0,
+      "last_success": null,
+      "last_failure": null,
+      "avg_duration_ms": 0.0,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    },
+    "FlaUI:AutomationId": {
+      "success_count": 0,
+      "failure_count": 4,
+      "total_duration_ms": 2129.007339477539,
+      "last_success": null,
+      "last_failure": "2026-09-04T22:02:28.595072",
+      "avg_duration_ms": 532.2518348693848,
+      "last_image_match_score": null,
+      "min_image_match_score": null
+    }
+  },
+  "total_interactions": 19,
+  "first_seen": "2026-08-09T17:58:04.697969",
+  "last_interaction": "2026-09-04T22:02:28.595075",
+  "consecutive_failures": 6,
+  "consecutive_successes": 0
+}
