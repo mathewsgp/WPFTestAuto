@@ -84,17 +84,19 @@ echo   pytest               (unit tests)
 echo   pywin32              (Windows named pipe / Win32 APIs)
 echo   pydantic             (data validation/settings)
 echo   pydantic-settings    (env-file based settings)
+echo   debugpy              (debugger support)
+echo   psutil               (process detection / auto-attach)
 echo.
-python -m pip install robotframework pytest pywin32 pydantic pydantic-settings
+python -m pip install robotframework pytest pywin32 pydantic pydantic-settings debugpy psutil
 if errorlevel 1 (
     echo WARNING: Some core packages failed to install. Check the output above.
 )
 echo.
 
 echo   -- Installing optional UI driver dependencies --
-echo   okulix              (Sikuli image-based driver)
+echo   flaui-uiautomation-wrapper  (FlaUI Python UI Automation driver)
 echo.
-python -m pip install flaui-uiautomation-wrapper okulix
+python -m pip install flaui-uiautomation-wrapper
 if errorlevel 1 (
     echo WARNING: Optional UI driver packages failed to install.
     echo   FlaUI/Sikuli drivers will not be available until these are installed.
@@ -128,7 +130,17 @@ if errorlevel 1 (
     echo   https://github.com/tesseract-ocr/tesseract
 )
 echo.
-
+ 
+echo   -- Installing optional .NET integration dependencies --
+echo   pythonnet            (pythonnet-based custom driver implementations)
+echo.
+python -m pip install pythonnet
+if errorlevel 1 (
+    echo WARNING: Optional .NET integration packages failed to install.
+    echo   pythonnet-based custom drivers will not be available until installed.
+)
+echo.
+ 
 REM ------------------------------------------------------------
 REM 5. Verify installation
 REM ------------------------------------------------------------
