@@ -96,7 +96,7 @@ echo.
 echo   -- Installing optional UI driver dependencies --
 echo   flaui-uiautomation-wrapper  (FlaUI Python UI Automation driver)
 echo.
-python -m pip install flaui-uiautomation-wrapper
+python -m pip install flaui-uiautomation-wrapper>=1.0.0b1
 if errorlevel 1 (
     echo WARNING: Optional UI driver packages failed to install.
     echo   FlaUI/Sikuli drivers will not be available until these are installed.
