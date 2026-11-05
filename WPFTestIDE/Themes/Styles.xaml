@@ -418,17 +418,21 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ScrollBar">
-                    <Grid Background="{DynamicResource BackgroundBrush}">
-                        <Track x:Name="PART_Track"
-                               IsDirectionReversed="True"
-                               IsEnabled="{TemplateBinding IsMouseOver}">
-                            <Track.Thumb>
-                                <Thumb Background="{DynamicResource ButtonBackgroundBrush}"
-                                       BorderBrush="{DynamicResource BorderBrush}"
-                                       BorderThickness="1"/>
+<Grid Background="{DynamicResource BackgroundBrush}">
+                    <Track x:Name="PART_Track"
+                           Width="{TemplateBinding Width}"
+                           Height="{TemplateBinding Height}"
+                           IsDirectionReversed="True"
+                           IsEnabled="{TemplateBinding IsMouseOver}">
+                        <Track.Thumb>
+<Thumb Background="{DynamicResource ButtonBackgroundBrush}"
+                                   BorderBrush="{DynamicResource BorderBrush}"
+                                   BorderThickness="1"
+                                   Width="{TemplateBinding Width}"
+                                   Height="20"/>
                             </Track.Thumb>
-                        </Track>
-                    </Grid>
+                    </Track>
+                </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
