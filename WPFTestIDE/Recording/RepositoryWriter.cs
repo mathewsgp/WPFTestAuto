@@ -19,7 +19,7 @@ namespace WpfTestIde.Recording
         /// strategies for the selected recording modes.
         /// </summary>
         /// <param name="entries">Discovered element entries.</param>
-        /// <param name="recordingModes">Selected recording modes (FlaUI, WPFSpy, Sikuli).
+        /// <param name="recordingModes">Selected recording modes (UIA3, WPFSpy, Sikuli).
         /// If empty or null, all strategies are included (backward compatible).</param>
         public static string GenerateJson(IEnumerable<ElementEntry> entries, List<string>? recordingModes = null)
         {
@@ -30,26 +30,26 @@ namespace WpfTestIde.Recording
                 var strategies = new Dictionary<string, List<object>>();
 
                 // Use per-element recording modes if available, otherwise fall back to global modes.
-                // If the element was resolved via FlaUI probe, always include a FlaUI strategy
-                // (even if global recording modes don't include FlaUI) — otherwise the recorded
+                // If the element was resolved via UIA3 probe, always include a UIA3 strategy
+                // (even if global recording modes don't include UIA3) — otherwise the recorded
                 // step will fail to find the element at replay time.
                 var modes = entry.RecordingModes ?? recordingModes;
-                bool resolvedViaFlaUI = entry.NonStandard == false && !string.IsNullOrEmpty(entry.XPath) == false;
+                bool resolvedViaUIA3 = entry.NonStandard == false && !string.IsNullOrEmpty(entry.XPath) == false;
                 bool resolvedViaWPFSpy = !string.IsNullOrEmpty(entry.XPath) && entry.XPath!.Contains("[@AutomationId=");
-                // Heuristic: elements with an XPath always get an XPath-based FlaUI strategy
+                // Heuristic: elements with an XPath always get an XPath-based UIA3 strategy
                 // as the default (mirrors the WPFSpy default), so the recorded step is
                 // symmetric across drivers and stable when AutomationId is missing or
                 // collides. AutomationId/Name are kept as fallbacks.
-                bool includeFlaUI = (modes == null || modes.Contains("FlaUI"))
+                bool includeUIA3 = (modes == null || modes.Contains("UIA3"))
                     || !string.IsNullOrEmpty(entry.AutomationId)
                     || entry.ControlType == "Window"
                     || (!string.IsNullOrEmpty(entry.Name) && entry.Name.Length > 0);
 
-                if (includeFlaUI && !string.IsNullOrEmpty(entry.XPath))
+                if (includeUIA3 && !string.IsNullOrEmpty(entry.XPath))
                 {
-                    // Default FlaUI strategy: XPath (UIA control types, built by
-                    // FlaUIElementProbe.BuildXPath — already compatible with FlaUI).
-                    var flauiStrategies = new List<object>
+                    // Default UIA3 strategy: XPath (UIA control types, built by
+                    // UIA3ElementProbe.BuildXPath — already compatible with UIA3).
+                    var uia3Strategies = new List<object>
                     {
                         new Dictionary<string, object>
                         {
@@ -59,7 +59,7 @@ namespace WpfTestIde.Recording
                     };
                     if (!string.IsNullOrEmpty(entry.AutomationId))
                     {
-                        flauiStrategies.Add(new Dictionary<string, object>
+                        uia3Strategies.Add(new Dictionary<string, object>
                         {
                             ["searchBy"] = "AutomationId",
                             ["value"] = entry.AutomationId!,
@@ -68,18 +68,18 @@ namespace WpfTestIde.Recording
                     }
                     if (!string.IsNullOrEmpty(entry.Name) && entry.Name != entry.AutomationId)
                     {
-                        flauiStrategies.Add(new Dictionary<string, object>
+                        uia3Strategies.Add(new Dictionary<string, object>
                         {
                             ["searchBy"] = "Name",
                             ["value"] = entry.Name,
                             ["scope"] = "Descendant",
                         });
                     }
-                    strategies["FlaUI"] = flauiStrategies;
+                    strategies["UIA3"] = uia3Strategies;
                 }
-                else if (includeFlaUI && !string.IsNullOrEmpty(entry.AutomationId))
+                else if (includeUIA3 && !string.IsNullOrEmpty(entry.AutomationId))
                 {
-                    strategies["FlaUI"] = new List<object>
+                    strategies["UIA3"] = new List<object>
                     {
                         new Dictionary<string, object>
                         {
@@ -89,9 +89,9 @@ namespace WpfTestIde.Recording
                         }
                     };
                 }
-                else if (includeFlaUI && !string.IsNullOrEmpty(entry.Name))
+                else if (includeUIA3 && !string.IsNullOrEmpty(entry.Name))
                 {
-                    strategies["FlaUI"] = new List<object>
+                    strategies["UIA3"] = new List<object>
                     {
                         new Dictionary<string, object>
                         {

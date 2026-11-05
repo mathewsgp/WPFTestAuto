@@ -28,12 +28,12 @@ namespace WpfTestIde.Models
 
         public bool NonStandard => string.IsNullOrEmpty(AutomationId);
 
-        /// <summary>Per-element recording modes (FlaUI, WPFSpy, OculiX).
+        /// <summary>Per-element recording modes (UIA3, WPFSpy, OculiX).
         /// If null or empty, the global recording modes from the ViewModel are used.</summary>
         public List<string>? RecordingModes { get; set; }
 
         /// <summary>Per-element driver priority order for element identification.
-        /// Example: ["FlaUI", "WPFSpy", "OculiX"]
+        /// Example: ["UIA3", "WPFSpy", "OculiX"]
         /// If null or empty, the global driver order from config is used.</summary>
         public List<string>? DriverPriority { get; set; }
 

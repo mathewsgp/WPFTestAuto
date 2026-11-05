@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Uia3Worker</AssemblyName>
+    <RootNamespace>WpfTestIde.Uia3Worker</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WpfTestIde.Uia3Worker.Core\WpfTestIde.Uia3Worker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

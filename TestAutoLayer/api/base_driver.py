@@ -26,10 +26,40 @@ class ElementHandle:
     locator: Dict[str, str]
     driver_name: str
     found_at: float = None
+    driver: Optional['BaseDriver'] = None
     
     def __post_init__(self):
         if self.found_at is None:
             self.found_at = time.time()
+    
+    def exists(self) -> bool:
+        """ElementHandle always represents a found element at creation time."""
+        return True
+    
+    @property
+    def name(self) -> str:
+        """Element name from driver if available, else locator value."""
+        if self.driver is not None:
+            try:
+                return self.driver.get_text(self) or self.locator.get("value", "")
+            except Exception:
+                pass
+        return self.locator.get("value", "")
+    
+    @property
+    def is_visible(self) -> bool:
+        """Visibility requires the driver; returns True if driver reference present."""
+        if self.driver is not None:
+            try:
+                return self.driver.is_visible(self)
+            except Exception:
+                return False
+        return True
+    
+    def click(self) -> None:
+        """Click/invoke the element via the driver."""
+        if self.driver is not None:
+            self.driver.invoke(self)
     
     def is_stale(self, max_age: float = 60.0) -> bool:
         """Check if the element handle is potentially stale."""

@@ -13,8 +13,8 @@ namespace WpfTestIde.Dialogs
     {
         private readonly List<ElementEntry> _elements;
         private readonly string _pipeName;
-        private readonly List<string> _allDrivers = new() { "WPFSpy", "FlaUI", "OculiX" };
-        private List<string> _selectedDrivers = new() { "WPFSpy", "FlaUI" };
+        private readonly List<string> _allDrivers = new() { "WPFSpy", "UIA3", "OculiX" };
+        private List<string> _selectedDrivers = new() { "WPFSpy", "UIA3" };
 
         public RecordedStep? CreatedStep { get; private set; }
 

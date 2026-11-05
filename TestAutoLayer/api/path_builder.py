@@ -104,7 +104,7 @@ class PathBuilder:
         automation_id: Optional[str] = None,
         name: Optional[str] = None,
         index: Optional[int] = None,
-        driver: str = "FlaUI"
+        driver: str = "UIA3"
     ) -> str:
         """Build a full XPath from container chain and control info.
         
@@ -114,7 +114,7 @@ class PathBuilder:
             automation_id: AutomationId of the control (if available)
             name: Name of the control (if available)
             index: Index among siblings (if no unique identifier)
-            driver: Driver type (FlaUI, WPFSpy)
+            driver: Driver type (UIA3, WPFSpy)
         
         Returns:
             Full XPath string
@@ -251,20 +251,20 @@ class PathBuilder:
         strategies = {}
         priority = 1
         
-        # FlaUI paths
-        flaui_strategies = []
+        # UIA3 paths
+        uia3_strategies = []
         if automation_id:
             xpath = PathBuilder.build_xpath(
                 container_chain, control_type, 
                 automation_id=automation_id,
-                driver="FlaUI"
+                driver="UIA3"
             )
-            flaui_strategies.append({
+            uia3_strategies.append({
                 "searchBy": "XPath",
                 "value": xpath,
                 "priority": 1
             })
-            flaui_strategies.append({
+            uia3_strategies.append({
                 "searchBy": "AutomationId",
                 "value": automation_id,
                 "priority": 1
@@ -274,21 +274,21 @@ class PathBuilder:
             xpath = PathBuilder.build_xpath(
                 container_chain, control_type,
                 name=name,
-                driver="FlaUI"
+                driver="UIA3"
             )
-            flaui_strategies.append({
+            uia3_strategies.append({
                 "searchBy": "XPath",
                 "value": xpath,
-                "priority": len(flaui_strategies) + 1
+                "priority": len(uia3_strategies) + 1
             })
-            flaui_strategies.append({
+            uia3_strategies.append({
                 "searchBy": "Name",
                 "value": name,
-                "priority": len(flaui_strategies) + 1
+                "priority": len(uia3_strategies) + 1
             })
         
-        if flaui_strategies:
-            strategies["FlaUI"] = flaui_strategies
+        if uia3_strategies:
+            strategies["UIA3"] = uia3_strategies
         
         # WPFSpy paths
         wpfspy_strategies = []

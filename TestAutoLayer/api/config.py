@@ -15,12 +15,17 @@ class FrameworkConfig(BaseSettings):
     """Centralized configuration for the test automation framework."""
 
     # Driver configuration
-    DRIVER_ORDER: List[str] = ["FlaUI", "WPFSpy", "OculiX"]
+    DRIVER_ORDER: List[str] = ["UIA3", "WPFSpy", "OculiX"]
+
+    # Deprecated driver name aliases (kept for backward compatibility with
+    # existing element repository JSON files and scripts).
+    FLAUI_DEPRECATED_ALIAS: str = "UIA3"
 
     # Timeouts (seconds)
     DEFAULT_TIMEOUT: float = 30.0
     DRIVER_TIMEOUTS: Dict[str, float] = {
-        "FlaUI": 10.0,
+        "UIA3": 10.0,
+        "FlaUI": 10.0,  # kept as deprecated alias
         "WPFSpy": 15.0,
         "OculiX": 30.0,
     }
@@ -58,7 +63,7 @@ class FrameworkConfig(BaseSettings):
     @classmethod
     def _parse_driver_timeouts(cls, v):
         result = dict(v) if isinstance(v, dict) else {}
-        for driver in ("FlaUI", "WPFSpy", "OculiX"):
+        for driver in ("UIA3", "FlaUI", "WPFSpy", "OculiX"):
             env_val = os.environ.get(f"{driver.upper()}_TIMEOUT")
             if env_val:
                 try:

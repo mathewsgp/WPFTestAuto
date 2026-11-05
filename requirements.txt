@@ -10,8 +10,11 @@ pydantic-settings>=2.0.0
 debugpy>=1.0
 psutil>=5.0
 # ---- Optional: UI drivers ----
-# Required for flaui-uiautomation-wrapper Python UI Automation driver.
-flaui-uiautomation-wrapper>=1.0.0b1
+# UIA3 driver uses pywin32 (already in core) for named-pipe IPC to the
+# Uia3Worker.exe C# process — no flaui-uiautomation-wrapper or pythonnet needed.
+# flaui-uiautomation-wrapper>=1.0.0b1  (removed — replaced by Uia3Worker)
+# pythonnet>=3.0                        (removed — no longer used)
+
 # Required for Sikuli image-based automation.
 
 # ---- Optional: OCR ----
@@ -28,5 +31,5 @@ pyautogui>=0.9
 pyperclip>=1.8
 
 # ---- Optional: .NET integration ----
-# Required for pythonnet-based custom driver implementations.
-pythonnet>=3.0
+# pythonnet was previously used by flaui-uiautomation-wrapper; removed with it.
+# pythonnet>=3.0

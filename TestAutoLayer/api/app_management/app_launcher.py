@@ -162,7 +162,7 @@ def launch_application(
             or "wpf" in base_for_detect
             or "xaml" in base_for_detect
         )
-        drivers = ["WPFSpy"] if is_likely_wpf else ["FlaUI"]
+        drivers = ["WPFSpy"] if is_likely_wpf else ["UIA3"]
 
     # Normalize path
     norm_path = (app_path or "").replace("/", "\\").strip()
@@ -376,10 +376,10 @@ def attach_to_application(
         process_id = detected_pid
         if spy_pipe:
             pipe_name = spy_pipe
-            if driver_list is None:
-                driver_list = ["WPFSpy", "FlaUI"]
+        if driver_list is None:
+            driver_list = ["WPFSpy", "UIA3"]
         elif driver_list is None:
-            driver_list = ["FlaUI"]
+            driver_list = ["UIA3"]
 
     app_context = AppContext(
         app_id=app_id,

@@ -105,14 +105,14 @@ class StrategyExecutor:
         elif active_driver is not None:
             driver_order = [active_driver]
         elif element_priority:
-            driver_order = [d for d in element_priority if d in all_strategies]
+            driver_order = [d for d in element_priority if self._driver_in_strategies(d, all_strategies)]
             if not driver_order:
                 driver_order = self._get_default_driver_order(all_strategies)
         elif app_id:
             # Use app context driver list if available
             try:
                 app_ctx = get_multi_app_context().get_app(app_id)
-                driver_order = [d for d in app_ctx.driver_list if d in all_strategies]
+                driver_order = [d for d in app_ctx.driver_list if self._driver_in_strategies(d, all_strategies)]
                 if not driver_order:
                     driver_order = self._get_default_driver_order(all_strategies)
             except ValueError:
@@ -134,11 +134,13 @@ class StrategyExecutor:
         healing_info = HealingInfo()
         
         for driver_name in driver_order:
-            if driver_name not in all_strategies:
+            # Resolve strategies for this driver, handling FlaUI→UIA3 alias.
+            strategy_driver = self._strategy_driver_for(driver_name, all_strategies)
+            if strategy_driver is None:
                 continue
-            
-            driver_strategies = all_strategies[driver_name]
-            driver = self._driver_provider(driver_name, app_id)
+
+            driver_strategies = all_strategies[strategy_driver]
+            driver = self._driver_provider(strategy_driver, app_id)
             
             if driver is None:
                 logger.warning(
@@ -149,7 +151,7 @@ class StrategyExecutor:
                 continue
             
             # Check circuit breaker
-            breaker = self._breaker_manager.get_breaker(driver_name)
+            breaker = self._breaker_manager.get_breaker(strategy_driver)
             if not breaker.allow_request():
                 logger.warning(
                     f"Circuit breaker open for {driver_name}, skipping",
@@ -162,7 +164,7 @@ class StrategyExecutor:
             # Try each strategy for this driver in priority order
             for strategy in driver_strategies:
                 result = self._execute_strategy(
-                    driver, driver_name, strategy, action_name, args,
+                    driver, driver_name, strategy_driver, strategy, action_name, args,
                     alias, app_id, healing_info, attempts
                 )
                 
@@ -228,6 +230,7 @@ class StrategyExecutor:
         self,
         driver: Any,
         driver_name: str,
+        strategy_driver_name: str,
         strategy: Dict[str, Any],
         action_name: str,
         args: tuple,
@@ -258,7 +261,7 @@ class StrategyExecutor:
             duration_ms = (time.time() - start_time) * 1000
             
             # Success
-            breaker = self._breaker_manager.get_breaker(driver_name)
+            breaker = self._breaker_manager.get_breaker(strategy_driver_name)
             breaker.record_success()
             
             # Record healing/baseline
@@ -266,7 +269,7 @@ class StrategyExecutor:
                 image_score = getattr(driver, "last_match_score", None)
                 self._healing_tracker.record_strategy_attempt(
                     alias=alias,
-                    driver=driver_name,
+                    driver=strategy_driver_name,
                     search_method=search_by,
                     success=True,
                     duration_ms=duration_ms,
@@ -282,7 +285,7 @@ class StrategyExecutor:
                         primary_search_method=healing_info.primary_search_by,
                         primary_search_value=healing_info.primary_value,
                         failure_reason=healing_info.primary_error,
-                        healing_driver=driver_name,
+                        healing_driver=strategy_driver_name,
                         healing_search_method=search_by,
                         healing_search_value=strategy_value,
                         healing_successful=True,
@@ -293,7 +296,7 @@ class StrategyExecutor:
                         alias=alias,
                         app_id=app_id,
                         primary=healing_info.primary_driver,
-                        healing=driver_name
+                        healing=strategy_driver_name
                     )
                 else:
                     # Capture baseline on first success
@@ -301,7 +304,7 @@ class StrategyExecutor:
                     self._healing_tracker.capture_baseline(
                         alias=alias,
                         properties=props,
-                        driver=driver_name,
+                        driver=strategy_driver_name,
                         search_method=search_by,
                         search_value=strategy_value,
                     )
@@ -324,7 +327,7 @@ class StrategyExecutor:
             if self._healing_tracker:
                 self._healing_tracker.record_strategy_attempt(
                     alias=alias,
-                    driver=driver_name,
+                    driver=strategy_driver_name,
                     search_method=search_by,
                     success=False,
                     duration_ms=duration_ms,
@@ -333,7 +336,7 @@ class StrategyExecutor:
             # Record first failure for healing tracking
             if not healing_info.attempted:
                 healing_info.attempted = True
-                healing_info.primary_driver = driver_name
+                healing_info.primary_driver = strategy_driver_name
                 healing_info.primary_search_by = search_by
                 healing_info.primary_value = strategy_value
                 healing_info.primary_error = error_msg
@@ -348,7 +351,7 @@ class StrategyExecutor:
             )
             
             # Record failure for circuit breaker
-            breaker = self._breaker_manager.get_breaker(driver_name)
+            breaker = self._breaker_manager.get_breaker(strategy_driver_name)
             breaker.record_failure()
             
             return ExecutionResult(
@@ -360,9 +363,52 @@ class StrategyExecutor:
             )
     
     def _get_default_driver_order(self, all_strategies: Dict[str, List[Dict]]) -> List[str]:
-        """Get default driver order from config."""
-        return [d for d in config.DRIVER_ORDER if d in all_strategies]
-    
+        """Get default driver order from config.
+
+        Treats the deprecated "FlaUI" strategy key as equivalent to "UIA3"
+        so existing element repository JSON files with "FlaUI" strategies
+        still resolve correctly.
+        """
+        normalized = {}
+        for driver in config.DRIVER_ORDER:
+            alias = config.FLAUI_DEPRECATED_ALIAS if driver == "FlaUI" else driver
+            normalized[driver] = alias
+
+        result = []
+        for driver in config.DRIVER_ORDER:
+            alias = normalized[driver]
+            for strategy_driver in all_strategies:
+                strategy_alias = config.FLAUI_DEPRECATED_ALIAS if strategy_driver == "FlaUI" else strategy_driver
+                if alias == strategy_alias and driver not in result:
+                    result.append(driver)
+                    break
+        return result
+
+    @staticmethod
+    def _normalize_driver_name(name: str) -> str:
+        """Map deprecated driver name "FlaUI" to canonical "UIA3"."""
+        return "UIA3" if name == "FlaUI" else name
+
+    def _driver_in_strategies(self, driver_name: str, all_strategies: Dict[str, List[Dict]]) -> bool:
+        """Check if a driver has strategies, treating FlaUI as UIA3 alias."""
+        normalized = self._normalize_driver_name(driver_name)
+        if normalized in all_strategies:
+            return True
+        for sd in all_strategies:
+            if self._normalize_driver_name(sd) == normalized:
+                return True
+        return False
+
+    def _strategy_driver_for(self, driver_name: str, all_strategies: Dict[str, List[Dict]]) -> Optional[str]:
+        """Return the actual strategy key for a driver name, handling FlaUI→UIA3 alias."""
+        if driver_name in all_strategies:
+            return driver_name
+        normalized = self._normalize_driver_name(driver_name)
+        for sd in all_strategies:
+            if self._normalize_driver_name(sd) == normalized:
+                return sd
+        return None
+
     def _capture_element_properties(self, driver: Any, element: ElementHandle) -> Dict[str, Any]:
         """Capture element properties for baseline storage."""
         properties = {}
@@ -397,7 +443,7 @@ class StrategyExecutor:
         try:
             from screenshot_manager import get_screenshot_manager
             screenshot_mgr = get_screenshot_manager()
-            driver = self._driver_provider(driver_name, None) if driver_name else None
+            driver = self._driver_provider(self._normalize_driver_name(driver_name) if driver_name else None, None) if driver_name else None
             
             if driver:
                 try:
@@ -450,15 +496,16 @@ class StrategyExecutor:
             driver_order = self._get_default_driver_order(all_strategies)
         
         for driver_name in driver_order:
-            if driver_name not in all_strategies:
+            strategy_driver = self._strategy_driver_for(driver_name, all_strategies)
+            if strategy_driver is None:
                 continue
-            
-            breaker = self._breaker_manager.get_breaker(driver_name)
-            driver = self._driver_provider(driver_name, app_id)
+
+            breaker = self._breaker_manager.get_breaker(strategy_driver)
+            driver = self._driver_provider(strategy_driver, app_id)
             if driver is None:
                 continue
-            
-            for strategy in all_strategies[driver_name]:
+
+            for strategy in all_strategies[strategy_driver]:
                 # Per-strategy circuit breaker check
                 if not breaker.allow_request():
                     logger.debug(

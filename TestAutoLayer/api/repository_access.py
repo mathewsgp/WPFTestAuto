@@ -317,11 +317,11 @@ def has_automation_id(alias: str, app_id: str = None, element_repo_path: str = N
     if element.get("hasAutomationId", True) is False:
         return False
     
-    strategies = get_strategies(alias, "FlaUI", app_id=app_id, element_repo_path=element_repo_path)
+    strategies = get_strategies(alias, "UIA3", app_id=app_id, element_repo_path=element_repo_path)
     if not strategies:
         return False
     
-    for strategy in strategies.get("FlaUI", []):
+    for strategy in strategies.get("UIA3", []):
         if strategy.get("searchBy") == "AutomationId":
             return True
     return False
@@ -329,13 +329,21 @@ def has_automation_id(alias: str, app_id: str = None, element_repo_path: str = N
 
 # Supported search methods across all drivers
 SUPPORTED_SEARCH_METHODS = {
-    "FlaUI": [
+    "UIA3": [
         "AutomationId",    # Primary - most stable
         "Name",            # Secondary - usually stable
         "XPath",          # Fallback - can break with UI changes
         "ClassName",      # Additional - useful for custom controls
         "Index",          # Position-based - last resort
         "Text",           # Content-based - for text controls
+    ],
+    "FlaUI": [  # deprecated alias — same methods as UIA3
+        "AutomationId",
+        "Name",
+        "XPath",
+        "ClassName",
+        "Index",
+        "Text",
     ],
     "WPFSpy": [
         "AutomationId",

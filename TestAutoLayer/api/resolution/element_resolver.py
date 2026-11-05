@@ -104,8 +104,8 @@ class ElementResolver:
             window_id = element.get("windowAutomationId", "MainWindow")
             
             if control_type == "Window":
-                # FlaUI uses UIA Name (Title) for Window; WPFSpy reads AutomationId directly
-                if driver_name == "FlaUI":
+                # UIA3 uses UIA Name (Title) for Window; WPFSpy reads AutomationId directly
+                if driver_name == "UIA3":
                     window_name = element.get("name") or window_id
                     if window_name and window_name != window_id:
                         path_parts.insert(0, f"Window[@Name='{window_name}']")

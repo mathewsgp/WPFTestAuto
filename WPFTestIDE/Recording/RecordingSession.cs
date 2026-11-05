@@ -11,7 +11,7 @@ using WpfTestIde.Models;
 namespace WpfTestIde.Recording
 {
     /// <summary>Which element-resolution strategy a target uses.</summary>
-    public enum ProbeMode { WPFSpy, FlaUI }
+    public enum ProbeMode { WPFSpy, UIA3 }
 
     /// <summary>Candidate window discovered by one hit-testing strategy at a screen point.</summary>
     sealed class WindowCandidate
@@ -27,7 +27,7 @@ namespace WpfTestIde.Recording
     /// Per-app configuration for a recording session. A single session can
     /// carry any number of these (multi-app recording). Each target knows
     /// its own probe, pipe, pid (if known), exe name, page map, appId, and
-    /// probe mode (WPFSpy or FlaUI).
+    /// probe mode (WPFSpy or UIA3).
     /// </summary>
     public sealed class RecordingTarget
     {
@@ -42,7 +42,7 @@ namespace WpfTestIde.Recording
         // ElementProbe at registration time so targets added before the
         // target process exists don't immediately try to open a pipe.
         internal ElementProbe? WpfProbe { get; set; }
-        internal FlaUIElementProbe? FlaProbe { get; set; }
+        internal UIA3ElementProbe? UIA3Probe { get; set; }
 
         // Cached window identifier (AutomationId / Name / sanitized Title)
         // for this target. Resolved on the FIRST click in this target's
@@ -72,14 +72,14 @@ namespace WpfTestIde.Recording
             }
             else
             {
-                FlaProbe = new FlaUIElementProbe(processId, ResolveLivePid);
+                UIA3Probe = new UIA3ElementProbe(processId, ResolveLivePid);
             }
         }
 
         private int ResolveLivePid()
         {
             // Mirror RecordingSession.ResolveTargetPid for this target's exe
-            // name. We duplicate the algorithm here so each FlaUI target
+            // name. We duplicate the algorithm here so each UIA3 target
             // independently finds its own process.
             if (ProcessId > 0) return ProcessId;
             if (string.IsNullOrEmpty(ExeName)) return 0;
@@ -384,7 +384,7 @@ namespace WpfTestIde.Recording
             IntPtr rootHwnd = chosen.Hwnd;
 
             // Find the target that owns this process, or auto-register it
-            // (WPFSpy if the spy agent pipe is alive, else FlaUI/UIA).
+            // (WPFSpy if the spy agent pipe is alive, else UIA3).
             RecordingTarget? target = Targets.FirstOrDefault(t => t.ProcessId == processId);
             if (target is null)
             {
@@ -401,12 +401,12 @@ namespace WpfTestIde.Recording
 
             ProbedElement? probed = target.Mode == ProbeMode.WPFSpy
                 ? target.WpfProbe?.ProbeAt(x, y)
-                : target.FlaProbe?.ProbeAt(x, y);
+                : target.UIA3Probe?.ProbeAt(x, y);
 
             if (probed is null)
             {
                 Log($"[OnClick] ProbeAt({x},{y}) returned null for appId={target.AppId}, trying window-level fallback");
-                probed = target.Mode == ProbeMode.FlaUI ? CreateWindowLevelElement(target) : null;
+                probed = target.Mode == ProbeMode.UIA3 ? CreateWindowLevelElement(target) : null;
                 if (probed is null)
                 {
                     Log($"[OnClick] rejected: ProbeAt returned null and no window fallback for appId={target.AppId}");
@@ -617,7 +617,7 @@ namespace WpfTestIde.Recording
 
             string? value = _pendingFocusedTarget.Mode == ProbeMode.WPFSpy
                 ? _pendingFocusedTarget.WpfProbe?.GetCurrentValue(_pendingFocusedInput)
-                : _pendingFocusedTarget.FlaProbe?.GetCurrentValue(_pendingFocusedInput);
+                : _pendingFocusedTarget.UIA3Probe?.GetCurrentValue(_pendingFocusedInput);
 
             var entry = BuildEntry(_pendingFocusedAlias, _pendingFocusedInput, _pendingFocusedTarget);
             var step = new RecordedStep
@@ -703,7 +703,7 @@ namespace WpfTestIde.Recording
         /// <summary>
         /// Checks whether the WpfSpyAgent is alive on the given named pipe by
         /// sending a lightweight <c>GetMainWindow</c> command. Used to decide
-        /// between WPFSpy and FlaUI probing when auto-registering a running app.
+        /// between WPFSpy and UIA3 probing when auto-registering a running app.
         /// </summary>
         private bool IsSpyPipeAlive(string pipeName)
         {
@@ -746,7 +746,7 @@ namespace WpfTestIde.Recording
         /// <summary>
         /// Attempts to auto-register the application window at screen point
         /// (x, y) as a new recording target. WPFSpy is used when the target's
-        /// spy agent pipe is alive, otherwise FlaUI/UIA. Returns the
+        /// spy agent pipe is alive, otherwise UIA3. Returns the
         /// registered target, or null if no suitable process was found.
         /// </summary>
         public RecordingTarget? TryAutoRegisterTargetAtPoint(int x, int y, IntPtr? hwnd = null)
@@ -772,7 +772,7 @@ namespace WpfTestIde.Recording
             string pipeName = $"WPFSpyAgentPipe_{appId}";
             bool spyAlive = IsSpyPipeAlive(pipeName);
 
-            var mode = spyAlive ? ProbeMode.WPFSpy : ProbeMode.FlaUI;
+            var mode = spyAlive ? ProbeMode.WPFSpy : ProbeMode.UIA3;
             var target = new RecordingTarget(appId, pipeName, processId, exeName, mode, priority: Targets.Count);
             AddTarget(target);
             Log($"[AutoRegister] appId={appId} pid={processId} mode={mode} spyAlive={spyAlive}");
@@ -782,7 +782,7 @@ namespace WpfTestIde.Recording
         /// <summary>
         /// Scans all running processes with visible windows and registers each
         /// un-tracked one as a recording target (WPFSpy if its spy pipe is
-        /// alive, otherwise FlaUI/UIA). Returns the newly registered targets.
+        /// alive, otherwise UIA3). Returns the newly registered targets.
         /// </summary>
         public List<RecordingTarget> TryAutoRegisterRunningApps()
         {
@@ -803,7 +803,7 @@ namespace WpfTestIde.Recording
 
                     string pipeName = $"WPFSpyAgentPipe_{appId}";
                     bool spyAlive = IsSpyPipeAlive(pipeName);
-                    var mode = spyAlive ? ProbeMode.WPFSpy : ProbeMode.FlaUI;
+                    var mode = spyAlive ? ProbeMode.WPFSpy : ProbeMode.UIA3;
                     var target = new RecordingTarget(appId, pipeName, processId, exeName, mode, priority: Targets.Count);
                     AddTarget(target);
                     registered.Add(target);
@@ -839,7 +839,7 @@ namespace WpfTestIde.Recording
                             Name = title,
                             ControlType = "Window",
                             Text = null,
-                            ResolvedVia = "FlaUI",
+                            ResolvedVia = "UIA3",
                             XPath = $"/Window[@Name='{title}']",
                         };
                     }
@@ -1297,9 +1297,9 @@ namespace WpfTestIde.Recording
 
         private ElementEntry BuildEntry(string alias, ProbedElement probed, RecordingTarget target)
         {
-            var modes = target.Mode == ProbeMode.FlaUI
-                ? new List<string> { "FlaUI" }
-                : new List<string> { "FlaUI", "WPFSpy" };
+            var modes = target.Mode == ProbeMode.UIA3
+                ? new List<string> { "UIA3" }
+                : new List<string> { "UIA3", "WPFSpy" };
 
             if (RecordOculiX)
             {

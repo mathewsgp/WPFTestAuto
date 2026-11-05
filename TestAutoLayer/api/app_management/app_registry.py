@@ -28,7 +28,7 @@ class Constants:
     FRAMEWORK_HOOK_DLL = "WpfSpyAgent.FrameworkHook.dll"
     AGENT_DLL = "WpfSpyAgent.dll"
     NEWTONSOFT_JSON_DLL = "Newtonsoft.Json.dll"
-    DEFAULT_DRIVER = "FlaUI"
+    DEFAULT_DRIVER = "UIA3"
     LAUNCH_POLL_DELAY = 0.2
     TERMINATE_TIMEOUT = 3
     KILL_TIMEOUT = 2
@@ -47,12 +47,16 @@ def _create_driver_for_app(driver_name: str, app_context: 'AppContext') -> Any:
     except ImportError:
         effective_mode = os.environ.get("WPFSPY_MODE", "mock").lower()
 
-    if driver_name == "FlaUI":
+    if driver_name in ("UIA3", "FlaUI"):
+        # "FlaUI" is a deprecated alias mapping to UIA3.
         try:
-            from flaui_driver import FlaUIDriver
-            return FlaUIDriver(app_pid=app_context.process_id)
+            from uia3_driver import Uia3Driver
+            return Uia3Driver(app_pid=app_context.process_id)
         except ImportError:
-            raise ImportError("FlaUI driver not available. Install: pip install flaui-uiautomation-wrapper")
+            raise ImportError(
+                "UIA3 driver not available. Ensure WpfTestIde.Uia3Worker is built "
+                "and UIA3_WORKER_EXE points to Uia3Worker.exe."
+            )
 
     if driver_name == "WPFSpy":
         if effective_mode == "real":
@@ -110,7 +114,7 @@ class AppContext:
     ):
         self.app_id = app_id
         self.app_name = app_name
-        self.driver_list = driver_list or ["FlaUI"]
+        self.driver_list = driver_list or ["UIA3"]
         self.process_id = process_id
         self.pipe_name = pipe_name
         self.app_path = app_path

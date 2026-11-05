@@ -1,7 +1,7 @@
 """
 Contract Tests for Driver Interface
-===================================
-Verifies all drivers (FlaUI, WPFSpy, Sikuli) implement the BaseDriver
+=====================================
+Verifies all drivers (UIA3, WPFSpy, Sikuli) implement the BaseDriver
 abstract interface with matching signatures. Prevents interface drift.
 
 Run: pytest Tests/contract/test_driver_contract.py -v
@@ -27,12 +27,12 @@ def get_driver_classes():
     drivers_rf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "TestAutoLayer", "drivers_rf")
     sys.path.insert(0, drivers_rf_path)
     
-    # FlaUIDriver
+    # Uia3Driver
     try:
-        from flaui_robotframework.flaui_driver import FlaUIDriver
-        drivers["FlaUIDriver"] = FlaUIDriver
+        from uia3_robotframework.uia3_driver import Uia3Driver
+        drivers["Uia3Driver"] = Uia3Driver
     except ImportError as e:
-        print(f"SKIP: FlaUIDriver not available: {e}")
+        print(f"SKIP: Uia3Driver not available: {e}")
     
     # WPFSpyMockDriver (available cross-platform)
     try:
@@ -142,7 +142,7 @@ class TestDriverContract:
         for name, driver_cls in self.driver_classes.items():
             try:
                 # Try instantiation with minimal args
-                if name == "FlaUIDriver":
+                if name == "Uia3Driver":
                     instance = driver_cls(app_pid=None)
                 else:
                     instance = driver_cls()

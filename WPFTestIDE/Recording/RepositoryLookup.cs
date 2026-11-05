@@ -67,7 +67,7 @@ namespace WpfTestIde.Recording
 
                         try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] Processing alias={alias}{Environment.NewLine}"); } catch { }
 
-                        // Extract AutomationId from FlaUI strategy
+                        // Extract AutomationId from UIA3 strategy
                         if (entry.TryGetProperty("strategies", out var strategiesObj) && strategiesObj.ValueKind == JsonValueKind.Object)
                         {
                             try { File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}]   Found strategies{Environment.NewLine}"); } catch { }
@@ -75,9 +75,9 @@ namespace WpfTestIde.Recording
                             string? automationId = null;
                             string? name = null;
 
-                            if (strategiesObj.TryGetProperty("FlaUI", out var flaObj) && flaObj.ValueKind == JsonValueKind.Array)
+                            if (strategiesObj.TryGetProperty("UIA3", out var uiaObj) && uiaObj.ValueKind == JsonValueKind.Array)
                             {
-                                foreach (var strategy in flaObj.EnumerateArray())
+                                foreach (var strategy in uiaObj.EnumerateArray())
                                 {
                                     if (strategy.TryGetProperty("searchBy", out var sbProp) && sbProp.GetString() == "AutomationId"
                                         && strategy.TryGetProperty("value", out var valProp) && valProp.ValueKind == JsonValueKind.String)

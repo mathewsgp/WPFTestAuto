@@ -11,7 +11,7 @@ namespace WpfTestIde.Models
     {
         private string _appId = "";
         private string _appName = "";
-        private string _driver = "FlaUI";
+        private string _driver = "UIA3";
         private List<string>? _driverList;
         private int _processId;
         private string _pipeName = "WPFSpyAgentPipe";

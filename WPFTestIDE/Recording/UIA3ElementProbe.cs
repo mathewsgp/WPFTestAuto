@@ -1,5 +1,7 @@
 using System;
+using System.Windows;
 using System.Windows.Automation;
+using WpfTestIde.Uia3Worker.Core;
 
 namespace WpfTestIde.Recording
 {
@@ -9,19 +11,21 @@ namespace WpfTestIde.Recording
     /// target process does NOT have the WPFSpy agent loaded (e.g. Notepad,
     /// third-party Win32 apps).
     ///
-    /// Uses System.Windows.Automation (UIA3) directly — no FlaUI dependency.
+    /// Uses System.Windows.Automation (UIA3) directly via the shared
+    /// WpfTestIde.Uia3Worker.Core library — UIA3 backend.
     /// </summary>
-    public class FlaUIElementProbe
+    public class UIA3ElementProbe
     {
         private int _targetProcessId;
-        private readonly System.Func<int>? _pidResolver;
+        private readonly Func<int>? _pidResolver;
+        private readonly Uia3Probe _uia3Probe = new();
 
         /// <summary>
         /// Creates a probe that filters elements by process id. When the pid
         /// is 0 (not yet known) and a resolver is supplied, the resolver is
         /// called at each ProbeAt to find the live pid dynamically.
         /// </summary>
-        public FlaUIElementProbe(int targetProcessId, System.Func<int>? pidResolver = null)
+        public UIA3ElementProbe(int targetProcessId, Func<int>? pidResolver = null)
         {
             _targetProcessId = targetProcessId;
             _pidResolver = pidResolver;
@@ -34,7 +38,7 @@ namespace WpfTestIde.Recording
         {
             try
             {
-                AutomationElement? element = AutomationElement.FromPoint(new System.Windows.Point(x, y));
+                AutomationElement? element = AutomationElement.FromPoint(new Point(x, y));
                 if (element == null) return null;
 
                 int livePid = _targetProcessId > 0 ? _targetProcessId : (_pidResolver?.Invoke() ?? 0);
@@ -46,15 +50,12 @@ namespace WpfTestIde.Recording
                     }
                     catch { }
                 }
-                // If pid is unknown, accept the element (the FindOwningTarget
-                // check in RecordingSession is the primary guard against
-                // recording against the wrong app).
 
                 return BuildProbedElement(element);
             }
             catch (Exception ex)
             {
-                RecordingSession.Log($"[FlaUIElementProbe.ProbeAt] exception: {ex.GetType().Name}: {ex.Message}");
+                RecordingSession.Log($"[UIA3ElementProbe.ProbeAt] exception: {ex.GetType().Name}: {ex.Message}");
                 return null;
             }
         }
@@ -75,7 +76,7 @@ namespace WpfTestIde.Recording
             }
             catch (Exception ex)
             {
-                RecordingSession.Log($"[FlaUIElementProbe.GetCurrentValue] exception: {ex.GetType().Name}: {ex.Message}");
+                RecordingSession.Log($"[UIA3ElementProbe.GetCurrentValue] exception: {ex.GetType().Name}: {ex.Message}");
                 return null;
             }
         }
@@ -123,7 +124,7 @@ namespace WpfTestIde.Recording
                 Name = name ?? "",
                 ControlType = controlType,
                 Text = text,
-                ResolvedVia = "FlaUI",
+                ResolvedVia = "UIA3",
                 XPath = xpath,
             };
         }
@@ -155,13 +156,13 @@ namespace WpfTestIde.Recording
                     string? segmentAutomationId = null;
                     try { segmentAutomationId = current.Current.AutomationId; } catch { }
                     string? segmentName = null;
-                try { segmentName = current.Current.Name; } catch { }
+                    try { segmentName = current.Current.Name; } catch { }
 
-                string segment;
-                if (!string.IsNullOrEmpty(segmentAutomationId) && current.Current.ControlType != ControlType.Window)
-                {
-                    segment = $"{segmentControlType}[@AutomationId='{segmentAutomationId}']";
-                }
+                    string segment;
+                    if (!string.IsNullOrEmpty(segmentAutomationId) && current.Current.ControlType != ControlType.Window)
+                    {
+                        segment = $"{segmentControlType}[@AutomationId='{segmentAutomationId}']";
+                    }
                     else if (!string.IsNullOrEmpty(segmentName))
                     {
                         segment = $"{segmentControlType}[@Name='{segmentName}']";
@@ -223,7 +224,7 @@ namespace WpfTestIde.Recording
             }
             catch (Exception ex)
             {
-                RecordingSession.Log($"[FlaUIElementProbe.ResolveElement] exception: {ex.GetType().Name}: {ex.Message}");
+                RecordingSession.Log($"[UIA3ElementProbe.ResolveElement] exception: {ex.GetType().Name}: {ex.Message}");
             }
             return null;
         }

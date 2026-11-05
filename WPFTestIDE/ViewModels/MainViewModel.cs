@@ -327,7 +327,7 @@ namespace WpfTestIde.ViewModels
             get => _selectedDriver;
             set { _selectedDriver = value; OnPropertyChanged(); RegenerateScript(); }
         }
-        public string[] AvailableDrivers { get; } = { "Auto", "FlaUI", "WPFSpy", "OculiX" };
+        public string[] AvailableDrivers { get; } = { "Auto", "UIA3", "WPFSpy", "OculiX" };
 
          // Mode selection for test execution
         private string _selectedMode = "Auto";
@@ -373,12 +373,12 @@ private FolderTreeItem? _workingFolderSelectedItem;
         }
         public bool CanImportSelected => WorkingFolderSelectedItem != null && !WorkingFolderSelectedItem.IsDirectory;
 
-        // Recording mode checkboxes (FlaUI, WPFSpy, Sikuli)
-        private bool _recordFlaUI = true;
-        public bool RecordFlaUI
+        // Recording mode checkboxes (UIA3, WPFSpy, Sikuli)
+        private bool _recordUIA3 = true;
+        public bool RecordUIA3
         {
-            get => _recordFlaUI;
-            set { _recordFlaUI = value; OnPropertyChanged(); RegenerateScript(); }
+            get => _recordUIA3;
+            set { _recordUIA3 = value; OnPropertyChanged(); RegenerateScript(); }
         }
 
         private bool _recordWPFSpy = true;
@@ -404,12 +404,12 @@ private FolderTreeItem? _workingFolderSelectedItem;
             }
         }
 
-        // Run mode checkboxes (FlaUI, WPFSpy, Sikuli)
-        private bool _runFlaUI = true;
-        public bool RunFlaUI
+        // Run mode checkboxes (UIA3, WPFSpy, Sikuli)
+        private bool _runUIA3 = true;
+        public bool RunUIA3
         {
-            get => _runFlaUI;
-            set { _runFlaUI = value; OnPropertyChanged(); RegenerateScript(); }
+            get => _runUIA3;
+            set { _runUIA3 = value; OnPropertyChanged(); RegenerateScript(); }
         }
 
         private bool _runWPFSpy = true;
@@ -856,7 +856,7 @@ private string _ocrResultText = "";
                 _session.RecordOculiX = RecordOculiX;
             }
             _session.RemoveTarget(appId);
-            var attachMode = dialog.SpyAgentEnabled ? ProbeMode.WPFSpy : ProbeMode.FlaUI;
+            var attachMode = dialog.SpyAgentEnabled ? ProbeMode.WPFSpy : ProbeMode.UIA3;
             _session.AddTarget(new RecordingTarget(
                 appId: appId,
                 pipeName: dialog.PipeName,
@@ -937,11 +937,11 @@ private string _ocrResultText = "";
                 string appName = System.IO.Path.GetFileNameWithoutExtension(step.AppPath);
                 string pipeName = step.PipeName ?? $"WPFSpyAgentPipe_{appId}";
 
-                // Use FlaUI driver when spy agent is disabled (e.g. Notepad, Calc),
+                // Use UIA3 driver when spy agent is disabled (e.g. Notepad, Calc),
                 // WPFSpy when the agent is enabled. Prefer LaunchDriverList if set.
                 string driver = step.SpyAgentEnabled
                     ? (step.LaunchDriverList != null && step.LaunchDriverList.Any() ? step.LaunchDriverList[0] : (step.LaunchDriver ?? "WPFSpy"))
-                    : "FlaUI";
+                    : "UIA3";
 
                 var appContext = new WpfTestIde.Models.AppContext
                 {
@@ -974,7 +974,7 @@ private string _ocrResultText = "";
             }
 
             // Multi-app recording session: one session, one target per attached app.
-            // Use WPFSpy probe when spy agent is enabled, else FlaUI/UIA.
+            // Use WPFSpy probe when spy agent is enabled, else UIA3/UIA.
             if (_session is null)
             {
                 _session = new RecordingSession();
@@ -991,23 +991,23 @@ private string _ocrResultText = "";
             {
                 var matchingStep = launchSteps.FirstOrDefault(s =>
                     (s.AppId ?? System.IO.Path.GetFileNameWithoutExtension(s.AppPath ?? "").ToLowerInvariant()) == app.AppId);
-                bool useFlaUI = matchingStep != null && !matchingStep.SpyAgentEnabled;
+                bool useUIA3 = matchingStep != null && !matchingStep.SpyAgentEnabled;
                 
                 _session.AddTarget(new RecordingTarget(
                     appId: app.AppId,
                     pipeName: app.PipeName,
                     processId: app.ProcessId,
                     exeName: app.AppPath,
-                    mode: useFlaUI ? ProbeMode.FlaUI : ProbeMode.WPFSpy,
+                    mode: useUIA3 ? ProbeMode.UIA3 : ProbeMode.WPFSpy,
                     priority: priority++));
             }
 
             IsAttached = true;
             int wpfCount = _session.Targets.Count(t => t.Mode == ProbeMode.WPFSpy);
-            int flaCount = _session.Targets.Count(t => t.Mode == ProbeMode.FlaUI);
-            string modeLabel = (wpfCount > 0 && flaCount > 0)
-                ? $"{wpfCount} WPFSpy + {flaCount} FlaUI"
-                : (flaCount > 0 ? "FlaUI/UIA" : "WPFSpy");
+            int uia3Count = _session.Targets.Count(t => t.Mode == ProbeMode.UIA3);
+            string modeLabel = (wpfCount > 0 && uia3Count > 0)
+                ? $"{wpfCount} WPFSpy + {uia3Count} UIA3"
+                : (uia3Count > 0 ? "UIA3/UIA" : "WPFSpy");
             StatusText = $"Ready to record ({modeLabel} mode). {AttachedApps.Count} application(s) configured. Run the script to launch and attach.";
         }
 
@@ -1310,7 +1310,7 @@ private string _ocrResultText = "";
 
         private void OnStepCaptured(RecordedStep step, ElementEntry entry)
         {
-            // Marshal back to the UI thread ï¿½ the mouse hook and FlaUI
+            // Marshal back to the UI thread ï¿½ the mouse hook and UIA3
             // focus events fire on non-UI threads.
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -1341,8 +1341,8 @@ private string _ocrResultText = "";
                 };
 
                 // Choose driver priority based on which probe mode the session is using.
-                // For FlaUI-resolved elements, WPFSpy is meaningless (no spy agent in the app).
-                // For WPFSpy-resolved elements, the full [FlaUI, WPFSpy, OculiX] priority applies.
+                // For UIA3-resolved elements, WPFSpy is meaningless (no spy agent in the app).
+                // For WPFSpy-resolved elements, the full [UIA3, WPFSpy, OculiX] priority applies.
                 List<string> driverPriority;
                 List<string>? recordingModes = entry.RecordingModes;
                 if (recordingModes != null && recordingModes.Count > 0)
@@ -1355,7 +1355,7 @@ private string _ocrResultText = "";
                     driverPriority = new List<string>(GetSelectedRecordingModes());
                     if (driverPriority.Count == 0)
                     {
-                        driverPriority = new List<string> { "FlaUI", "WPFSpy", "OculiX" };
+                        driverPriority = new List<string> { "UIA3", "WPFSpy", "OculiX" };
                     }
                 }
 
@@ -1698,7 +1698,7 @@ private string _ocrResultText = "";
                         Name = name ?? "",
                         XPath = xpath ?? "",
                         RecordingModes = dialog.SelectedRecordingModes,
-                        DriverPriority = new List<string> { "FlaUI", "WPFSpy", "OculiX" }
+                        DriverPriority = new List<string> { "UIA3", "WPFSpy", "OculiX" }
                     };
                     Elements.Add(newElement);
                     StatusText = $"Added element: {alias}";
@@ -1796,7 +1796,7 @@ private string _ocrResultText = "";
         private List<string> GetSelectedRecordingModes()
         {
             var modes = new List<string>();
-            if (RecordFlaUI) modes.Add("FlaUI");
+            if (RecordUIA3) modes.Add("UIA3");
             if (RecordWPFSpy) modes.Add("WPFSpy");
             if (RecordOculiX) modes.Add("OculiX");
             return modes;
@@ -1805,7 +1805,7 @@ private string _ocrResultText = "";
         private List<string> GetSelectedRunModes()
         {
             var modes = new List<string>();
-            if (RunFlaUI) modes.Add("FlaUI");
+            if (RunUIA3) modes.Add("UIA3");
             if (RunWPFSpy) modes.Add("WPFSpy");
             if (RunOculiX) modes.Add("OculiX");
             return modes;
@@ -2711,7 +2711,7 @@ private string _ocrResultText = "";
                             ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
                             AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
                             Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
-                            DriverPriority = new List<string> { "FlaUI", "WPFSpy", "OculiX" }
+                            DriverPriority = new List<string> { "UIA3", "WPFSpy", "OculiX" }
                         };
 
                         loadedAliases.Add(alias);
@@ -2819,7 +2819,7 @@ private string _ocrResultText = "";
                 AutomationId = "",
                 Name = "",
                 XPath = "",
-                DriverPriority = new List<string> { "FlaUI", "WPFSpy", "OculiX" }
+                DriverPriority = new List<string> { "UIA3", "WPFSpy", "OculiX" }
             };
             Elements.Add(newElement);
             SelectedElement = newElement;
@@ -3156,7 +3156,7 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                             AutomationId = probe.AutomationId,
                             Name = probe.Name,
                             XPath = probe.XPath,
-                            DriverPriority = new List<string> { "FlaUI", "WPFSpy", "OculiX" }
+                            DriverPriority = new List<string> { "UIA3", "WPFSpy", "OculiX" }
                         };
 
                         // Marshaling to UI thread because mouse hook raises events on a background thread

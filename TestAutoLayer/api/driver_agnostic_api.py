@@ -66,7 +66,7 @@ logger = get_api_logger()
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Add driver directories to path for driver module imports
-sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "flaui_robotframework"))
+sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "uia3_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "wpfspy_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "drivers_rf", "okulix_robotframework"))
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "mock_wpf_app"))
@@ -74,7 +74,7 @@ sys.path.insert(0, os.path.join(_THIS_DIR, "..", "mock_wpf_app"))
 sys.path.insert(0, os.path.join(_THIS_DIR, ".."))
 
 # Driver imports (need path for relative imports within driver modules)
-from flaui_driver import FlaUIDriver          # noqa: E402
+from uia3_driver import Uia3Driver          # noqa: E402
 from WPFSpyLibrary import WPFSpyDriver        # noqa: E402
 from OkulixLibrary import OculiXDriver        # noqa: E402
 from mock_app import (                        # noqa: E402
@@ -133,7 +133,8 @@ def _get_drivers() -> dict:
     if not _DRIVERS_INITIALIZED:
         _DRIVERS = {}
         driver_factories = {
-            "FlaUI": lambda: FlaUIDriver(),
+            "UIA3": lambda: Uia3Driver(),
+            "FlaUI": lambda: Uia3Driver(),   # deprecated alias → UIA3
             "WPFSpy": _create_wpfspy_driver,
             "OculiX": lambda: OculiXDriver(),
         }
@@ -282,9 +283,12 @@ class DriverAgnosticApi:
         # Auto-register app from IDE environment variables if present
         self._auto_register_from_env()
 
-        import debugpy
-        debugpy.listen(("127.0.0.1", 5678))
-        debugpy.wait_for_client()   # blocks here until a debugger attaches
+        # Debugpy: blocks until a debugger attaches. Skipped unless
+        # WPFSPY_WAIT_FOR_DEBUGGER=1 is set (avoids hanging tests/scripts).
+        if os.environ.get("WPFSPY_WAIT_FOR_DEBUGGER", "0") == "1":
+            import debugpy
+            debugpy.listen(("127.0.0.1", 5678))
+            debugpy.wait_for_client()
     
     def _auto_register_from_env(self):
         """Auto-register app context from WPFSPY_* environment variables."""
@@ -308,7 +312,7 @@ class DriverAgnosticApi:
             app_context = AppContext(
                 app_id=app_id,
                 app_name=app_name,
-                driver_list=["FlaUI"],
+                driver_list=["UIA3"],
                 process_id=process_id,
                 pipe_name=pipe_name,
             )
@@ -364,7 +368,7 @@ class DriverAgnosticApi:
             # Check if WPFSpy agent pipe is alive
             pipe_name = f"WPFSpyAgentPipe_{app_id}"
             spy_alive = self._is_spy_pipe_alive(pipe_name)
-            driver_list = ["WPFSpy", "FlaUI"] if spy_alive else ["FlaUI"]
+            driver_list = ["WPFSpy", "UIA3"] if spy_alive else ["UIA3"]
 
             try:
                 attach_to_application(
@@ -410,7 +414,7 @@ class DriverAgnosticApi:
             # Check if WPFSpy agent pipe is alive
             pipe_name = f"WPFSpyAgentPipe_{app_id}"
             spy_alive = self._is_spy_pipe_alive(pipe_name)
-            driver_list = ["WPFSpy", "FlaUI"] if spy_alive else ["FlaUI"]
+            driver_list = ["WPFSpy", "UIA3"] if spy_alive else ["UIA3"]
 
             try:
                 from app_management.app_launcher import attach_to_application

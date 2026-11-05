@@ -36,7 +36,7 @@ namespace WpfTestIde.Dialogs
             _targetProcessId = targetProcessId;
             _appId = appId;
             _attachedApps = attachedApps ?? new List<WpfTestIde.Models.AppContext>();
-            SelectedRecordingModes = recordingModes ?? new List<string> { "FlaUI", "WPFSpy" };
+            SelectedRecordingModes = recordingModes ?? new List<string> { "UIA3", "WPFSpy" };
             SelectedMode = selectedMode;
             
             // Populate app selector
@@ -204,9 +204,9 @@ namespace WpfTestIde.Dialogs
         {
             try
             {
-                if (SelectedMode == "FlaUI")
+                if (SelectedMode == "UIA3")
                 {
-                    LoadFlaUITree();
+                    LoadUia3Tree();
                 }
                 else
                 {
@@ -263,7 +263,7 @@ namespace WpfTestIde.Dialogs
             XPathStatus.Foreground = Brushes.Green;
         }
 
-        private void LoadFlaUITree()
+        private void LoadUia3Tree()
         {
             ElementTree.Items.Clear();
             _allNodes.Clear();
@@ -312,12 +312,12 @@ namespace WpfTestIde.Dialogs
                     _allNodes.Add(node);
                 }
 
-                XPathStatus.Text = $"Loaded {_allNodes.Count} elements (FlaUI Automation Tree)";
+                XPathStatus.Text = $"Loaded {_allNodes.Count} elements (UIA3 Automation Tree)";
                 XPathStatus.Foreground = Brushes.Green;
             }
             catch (Exception ex)
             {
-                XPathStatus.Text = $"FlaUI Error: {ex.Message}";
+                XPathStatus.Text = $"UIA3 Error: {ex.Message}";
                 XPathStatus.Foreground = Brushes.Red;
             }
         }

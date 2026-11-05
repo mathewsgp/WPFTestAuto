@@ -4,7 +4,7 @@ These tests verify WPFTestIDE features end-to-end **without using
 TestAutoLayer**. They launch ``WpfTestIde.exe`` directly and interact
 with it via UI Automation (AutomationId-based).  No import from
 ``TestAutoLayer`` is made, and there is no pywinauto compatibility layer —
-all interaction goes through the flaui wrapper directly (see ide_flaui.py).
+all interaction goes through the Uia3Driver directly (see ide_uia3.py).
 
 Run:
 
@@ -21,7 +21,7 @@ import pytest
 sys.path.insert(
     0, os.path.join(os.path.dirname(os.path.abspath(__file__)))
 )
-from ide_flaui import (  # noqa: E402
+from ide_uia3 import (  # noqa: E402
     find_by_auto_id,
     click_by_auto_id,
     get_text_by_auto_id,
@@ -164,7 +164,7 @@ class TestUC008ToggleRecord:
 class TestUC009DriverSettings:
     def test_record_checkboxes_toggle(self, main_window):
         """Record driver checkboxes should toggle."""
-        for cb_id in ["chkRecordFlaUI", "chkRecordWPFSpy", "chkRecordSikuli"]:
+        for cb_id in ["chkRecordUIA3", "chkRecordWPFSpy", "chkRecordSikuli"]:
             try:
                 toggle_by_auto_id(main_window, cb_id)
                 time.sleep(0.3)
@@ -174,7 +174,7 @@ class TestUC009DriverSettings:
 
     def test_run_checkboxes_toggle(self, main_window):
         """Run driver checkboxes should toggle."""
-        for cb_id in ["chkRunFlaUI", "chkRunWPFSpy", "chkRunSikuli"]:
+        for cb_id in ["chkRunUIA3", "chkRunWPFSpy", "chkRunSikuli"]:
             try:
                 toggle_by_auto_id(main_window, cb_id)
                 time.sleep(0.3)
@@ -334,9 +334,9 @@ class TestUC017DriverSettingsToggle:
     def test_all_driver_checkboxes_toggle(self, main_window):
         """All Record and Run checkboxes should toggle."""
         for cb_id in [
-            "chkRecordFlaUI",
+            "chkRecordUIA3",
             "chkRecordWPFSpy",
-            "chkRunFlaUI",
+            "chkRunUIA3",
             "chkRunWPFSpy",
         ]:
             try:
@@ -483,13 +483,13 @@ class TestREG005DriverSettingsAllModes:
     def test_all_modes_toggle(self, main_window):
         """Toggle all driver checkboxes in both Record and Run sections."""
         for cb_id in [
-            "chkRecordFlaUI",
+            "chkRecordUIA3",
             "chkRecordWPFSpy",
-            "chkRunFlaUI",
+            "chkRunUIA3",
             "chkRunWPFSpy",
-            "chkRecordFlaUI",
+            "chkRecordUIA3",
             "chkRecordWPFSpy",
-            "chkRunFlaUI",
+            "chkRunUIA3",
             "chkRunWPFSpy",
         ]:
             try:
