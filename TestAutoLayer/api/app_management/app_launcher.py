@@ -349,16 +349,25 @@ def attach_to_application(
     # Generated playback scripts pass PID=0 because WPFSPY_PROCESS_ID is not
     # available outside the IDE recording session.
     if not process_id:
+        ctx = get_multi_app_context()
+        # If the app is already registered, nothing to do.
+        if app_id in ctx.apps:
+            return app_id
+
         target_name = app_id if app_id.lower().endswith(".exe") else app_id + ".exe"
         detected_pid = None
         spy_pipe = None
-        ctx = get_multi_app_context()
         for proc_info in _detect_running_processes(set()):
             if proc_info["name"].lower() != target_name.lower():
                 continue
             pid = proc_info["pid"]
             # Skip PIDs already tracked under a different app_id.
-            if any(c.process_id == pid for c in ctx.apps.values()):
+            # PIDs tracked under the same app_id are valid targets.
+            already_tracked = any(
+                c.process_id == pid and c.app_id != app_id
+                for c in ctx.apps.values()
+            )
+            if already_tracked:
                 continue
             candidate_pipe = f"WPFSpyAgentPipe_{app_id}"
             if _is_spy_pipe_alive(candidate_pipe):
@@ -377,9 +386,7 @@ def attach_to_application(
         if spy_pipe:
             pipe_name = spy_pipe
         if driver_list is None:
-            driver_list = ["WPFSpy", "UIA3"]
-        elif driver_list is None:
-            driver_list = ["UIA3"]
+            driver_list = ["WPFSpy", "UIA3"] if spy_pipe else ["UIA3"]
 
     app_context = AppContext(
         app_id=app_id,
