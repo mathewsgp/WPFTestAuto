@@ -64,23 +64,8 @@ namespace WpfTestIde.Models
         /// generation should prefer this data over the shared top-level fields.</summary>
         public Dictionary<string, DriverProbeData>? DriverProbes { get; set; }
 
-        /// <summary>Order of driver strategy groups in the emitted repository
-        /// JSON (e.g. ["UIA3","WPFSpy","OculiX"]). When null/empty, the
-        /// default fixed order UIA3 -> WPFSpy -> OculiX is used.</summary>
+        /// <summary>Order of driver strategy groups in the emitted repository JSON.</summary>
         public List<string>? StrategyOrder { get; set; }
-
-        /// <summary>Legacy per-element driver priority. Accepted on load for backward compatibility;
-        /// ignored for runtime priority (fixed UIA3-&gt;WPFSpy-&gt;OculiX) and not emitted on save.</summary>
-        [System.Text.Json.Serialization.JsonPropertyName("driverPriority")]
-        public List<string>? LegacyDriverPriority
-        {
-            get => null;
-            set
-            {
-                if (value != null && value.Count > 0 && (StrategyOrder == null || StrategyOrder.Count == 0))
-                    StrategyOrder = value.Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
-            }
-        }
 
         /// <summary>App context ID for multi-app support. Null/empty means global element.</summary>
         public string? AppId { get; set; }

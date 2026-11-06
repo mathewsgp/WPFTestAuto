@@ -117,19 +117,6 @@ namespace WpfTestIde.Models
         /// Null/empty means all drivers are applicable. Runtime priority remains fixed.</summary>
         public List<string>? LaunchApplicableDrivers { get; set; }
 
-        /// <summary>Legacy ordered driver priority list. Accepted on load for compatibility;
-        /// mapped to <see cref="LaunchApplicableDrivers"/>. Not written canonically.</summary>
-        [JsonPropertyName("launchDriverList")]
-        public List<string>? LaunchDriverList
-        {
-            get => null;
-            set
-            {
-                if (value != null && value.Count > 0 && (LaunchApplicableDrivers == null || LaunchApplicableDrivers.Count == 0))
-                    LaunchApplicableDrivers = AppContext.NormalizeApplicable(value);
-            }
-        }
-
         /// <summary>Whether to enable Spy Agent for the launched process. Default true.</summary>
         public bool SpyAgentEnabled { get; set; } = true;
 

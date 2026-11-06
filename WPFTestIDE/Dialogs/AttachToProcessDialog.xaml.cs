@@ -25,9 +25,6 @@ namespace WpfTestIde.Dialogs
         /// <summary>Drivers applicable to the attached/launched app (checkbox membership). Null/empty means all applicable.</summary>
         public List<string>? ApplicableDrivers { get; private set; }
 
-        /// <summary>Legacy compatibility: ordered list semantics removed; returns <see cref="ApplicableDrivers"/>.</summary>
-        public List<string>? DriverList => ApplicableDrivers;
-
         public bool InjectSpyAgentOnAttach { get; private set; } = true;
         public bool SpyAgentEnabled { get; private set; } = true;
         public AttachMode Mode { get; private set; } = AttachMode.RuntimeAttach;

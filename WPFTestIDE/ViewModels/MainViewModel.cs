@@ -2725,12 +2725,10 @@ private string _ocrResultText = "";
                 ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
                 AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
                 Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
-                XPath = entry.TryGetProperty("relativeXPath", out var xpProp) ? xpProp.GetString() : (entry.TryGetProperty("xpath", out var xp2) ? xp2.GetString() : null),
+                XPath = entry.TryGetProperty("xpath", out var xp2) ? xp2.GetString() : null,
                 AppId = entry.TryGetProperty("appId", out var appProp) ? appProp.GetString() : null,
                 ImagePath = entry.TryGetProperty("imagePath", out var imgProp) ? imgProp.GetString() : null,
             };
-            if (entry.TryGetProperty("recordingModes", out var rmProp) && rmProp.ValueKind == JsonValueKind.Array)
-                element.RecordingModes = rmProp.EnumerateArray().Select(v => v.GetString()).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!).ToList();
             if (entry.TryGetProperty("strategies", out var strategiesProp) && strategiesProp.ValueKind == JsonValueKind.Object)
             {
                 element.StrategyGroups = new System.Collections.ObjectModel.ObservableCollection<ElementStrategyGroup>();
@@ -2757,9 +2755,6 @@ private string _ocrResultText = "";
                 }
                 element.StrategyOrder = element.StrategyGroups.Select(x => x.Driver).ToList();
             }
-            // Legacy driverPriority import
-            if (entry.TryGetProperty("driverPriority", out var dp) && dp.ValueKind == JsonValueKind.Array && (element.StrategyOrder == null || element.StrategyOrder.Count == 0))
-                element.StrategyOrder = dp.EnumerateArray().Select(v => v.GetString()).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!).ToList();
             EnsureElementStrategies(element);
             return element;
         }

@@ -678,8 +678,7 @@ namespace WpfTestIde.Execution
 
         private static RecordedStep ParseRobotLaunchApplication(IReadOnlyList<string> positional, IReadOnlyDictionary<string, string> named)
         {
-            var driverList = ParseDriverList(Named(named, "drivers") ?? OptionalPositional(positional, 4));
-            var applicable = Models.AppContext.NormalizeApplicable(driverList);
+            var drivers = ParseApplicableDrivers(Named(named, "drivers") ?? OptionalPositional(positional, 4));
             return new RecordedStep
             {
                 Kind = StepKind.LaunchApplication,
@@ -689,8 +688,8 @@ namespace WpfTestIde.Execution
                 Args = Named(named, "args") ?? OptionalPositional(positional, 2),
                 LaunchTimeout = Named(named, "timeout") ?? OptionalPositional(positional, 6),
                 AutoAttach = IsTrue(Named(named, "attach") ?? OptionalPositional(positional, 5)),
-                LaunchDriver = Named(named, "driver") ?? applicable?.FirstOrDefault() ?? "WPFSpy",
-                LaunchApplicableDrivers = applicable,
+                LaunchDriver = Named(named, "driver") ?? drivers?.FirstOrDefault() ?? "WPFSpy",
+                LaunchApplicableDrivers = drivers,
                 SpyAgentEnabled = !string.Equals(Named(named, "spy_agent_enabled") ?? Named(named, "spy_agent") ?? OptionalPositional(positional, 7), "No", StringComparison.OrdinalIgnoreCase)
                     && !string.Equals(Named(named, "spy_agent_enabled") ?? Named(named, "spy_agent") ?? OptionalPositional(positional, 7), "False", StringComparison.OrdinalIgnoreCase),
                 PipeName = Named(named, "pipe_name") ?? OptionalPositional(positional, 8),
@@ -755,7 +754,7 @@ namespace WpfTestIde.Execution
 
         private static RecordedStep ParsePythonLaunchApplication(PythonCall call)
         {
-            var applicable = Models.AppContext.NormalizeApplicable(ParsePythonDriverList(KeywordRaw(call, "drivers")));
+            var applicable = ParseApplicableDrivers(KeywordRaw(call, "drivers"), pythonList: true);
             return new RecordedStep
             {
                 Kind = StepKind.LaunchApplication,
@@ -942,10 +941,6 @@ namespace WpfTestIde.Execution
                 || value.Equals("True", StringComparison.OrdinalIgnoreCase)
                 || value.Equals("1", StringComparison.OrdinalIgnoreCase));
 
-        private static List<string>? ParseDriverList(string? value) => string.IsNullOrWhiteSpace(value)
-            ? null
-            : value.Trim('[', ']', '"', '\'').Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-
         private sealed record PythonCall(string Name, List<string> Positional, Dictionary<string, string> Named, int LineNumber)
         {
             public string? PositionalString(int index) => index >= 0 && index < Positional.Count ? ParsePythonScriptValue(Positional[index]) : null;
@@ -1006,13 +1001,23 @@ namespace WpfTestIde.Execution
             return result.ToString();
         }
 
-        private static List<string>? ParsePythonDriverList(string? value)
+        private static List<string>? ParseApplicableDrivers(string? value, bool pythonList = false)
         {
             if (string.IsNullOrWhiteSpace(value)) return null;
-            value = value.Trim();
-            if (value.StartsWith("[", StringComparison.Ordinal) && value.EndsWith("]", StringComparison.Ordinal))
-                return SplitPythonArguments(value[1..^1]).Select(ParsePythonString).ToList();
-            return ParseDriverList(ParsePythonString(value));
+            IEnumerable<string> parts;
+            if (pythonList)
+            {
+                value = value.Trim();
+                if (value.StartsWith("[", StringComparison.Ordinal) && value.EndsWith("]", StringComparison.Ordinal))
+                    parts = SplitPythonArguments(value[1..^1]).Select(ParsePythonString);
+                else
+                    parts = new[] { ParsePythonString(value) };
+            }
+            else
+            {
+                parts = value.Trim('[', ']', '"', '\'').Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            }
+            return Models.AppContext.NormalizeApplicable(parts);
         }
     }
 }

@@ -2,7 +2,6 @@ using System;
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 
 namespace WpfTestIde.Models
 {
@@ -49,19 +48,6 @@ namespace WpfTestIde.Models
         {
             get => _applicableDrivers;
             set { _applicableDrivers = NormalizeApplicable(value); OnPropertyChanged(); }
-        }
-
-        /// <summary>Legacy ordered driver list (priority UI removed). Accepted on load for compatibility;
-        /// mapped to <see cref="ApplicableDrivers"/> membership in fixed order.</summary>
-        [JsonPropertyName("driverList")]
-        public List<string>? DriverList
-        {
-            get => null;
-            set
-            {
-                if (value != null && value.Count > 0 && (_applicableDrivers == null || _applicableDrivers.Count == 0))
-                    ApplicableDrivers = value;
-            }
         }
 
         public int ProcessId
