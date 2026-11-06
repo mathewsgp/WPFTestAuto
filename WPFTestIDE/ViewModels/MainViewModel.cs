@@ -1865,8 +1865,19 @@ private string _ocrResultText = "";
         private void EnsureElementStrategies(ElementEntry? element)
         {
             if (element == null) return;
-            if (element.StrategyGroups == null || element.StrategyGroups.Count == 0)
-                element.StrategyGroups = BuildDefaultStrategyGroups(element);
+            if (element.StrategyGroups == null)
+                element.StrategyGroups = new System.Collections.ObjectModel.ObservableCollection<ElementStrategyGroup>();
+            if (element.StrategyGroups.Count == 0)
+            {
+                foreach (var g in BuildDefaultStrategyGroups(element))
+                    element.StrategyGroups.Add(g);
+            }
+            else
+            {
+                // Ensure every group has at least one editable row
+                foreach (var g in element.StrategyGroups)
+                    if (g.Items.Count == 0) g.Items.Add(new ElementStrategyItem { SearchBy = g.Driver.Equals("OculiX", StringComparison.OrdinalIgnoreCase) ? "Image" : "XPath", Value = "" });
+            }
             EnsureStrategyOrder(element);
         }
 
@@ -2722,7 +2733,7 @@ private string _ocrResultText = "";
                 element.RecordingModes = rmProp.EnumerateArray().Select(v => v.GetString()).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!).ToList();
             if (entry.TryGetProperty("strategies", out var strategiesProp) && strategiesProp.ValueKind == JsonValueKind.Object)
             {
-                element.StrategyGroups = new List<ElementStrategyGroup>();
+                element.StrategyGroups = new System.Collections.ObjectModel.ObservableCollection<ElementStrategyGroup>();
                 foreach (var g in strategiesProp.EnumerateObject())
                 {
                     var group = new ElementStrategyGroup { Driver = g.Name, IsEnabled = true };
@@ -3006,7 +3017,8 @@ private string _ocrResultText = "";
                 Name = "",
                 XPath = "",
                 StrategyOrder = FixedStrategyOrder.ToList(),
-                StrategyGroups = BuildDefaultStrategyGroups(new ElementEntry { Alias = "NewPage.newElement", ControlType = "Text" }),
+                StrategyGroups = new System.Collections.ObjectModel.ObservableCollection<ElementStrategyGroup>(
+                    BuildDefaultStrategyGroups(new ElementEntry { Alias = "NewPage.newElement", ControlType = "Text" })),
             };
             Elements.Add(newElement);
             SelectedElement = newElement;

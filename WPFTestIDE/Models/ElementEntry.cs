@@ -92,9 +92,8 @@ namespace WpfTestIde.Models
         /// stays portable across machines.</summary>
         public string? ImagePath { get; set; }
 
-        /// <summary>Editable strategy groups for the properties UI and canonical export.
-        /// Not persisted directly by System.Text.Json in old loads; populated by IDE import/edit flow.</summary>
-        public List<ElementStrategyGroup>? StrategyGroups { get; set; }
+        /// <summary>Editable strategy groups for the properties UI and canonical export.</summary>
+        public System.Collections.ObjectModel.ObservableCollection<ElementStrategyGroup> StrategyGroups { get; set; } = new();
 
         public ElementEntry Clone()
         {
@@ -109,7 +108,8 @@ namespace WpfTestIde.Models
                 RecordingModes = RecordingModes != null ? new List<string>(RecordingModes) : null,
                 DriverProbes = DriverProbes?.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()),
                 StrategyOrder = StrategyOrder != null ? new List<string>(StrategyOrder) : null,
-                StrategyGroups = StrategyGroups?.Select(g => g.Clone()).ToList(),
+                StrategyGroups = new System.Collections.ObjectModel.ObservableCollection<ElementStrategyGroup>(
+                    StrategyGroups?.Select(g => g.Clone()) ?? Enumerable.Empty<ElementStrategyGroup>()),
                 AppId = AppId,
                 ImagePath = ImagePath,
             };
