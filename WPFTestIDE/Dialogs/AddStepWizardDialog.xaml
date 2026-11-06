@@ -137,22 +137,13 @@
             <CheckBox x:Name="LaunchAutoAttachCheck" Content="Automatically attach" Margin="0,0,0,4"
                       AutomationProperties.AutomationId="LaunchAutoAttachCheck"
                       ToolTip="After launching, wait for the Spy Agent / driver to be ready and register the app for subsequent keywords."/>
-            
-            <!-- Driver Selection -->
-            <StackPanel Margin="0,4,0,8">
-                <TextBlock Text="Available Drivers:" Margin="0,0,0,4"/>
-                <ListBox x:Name="AvailableDriversList" Height="60" FontSize="11" Margin="0,0,0,4" AutomationProperties.AutomationId="AvailableDriversList"/>
 
-                <TextBlock Text="Selected Drivers (priority order):" Margin="0,0,0,4"/>
-                <DockPanel Margin="0,0,0,4">
-                    <ListBox x:Name="SelectedDriversList" Height="60" FontSize="11" Margin="0,0,4,0" AutomationProperties.AutomationId="SelectedDriversList"/>
-                    <StackPanel Orientation="Vertical" DockPanel.Dock="Right">
-                        <Button x:Name="btnAddDriver" Content="Add >" Padding="6,2" FontSize="10" Margin="0,0,0,1" AutomationProperties.AutomationId="btnAddDriver" Click="btnAddDriver_Click"/>
-                        <Button x:Name="btnRemoveDriver" Content="&lt; Remove" Padding="6,2" FontSize="10" Margin="0,0,0,1" AutomationProperties.AutomationId="btnRemoveDriver" Click="btnRemoveDriver_Click"/>
-                        <Button x:Name="btnDriverUp" Content="Up" Padding="6,2" FontSize="10" Margin="0,0,0,1" AutomationProperties.AutomationId="btnDriverUp" Click="btnDriverUp_Click"/>
-                        <Button x:Name="btnDriverDown" Content="Down" Padding="6,2" FontSize="10" AutomationProperties.AutomationId="btnDriverDown" Click="btnDriverDown_Click"/>
-                    </StackPanel>
-                </DockPanel>
+            <!-- Applicable driver checkboxes (no priority ordering) -->
+            <TextBlock Text="Applicable drivers (runtime priority is fixed: UIA3 → WPFSpy → OculiX):" Margin="0,0,0,4" TextWrapping="Wrap"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <CheckBox x:Name="LaunchApplicableUIA3Check" Content="UIA3" IsChecked="True" Margin="0,0,12,0" AutomationProperties.AutomationId="LaunchApplicableUIA3Check"/>
+                <CheckBox x:Name="LaunchApplicableWPFSpyCheck" Content="WPFSpy" IsChecked="True" Margin="0,0,12,0" AutomationProperties.AutomationId="LaunchApplicableWPFSpyCheck"/>
+                <CheckBox x:Name="LaunchApplicableOculiXCheck" Content="OculiX" IsChecked="True" Margin="0,0,0,0" AutomationProperties.AutomationId="LaunchApplicableOculiXCheck"/>
             </StackPanel>
 
             <!-- Enable Spy Agent + conditional pipe name -->
@@ -202,7 +193,7 @@
         </StackPanel>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="7" Grid.ColumnSpan="2" Orientation="Horizontal" 
+        <StackPanel Grid.Row="7" Grid.ColumnSpan="2" Orientation="Horizontal"
                     HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button x:Name="btnStepCancel" Content="Cancel" Width="80" Height="28" Padding="8,2" Margin="0,0,8,0" Click="Cancel_Click" AutomationProperties.AutomationId="btnStepCancel"/>
             <Button x:Name="btnStepAdd" Content="Add" Width="80" Height="28" Padding="8,2" Click="Add_Click" IsDefault="True" AutomationProperties.AutomationId="btnStepAdd"/>

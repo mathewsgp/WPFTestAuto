@@ -1,5 +1,8 @@
+using System;
 using System.ComponentModel;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace WpfTestIde.Models
 {
@@ -9,10 +12,12 @@ namespace WpfTestIde.Models
     /// </summary>
     public class AppContext : INotifyPropertyChanged
     {
+        private static readonly string[] FixedDriverOrder = { "UIA3", "WPFSpy", "OculiX" };
+
         private string _appId = "";
         private string _appName = "";
         private string _driver = "UIA3";
-        private List<string>? _driverList;
+        private List<string>? _applicableDrivers;
         private int _processId;
         private string _pipeName = "WPFSpyAgentPipe";
         private string _appPath = "";
@@ -31,16 +36,32 @@ namespace WpfTestIde.Models
             set { _appName = value; OnPropertyChanged(); }
         }
 
+        /// <summary>Primary/legacy driver hint. Runtime priority remains fixed UIA3-&gt;WPFSpy-&gt;OculiX.</summary>
         public string Driver
         {
             get => _driver;
             set { _driver = value; OnPropertyChanged(); }
         }
 
+        /// <summary>Drivers applicable to this app (checkbox membership, not ordered).
+        /// Null/empty means all drivers are applicable.</summary>
+        public List<string>? ApplicableDrivers
+        {
+            get => _applicableDrivers;
+            set { _applicableDrivers = NormalizeApplicable(value); OnPropertyChanged(); }
+        }
+
+        /// <summary>Legacy ordered driver list (priority UI removed). Accepted on load for compatibility;
+        /// mapped to <see cref="ApplicableDrivers"/> membership in fixed order.</summary>
+        [JsonPropertyName("driverList")]
         public List<string>? DriverList
         {
-            get => _driverList;
-            set { _driverList = value; OnPropertyChanged(); }
+            get => null;
+            set
+            {
+                if (value != null && value.Count > 0 && (_applicableDrivers == null || _applicableDrivers.Count == 0))
+                    ApplicableDrivers = value;
+            }
         }
 
         public int ProcessId
@@ -76,6 +97,20 @@ namespace WpfTestIde.Models
         public string DisplayText => string.IsNullOrEmpty(AppName)
             ? $"PID {ProcessId}"
             : $"{AppName} (PID {ProcessId})";
+
+        public static List<string>? NormalizeApplicable(IEnumerable<string>? drivers)
+        {
+            if (drivers == null) return null;
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var d in drivers)
+            {
+                if (string.IsNullOrWhiteSpace(d)) continue;
+                var match = FixedDriverOrder.FirstOrDefault(f => f.Equals(d.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (match != null) set.Add(match);
+            }
+            if (set.Count == 0) return null;
+            return FixedDriverOrder.Where(set.Contains).ToList();
+        }
 
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? name = null) =>

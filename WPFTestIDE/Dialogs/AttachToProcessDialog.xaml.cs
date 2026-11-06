@@ -9,21 +9,25 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
 using WpfTestIde.Helpers;
+using WpfTestIde.Models;
 
 namespace WpfTestIde.Dialogs
 {
     public partial class AttachToProcessDialog : Window
     {
-        private readonly List<string> _allDrivers = new() { "WPFSpy", "UIA3", "OculiX" };
-        private List<string> _selectedDrivers = new() { "WPFSpy", "UIA3" };
-
         public int? SelectedProcessId { get; private set; }
         public string PipeName { get; private set; } = "WPFSpyAgentPipe";
         public string AppId { get; private set; } = "";
         public string? ApplicationPath { get; private set; }
         public string? Arguments { get; private set; }
         public string? StartIn { get; private set; }
-        public List<string>? DriverList { get; private set; }
+
+        /// <summary>Drivers applicable to the attached/launched app (checkbox membership). Null/empty means all applicable.</summary>
+        public List<string>? ApplicableDrivers { get; private set; }
+
+        /// <summary>Legacy compatibility: ordered list semantics removed; returns <see cref="ApplicableDrivers"/>.</summary>
+        public List<string>? DriverList => ApplicableDrivers;
+
         public bool InjectSpyAgentOnAttach { get; private set; } = true;
         public bool SpyAgentEnabled { get; private set; } = true;
         public AttachMode Mode { get; private set; } = AttachMode.RuntimeAttach;
@@ -31,23 +35,31 @@ namespace WpfTestIde.Dialogs
         public AttachToProcessDialog()
         {
             InitializeComponent();
-            RefreshDriverLists();
             RefreshProcessList();
+            UpdatePipeNameVisibility();
             StatusText.Text = "Select a process to attach to, or launch a new process";
         }
 
-        private void RefreshDriverLists()
+        private List<string>? GetSelectedApplicableDrivers()
         {
-            var available = _allDrivers.Except(_selectedDrivers).ToList();
-            AvailableDriversList.ItemsSource = available;
-            SelectedDriversList.ItemsSource = _selectedDrivers.ToList();
-            UpdatePipeNameVisibility();
+            bool uia3 = Mode == AttachMode.RuntimeAttach ? RuntimeApplicableUIA3Check?.IsChecked == true : ApplicableUIA3Check?.IsChecked == true;
+            bool wpf = Mode == AttachMode.RuntimeAttach ? RuntimeApplicableWPFSpyCheck?.IsChecked == true : ApplicableWPFSpyCheck?.IsChecked == true;
+            bool oculix = Mode == AttachMode.RuntimeAttach ? RuntimeApplicableOculiXCheck?.IsChecked == true : ApplicableOculiXCheck?.IsChecked == true;
+            var selected = new List<string>();
+            if (uia3) selected.Add("UIA3");
+            if (wpf) selected.Add("WPFSpy");
+            if (oculix) selected.Add("OculiX");
+            if (selected.Count == 0 || selected.Count == 3) return null; // null => all applicable
+            return Models.AppContext.NormalizeApplicable(selected);
         }
 
         private void UpdatePipeNameVisibility()
         {
             if (PipeNamePanel == null) return;
-            PipeNamePanel.Visibility = _selectedDrivers.Contains("WPFSpy") ? Visibility.Visible : Visibility.Collapsed;
+            bool show = Mode == AttachMode.RuntimeAttach
+                ? RuntimeApplicableWPFSpyCheck?.IsChecked == true || InjectSpyAgentRuntimeCheck?.IsChecked == true
+                : ApplicableWPFSpyCheck?.IsChecked == true || EnableSpyAgentCheck?.IsChecked == true;
+            PipeNamePanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void RefreshProcessList()
@@ -95,6 +107,7 @@ namespace WpfTestIde.Dialogs
                 RuntimeAttachPanel.Visibility = Visibility.Visible;
                 NewProcessPanel.Visibility = Visibility.Collapsed;
                 Mode = AttachMode.RuntimeAttach;
+                UpdatePipeNameVisibility();
                 StatusText.Text = "Select a running process to attach to";
             }
         }
@@ -106,6 +119,7 @@ namespace WpfTestIde.Dialogs
                 RuntimeAttachPanel.Visibility = Visibility.Collapsed;
                 NewProcessPanel.Visibility = Visibility.Visible;
                 Mode = AttachMode.LaunchNew;
+                UpdatePipeNameVisibility();
                 StatusText.Text = "Launch new process with Spy Agent injected";
             }
         }
@@ -125,50 +139,14 @@ namespace WpfTestIde.Dialogs
             }
         }
 
-        private void btnAddDriver_Click(object sender, RoutedEventArgs e)
+        private void ApplicableDriver_Changed(object sender, RoutedEventArgs e)
         {
-            if (AvailableDriversList.SelectedItem is string driver)
-            {
-                _selectedDrivers.Add(driver);
-                RefreshDriverLists();
-                SelectedDriversList.SelectedItem = driver;
-            }
-        }
-
-        private void btnRemoveDriver_Click(object sender, RoutedEventArgs e)
-        {
-            if (SelectedDriversList.SelectedItem is string driver)
-            {
-                _selectedDrivers.Remove(driver);
-                RefreshDriverLists();
-            }
-        }
-
-        private void btnDriverUp_Click(object sender, RoutedEventArgs e)
-        {
-            if (_selectedDrivers == null || SelectedDriversList.SelectedIndex < 1) return;
-            int index = SelectedDriversList.SelectedIndex;
-            var item = _selectedDrivers[index];
-            _selectedDrivers.RemoveAt(index);
-            _selectedDrivers.Insert(index - 1, item);
-            RefreshDriverLists();
-            SelectedDriversList.SelectedIndex = index - 1;
-        }
-
-        private void btnDriverDown_Click(object sender, RoutedEventArgs e)
-        {
-            if (_selectedDrivers == null || SelectedDriversList.SelectedIndex < 0 || SelectedDriversList.SelectedIndex >= _selectedDrivers.Count - 1) return;
-            int index = SelectedDriversList.SelectedIndex;
-            var item = _selectedDrivers[index];
-            _selectedDrivers.RemoveAt(index);
-            _selectedDrivers.Insert(index + 1, item);
-            RefreshDriverLists();
-            SelectedDriversList.SelectedIndex = index + 1;
+            UpdatePipeNameVisibility();
         }
 
         private void EnableSpyAgentCheck_Checked(object sender, RoutedEventArgs e)
         {
-            SpyAgentEnabled = EnableSpyAgentCheck.IsChecked == true;
+            SpyAgentEnabled = EnableSpyAgentCheck?.IsChecked == true;
             UpdatePipeNameVisibility();
         }
 
@@ -197,8 +175,8 @@ namespace WpfTestIde.Dialogs
 
         private async void Attach_Click(object sender, RoutedEventArgs e)
         {
+            ApplicableDrivers = GetSelectedApplicableDrivers();
             AppId = string.IsNullOrWhiteSpace(AppIdBox.Text) ? "" : AppIdBox.Text.Trim();
-            DriverList = _selectedDrivers != null && _selectedDrivers.Any() ? new List<string>(_selectedDrivers) : null;
             if (EnableSpyAgentCheck != null) SpyAgentEnabled = EnableSpyAgentCheck.IsChecked == true; else SpyAgentEnabled = true;
             if (InjectSpyAgentRuntimeCheck != null) InjectSpyAgentOnAttach = InjectSpyAgentRuntimeCheck.IsChecked == true; else InjectSpyAgentOnAttach = true;
 
@@ -235,7 +213,7 @@ namespace WpfTestIde.Dialogs
 
                 StatusText.Text = $"Attempting to attach to PID {SelectedProcessId}...";
 
-                var result = InjectSpyAgentOnAttach 
+                var result = InjectSpyAgentOnAttach
                     ? await TryRuntimeAttachAsync(SelectedProcessId.Value, PipeName)
                     : true;
 
@@ -285,15 +263,16 @@ namespace WpfTestIde.Dialogs
                 LogDiagnostic($"StartIn: {StartIn ?? "(none)"}");
                 LogDiagnostic($"SpyAgentEnabled: {SpyAgentEnabled}");
                 LogDiagnostic($"PipeName: {PipeName}");
+                LogDiagnostic($"ApplicableDrivers: {(ApplicableDrivers == null ? "ALL" : string.Join(",", ApplicableDrivers))}");
                 LogDiagnostic($"IsNetFrameworkApp: {IsNetFrameworkApp(ApplicationPath)}");
 
                 if (IsNetFrameworkApp(ApplicationPath))
                 {
                     StatusText.Text = "Launching .NET Framework app with runtime injection...";
                     LogDiagnostic("Detected .NET Framework app - using launch + inject flow");
-                    
+
                     var result = await LaunchFrameworkAppWithInjection(ApplicationPath, Arguments, StartIn, PipeName);
-                    
+
                     if (result != null)
                     {
                         SelectedProcessId = result.Id;
@@ -303,7 +282,7 @@ namespace WpfTestIde.Dialogs
                     else
                     {
                         StatusText.Text = "Failed to launch/inject .NET Framework app";
-                        MessageBox.Show(this, 
+                        MessageBox.Show(this,
                             "Failed to launch and inject the .NET Framework application.\n\n" +
                             "This requires:\n" +
                             "1. Build WpfSpyAgent.NativeInject project (C++ DLL)\n" +
@@ -375,7 +354,7 @@ namespace WpfTestIde.Dialogs
                 RuntimeInjector.StatusChanged += msg => LogDiagnostic($"[Inject] {msg}");
                 bool injected = await RuntimeInjector.InjectAsync(processId, dllPath, pipeName);
                 RuntimeInjector.StatusChanged -= msg => LogDiagnostic($"[Inject] {msg}");
-                
+
                 if (injected)
                 {
                     StatusText.Text = "Waiting for Spy Agent pipe...";
@@ -404,33 +383,6 @@ namespace WpfTestIde.Dialogs
                 LogDiagnostic($"Runtime attach exception: {ex.GetType().Name}: {ex.Message}");
                 return false;
             }
-        }
-
-        private bool IsProcessDotNetFramework(int processId)
-        {
-            try
-            {
-                using var process = Process.GetProcessById(processId);
-                string? exePath = process.MainModule?.FileName;
-                if (!string.IsNullOrEmpty(exePath))
-                {
-                    string dir = Path.GetDirectoryName(exePath)!;
-                    string lowerDir = dir.ToLowerInvariant();
-                    if (lowerDir.Contains("net461") || lowerDir.Contains("net48") || lowerDir.Contains("net472") || lowerDir.Contains("net462"))
-                        return true;
-                }
-
-                foreach (ProcessModule module in process.Modules)
-                {
-                    string name = module.ModuleName.ToLowerInvariant();
-                    if (name == "mscoree.dll")
-                        return true;
-                    if (name == "coreclr.dll")
-                        return false;
-                }
-            }
-            catch { }
-            return false;
         }
 
         private string? GetStartupHookDllPath()
@@ -560,7 +512,7 @@ namespace WpfTestIde.Dialogs
             {
                 var startupHookPath = GetStartupHookDllPath();
                 LogDiagnostic($"GetStartupHookDllPath returned: {startupHookPath ?? "null"}");
-                
+
                 if (string.IsNullOrEmpty(startupHookPath))
                 {
                     StatusText.Text = "Startup hook DLL not found";
@@ -580,7 +532,7 @@ namespace WpfTestIde.Dialogs
                 var agentDllName = "WpfSpyAgent.dll";
                 var agentDllPath = Path.Combine(Path.GetDirectoryName(startupHookPath) ?? "", agentDllName);
                 LogDiagnostic($"Agent DLL path (same dir as hook): {agentDllPath}, exists: {File.Exists(agentDllPath)}");
-                
+
                 if (!File.Exists(agentDllPath))
                 {
                     agentDllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, agentDllName);
@@ -590,7 +542,7 @@ namespace WpfTestIde.Dialogs
                 var newtonsoftDllName = "Newtonsoft.Json.dll";
                 var newtonsoftDllPath = Path.Combine(Path.GetDirectoryName(startupHookPath) ?? "", newtonsoftDllName);
                 LogDiagnostic($"Newtonsoft.Json DLL path (same dir as hook): {newtonsoftDllPath}, exists: {File.Exists(newtonsoftDllPath)}");
-                
+
                 if (!File.Exists(newtonsoftDllPath))
                 {
                     newtonsoftDllPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, newtonsoftDllName);
@@ -701,9 +653,6 @@ namespace WpfTestIde.Dialogs
                     return false;
 
                 var exeName = Path.GetFileNameWithoutExtension(appPath);
-
-                // .NET Core/5+ apps have a runtimeconfig.json alongside the exe.
-                // .NET Framework apps do not.
                 var runtimeConfigPath = Path.Combine(targetDir, $"{exeName}.runtimeconfig.json");
                 return !File.Exists(runtimeConfigPath);
             }

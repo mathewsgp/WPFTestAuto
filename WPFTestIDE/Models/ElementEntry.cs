@@ -64,10 +64,23 @@ namespace WpfTestIde.Models
         /// generation should prefer this data over the shared top-level fields.</summary>
         public Dictionary<string, DriverProbeData>? DriverProbes { get; set; }
 
-        /// <summary>Per-element driver priority order for element identification.
-        /// Example: ["UIA3", "WPFSpy", "OculiX"]
-        /// If null or empty, the global driver order from config is used.</summary>
-        public List<string>? DriverPriority { get; set; }
+        /// <summary>Order of driver strategy groups in the emitted repository
+        /// JSON (e.g. ["UIA3","WPFSpy","OculiX"]). When null/empty, the
+        /// default fixed order UIA3 -> WPFSpy -> OculiX is used.</summary>
+        public List<string>? StrategyOrder { get; set; }
+
+        /// <summary>Legacy per-element driver priority. Accepted on load for backward compatibility;
+        /// ignored for runtime priority (fixed UIA3-&gt;WPFSpy-&gt;OculiX) and not emitted on save.</summary>
+        [System.Text.Json.Serialization.JsonPropertyName("driverPriority")]
+        public List<string>? LegacyDriverPriority
+        {
+            get => null;
+            set
+            {
+                if (value != null && value.Count > 0 && (StrategyOrder == null || StrategyOrder.Count == 0))
+                    StrategyOrder = value.Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
+            }
+        }
 
         /// <summary>App context ID for multi-app support. Null/empty means global element.</summary>
         public string? AppId { get; set; }
@@ -91,7 +104,7 @@ namespace WpfTestIde.Models
                 XPath = XPath,
                 RecordingModes = RecordingModes != null ? new List<string>(RecordingModes) : null,
                 DriverProbes = DriverProbes?.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()),
-                DriverPriority = DriverPriority != null ? new List<string>(DriverPriority) : null,
+                StrategyOrder = StrategyOrder != null ? new List<string>(StrategyOrder) : null,
                 AppId = AppId,
                 ImagePath = ImagePath,
             };

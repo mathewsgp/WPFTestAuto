@@ -396,6 +396,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
             {
                 _recordOculiX = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(RecordSikuli));
                 RegenerateScript();
                 if (_session != null)
                 {
@@ -403,6 +404,8 @@ private FolderTreeItem? _workingFolderSelectedItem;
                 }
             }
         }
+        // Compatibility alias for older bindings/tests.
+        public bool RecordSikuli { get => RecordOculiX; set => RecordOculiX = value; }
 
         // Run mode checkboxes (UIA3, WPFSpy, Sikuli)
         private bool _runUIA3 = true;
@@ -423,8 +426,10 @@ private FolderTreeItem? _workingFolderSelectedItem;
         public bool RunOculiX
         {
             get => _runOculiX;
-            set { _runOculiX = value; OnPropertyChanged(); RegenerateScript(); }
+            set { _runOculiX = value; OnPropertyChanged(); OnPropertyChanged(nameof(RunSikuli)); RegenerateScript(); }
         }
+        // Compatibility alias for older bindings/tests.
+        public bool RunSikuli { get => RunOculiX; set => RunOculiX = value; }
 
         private double _oculixSimilarity = 0.85;
         public double OculiXSimilarity
@@ -454,8 +459,11 @@ private FolderTreeItem? _workingFolderSelectedItem;
             set { _oculixScreenCapture = value; OnPropertyChanged(); }
         }
 
+        public ICommand MoveElementStrategyUpCommand { get; }
+        public ICommand MoveElementStrategyDownCommand { get; }
         public ICommand MoveElementPriorityUpCommand { get; }
         public ICommand MoveElementPriorityDownCommand { get; }
+        public int SelectedStrategyOrderIndex { get; set; } = -1;
 
         private bool _lastRunSuccess;
         public bool LastRunSuccess { get => _lastRunSuccess; set { _lastRunSuccess = value; OnPropertyChanged(); } }
@@ -499,10 +507,13 @@ private FolderTreeItem? _workingFolderSelectedItem;
                 if (value != null)
                 {
                     EditingElement = value.Clone();
+                    EnsureStrategyOrder(EditingElement);
+                    SelectedStrategyOrderIndex = -1;
                 }
                 else
                 {
                     EditingElement = null;
+                    SelectedStrategyOrderIndex = -1;
                 }
             }
         }
@@ -688,8 +699,10 @@ private string _ocrResultText = "";
             ShowWorkingFolderCommand = new RelayCommand(_ => ShowWorkingFolder());
             RefreshWorkingFolderCommand = new RelayCommand(_ => RefreshWorkingFolder());
             BrowseScriptCommand = new RelayCommand(param => BrowseScript(param as RecordedStep));
-            MoveElementPriorityUpCommand = new RelayCommand(_ => MoveElementPriorityUp(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
-            MoveElementPriorityDownCommand = new RelayCommand(_ => MoveElementPriorityDown(), _ => EditingElement != null && EditingElement.DriverPriority != null && EditingElement.DriverPriority.Any());
+            MoveElementStrategyUpCommand = new RelayCommand(_ => MoveElementStrategyUp(), _ => EditingElement?.StrategyOrder?.Count > 1);
+            MoveElementStrategyDownCommand = new RelayCommand(_ => MoveElementStrategyDown(), _ => EditingElement?.StrategyOrder?.Count > 1);
+            MoveElementPriorityUpCommand = MoveElementStrategyUpCommand;
+            MoveElementPriorityDownCommand = MoveElementStrategyDownCommand;
 
             // Menu commands
             ToggleThemeCommand = new RelayCommand(_ => ToggleTheme());
@@ -829,8 +842,10 @@ private string _ocrResultText = "";
             {
                 AppId = appId,
                 AppName = appName,
-                Driver = dialog.DriverList != null && dialog.DriverList.Any() ? dialog.DriverList[0] : "WPFSpy",
-                DriverList = dialog.DriverList,
+                Driver = dialog.ApplicableDrivers?.FirstOrDefault(d => d.Equals("WPFSpy", StringComparison.OrdinalIgnoreCase))
+                    ?? dialog.ApplicableDrivers?.FirstOrDefault()
+                    ?? "WPFSpy",
+                ApplicableDrivers = dialog.ApplicableDrivers,
                 ProcessId = dialog.SelectedProcessId.Value,
                 PipeName = dialog.PipeName,
                 AppPath = dialog.ApplicationPath ?? "",
@@ -862,7 +877,8 @@ private string _ocrResultText = "";
                 pipeName: dialog.PipeName,
                 processId: dialog.SelectedProcessId.Value,
                 exeName: dialog.ApplicationPath,
-                mode: attachMode));
+                mode: attachMode,
+                applicableDrivers: dialog.ApplicableDrivers));
 
             string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "repository", "attach_log.txt");
             try
@@ -938,9 +954,12 @@ private string _ocrResultText = "";
                 string pipeName = step.PipeName ?? $"WPFSpyAgentPipe_{appId}";
 
                 // Use UIA3 driver when spy agent is disabled (e.g. Notepad, Calc),
-                // WPFSpy when the agent is enabled. Prefer LaunchDriverList if set.
+                // WPFSpy when the agent is enabled. Applicable drivers come from launch step checkboxes.
                 string driver = step.SpyAgentEnabled
-                    ? (step.LaunchDriverList != null && step.LaunchDriverList.Any() ? step.LaunchDriverList[0] : (step.LaunchDriver ?? "WPFSpy"))
+                    ? (step.LaunchApplicableDrivers?.FirstOrDefault(d => d.Equals("WPFSpy", StringComparison.OrdinalIgnoreCase))
+                        ?? step.LaunchApplicableDrivers?.FirstOrDefault()
+                        ?? step.LaunchDriver
+                        ?? "WPFSpy")
                     : "UIA3";
 
                 var appContext = new WpfTestIde.Models.AppContext
@@ -948,7 +967,7 @@ private string _ocrResultText = "";
                     AppId = appId,
                     AppName = appName,
                     Driver = driver,
-                    DriverList = step.LaunchDriverList,
+                    ApplicableDrivers = step.LaunchApplicableDrivers,
                     ProcessId = 0, // Will be set after launch
                     PipeName = pipeName,
                     AppPath = step.AppPath,
@@ -989,14 +1008,15 @@ private string _ocrResultText = "";
                 var matchingStep = launchSteps.FirstOrDefault(s =>
                     (s.AppId ?? System.IO.Path.GetFileNameWithoutExtension(s.AppPath ?? "").ToLowerInvariant()) == app.AppId);
                 bool useUIA3 = matchingStep != null && !matchingStep.SpyAgentEnabled;
-                
+
                 _session.AddTarget(new RecordingTarget(
                     appId: app.AppId,
                     pipeName: app.PipeName,
                     processId: app.ProcessId,
                     exeName: app.AppPath,
                     mode: useUIA3 ? ProbeMode.UIA3 : ProbeMode.WPFSpy,
-                    priority: priority++));
+                    priority: priority++,
+                    applicableDrivers: app.ApplicableDrivers ?? matchingStep?.LaunchApplicableDrivers));
             }
 
             IsAttached = true;
@@ -1343,21 +1363,7 @@ private string _ocrResultText = "";
                 // Choose driver priority based on which probe mode the session is using.
                 // For UIA3-resolved elements, WPFSpy is meaningless (no spy agent in the app).
                 // For WPFSpy-resolved elements, the full [UIA3, WPFSpy, OculiX] priority applies.
-                List<string> driverPriority;
                 List<string>? recordingModes = entry.RecordingModes;
-                if (recordingModes != null && recordingModes.Count > 0)
-                {
-                    driverPriority = new List<string>(recordingModes);
-                }
-                else
-                {
-                    // Default to whatever the session is currently using.
-                    driverPriority = new List<string>(GetSelectedRecordingModes());
-                    if (driverPriority.Count == 0)
-                    {
-                        driverPriority = new List<string> { "UIA3", "WPFSpy", "OculiX" };
-                    }
-                }
 
                 entry = new ElementEntry
                 {
@@ -1368,7 +1374,6 @@ private string _ocrResultText = "";
                     Name = entry.Name,
                     XPath = entry.XPath,
                     RecordingModes = recordingModes,
-                    DriverPriority = driverPriority,
                     DriverProbes = entry.DriverProbes != null
                         ? entry.DriverProbes.ToDictionary(kv => kv.Key, kv => kv.Value.Clone())
                         : null,
@@ -1723,7 +1728,6 @@ private string _ocrResultText = "";
                         Name = name ?? "",
                         XPath = xpath ?? "",
                         RecordingModes = dialog.SelectedRecordingModes,
-                        DriverPriority = new List<string> { "UIA3", "WPFSpy", "OculiX" }
                     };
                     Elements.Add(newElement);
                     StatusText = $"Added element: {alias}";
@@ -1843,32 +1847,52 @@ private string _ocrResultText = "";
             return modes;
         }
 
-        private void MoveElementPriorityUp()
+        private static readonly string[] FixedStrategyOrder = { "UIA3", "WPFSpy", "OculiX" };
+
+        private void EnsureStrategyOrder(ElementEntry? element)
         {
-            if (EditingElement?.DriverPriority == null || EditingElement.DriverPriority.Count < 2) return;
-            int index = EditingElement.DriverPriority.Count - 1; // Move last selected or just move up if there's a selection
-            // For simplicity, move the first item up if no specific selection
-            if (index > 0)
-            {
-                var item = EditingElement.DriverPriority[0];
-                EditingElement.DriverPriority.RemoveAt(0);
-                EditingElement.DriverPriority.Insert(1, item);
-                OnPropertyChanged(nameof(EditingElement));
-            }
+            if (element == null) return;
+            var existing = (element.StrategyOrder ?? new List<string>())
+                .Select(s => FixedStrategyOrder.FirstOrDefault(f => f.Equals(s, StringComparison.OrdinalIgnoreCase)))
+                .Where(s => s != null)
+                .Select(s => s!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            foreach (var d in FixedStrategyOrder)
+                if (!existing.Contains(d, StringComparer.OrdinalIgnoreCase)) existing.Add(d);
+            element.StrategyOrder = new System.Collections.ObjectModel.ObservableCollection<string>(existing).ToList();
+            // Keep an observable list for UI binding updates by reassigning through clone-safe list.
+            element.StrategyOrder = existing;
         }
 
-        private void MoveElementPriorityDown()
+        private void MoveElementStrategyUp()
         {
-            if (EditingElement?.DriverPriority == null || EditingElement.DriverPriority.Count < 2) return;
-            int lastIndex = EditingElement.DriverPriority.Count - 1;
-            if (lastIndex > 0)
-            {
-                var item = EditingElement.DriverPriority[lastIndex];
-                EditingElement.DriverPriority.RemoveAt(lastIndex);
-                EditingElement.DriverPriority.Insert(lastIndex - 1, item);
-                OnPropertyChanged(nameof(EditingElement));
-            }
+            if (EditingElement?.StrategyOrder == null || EditingElement.StrategyOrder.Count < 2) return;
+            int index = SelectedStrategyOrderIndex;
+            if (index < 0 || index >= EditingElement.StrategyOrder.Count) index = 1;
+            if (index <= 0) return;
+            var item = EditingElement.StrategyOrder[index];
+            EditingElement.StrategyOrder.RemoveAt(index);
+            EditingElement.StrategyOrder.Insert(index - 1, item);
+            SelectedStrategyOrderIndex = index - 1;
+            OnPropertyChanged(nameof(EditingElement));
         }
+
+        private void MoveElementStrategyDown()
+        {
+            if (EditingElement?.StrategyOrder == null || EditingElement.StrategyOrder.Count < 2) return;
+            int index = SelectedStrategyOrderIndex;
+            if (index < 0 || index >= EditingElement.StrategyOrder.Count) index = EditingElement.StrategyOrder.Count - 2;
+            if (index < 0 || index >= EditingElement.StrategyOrder.Count - 1) return;
+            var item = EditingElement.StrategyOrder[index];
+            EditingElement.StrategyOrder.RemoveAt(index);
+            EditingElement.StrategyOrder.Insert(index + 1, item);
+            SelectedStrategyOrderIndex = index + 1;
+            OnPropertyChanged(nameof(EditingElement));
+        }
+
+        private void MoveElementPriorityUp() => MoveElementStrategyUp();
+        private void MoveElementPriorityDown() => MoveElementStrategyDown();
          private void RegenerateRepository() => RepositoryJson = RepositoryWriter.GenerateJson(Elements, GetSelectedRecordingModes());
 
         // ------------------------------------------------------------
@@ -2743,7 +2767,6 @@ private string _ocrResultText = "";
                             ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
                             AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
                             Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
-                            DriverPriority = new List<string> { "UIA3", "WPFSpy", "OculiX" }
                         };
 
                         loadedAliases.Add(alias);
@@ -2851,11 +2874,12 @@ private string _ocrResultText = "";
                 AutomationId = "",
                 Name = "",
                 XPath = "",
-                DriverPriority = new List<string> { "UIA3", "WPFSpy", "OculiX" }
+                StrategyOrder = FixedStrategyOrder.ToList(),
             };
             Elements.Add(newElement);
             SelectedElement = newElement;
             EditingElement = newElement.Clone();
+            EnsureStrategyOrder(EditingElement);
         }
 
         private void EditElement(ElementEntry? element)
@@ -2864,6 +2888,7 @@ private string _ocrResultText = "";
             try
             {
                 EditingElement = element.Clone();
+                EnsureStrategyOrder(EditingElement);
             }
             catch (Exception ex)
             {
@@ -3188,7 +3213,6 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                             AutomationId = probe.AutomationId,
                             Name = probe.Name,
                             XPath = probe.XPath,
-                            DriverPriority = new List<string> { "UIA3", "WPFSpy", "OculiX" }
                         };
 
                         // Marshaling to UI thread because mouse hook raises events on a background thread
@@ -3284,4 +3308,6 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }
+
+
 

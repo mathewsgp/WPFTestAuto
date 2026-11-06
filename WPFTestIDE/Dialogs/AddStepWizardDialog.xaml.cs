@@ -13,8 +13,6 @@ namespace WpfTestIde.Dialogs
     {
         private readonly List<ElementEntry> _elements;
         private readonly string _pipeName;
-        private readonly List<string> _allDrivers = new() { "WPFSpy", "UIA3", "OculiX" };
-        private List<string> _selectedDrivers = new() { "WPFSpy", "UIA3" };
 
         public RecordedStep? CreatedStep { get; private set; }
 
@@ -100,11 +98,6 @@ namespace WpfTestIde.Dialogs
                 }
             }
 
-            if (showLaunchAppPanel)
-            {
-                RefreshDriverLists();
-            }
-
             if (text == "Verify Element Text" && AliasCombo.SelectedItem is ElementEntry entry)
             {
                 TryPrefillExpectedValue(entry);
@@ -184,52 +177,17 @@ namespace WpfTestIde.Dialogs
             }
         }
 
-        private void RefreshDriverLists()
+        private List<string>? GetLaunchApplicableDrivers()
         {
-            var available = _allDrivers.Except(_selectedDrivers).ToList();
-            AvailableDriversList.ItemsSource = available;
-            SelectedDriversList.ItemsSource = _selectedDrivers.ToList();
-        }
-
-        private void btnAddDriver_Click(object sender, RoutedEventArgs e)
-        {
-            if (AvailableDriversList.SelectedItem is string driver)
-            {
-                _selectedDrivers.Add(driver);
-                RefreshDriverLists();
-                SelectedDriversList.SelectedItem = driver;
-            }
-        }
-
-        private void btnRemoveDriver_Click(object sender, RoutedEventArgs e)
-        {
-            if (SelectedDriversList.SelectedItem is string driver)
-            {
-                _selectedDrivers.Remove(driver);
-                RefreshDriverLists();
-            }
-        }
-
-        private void btnDriverUp_Click(object sender, RoutedEventArgs e)
-        {
-            if (_selectedDrivers == null || SelectedDriversList.SelectedIndex < 1) return;
-            int index = SelectedDriversList.SelectedIndex;
-            var item = _selectedDrivers[index];
-            _selectedDrivers.RemoveAt(index);
-            _selectedDrivers.Insert(index - 1, item);
-            RefreshDriverLists();
-            SelectedDriversList.SelectedIndex = index - 1;
-        }
-
-        private void btnDriverDown_Click(object sender, RoutedEventArgs e)
-        {
-            if (_selectedDrivers == null || SelectedDriversList.SelectedIndex < 0 || SelectedDriversList.SelectedIndex >= _selectedDrivers.Count - 1) return;
-            int index = SelectedDriversList.SelectedIndex;
-            var item = _selectedDrivers[index];
-            _selectedDrivers.RemoveAt(index);
-            _selectedDrivers.Insert(index + 1, item);
-            RefreshDriverLists();
-            SelectedDriversList.SelectedIndex = index + 1;
+            bool uia3 = LaunchApplicableUIA3Check?.IsChecked == true;
+            bool wpf = LaunchApplicableWPFSpyCheck?.IsChecked == true;
+            bool oculix = LaunchApplicableOculiXCheck?.IsChecked == true;
+            var selected = new List<string>();
+            if (uia3) selected.Add("UIA3");
+            if (wpf) selected.Add("WPFSpy");
+            if (oculix) selected.Add("OculiX");
+            if (selected.Count == 0 || selected.Count == 3) return null; // null => all applicable
+            return Models.AppContext.NormalizeApplicable(selected);
         }
 
         private void UpdatePipeNameSuggestion()
@@ -420,8 +378,10 @@ namespace WpfTestIde.Dialogs
                          step.Args = string.IsNullOrWhiteSpace(LaunchArgsBox.Text)
                              ? null : LaunchArgsBox.Text.Trim();
                           step.AutoAttach = LaunchAutoAttachCheck.IsChecked == true;
-                          step.LaunchDriver = "WPFSpy";
-                          step.LaunchDriverList = _selectedDrivers != null && _selectedDrivers.Any() ? new List<string>(_selectedDrivers) : null;
+                          step.LaunchApplicableDrivers = GetLaunchApplicableDrivers();
+                          step.LaunchDriver = step.LaunchApplicableDrivers?.FirstOrDefault(d => d.Equals("WPFSpy", StringComparison.OrdinalIgnoreCase))
+                              ?? step.LaunchApplicableDrivers?.FirstOrDefault()
+                              ?? "WPFSpy";
                           step.SpyAgentEnabled = LaunchSpyAgentCheck.IsChecked == true;
                          step.PipeName = string.IsNullOrWhiteSpace(LaunchPipeNameBox.Text)
                              ? null : LaunchPipeNameBox.Text.Trim();

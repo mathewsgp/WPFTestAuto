@@ -174,36 +174,47 @@ namespace WpfTestIde.Recording
                 {
                     elementDef["name"] = entry.Name;
                 }
-                if (!string.IsNullOrEmpty(entry.XPath))
-                {
-                    elementDef["relativeXPath"] = entry.XPath!;
-                }
-                if (entry.DriverProbes != null && entry.DriverProbes.Count > 0)
-                {
-                    elementDef["driverProbes"] = entry.DriverProbes.ToDictionary(
-                        kv => kv.Key,
-                        kv => (object)new Dictionary<string, object?>
-                        {
-                            ["automationId"] = kv.Value.AutomationId,
-                            ["name"] = kv.Value.Name,
-                            ["controlType"] = kv.Value.ControlType,
-                            ["text"] = kv.Value.Text,
-                            ["xpath"] = kv.Value.XPath,
-                        }.Where(p => p.Value != null).ToDictionary(p => p.Key, p => p.Value!));
-                }
+                    if (!string.IsNullOrEmpty(entry.XPath))
+                    {
+                        elementDef["relativeXPath"] = entry.XPath!;
+                    }
+                    // Legacy driverPriority is intentionally not emitted; runtime priority is fixed
+                    // and strategy group order is represented by the strategies object order.
+                    if (entry.DriverProbes != null && entry.DriverProbes.Count > 0)
+                    {
+                        elementDef["driverProbes"] = entry.DriverProbes.ToDictionary(
+                            kv => kv.Key,
+                            kv => (object)new Dictionary<string, object?>
+                            {
+                                ["automationId"] = kv.Value.AutomationId,
+                                ["name"] = kv.Value.Name,
+                                ["controlType"] = kv.Value.ControlType,
+                                ["text"] = kv.Value.Text,
+                                ["xpath"] = kv.Value.XPath,
+                            }.Where(p => p.Value != null).ToDictionary(p => p.Key, p => p.Value!));
+                    }
 
-                elementDef["parentAlias"] = parentAlias;
-                elementDef["defaultTimeout"] = 10;
-                elementDef["tags"] = entry.NonStandard
-                    ? new List<string> { "recorded", "self-healing-demo" }
-                    : new List<string> { "recorded" };
-                elementDef["strategies"] = strategies;
-
-                // Include per-element driver priority if set
-                if (entry.DriverPriority != null && entry.DriverPriority.Any())
-                {
-                    elementDef["driverPriority"] = entry.DriverPriority;
-                }
+                    elementDef["parentAlias"] = parentAlias;
+                    elementDef["defaultTimeout"] = 10;
+                    elementDef["tags"] = entry.NonStandard
+                        ? new List<string> { "recorded", "self-healing-demo" }
+                        : new List<string> { "recorded" };
+                    // Reorder strategies according to entry.StrategyOrder (if provided).
+                    var orderedStrategies = new Dictionary<string, List<object>>();
+                    var order = (entry.StrategyOrder != null && entry.StrategyOrder.Any())
+                        ? entry.StrategyOrder
+                        : new List<string> { "UIA3", "WPFSpy", "OculiX" };
+                    foreach (var key in order)
+                    {
+                        if (strategies.TryGetValue(key, out var val))
+                            orderedStrategies[key] = val;
+                    }
+                    foreach (var kv in strategies)
+                    {
+                        if (!orderedStrategies.ContainsKey(kv.Key))
+                            orderedStrategies[kv.Key] = kv.Value;
+                    }
+                    elementDef["strategies"] = orderedStrategies;
 
                 elements[entry.Alias] = elementDef;
             }

@@ -38,6 +38,8 @@ namespace WpfTestIde.Recording
         public ProbeMode Mode { get; }
         public int Priority { get; }                       // lower = checked first
 
+        public List<string>? ApplicableDrivers { get; set; }
+
         // Lazily-constructed per-target probes. We do NOT construct the
         // ElementProbe at registration time so targets added before the
         // target process exists don't immediately try to open a pipe.
@@ -57,7 +59,8 @@ namespace WpfTestIde.Recording
             int processId,
             string? exeName,
             ProbeMode mode,
-            int priority = 0)
+            int priority = 0,
+            IEnumerable<string>? applicableDrivers = null)
         {
             AppId = appId;
             PipeName = pipeName ?? "";
@@ -65,6 +68,7 @@ namespace WpfTestIde.Recording
             ExeName = exeName;
             Mode = mode;
             Priority = priority;
+            ApplicableDrivers = Models.AppContext.NormalizeApplicable(applicableDrivers);
 
             if (mode == ProbeMode.WPFSpy)
             {
@@ -420,7 +424,24 @@ namespace WpfTestIde.Recording
                 }
             }
 
-            var selectedModes = GetSelectedModesForCapture();
+            var globalModes = GetSelectedModesForCapture();
+            var applicable = target.ApplicableDrivers;
+            List<string> effective;
+            if (applicable == null || applicable.Count == 0)
+            {
+                effective = new List<string>(globalModes);
+            }
+            else
+            {
+                var applicableSet = new HashSet<string>(applicable, StringComparer.OrdinalIgnoreCase);
+                effective = globalModes.Where(m => applicableSet.Contains(m)).ToList();
+            }
+            if (effective.Count == 0)
+            {
+                Log($"[OnClick] skipped: effective recording modes empty for appId={target.AppId} (global=[{string.Join(",", globalModes)}], applicable=[{string.Join(",", applicable ?? new List<string>())}])");
+                return;
+            }
+            var selectedModes = effective;
             var probeResults = ProbeSelectedDrivers(x, y, target, selectedModes);
             ProbedElement? primaryProbed = SelectPrimaryProbe(probeResults, target);
 

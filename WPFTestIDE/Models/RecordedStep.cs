@@ -113,8 +113,22 @@ namespace WpfTestIde.Models
         /// <summary>Driver to use for the launched process. Default "WPFSpy".</summary>
         public string LaunchDriver { get; set; } = "WPFSpy";
 
-        /// <summary>Ordered driver priority list for the launched process. When set, takes precedence over LaunchDriver.</summary>
-        public List<string>? LaunchDriverList { get; set; }
+        /// <summary>Drivers applicable to the launched app (checkbox membership, not ordered).
+        /// Null/empty means all drivers are applicable. Runtime priority remains fixed.</summary>
+        public List<string>? LaunchApplicableDrivers { get; set; }
+
+        /// <summary>Legacy ordered driver priority list. Accepted on load for compatibility;
+        /// mapped to <see cref="LaunchApplicableDrivers"/>. Not written canonically.</summary>
+        [JsonPropertyName("launchDriverList")]
+        public List<string>? LaunchDriverList
+        {
+            get => null;
+            set
+            {
+                if (value != null && value.Count > 0 && (LaunchApplicableDrivers == null || LaunchApplicableDrivers.Count == 0))
+                    LaunchApplicableDrivers = AppContext.NormalizeApplicable(value);
+            }
+        }
 
         /// <summary>Whether to enable Spy Agent for the launched process. Default true.</summary>
         public bool SpyAgentEnabled { get; set; } = true;
@@ -290,7 +304,7 @@ namespace WpfTestIde.Models
                 LaunchTimeout = LaunchTimeout,
                 AutoAttach = AutoAttach,
                 LaunchDriver = LaunchDriver,
-                LaunchDriverList = LaunchDriverList != null ? new List<string>(LaunchDriverList) : null,
+                LaunchApplicableDrivers = LaunchApplicableDrivers != null ? new List<string>(LaunchApplicableDrivers) : null,
                 SpyAgentEnabled = SpyAgentEnabled,
                 PipeName = PipeName,
                 WindowTitle = WindowTitle,

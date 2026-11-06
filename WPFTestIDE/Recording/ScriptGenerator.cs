@@ -178,10 +178,10 @@ namespace WpfTestIde.Recording
                          if (!string.IsNullOrWhiteSpace(step.LaunchTimeout))
                              la.Add($"timeout={step.LaunchTimeout}");
                           la.Add($"attach={(step.AutoAttach ? "Yes" : "No")}");
-                          // Emit driver priority list when available; fall back to single driver.
-                          if (step.LaunchDriverList != null && step.LaunchDriverList.Any())
+                          // Emit applicable drivers when explicitly configured; otherwise omit (all applicable).
+                          if (step.LaunchApplicableDrivers != null && step.LaunchApplicableDrivers.Any())
                           {
-                              la.Add($"drivers={string.Join(",", step.LaunchDriverList)}");
+                              la.Add($"drivers={string.Join(",", Models.AppContext.NormalizeApplicable(step.LaunchApplicableDrivers)!)}");
                           }
                           else if (!string.IsNullOrWhiteSpace(step.LaunchDriver) && step.LaunchDriver != "WPFSpy")
                           {
@@ -526,9 +526,9 @@ namespace WpfTestIde.Recording
                         if (!string.IsNullOrWhiteSpace(step.StartIn)) launchArgs.Add("start_in=" + PythonValue(NormalizePathForPython(step.StartIn)));
                         if (!string.IsNullOrWhiteSpace(step.Args)) launchArgs.Add("args=" + PythonValue(step.Args));
                         if (!string.IsNullOrWhiteSpace(step.LaunchTimeout)) launchArgs.Add("timeout=" + step.LaunchTimeout);
-                        var drivers = step.LaunchDriverList?.Count > 0
-                            ? step.LaunchDriverList
-                            : new List<string> { step.LaunchDriver };
+                        var drivers = step.LaunchApplicableDrivers?.Count > 0
+                            ? Models.AppContext.NormalizeApplicable(step.LaunchApplicableDrivers)!
+                            : new List<string> { string.IsNullOrWhiteSpace(step.LaunchDriver) ? "WPFSpy" : step.LaunchDriver };
                         launchArgs.Add("drivers=[" + string.Join(", ", drivers.Select(Quote)) + "]");
                         launchArgs.Add("attach=" + (step.AutoAttach ? "True" : "False"));
                         launchArgs.Add("spy_agent_enabled=" + (step.SpyAgentEnabled ? "True" : "False"));

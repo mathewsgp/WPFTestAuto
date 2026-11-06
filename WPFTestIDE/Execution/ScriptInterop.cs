@@ -679,6 +679,7 @@ namespace WpfTestIde.Execution
         private static RecordedStep ParseRobotLaunchApplication(IReadOnlyList<string> positional, IReadOnlyDictionary<string, string> named)
         {
             var driverList = ParseDriverList(Named(named, "drivers") ?? OptionalPositional(positional, 4));
+            var applicable = Models.AppContext.NormalizeApplicable(driverList);
             return new RecordedStep
             {
                 Kind = StepKind.LaunchApplication,
@@ -688,8 +689,8 @@ namespace WpfTestIde.Execution
                 Args = Named(named, "args") ?? OptionalPositional(positional, 2),
                 LaunchTimeout = Named(named, "timeout") ?? OptionalPositional(positional, 6),
                 AutoAttach = IsTrue(Named(named, "attach") ?? OptionalPositional(positional, 5)),
-                LaunchDriver = Named(named, "driver") ?? driverList?.FirstOrDefault() ?? "WPFSpy",
-                LaunchDriverList = driverList,
+                LaunchDriver = Named(named, "driver") ?? applicable?.FirstOrDefault() ?? "WPFSpy",
+                LaunchApplicableDrivers = applicable,
                 SpyAgentEnabled = !string.Equals(Named(named, "spy_agent_enabled") ?? Named(named, "spy_agent") ?? OptionalPositional(positional, 7), "No", StringComparison.OrdinalIgnoreCase)
                     && !string.Equals(Named(named, "spy_agent_enabled") ?? Named(named, "spy_agent") ?? OptionalPositional(positional, 7), "False", StringComparison.OrdinalIgnoreCase),
                 PipeName = Named(named, "pipe_name") ?? OptionalPositional(positional, 8),
@@ -754,6 +755,7 @@ namespace WpfTestIde.Execution
 
         private static RecordedStep ParsePythonLaunchApplication(PythonCall call)
         {
+            var applicable = Models.AppContext.NormalizeApplicable(ParsePythonDriverList(KeywordRaw(call, "drivers")));
             return new RecordedStep
             {
                 Kind = StepKind.LaunchApplication,
@@ -763,8 +765,8 @@ namespace WpfTestIde.Execution
                 Args = KeywordString(call, "args"),
                 LaunchTimeout = KeywordRaw(call, "timeout"),
                 AutoAttach = IsTrue(KeywordRaw(call, "attach")),
-                LaunchDriver = ParseDriverList(KeywordRaw(call, "drivers"))?.FirstOrDefault() ?? "WPFSpy",
-                LaunchDriverList = ParsePythonDriverList(KeywordRaw(call, "drivers")),
+                LaunchDriver = applicable?.FirstOrDefault() ?? "WPFSpy",
+                LaunchApplicableDrivers = applicable,
                 SpyAgentEnabled = !string.Equals(KeywordRaw(call, "spy_agent_enabled"), "False", StringComparison.OrdinalIgnoreCase),
                 PipeName = KeywordString(call, "pipe_name"),
             };
