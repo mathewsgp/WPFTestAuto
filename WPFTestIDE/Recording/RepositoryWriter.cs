@@ -178,21 +178,9 @@ namespace WpfTestIde.Recording
                     {
                         elementDef["relativeXPath"] = entry.XPath!;
                     }
-                    // Legacy driverPriority is intentionally not emitted; runtime priority is fixed
-                    // and strategy group order is represented by the strategies object order.
-                    if (entry.DriverProbes != null && entry.DriverProbes.Count > 0)
-                    {
-                        elementDef["driverProbes"] = entry.DriverProbes.ToDictionary(
-                            kv => kv.Key,
-                            kv => (object)new Dictionary<string, object?>
-                            {
-                                ["automationId"] = kv.Value.AutomationId,
-                                ["name"] = kv.Value.Name,
-                                ["controlType"] = kv.Value.ControlType,
-                                ["text"] = kv.Value.Text,
-                                ["xpath"] = kv.Value.XPath,
-                            }.Where(p => p.Value != null).ToDictionary(p => p.Key, p => p.Value!));
-                    }
+                    // driverProbes is IDE capture/debug metadata (per-driver raw probe snapshots).
+                    // Runtime consumers use strategies; do not emit driverProbes to avoid duplication/drift.
+                    // Legacy files containing driverProbes remain tolerated by readers that ignore unknown fields.
 
                     elementDef["parentAlias"] = parentAlias;
                     elementDef["defaultTimeout"] = 10;
