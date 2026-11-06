@@ -174,13 +174,9 @@ namespace WpfTestIde.Recording
                 {
                     elementDef["name"] = entry.Name;
                 }
-                    if (!string.IsNullOrEmpty(entry.XPath))
-                    {
-                        elementDef["relativeXPath"] = entry.XPath!;
-                    }
-                    if (entry.AppId != null) elementDef["appId"] = entry.AppId;
-                    if (entry.ImagePath != null) elementDef["imagePath"] = entry.ImagePath;
-                    // recordingModes is IDE capture metadata; omit from canonical JSON. Runtime uses strategies.
+                if (entry.AppId != null) elementDef["appId"] = entry.AppId;
+                if (entry.ImagePath != null) elementDef["imagePath"] = entry.ImagePath;
+                // relativeXPath is redundant with strategy locators; omit from canonical JSON. Legacy files/import remain tolerant.
 
                     // Prefer explicit editable strategy groups when present; otherwise derive from probes/fields.
                     if (entry.StrategyGroups != null && entry.StrategyGroups.Count > 0)
