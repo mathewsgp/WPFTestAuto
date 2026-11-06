@@ -33,6 +33,19 @@ namespace WpfTestIde.Recording
         /// by WPFSpy's ProbeAt response. Used when AutomationId/Name alone
         /// are not unique enough in a deep hierarchy.</summary>
         public string? XPath { get; set; }
+
+        public ProbedElement Clone()
+        {
+            return new ProbedElement
+            {
+                AutomationId = AutomationId,
+                Name = Name,
+                ControlType = ControlType,
+                Text = Text,
+                ResolvedVia = ResolvedVia,
+                XPath = XPath,
+            };
+        }
     }
 
     /// <summary>
@@ -44,6 +57,8 @@ namespace WpfTestIde.Recording
     {
         private readonly string _pipeName;
 
+        internal ProbedElement? LastProbe { get; private set; }
+
         public ElementProbe(string pipeName)
         {
             _pipeName = pipeName;
@@ -51,7 +66,9 @@ namespace WpfTestIde.Recording
 
         public ProbedElement? ProbeAt(int screenX, int screenY)
         {
-            return TryWpfSpy(screenX, screenY);
+            var result = TryWpfSpy(screenX, screenY);
+            LastProbe = result?.Clone();
+            return result;
         }
 
         private ProbedElement? TryWpfSpy(int x, int y)

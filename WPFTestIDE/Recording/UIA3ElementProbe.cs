@@ -31,6 +31,9 @@ namespace WpfTestIde.Recording
             _pidResolver = pidResolver;
         }
 
+        /// <summary>Last successful probe result.</summary>
+        internal ProbedElement? LastProbe { get; private set; }
+
         /// <summary>Updates the process id filter at runtime.</summary>
         public void SetTargetProcessId(int pid) => _targetProcessId = pid;
 
@@ -51,7 +54,9 @@ namespace WpfTestIde.Recording
                     catch { }
                 }
 
-                return BuildProbedElement(element);
+                var probed = BuildProbedElement(element);
+                LastProbe = probed?.Clone();
+                return probed;
             }
             catch (Exception ex)
             {

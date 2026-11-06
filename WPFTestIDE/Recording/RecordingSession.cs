@@ -68,12 +68,26 @@ namespace WpfTestIde.Recording
 
             if (mode == ProbeMode.WPFSpy)
             {
-                WpfProbe = new ElementProbe(PipeName);
+                EnsureWpfProbe();
             }
             else
             {
-                UIA3Probe = new UIA3ElementProbe(processId, ResolveLivePid);
+                EnsureUIA3Probe();
             }
+        }
+
+        internal ElementProbe? EnsureWpfProbe()
+        {
+            if (string.IsNullOrEmpty(PipeName)) return null;
+            WpfProbe ??= new ElementProbe(PipeName);
+            return WpfProbe;
+        }
+
+        internal UIA3ElementProbe EnsureUIA3Probe()
+        {
+            UIA3Probe ??= new UIA3ElementProbe(ProcessId, ResolveLivePid);
+            UIA3Probe.SetTargetProcessId(ProcessId);
+            return UIA3Probe;
         }
 
         private int ResolveLivePid()
@@ -142,6 +156,8 @@ namespace WpfTestIde.Recording
         private ProbedElement? _pendingFocusedInput;
         private RecordingTarget? _pendingFocusedTarget;
         private string? _pendingFocusedAlias;
+        private Dictionary<string, ProbedElement>? _pendingProbeResults;
+        private List<string>? _pendingRecordingModes;
         private bool _running;
 
         public event Action<RecordedStep, ElementEntry>? StepCaptured;
@@ -162,6 +178,11 @@ namespace WpfTestIde.Recording
         {
             _mouseHook.LeftButtonDown += OnClick;
         }
+
+        /// <summary>Global recording modes selected in the IDE (UIA3, WPFSpy, OculiX).
+        /// When both UIA3 and WPFSpy are selected, OnClick probes each driver separately
+        /// and stores per-driver results.</summary>
+        public List<string> SelectedRecordingModes { get; set; } = new() { "UIA3", "WPFSpy" };
 
         /// <summary>When true, OnClick calls the agent's CaptureElement
         /// command for every accepted step and writes a template PNG
@@ -399,30 +420,36 @@ namespace WpfTestIde.Recording
                 }
             }
 
-            ProbedElement? probed = target.Mode == ProbeMode.WPFSpy
-                ? target.WpfProbe?.ProbeAt(x, y)
-                : target.UIA3Probe?.ProbeAt(x, y);
+            var selectedModes = GetSelectedModesForCapture();
+            var probeResults = ProbeSelectedDrivers(x, y, target, selectedModes);
+            ProbedElement? primaryProbed = SelectPrimaryProbe(probeResults, target);
 
-            if (probed is null)
+            if (primaryProbed is null)
             {
                 Log($"[OnClick] ProbeAt({x},{y}) returned null for appId={target.AppId}, trying window-level fallback");
-                probed = target.Mode == ProbeMode.UIA3 ? CreateWindowLevelElement(target) : null;
-                if (probed is null)
+                bool allowFallback = selectedModes.Contains("UIA3") || target.Mode == ProbeMode.UIA3;
+                if (allowFallback)
+                {
+                    primaryProbed = CreateWindowLevelElement(target);
+                    if (primaryProbed != null && selectedModes.Contains("UIA3"))
+                        probeResults["UIA3"] = primaryProbed;
+                }
+                if (primaryProbed is null)
                 {
                     Log($"[OnClick] rejected: ProbeAt returned null and no window fallback for appId={target.AppId}");
                     return;
                 }
-                Log($"[OnClick] using window-level fallback for appId={target.AppId}: {probed.ControlType} name={probed.Name}");
+                Log($"[OnClick] using window-level fallback for appId={target.AppId}: {primaryProbed.ControlType} name={primaryProbed.Name}");
             }
 
-            Log($"[OnClick] accepted for appId={target.AppId} via {chosen.Strategy} (pid={processId}, hwnd=0x{rootHwnd:X8}): {probed.ControlType} name={probed.Name} automationId={probed.AutomationId}");
+            Log($"[OnClick] accepted for appId={target.AppId} via {chosen.Strategy} (pid={processId}, hwnd=0x{rootHwnd:X8}): {primaryProbed.ControlType} name={primaryProbed.Name} automationId={primaryProbed.AutomationId} drivers=[{string.Join(",", probeResults.Keys)}]");
 
             string processName = ResolveProcessName(target);
             string windowSegment;
             string ancestorPath;
-            string idOrName = string.IsNullOrEmpty(probed.AutomationId) ? probed.Name : probed.AutomationId!;
+            string idOrName = string.IsNullOrEmpty(primaryProbed.AutomationId) ? primaryProbed.Name : primaryProbed.AutomationId!;
 
-            string? xpath = probed.XPath;
+            string? xpath = primaryProbed.XPath;
             if (IsLikelyTemplatePartName(idOrName) && !string.IsNullOrEmpty(xpath))
             {
                 string? parentId = null;
@@ -439,9 +466,9 @@ namespace WpfTestIde.Recording
                 idOrName = parentId ?? string.Empty;
             }
 
-            if (!string.IsNullOrEmpty(probed.XPath))
+            if (!string.IsNullOrEmpty(primaryProbed.XPath))
             {
-                var (xpathWindow, xpathAncestor) = SplitXPathForAlias(probed.XPath);
+                var (xpathWindow, xpathAncestor) = SplitXPathForAlias(primaryProbed.XPath);
                 if (!string.IsNullOrEmpty(xpathWindow))
                 {
                     windowSegment = xpathWindow;
@@ -450,13 +477,13 @@ namespace WpfTestIde.Recording
                 else
                 {
                     windowSegment = ResolveWindowSegment(x, y, target);
-                    ancestorPath = BuildAncestorPath(probed);
+                    ancestorPath = BuildAncestorPath(primaryProbed);
                 }
             }
             else
             {
                 windowSegment = ResolveWindowSegment(x, y, target);
-                ancestorPath = BuildAncestorPath(probed);
+                ancestorPath = BuildAncestorPath(primaryProbed);
             }
 
             // The element identifier (idOrName) must not be duplicated in ancestorPath.
@@ -491,18 +518,20 @@ namespace WpfTestIde.Recording
             parts.Add(idOrName);
             string alias = string.Join(".", parts);
 
-            bool isTextEntry = probed.ControlType is "TextBox" or "Edit" or "ComboBox" or "PasswordBox" or "Document";
+            bool isTextEntry = primaryProbed.ControlType is "TextBox" or "Edit" or "ComboBox" or "PasswordBox" or "Document";
             if (isTextEntry)
             {
-                _pendingFocusedInput = probed;
+                _pendingFocusedInput = primaryProbed;
                 _pendingFocusedTarget = target;
                 _pendingFocusedAlias = alias;
+                _pendingProbeResults = probeResults;
+                _pendingRecordingModes = selectedModes;
                 Log($"[OnClick] text entry pending: appId={target.AppId} alias={alias}");
                 return;
             }
 
-            bool isToggle = probed.ControlType == "CheckBox" || probed.ControlType.Contains("Toggle");
-            var entry = BuildEntry(alias, probed, target);
+            bool isToggle = primaryProbed.ControlType == "CheckBox" || primaryProbed.ControlType.Contains("Toggle");
+            var entry = BuildEntryFromProbes(alias, primaryProbed, target, probeResults, selectedModes);
 
             // Phase 2.3: when the operator has OculiX recording turned on
             // and the agent can see the element, capture a template PNG of
@@ -510,7 +539,7 @@ namespace WpfTestIde.Recording
             // resulting imagePath is propagated through BuildEntry -> step
             // -> RepositoryWriter so the emitted JSON uses a real image
             // instead of the placeholder name.
-            if (RecordOculiX)
+            if (selectedModes.Contains("OculiX"))
             {
                 TryCaptureElementImage(entry, target);
             }
@@ -520,8 +549,8 @@ namespace WpfTestIde.Recording
                 Kind = StepKind.Action,
                 Alias = alias,
                 Action = isToggle ? ActionKind.Toggle : ActionKind.Invoke,
-                NonStandard = probed.ResolvedVia == "WPFSpy",
-                Value = isToggle ? (probed.Text ?? "") : null,
+                NonStandard = primaryProbed.ResolvedVia == "WPFSpy",
+                Value = isToggle ? (primaryProbed.Text ?? "") : null,
                 AppId = target.AppId,
             };
             Log($"[OnClick] firing StepCaptured: appId={target.AppId} alias={alias} action={step.Action}");
@@ -615,24 +644,45 @@ namespace WpfTestIde.Recording
         {
             if (_pendingFocusedInput is null || _pendingFocusedTarget is null || _pendingFocusedAlias is null) return;
 
-            string? value = _pendingFocusedTarget.Mode == ProbeMode.WPFSpy
-                ? _pendingFocusedTarget.WpfProbe?.GetCurrentValue(_pendingFocusedInput)
-                : _pendingFocusedTarget.UIA3Probe?.GetCurrentValue(_pendingFocusedInput);
+            var probeResults = _pendingProbeResults ?? new Dictionary<string, ProbedElement> { [_pendingFocusedInput.ResolvedVia] = _pendingFocusedInput };
+            var selectedModes = _pendingRecordingModes ?? new List<string> { _pendingFocusedInput.ResolvedVia };
 
-            var entry = BuildEntry(_pendingFocusedAlias, _pendingFocusedInput, _pendingFocusedTarget);
+            ProbedElement? valueProbe = null;
+            string? value = null;
+            if (probeResults.TryGetValue("WPFSpy", out var wpfPending) && _pendingFocusedTarget.EnsureWpfProbe() is ElementProbe wpfProbe)
+            {
+                value = wpfProbe.GetCurrentValue(wpfPending);
+                valueProbe = wpfPending;
+            }
+            else if (probeResults.TryGetValue("UIA3", out var uiaPending))
+            {
+                value = _pendingFocusedTarget.EnsureUIA3Probe().GetCurrentValue(uiaPending);
+                valueProbe = uiaPending;
+            }
+            else
+            {
+                value = _pendingFocusedTarget.Mode == ProbeMode.WPFSpy
+                    ? _pendingFocusedTarget.WpfProbe?.GetCurrentValue(_pendingFocusedInput)
+                    : _pendingFocusedTarget.UIA3Probe?.GetCurrentValue(_pendingFocusedInput);
+                valueProbe = _pendingFocusedInput;
+            }
+
+            var entry = BuildEntryFromProbes(_pendingFocusedAlias, valueProbe ?? _pendingFocusedInput, _pendingFocusedTarget, probeResults, selectedModes);
             var step = new RecordedStep
             {
                 Kind = StepKind.Action,
                 Alias = _pendingFocusedAlias,
                 Action = ActionKind.SetValue,
                 Value = value ?? "",
-                NonStandard = _pendingFocusedInput.ResolvedVia == "WPFSpy",
+                NonStandard = (valueProbe ?? _pendingFocusedInput).ResolvedVia == "WPFSpy",
                 AppId = _pendingFocusedTarget.AppId,
             };
             StepCaptured?.Invoke(step, entry);
             _pendingFocusedInput = null;
             _pendingFocusedTarget = null;
             _pendingFocusedAlias = null;
+            _pendingProbeResults = null;
+            _pendingRecordingModes = null;
         }
         private int ResolveLivePidForTarget(RecordingTarget target)
         {
@@ -1295,27 +1345,143 @@ namespace WpfTestIde.Recording
                 ;
         }
 
-        private ElementEntry BuildEntry(string alias, ProbedElement probed, RecordingTarget target)
+        private List<string> GetSelectedModesForCapture()
         {
-            var modes = target.Mode == ProbeMode.UIA3
-                ? new List<string> { "UIA3" }
-                : new List<string> { "UIA3", "WPFSpy" };
-
-            if (RecordOculiX)
+            var selected = (SelectedRecordingModes ?? new List<string>())
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (selected.Count == 0)
             {
-                modes.Add("OculiX");
+                selected.Add("UIA3");
+            }
+            if (RecordOculiX && !selected.Any(m => m.Equals("OculiX", StringComparison.OrdinalIgnoreCase)))
+            {
+                selected.Add("OculiX");
+            }
+            Log($"[RecordingSession] selected capture modes: [{string.Join(",", selected)}]");
+            return selected;
+        }
+
+        private Dictionary<string, ProbedElement> ProbeSelectedDrivers(int x, int y, RecordingTarget target, IReadOnlyCollection<string> selectedModes)
+        {
+            var results = new Dictionary<string, ProbedElement>(StringComparer.OrdinalIgnoreCase);
+
+            if (selectedModes.Contains("UIA3", StringComparer.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var uiaProbe = target.EnsureUIA3Probe();
+                    var uia = uiaProbe.ProbeAt(x, y);
+                    if (uia != null)
+                    {
+                        results["UIA3"] = uia;
+                        Log($"[OnClick] UIA3 probe captured xpath='{uia.XPath}' automationId='{uia.AutomationId}' name='{uia.Name}'");
+                    }
+                    else
+                    {
+                        Log($"[OnClick] UIA3 probe returned null at ({x},{y}) for appId={target.AppId}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"[OnClick] UIA3 probe exception: {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            if (selectedModes.Contains("WPFSpy", StringComparer.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var wpfProbe = target.EnsureWpfProbe();
+                    if (wpfProbe == null)
+                    {
+                        Log($"[OnClick] WPFSpy probe skipped for appId={target.AppId}: no pipe");
+                    }
+                    else
+                    {
+                        var wpf = wpfProbe.ProbeAt(x, y);
+                        if (wpf != null)
+                        {
+                            results["WPFSpy"] = wpf;
+                            Log($"[OnClick] WPFSpy probe captured xpath='{wpf.XPath}' automationId='{wpf.AutomationId}' name='{wpf.Name}'");
+                        }
+                        else
+                        {
+                            Log($"[OnClick] WPFSpy probe returned null at ({x},{y}) for appId={target.AppId}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"[OnClick] WPFSpy probe exception: {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            if (selectedModes.Contains("OculiX", StringComparer.OrdinalIgnoreCase) && !results.ContainsKey("WPFSpy") && !results.ContainsKey("UIA3"))
+            {
+                Log($"[OnClick] OculiX selected but no driver probe captured element data at ({x},{y}); OculiX image capture will use fallback locators if available.");
+            }
+
+            return results;
+        }
+
+        private static ProbedElement? SelectPrimaryProbe(Dictionary<string, ProbedElement> probeResults, RecordingTarget target)
+        {
+            if (probeResults.TryGetValue("UIA3", out var uia)) return uia;
+            if (probeResults.TryGetValue("WPFSpy", out var wpf)) return wpf;
+            return target.Mode == ProbeMode.WPFSpy ? target.WpfProbe?.LastProbe : target.UIA3Probe?.LastProbe;
+        }
+
+        private static DriverProbeData ToDriverProbeData(ProbedElement probed)
+        {
+            return new DriverProbeData
+            {
+                AutomationId = probed.AutomationId,
+                Name = probed.Name,
+                ControlType = probed.ControlType,
+                Text = probed.Text,
+                XPath = probed.XPath,
+            };
+        }
+
+        private ElementEntry BuildEntryFromProbes(string alias, ProbedElement primary, RecordingTarget target, IReadOnlyDictionary<string, ProbedElement> probeResults, IReadOnlyCollection<string> selectedModes)
+        {
+            var driverProbes = probeResults.ToDictionary(kv => kv.Key, kv => ToDriverProbeData(kv.Value), StringComparer.OrdinalIgnoreCase);
+            var modes = new List<string>();
+            foreach (var mode in new[] { "UIA3", "WPFSpy", "OculiX" })
+            {
+                if (selectedModes.Contains(mode, StringComparer.OrdinalIgnoreCase)) modes.Add(mode);
+            }
+            foreach (var driver in driverProbes.Keys)
+            {
+                if (!modes.Contains(driver, StringComparer.OrdinalIgnoreCase)) modes.Add(driver);
             }
 
             return new ElementEntry
             {
                 Alias = alias,
-                DisplayName = probed.Name,
-                ControlType = probed.ControlType,
-                AutomationId = probed.AutomationId,
-                Name = probed.Name,
-                XPath = probed.XPath,
+                DisplayName = primary.Name,
+                ControlType = primary.ControlType,
+                AutomationId = primary.AutomationId,
+                Name = primary.Name,
+                XPath = primary.XPath,
                 RecordingModes = modes,
+                DriverProbes = driverProbes,
+                AppId = target.AppId,
             };
+        }
+
+        private ElementEntry BuildEntry(string alias, ProbedElement probed, RecordingTarget target)
+        {
+            var probeResults = new Dictionary<string, ProbedElement>(StringComparer.OrdinalIgnoreCase)
+            {
+                [probed.ResolvedVia] = probed
+            };
+            var selectedModes = GetSelectedModesForCapture();
+            if (!selectedModes.Contains(probed.ResolvedVia, StringComparer.OrdinalIgnoreCase))
+                selectedModes.Add(probed.ResolvedVia);
+            return BuildEntryFromProbes(alias, probed, target, probeResults, selectedModes);
         }
 
         /// <summary>

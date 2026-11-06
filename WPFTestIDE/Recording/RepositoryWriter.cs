@@ -19,7 +19,7 @@ namespace WpfTestIde.Recording
         /// strategies for the selected recording modes.
         /// </summary>
         /// <param name="entries">Discovered element entries.</param>
-        /// <param name="recordingModes">Selected recording modes (UIA3, WPFSpy, Sikuli).
+        /// <param name="recordingModes">Selected recording modes (UIA3, WPFSpy, OculiX).
         /// If empty or null, all strategies are included (backward compatible).</param>
         public static string GenerateJson(IEnumerable<ElementEntry> entries, List<string>? recordingModes = null)
         {
@@ -30,89 +30,108 @@ namespace WpfTestIde.Recording
                 var strategies = new Dictionary<string, List<object>>();
 
                 // Use per-element recording modes if available, otherwise fall back to global modes.
-                // If the element was resolved via UIA3 probe, always include a UIA3 strategy
-                // (even if global recording modes don't include UIA3) — otherwise the recorded
-                // step will fail to find the element at replay time.
+                // Prefer per-driver captured probe data so each driver gets its own XPath/properties.
                 var modes = entry.RecordingModes ?? recordingModes;
-                bool resolvedViaUIA3 = entry.NonStandard == false && !string.IsNullOrEmpty(entry.XPath) == false;
-                bool resolvedViaWPFSpy = !string.IsNullOrEmpty(entry.XPath) && entry.XPath!.Contains("[@AutomationId=");
-                // Heuristic: elements with an XPath always get an XPath-based UIA3 strategy
-                // as the default (mirrors the WPFSpy default), so the recorded step is
-                // symmetric across drivers and stable when AutomationId is missing or
-                // collides. AutomationId/Name are kept as fallbacks.
-                bool includeUIA3 = (modes == null || modes.Contains("UIA3"))
-                    || !string.IsNullOrEmpty(entry.AutomationId)
-                    || entry.ControlType == "Window"
-                    || (!string.IsNullOrEmpty(entry.Name) && entry.Name.Length > 0);
+                var driverProbes = entry.DriverProbes ?? new Dictionary<string, DriverProbeData>();
+                bool includeUIA3 = modes == null || modes.Contains("UIA3") || driverProbes.ContainsKey("UIA3");
+                bool includeWPFSpy = modes == null || modes.Contains("WPFSpy") || driverProbes.ContainsKey("WPFSpy");
 
-                if (includeUIA3 && !string.IsNullOrEmpty(entry.XPath))
+                if (includeUIA3)
                 {
-                    // Default UIA3 strategy: XPath (UIA control types, built by
-                    // UIA3ElementProbe.BuildXPath — already compatible with UIA3).
-                    var uia3Strategies = new List<object>
+                    if (driverProbes.TryGetValue("UIA3", out var uiaData))
                     {
-                        new Dictionary<string, object>
+                        var uia = uiaData;
+                        var uia3Strategies = new List<object>();
+                        if (!string.IsNullOrEmpty(uia.XPath))
                         {
-                            ["searchBy"] = "XPath",
-                            ["value"] = entry.XPath!,
+                            uia3Strategies.Add(new Dictionary<string, object>
+                            {
+                                ["searchBy"] = "XPath",
+                                ["value"] = uia.XPath!,
+                            });
                         }
-                    };
-                    if (!string.IsNullOrEmpty(entry.AutomationId))
-                    {
-                        uia3Strategies.Add(new Dictionary<string, object>
+                        if (!string.IsNullOrEmpty(uia.AutomationId))
                         {
-                            ["searchBy"] = "AutomationId",
-                            ["value"] = entry.AutomationId!,
-                            ["scope"] = "Descendant",
-                        });
+                            uia3Strategies.Add(new Dictionary<string, object>
+                            {
+                                ["searchBy"] = "AutomationId",
+                                ["value"] = uia.AutomationId!,
+                                ["scope"] = "Descendant",
+                            });
+                        }
+                        if (!string.IsNullOrEmpty(uia.Name) && uia.Name != uia.AutomationId)
+                        {
+                            uia3Strategies.Add(new Dictionary<string, object>
+                            {
+                                ["searchBy"] = "Name",
+                                ["value"] = uia.Name,
+                                ["scope"] = "Descendant",
+                            });
+                        }
+                        if (uia3Strategies.Count > 0)
+                            strategies["UIA3"] = uia3Strategies;
                     }
-                    if (!string.IsNullOrEmpty(entry.Name) && entry.Name != entry.AutomationId)
+                    else if (modes == null || modes.Contains("UIA3"))
                     {
-                        uia3Strategies.Add(new Dictionary<string, object>
+                        // Legacy/shared fallback only when UIA3 is selected and no
+                        // per-driver probe data exists (older recordings / non-split path).
+                        var uia = new DriverProbeData
                         {
-                            ["searchBy"] = "Name",
-                            ["value"] = entry.Name,
-                            ["scope"] = "Descendant",
-                        });
+                            AutomationId = entry.AutomationId,
+                            Name = entry.Name,
+                            ControlType = entry.ControlType,
+                            XPath = entry.XPath,
+                        };
+                        if (!string.IsNullOrEmpty(uia.XPath) || !string.IsNullOrEmpty(uia.AutomationId) || !string.IsNullOrEmpty(uia.Name))
+                        {
+                            var uia3Strategies = new List<object>();
+                            if (!string.IsNullOrEmpty(uia.XPath))
+                                uia3Strategies.Add(new Dictionary<string, object> { ["searchBy"] = "XPath", ["value"] = uia.XPath! });
+                            if (!string.IsNullOrEmpty(uia.AutomationId))
+                                uia3Strategies.Add(new Dictionary<string, object> { ["searchBy"] = "AutomationId", ["value"] = uia.AutomationId!, ["scope"] = "Descendant" });
+                            if (!string.IsNullOrEmpty(uia.Name) && uia.Name != uia.AutomationId)
+                                uia3Strategies.Add(new Dictionary<string, object> { ["searchBy"] = "Name", ["value"] = uia.Name, ["scope"] = "Descendant" });
+                            if (uia3Strategies.Count > 0)
+                                strategies["UIA3"] = uia3Strategies;
+                        }
                     }
-                    strategies["UIA3"] = uia3Strategies;
-                }
-                else if (includeUIA3 && !string.IsNullOrEmpty(entry.AutomationId))
-                {
-                    strategies["UIA3"] = new List<object>
-                    {
-                        new Dictionary<string, object>
-                        {
-                            ["searchBy"] = "AutomationId",
-                            ["value"] = entry.AutomationId!,
-                            ["scope"] = "Descendant",
-                        }
-                    };
-                }
-                else if (includeUIA3 && !string.IsNullOrEmpty(entry.Name))
-                {
-                    strategies["UIA3"] = new List<object>
-                    {
-                        new Dictionary<string, object>
-                        {
-                            ["searchBy"] = "Name",
-                            ["value"] = entry.Name,
-                            ["scope"] = "Descendant",
-                        }
-                    };
                 }
 
-                // WPFSpy strategy: XPath-based (visual tree path from root window)
-                if (modes == null || modes.Contains("WPFSpy"))
+                // WPFSpy strategy: prefer separately captured WPFSpy probe data.
+                // Do not fabricate WPFSpy XPath from UIA3/shared data when both
+                // drivers were selected but only UIA3 probe data was captured.
+                if (includeWPFSpy)
                 {
-                    strategies["WPFSpy"] = new List<object>
+                    if (driverProbes.TryGetValue("WPFSpy", out var wpfData))
                     {
-                        new Dictionary<string, object>
+                        var wpf = wpfData;
+                        string? wpfValue = !string.IsNullOrEmpty(wpf.XPath)
+                            ? wpf.XPath
+                            : $"{(string.IsNullOrEmpty(wpf.ControlType) ? entry.ControlType : wpf.ControlType)}[@Name='{(string.IsNullOrEmpty(wpf.Name) ? entry.Name : wpf.Name)}']";
+                        strategies["WPFSpy"] = new List<object>
                         {
-                            ["searchBy"] = "XPath",
-                            ["value"] = entry.XPath ?? $"{entry.ControlType}[@Name='{entry.Name}']",
-                        }
-                    };
+                            new Dictionary<string, object>
+                            {
+                                ["searchBy"] = "XPath",
+                                ["value"] = wpfValue!,
+                            }
+                        };
+                    }
+                    else if ((modes == null || modes.Contains("WPFSpy")) && !driverProbes.ContainsKey("UIA3"))
+                    {
+                        // Legacy/shared fallback only when no split probe data exists.
+                        string? wpfValue = !string.IsNullOrEmpty(entry.XPath)
+                            ? entry.XPath
+                            : $"{entry.ControlType}[@Name='{entry.Name}']";
+                        strategies["WPFSpy"] = new List<object>
+                        {
+                            new Dictionary<string, object>
+                            {
+                                ["searchBy"] = "XPath",
+                                ["value"] = wpfValue!,
+                            }
+                        };
+                    }
                 }
 
                 // OculiX strategy: image-based. When a reference image was
@@ -158,6 +177,19 @@ namespace WpfTestIde.Recording
                 if (!string.IsNullOrEmpty(entry.XPath))
                 {
                     elementDef["relativeXPath"] = entry.XPath!;
+                }
+                if (entry.DriverProbes != null && entry.DriverProbes.Count > 0)
+                {
+                    elementDef["driverProbes"] = entry.DriverProbes.ToDictionary(
+                        kv => kv.Key,
+                        kv => (object)new Dictionary<string, object?>
+                        {
+                            ["automationId"] = kv.Value.AutomationId,
+                            ["name"] = kv.Value.Name,
+                            ["controlType"] = kv.Value.ControlType,
+                            ["text"] = kv.Value.Text,
+                            ["xpath"] = kv.Value.XPath,
+                        }.Where(p => p.Value != null).ToDictionary(p => p.Key, p => p.Value!));
                 }
 
                 elementDef["parentAlias"] = parentAlias;

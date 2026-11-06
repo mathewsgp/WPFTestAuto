@@ -853,8 +853,8 @@ private string _ocrResultText = "";
             {
                 _session = new RecordingSession();
                 _session.StepCaptured += OnStepCaptured;
-                _session.RecordOculiX = RecordOculiX;
             }
+            ConfigureRecordingSessionModes();
             _session.RemoveTarget(appId);
             var attachMode = dialog.SpyAgentEnabled ? ProbeMode.WPFSpy : ProbeMode.UIA3;
             _session.AddTarget(new RecordingTarget(
@@ -979,12 +979,9 @@ private string _ocrResultText = "";
             {
                 _session = new RecordingSession();
                 _session.StepCaptured += OnStepCaptured;
-                _session.RecordOculiX = RecordOculiX;
             }
-            else
-            {
-                _session.ClearTargets();
-            }
+            ConfigureRecordingSessionModes();
+            _session.ClearTargets();
 
             int priority = 0;
             foreach (var app in AttachedApps)
@@ -1005,9 +1002,12 @@ private string _ocrResultText = "";
             IsAttached = true;
             int wpfCount = _session.Targets.Count(t => t.Mode == ProbeMode.WPFSpy);
             int uia3Count = _session.Targets.Count(t => t.Mode == ProbeMode.UIA3);
-            string modeLabel = (wpfCount > 0 && uia3Count > 0)
-                ? $"{wpfCount} WPFSpy + {uia3Count} UIA3"
-                : (uia3Count > 0 ? "UIA3/UIA" : "WPFSpy");
+            var selectedModes = GetSelectedRecordingModes();
+            string modeLabel = selectedModes.Count > 0
+                ? string.Join("+", selectedModes)
+                : ((wpfCount > 0 && uia3Count > 0)
+                    ? $"{wpfCount} WPFSpy + {uia3Count} UIA3"
+                    : (uia3Count > 0 ? "UIA3/UIA" : "WPFSpy"));
             StatusText = $"Ready to record ({modeLabel} mode). {AttachedApps.Count} application(s) configured. Run the script to launch and attach.";
         }
 
@@ -1289,8 +1289,8 @@ private string _ocrResultText = "";
             {
                 _session = new RecordingSession();
                 _session.StepCaptured += OnStepCaptured;
-                _session.RecordOculiX = RecordOculiX;
             }
+            ConfigureRecordingSessionModes();
 
             if (IsRecording)
             {
@@ -1369,13 +1369,38 @@ private string _ocrResultText = "";
                     XPath = entry.XPath,
                     RecordingModes = recordingModes,
                     DriverPriority = driverPriority,
+                    DriverProbes = entry.DriverProbes != null
+                        ? entry.DriverProbes.ToDictionary(kv => kv.Key, kv => kv.Value.Clone())
+                        : null,
                     ImagePath = entry.ImagePath,
+                    AppId = entry.AppId,
                 };
 
                 Steps.Add(step);
-                if (!Elements.Any(e => e.Alias == entry.Alias))
+                var existing = Elements.FirstOrDefault(e => e.Alias == entry.Alias);
+                if (existing == null)
                 {
                     Elements.Add(entry);
+                }
+                else
+                {
+                    // Merge separately captured driver probe data into existing element.
+                    if (entry.DriverProbes != null)
+                    {
+                        existing.DriverProbes ??= new Dictionary<string, Models.DriverProbeData>();
+                        foreach (var kv in entry.DriverProbes)
+                            existing.DriverProbes[kv.Key] = kv.Value.Clone();
+                    }
+                    if (entry.RecordingModes != null && entry.RecordingModes.Count > 0)
+                        existing.RecordingModes = new List<string>(entry.RecordingModes);
+                    if (!string.IsNullOrEmpty(entry.ImagePath))
+                        existing.ImagePath = entry.ImagePath;
+                    if (string.IsNullOrEmpty(existing.XPath) && !string.IsNullOrEmpty(entry.XPath))
+                        existing.XPath = entry.XPath;
+                    if (string.IsNullOrEmpty(existing.AutomationId) && !string.IsNullOrEmpty(entry.AutomationId))
+                        existing.AutomationId = entry.AutomationId;
+                    if (string.IsNullOrEmpty(existing.Name) && !string.IsNullOrEmpty(entry.Name))
+                        existing.Name = entry.Name;
                 }
             });
         }
@@ -1800,6 +1825,13 @@ private string _ocrResultText = "";
             if (RecordWPFSpy) modes.Add("WPFSpy");
             if (RecordOculiX) modes.Add("OculiX");
             return modes;
+        }
+
+        private void ConfigureRecordingSessionModes()
+        {
+            if (_session == null) return;
+            _session.SelectedRecordingModes = GetSelectedRecordingModes();
+            _session.RecordOculiX = RecordOculiX;
         }
 
         private List<string> GetSelectedRunModes()

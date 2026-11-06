@@ -1,7 +1,34 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace WpfTestIde.Models
 {
+    /// <summary>
+    /// Locator/probe data captured for one driver during recording.
+    /// Stored separately per driver so UIA3 and WPFSpy can keep their
+    /// own XPath/properties even when both recording modes are selected.
+    /// </summary>
+    public class DriverProbeData
+    {
+        public string? AutomationId { get; set; }
+        public string Name { get; set; } = "";
+        public string ControlType { get; set; } = "";
+        public string? Text { get; set; }
+        public string? XPath { get; set; }
+
+        public DriverProbeData Clone()
+        {
+            return new DriverProbeData
+            {
+                AutomationId = AutomationId,
+                Name = Name,
+                ControlType = ControlType,
+                Text = Text,
+                XPath = XPath,
+            };
+        }
+    }
+
     /// <summary>
     /// One Element Repository entry, discovered automatically during
     /// recording. Mirrors repository/elements/*.json's schema in the
@@ -32,6 +59,11 @@ namespace WpfTestIde.Models
         /// If null or empty, the global recording modes from the ViewModel are used.</summary>
         public List<string>? RecordingModes { get; set; }
 
+        /// <summary>Per-driver probe results captured during recording.
+        /// Keys are driver names (UIA3, WPFSpy). When present, repository
+        /// generation should prefer this data over the shared top-level fields.</summary>
+        public Dictionary<string, DriverProbeData>? DriverProbes { get; set; }
+
         /// <summary>Per-element driver priority order for element identification.
         /// Example: ["UIA3", "WPFSpy", "OculiX"]
         /// If null or empty, the global driver order from config is used.</summary>
@@ -58,6 +90,7 @@ namespace WpfTestIde.Models
                 Name = Name,
                 XPath = XPath,
                 RecordingModes = RecordingModes != null ? new List<string>(RecordingModes) : null,
+                DriverProbes = DriverProbes?.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()),
                 DriverPriority = DriverPriority != null ? new List<string>(DriverPriority) : null,
                 AppId = AppId,
                 ImagePath = ImagePath,
