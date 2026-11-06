@@ -1920,7 +1920,7 @@ private string _ocrResultText = "";
         private void EnsureStrategyOrder(ElementEntry? element)
         {
             if (element == null) return;
-            var groups = element.StrategyGroups ?? new List<ElementStrategyGroup>();
+            var groups = element.StrategyGroups?.ToList() ?? new List<ElementStrategyGroup>();
             var orderBase = (element.StrategyOrder != null && element.StrategyOrder.Count > 0)
                 ? element.StrategyOrder
                 : groups.Select(g => g.Driver).ToList();
