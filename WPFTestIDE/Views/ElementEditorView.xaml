@@ -4,6 +4,7 @@
              xmlns:models="clr-namespace:WpfTestIde.Models"
              DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
     <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <Style x:Key="PropName" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -90,32 +91,80 @@
                                     <Border BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" Padding="6" Margin="0,0,0,6" Background="{DynamicResource BackgroundBrush}">
                                         <StackPanel>
                                             <DockPanel Margin="0,0,0,4">
-                                                <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay}" Content="Enabled" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                <TextBox Text="{Binding Driver, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="110" FontWeight="Bold" Margin="0,0,6,0" Padding="3" AutomationProperties.AutomationId="StrategyDriverName"/>
-                                                <Button Content="+ Locator" Command="{Binding DataContext.AddStrategyItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Padding="6,1" Margin="0,0,4,0"/>
-                                                <Button Content="Remove" Command="{Binding DataContext.RemoveStrategyGroupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Padding="6,1" DockPanel.Dock="Right"/>
+                                                <TextBlock Text="{Binding HeaderText}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <ToggleButton Content="{Binding EditButtonText}" IsChecked="{Binding IsEditing, Mode=TwoWay}" DockPanel.Dock="Right" Padding="8,1" Margin="4,0,0,0" AutomationProperties.AutomationId="btnEditStrategyGroup"/>
+                                                <Button Content="+ Locator" Command="{Binding DataContext.AddStrategyItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Padding="6,1" Margin="0,0,4,0"
+                                                        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"/>
+                                                <Button Content="Remove Group" Command="{Binding DataContext.RemoveStrategyGroupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Padding="6,1"
+                                                        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"/>
                                             </DockPanel>
 
+                                            <!-- Summary (shown when not editing) -->
+                                            <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="2,0,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+
+                                            <!-- Two-column table view per locator (shown when editing) -->
                                             <ItemsControl ItemsSource="{Binding Items}">
+                                                <ItemsControl.Style>
+                                                    <Style TargetType="ItemsControl">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ItemsControl.Style>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate DataType="{x:Type models:ElementStrategyItem}">
-                                                        <Grid Margin="0,0,0,3">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="90"/>
-                                                                <ColumnDefinition Width="4"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="4"/>
-                                                                <ColumnDefinition Width="80"/>
-                                                                <ColumnDefinition Width="4"/>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <TextBox Grid.Column="0" Text="{Binding SearchBy, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Padding="3" FontFamily="Consolas" ToolTip="searchBy"/>
-                                                            <TextBox Grid.Column="2" Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Padding="3" FontFamily="Consolas" ToolTip="value"/>
-                                                            <TextBox Grid.Column="4" Text="{Binding Scope, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Padding="3" FontFamily="Consolas" ToolTip="scope"/>
-                                                            <Button Grid.Column="6" Content="✕" ToolTip="Remove locator"
-                                                                    Command="{Binding DataContext.RemoveStrategyItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding}" Padding="5,1"/>
-                                                        </Grid>
+                                                        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,6" Background="{DynamicResource BackgroundBrush}">
+                                                            <StackPanel>
+                                                                <DockPanel Background="{DynamicResource SurfaceBrush}" Margin="0,0,0,2">
+                                                                    <Button Content="✕" DockPanel.Dock="Right" ToolTip="Remove locator"
+                                                                            Command="{Binding DataContext.RemoveStrategyItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                            CommandParameter="{Binding}" Padding="6,1" Margin="4,2"/>
+                                                                    <TextBlock Text="Locator" FontWeight="SemiBold" FontSize="11" Margin="6,3" VerticalAlignment="Center"/>
+                                                                </DockPanel>
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="110" MinWidth="90"/>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <Grid.RowDefinitions>
+                                                                        <RowDefinition Height="Auto"/>
+                                                                        <RowDefinition Height="Auto"/>
+                                                                        <RowDefinition Height="Auto"/>
+                                                                        <RowDefinition Height="Auto"/>
+                                                                        <RowDefinition Height="Auto"/>
+                                                                    </Grid.RowDefinitions>
+                                                                    <Border Grid.Row="0" Grid.ColumnSpan="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1"/>
+                                                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Property" FontWeight="SemiBold" FontSize="11" Margin="6,2"/>
+                                                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="Value" FontWeight="SemiBold" FontSize="11" Margin="6,2"/>
+
+                                                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="searchBy" Style="{StaticResource PropName}"/>
+                                                                    <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource PropValue}" Text="{Binding SearchBy, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="value" Style="{StaticResource PropName}"/>
+                                                                    <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource PropValue}" Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="24"/>
+
+                                                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="scope" Style="{StaticResource PropName}"/>
+                                                                    <TextBox Grid.Row="3" Grid.Column="1" Style="{StaticResource PropValue}" Text="{Binding Scope, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="imagePath" Style="{StaticResource PropName}"/>
+                                                                    <TextBox Grid.Row="4" Grid.Column="1" Style="{StaticResource PropValue}" Text="{Binding ImagePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                                </Grid>
+                                                            </StackPanel>
+                                                        </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
