@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -461,9 +461,17 @@ private FolderTreeItem? _workingFolderSelectedItem;
 
         public ICommand MoveElementStrategyUpCommand { get; }
         public ICommand MoveElementStrategyDownCommand { get; }
+        public ICommand AddStrategyGroupCommand { get; }
+        public ICommand RemoveStrategyGroupCommand { get; }
+        public ICommand AddStrategyItemCommand { get; }
+        public ICommand RemoveStrategyItemCommand { get; }
         public ICommand MoveElementPriorityUpCommand { get; }
         public ICommand MoveElementPriorityDownCommand { get; }
         public int SelectedStrategyOrderIndex { get; set; } = -1;
+        private ElementStrategyGroup? _selectedStrategyGroup;
+        public ElementStrategyGroup? SelectedStrategyGroup { get => _selectedStrategyGroup; set { _selectedStrategyGroup = value; OnPropertyChanged(); } }
+        private ElementStrategyItem? _selectedStrategyItem;
+        public ElementStrategyItem? SelectedStrategyItem { get => _selectedStrategyItem; set { _selectedStrategyItem = value; OnPropertyChanged(); } }
 
         private bool _lastRunSuccess;
         public bool LastRunSuccess { get => _lastRunSuccess; set { _lastRunSuccess = value; OnPropertyChanged(); } }
@@ -507,7 +515,7 @@ private FolderTreeItem? _workingFolderSelectedItem;
                 if (value != null)
                 {
                     EditingElement = value.Clone();
-                    EnsureStrategyOrder(EditingElement);
+                    EnsureElementStrategies(EditingElement);
                     SelectedStrategyOrderIndex = -1;
                 }
                 else
@@ -701,6 +709,10 @@ private string _ocrResultText = "";
             BrowseScriptCommand = new RelayCommand(param => BrowseScript(param as RecordedStep));
             MoveElementStrategyUpCommand = new RelayCommand(_ => MoveElementStrategyUp(), _ => EditingElement?.StrategyOrder?.Count > 1);
             MoveElementStrategyDownCommand = new RelayCommand(_ => MoveElementStrategyDown(), _ => EditingElement?.StrategyOrder?.Count > 1);
+            AddStrategyGroupCommand = new RelayCommand(_ => AddStrategyGroup());
+            RemoveStrategyGroupCommand = new RelayCommand(p => RemoveStrategyGroup(p as ElementStrategyGroup ?? SelectedStrategyGroup));
+            AddStrategyItemCommand = new RelayCommand(p => AddStrategyItem(p as ElementStrategyGroup ?? SelectedStrategyGroup));
+            RemoveStrategyItemCommand = new RelayCommand(p => RemoveStrategyItem(SelectedStrategyGroup, p as ElementStrategyItem ?? SelectedStrategyItem));
             MoveElementPriorityUpCommand = MoveElementStrategyUpCommand;
             MoveElementPriorityDownCommand = MoveElementStrategyDownCommand;
 
@@ -1850,20 +1862,109 @@ private string _ocrResultText = "";
 
         private static readonly string[] FixedStrategyOrder = { "UIA3", "WPFSpy", "OculiX" };
 
+        private void EnsureElementStrategies(ElementEntry? element)
+        {
+            if (element == null) return;
+            if (element.StrategyGroups == null || element.StrategyGroups.Count == 0)
+                element.StrategyGroups = BuildDefaultStrategyGroups(element);
+            EnsureStrategyOrder(element);
+        }
+
+        private static List<ElementStrategyGroup> BuildDefaultStrategyGroups(ElementEntry element)
+        {
+            var groups = new List<ElementStrategyGroup>();
+            var probes = element.DriverProbes ?? new Dictionary<string, DriverProbeData>();
+            foreach (var driver in FixedStrategyOrder)
+            {
+                var g = new ElementStrategyGroup { Driver = driver, IsEnabled = true };
+                if (probes.TryGetValue(driver, out var p))
+                    AddStrategyRowsFromProbe(g, p, element, driver);
+                else if (driver == "UIA3")
+                    AddStrategyRowsFromProbe(g, new DriverProbeData { AutomationId = element.AutomationId, Name = element.Name, ControlType = element.ControlType, XPath = element.XPath }, element, driver);
+                else if (driver == "WPFSpy")
+                {
+                    var v = !string.IsNullOrEmpty(element.XPath) ? element.XPath : $"{element.ControlType}[@Name='{element.Name}']";
+                    if (!string.IsNullOrWhiteSpace(v)) g.Items.Add(new ElementStrategyItem { SearchBy = "XPath", Value = v });
+                }
+                else if (driver == "OculiX")
+                {
+                    var img = element.ImagePath ?? $"okulix/{(element.Alias?.Split('.').LastOrDefault() ?? "element").ToLowerInvariant()}.png";
+                    g.Items.Add(new ElementStrategyItem { SearchBy = "Image", Value = img, ImagePath = element.ImagePath, Similarity = 0.85 });
+                }
+                groups.Add(g);
+            }
+            return groups;
+        }
+
+        private static void AddStrategyRowsFromProbe(ElementStrategyGroup g, DriverProbeData p, ElementEntry element, string driver)
+        {
+            if (!string.IsNullOrEmpty(p.XPath)) g.Items.Add(new ElementStrategyItem { SearchBy = "XPath", Value = p.XPath });
+            if (!string.IsNullOrEmpty(p.AutomationId))
+                g.Items.Add(new ElementStrategyItem { SearchBy = "AutomationId", Value = p.AutomationId, Scope = driver == "UIA3" ? "Descendant" : null });
+            var name = !string.IsNullOrEmpty(p.Name) ? p.Name : element.Name;
+            if (!string.IsNullOrEmpty(name) && name != p.AutomationId)
+                g.Items.Add(new ElementStrategyItem { SearchBy = "Name", Value = name, Scope = driver == "UIA3" ? "Descendant" : null });
+        }
+
         private void EnsureStrategyOrder(ElementEntry? element)
         {
             if (element == null) return;
-            var existing = (element.StrategyOrder ?? new List<string>())
-                .Select(s => FixedStrategyOrder.FirstOrDefault(f => f.Equals(s, StringComparison.OrdinalIgnoreCase)))
-                .Where(s => s != null)
-                .Select(s => s!)
+            var groups = element.StrategyGroups ?? new List<ElementStrategyGroup>();
+            var orderBase = (element.StrategyOrder != null && element.StrategyOrder.Count > 0)
+                ? element.StrategyOrder
+                : groups.Select(g => g.Driver).ToList();
+            var existing = orderBase
+                .Select(s => FixedStrategyOrder.FirstOrDefault(f => f.Equals(s, StringComparison.OrdinalIgnoreCase)) ?? s)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
             foreach (var d in FixedStrategyOrder)
                 if (!existing.Contains(d, StringComparer.OrdinalIgnoreCase)) existing.Add(d);
-            element.StrategyOrder = new System.Collections.ObjectModel.ObservableCollection<string>(existing).ToList();
-            // Keep an observable list for UI binding updates by reassigning through clone-safe list.
+            foreach (var g in groups)
+                if (!existing.Contains(g.Driver, StringComparer.OrdinalIgnoreCase)) existing.Add(g.Driver);
             element.StrategyOrder = existing;
+        }
+
+        private void AddStrategyGroup()
+        {
+            if (EditingElement == null) return;
+            EnsureElementStrategies(EditingElement);
+            var name = FixedStrategyOrder.FirstOrDefault(d => EditingElement.StrategyGroups!.All(g => !g.Driver.Equals(d, StringComparison.OrdinalIgnoreCase))) ?? "Custom";
+            var g = new ElementStrategyGroup { Driver = name, IsEnabled = true };
+            g.Items.Add(new ElementStrategyItem { SearchBy = "XPath", Value = "" });
+            EditingElement.StrategyGroups!.Add(g);
+            SelectedStrategyGroup = g;
+            EnsureElementStrategies(EditingElement);
+            OnPropertyChanged(nameof(EditingElement));
+        }
+
+        private void RemoveStrategyGroup(ElementStrategyGroup? group)
+        {
+            if (EditingElement?.StrategyGroups == null || group == null) return;
+            EditingElement.StrategyGroups.Remove(group);
+            if (SelectedStrategyGroup == group) SelectedStrategyGroup = null;
+            EnsureElementStrategies(EditingElement);
+            OnPropertyChanged(nameof(EditingElement));
+        }
+
+        private void AddStrategyItem(ElementStrategyGroup? group)
+        {
+            if (group == null && EditingElement?.StrategyGroups != null) group = EditingElement.StrategyGroups.FirstOrDefault();
+            if (group == null) return;
+            var item = new ElementStrategyItem { SearchBy = group.Driver.Equals("OculiX", StringComparison.OrdinalIgnoreCase) ? "Image" : "XPath", Value = "" };
+            group.Items.Add(item);
+            SelectedStrategyItem = item;
+            OnPropertyChanged(nameof(EditingElement));
+        }
+
+        private void RemoveStrategyItem(ElementStrategyGroup? group, ElementStrategyItem? item)
+        {
+            if (EditingElement?.StrategyGroups == null || item == null) return;
+            group ??= SelectedStrategyGroup ?? EditingElement.StrategyGroups.FirstOrDefault(g => g.Items.Contains(item));
+            if (group == null) return;
+            group.Items.Remove(item);
+            if (SelectedStrategyItem == item) SelectedStrategyItem = null;
+            OnPropertyChanged(nameof(EditingElement));
         }
 
         private void MoveElementStrategyUp()
@@ -2589,16 +2690,7 @@ private string _ocrResultText = "";
                     if (string.IsNullOrEmpty(alias)) continue;
                     if (Elements.Any(e => e.Alias == alias)) continue;
 
-                    var entry = kv.Value;
-                    var element = new ElementEntry
-                    {
-                        Alias = alias,
-                        DisplayName = entry.TryGetProperty("displayName", out var dnProp) ? dnProp.GetString() ?? "" : "",
-                        ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
-                        AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
-                        Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
-                        XPath = entry.TryGetProperty("relativeXPath", out var xpProp) ? xpProp.GetString() : null,
-                    };
+                    var element = ParseImportedElement(alias, kv.Value);
                     Elements.Add(element);
                     imported++;
                 }
@@ -2611,6 +2703,54 @@ private string _ocrResultText = "";
             {
                 EnqueueToast($"Element import failed: {ex.Message}", ToastKind.Error);
             }
+        }
+
+        private ElementEntry ParseImportedElement(string alias, JsonElement entry)
+        {
+            var element = new ElementEntry
+            {
+                Alias = alias,
+                DisplayName = entry.TryGetProperty("displayName", out var dnProp) ? dnProp.GetString() ?? "" : "",
+                ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
+                AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
+                Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
+                XPath = entry.TryGetProperty("relativeXPath", out var xpProp) ? xpProp.GetString() : (entry.TryGetProperty("xpath", out var xp2) ? xp2.GetString() : null),
+                AppId = entry.TryGetProperty("appId", out var appProp) ? appProp.GetString() : null,
+                ImagePath = entry.TryGetProperty("imagePath", out var imgProp) ? imgProp.GetString() : null,
+            };
+            if (entry.TryGetProperty("recordingModes", out var rmProp) && rmProp.ValueKind == JsonValueKind.Array)
+                element.RecordingModes = rmProp.EnumerateArray().Select(v => v.GetString()).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!).ToList();
+            if (entry.TryGetProperty("strategies", out var strategiesProp) && strategiesProp.ValueKind == JsonValueKind.Object)
+            {
+                element.StrategyGroups = new List<ElementStrategyGroup>();
+                foreach (var g in strategiesProp.EnumerateObject())
+                {
+                    var group = new ElementStrategyGroup { Driver = g.Name, IsEnabled = true };
+                    if (g.Value.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var s in g.Value.EnumerateArray())
+                        {
+                            if (s.ValueKind != JsonValueKind.Object) continue;
+                            var item = new ElementStrategyItem
+                            {
+                                SearchBy = s.TryGetProperty("searchBy", out var sb) ? sb.GetString() ?? "XPath" : "XPath",
+                                Value = s.TryGetProperty("value", out var v) ? v.GetString() ?? "" : "",
+                                Scope = s.TryGetProperty("scope", out var sc) ? sc.GetString() : null,
+                                ImagePath = s.TryGetProperty("imagePath", out var ip) ? ip.GetString() : null,
+                                Similarity = s.TryGetProperty("similarity", out var sim) && sim.TryGetDouble(out var d) ? d : null,
+                            };
+                            group.Items.Add(item);
+                        }
+                    }
+                    element.StrategyGroups.Add(group);
+                }
+                element.StrategyOrder = element.StrategyGroups.Select(x => x.Driver).ToList();
+            }
+            // Legacy driverPriority import
+            if (entry.TryGetProperty("driverPriority", out var dp) && dp.ValueKind == JsonValueKind.Array && (element.StrategyOrder == null || element.StrategyOrder.Count == 0))
+                element.StrategyOrder = dp.EnumerateArray().Select(v => v.GetString()).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!).ToList();
+            EnsureElementStrategies(element);
+            return element;
         }
 
         private void ImportElements()
@@ -2639,21 +2779,11 @@ private string _ocrResultText = "";
 
                     if (Elements.Any(e => e.Alias == alias)) continue;
 
-                    var entry = kv.Value;
-                    var element = new ElementEntry
-                    {
-                        Alias = alias,
-                        DisplayName = entry.TryGetProperty("displayName", out var dnProp) ? dnProp.GetString() ?? "" : "",
-                        ControlType = entry.TryGetProperty("controlType", out var ctProp) ? ctProp.GetString() ?? "" : "",
-                        AutomationId = entry.TryGetProperty("automationId", out var aiProp) ? aiProp.GetString() : null,
-                        Name = entry.TryGetProperty("name", out var nmProp) ? nmProp.GetString() ?? "" : "",
-                        XPath = entry.TryGetProperty("relativeXPath", out var xpProp) ? xpProp.GetString() : null,
-                    };
-
-                    Elements.Add(element);
+                    Elements.Add(ParseImportedElement(alias, kv.Value));
                     imported++;
                 }
 
+                RefreshElementTree();
                 StatusText = $"Imported {imported} element(s) from {Path.GetFileName(dialog.FileName)}.";
                 EnqueueToast($"Imported {imported} elements", ToastKind.Success);
             }
@@ -2876,11 +3006,12 @@ private string _ocrResultText = "";
                 Name = "",
                 XPath = "",
                 StrategyOrder = FixedStrategyOrder.ToList(),
+                StrategyGroups = BuildDefaultStrategyGroups(new ElementEntry { Alias = "NewPage.newElement", ControlType = "Text" }),
             };
             Elements.Add(newElement);
             SelectedElement = newElement;
             EditingElement = newElement.Clone();
-            EnsureStrategyOrder(EditingElement);
+            EnsureElementStrategies(EditingElement);
         }
 
         private void EditElement(ElementEntry? element)
@@ -2889,7 +3020,7 @@ private string _ocrResultText = "";
             try
             {
                 EditingElement = element.Clone();
-                EnsureStrategyOrder(EditingElement);
+                EnsureElementStrategies(EditingElement);
             }
             catch (Exception ex)
             {
@@ -2932,12 +3063,19 @@ private string _ocrResultText = "";
             }
         }
 
-private void SaveElement()
+        private void SaveElement()
         {
             if (EditingElement == null || SelectedElement == null) return;
 
             try
             {
+                EnsureElementStrategies(EditingElement);
+                // Keep StrategyOrder aligned with enabled groups
+                if (EditingElement.StrategyGroups != null)
+                {
+                    var enabled = EditingElement.StrategyGroups.Where(g => g.IsEnabled && !string.IsNullOrWhiteSpace(g.Driver)).Select(g => g.Driver).ToList();
+                    if (enabled.Count > 0) EditingElement.StrategyOrder = enabled;
+                }
                 int index = Elements.IndexOf(SelectedElement);
                 if (index >= 0)
                 {
@@ -2945,6 +3083,9 @@ private void SaveElement()
                     SelectedElement = Elements[index];
                 }
                 EditingElement = null;
+                SelectedStrategyGroup = null;
+                SelectedStrategyItem = null;
+                RefreshElementTree();
             }
             catch (Exception ex)
             {
@@ -2990,7 +3131,10 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
 
         private void CancelEditElement()
         {
-            EditingElement = null;
+            EditingElement = SelectedElement?.Clone();
+            if (EditingElement != null) EnsureElementStrategies(EditingElement);
+            SelectedStrategyGroup = null;
+            SelectedStrategyItem = null;
         }
 
         private void DeleteElement(ElementEntry? element)
@@ -3259,7 +3403,7 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                 SelectedElement = existing;
             }
             EditingElement = SelectedElement?.Clone();
-            if (EditingElement != null) EnsureStrategyOrder(EditingElement);
+            if (EditingElement != null) EnsureElementStrategies(EditingElement);
         }
 
         private static string? SanitizeAliasSegment(string? value)
@@ -3355,6 +3499,8 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }
+
+
 
 
 

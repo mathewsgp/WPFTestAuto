@@ -178,6 +178,31 @@ namespace WpfTestIde.Recording
                     {
                         elementDef["relativeXPath"] = entry.XPath!;
                     }
+                    if (entry.AppId != null) elementDef["appId"] = entry.AppId;
+                    if (entry.ImagePath != null) elementDef["imagePath"] = entry.ImagePath;
+                    if (entry.RecordingModes != null && entry.RecordingModes.Count > 0)
+                        elementDef["recordingModes"] = entry.RecordingModes.ToList();
+
+                    // Prefer explicit editable strategy groups when present; otherwise derive from probes/fields.
+                    if (entry.StrategyGroups != null && entry.StrategyGroups.Count > 0)
+                    {
+                        strategies.Clear();
+                        foreach (var g in entry.StrategyGroups.Where(g => g.IsEnabled && !string.IsNullOrWhiteSpace(g.Driver)))
+                        {
+                            var rows = g.Items
+                                .Where(i => !string.IsNullOrWhiteSpace(i.SearchBy) && !string.IsNullOrWhiteSpace(i.Value))
+                                .Select(i =>
+                                {
+                                    var o = new Dictionary<string, object> { ["searchBy"] = i.SearchBy, ["value"] = i.Value };
+                                    if (!string.IsNullOrWhiteSpace(i.Scope)) o["scope"] = i.Scope!;
+                                    if (!string.IsNullOrWhiteSpace(i.ImagePath)) o["imagePath"] = i.ImagePath!;
+                                    if (i.Similarity.HasValue) o["similarity"] = i.Similarity.Value;
+                                    return (object)o;
+                                }).ToList();
+                            if (rows.Count > 0) strategies[g.Driver] = rows;
+                        }
+                    }
+
                     // driverProbes is IDE capture/debug metadata (per-driver raw probe snapshots).
                     // Runtime consumers use strategies; do not emit driverProbes to avoid duplication/drift.
                     // Legacy files containing driverProbes remain tolerated by readers that ignore unknown fields.
@@ -189,10 +214,12 @@ namespace WpfTestIde.Recording
                         : new List<string> { "recorded" };
                     // Reorder strategies according to entry.StrategyOrder (if provided).
                     var orderedStrategies = new Dictionary<string, List<object>>();
-                    var order = (entry.StrategyOrder != null && entry.StrategyOrder.Any())
+                    var orderSource = entry.StrategyOrder != null && entry.StrategyOrder.Any()
                         ? entry.StrategyOrder
-                        : new List<string> { "UIA3", "WPFSpy", "OculiX" };
-                    foreach (var key in order)
+                        : (entry.StrategyGroups != null && entry.StrategyGroups.Any(g => g.IsEnabled)
+                            ? entry.StrategyGroups.Where(g => g.IsEnabled).Select(g => g.Driver).ToList()
+                            : new List<string> { "UIA3", "WPFSpy", "OculiX" });
+                    foreach (var key in orderSource)
                     {
                         if (strategies.TryGetValue(key, out var val))
                             orderedStrategies[key] = val;
