@@ -498,7 +498,7 @@ namespace WpfTestIde.Recording
                 else
                 {
                     windowSegment = ResolveWindowSegment(x, y, target);
-                    ancestorPath = BuildAncestorPath(primaryProbed);
+                    ancestorPath = xpathAncestor; // already sanitized dot-path from SplitXPathForAlias
                 }
             }
             else
@@ -507,37 +507,24 @@ namespace WpfTestIde.Recording
                 ancestorPath = BuildAncestorPath(primaryProbed);
             }
 
-            // The element identifier (idOrName) must not be duplicated in ancestorPath.
-            // SplitXPathForAlias includes the innermost segment in ancestorPath; the
-            // template-part walk-up can promote a parent already present in ancestorPath.
-            // Strip idOrName (always the last segment of ancestorPath) so the alias is
-            // "...Window.Ancestors.Element" not "...Window.Ancestors.Element.Element".
-            if (!string.IsNullOrEmpty(ancestorPath) && !string.IsNullOrEmpty(idOrName))
-            {
-                var ancestorSegments = ancestorPath.Split('.');
-                var kept = new List<string>(ancestorSegments.Length);
-                bool removed = false;
-                for (int i = ancestorSegments.Length - 1; i >= 0; i--)
-                {
-                    if (!removed && ancestorSegments[i] == idOrName)
-                    {
-                        removed = true;
-                        continue;
-                    }
-                    kept.Add(ancestorSegments[i]);
-                }
-                if (removed)
-                {
-                    kept.Reverse();
-                    ancestorPath = string.Join(".", kept);
-                }
-            }
+            idOrName = SanitizeAliasSegment(idOrName);
+            if (string.IsNullOrEmpty(idOrName))
+                idOrName = SanitizeAliasSegment(primaryProbed.AutomationId)
+                    ?? SanitizeAliasSegment(primaryProbed.Name)
+                    ?? SanitizeAliasSegment(primaryProbed.ControlType)
+                    ?? "Element";
+
+            ancestorPath = NormalizeAncestorPath(ancestorPath, idOrName);
 
             // Alias format: <ProcessName>.<WindowSegment>[.<AncestorPath>].<Element>
-            var parts = new List<string> { processName, windowSegment };
+            var parts = new List<string>
+            {
+                SanitizeAliasSegment(processName) ?? "App",
+                SanitizeAliasSegment(windowSegment) ?? "Window",
+            };
             if (!string.IsNullOrEmpty(ancestorPath)) parts.Add(ancestorPath);
             parts.Add(idOrName);
-            string alias = string.Join(".", parts);
+            string alias = CollapseDuplicateAliasSegments(string.Join(".", parts.Where(p => !string.IsNullOrEmpty(p))));
 
             bool isTextEntry = primaryProbed.ControlType is "TextBox" or "Edit" or "ComboBox" or "PasswordBox" or "Document";
             if (isTextEntry)
@@ -1314,6 +1301,7 @@ namespace WpfTestIde.Recording
                 string segment = segments[i];
                 if (string.IsNullOrEmpty(segment)) continue;
                 string? identifier = ExtractIdentifier(segment);
+                identifier = SanitizeAliasSegment(identifier);
                 if (!string.IsNullOrEmpty(identifier)) parts.Add(identifier);
             }
             return string.Join(".", parts);
@@ -1329,7 +1317,7 @@ namespace WpfTestIde.Recording
                 {
                     int start = "@AutomationId='".Length;
                     int end = predicate.IndexOf('\'', start);
-                    if (end > start) return predicate.Substring(start, end - start);
+                    if (end > start) return SanitizeAliasSegment(predicate.Substring(start, end - start));
                 }
                 else if (predicate.StartsWith("@Name='"))
                 {
@@ -1339,11 +1327,11 @@ namespace WpfTestIde.Recording
                     {
                         string name = predicate.Substring(start, end - start);
                         if (IsLikelyTemplatePartName(name)) return null;
-                        return name;
+                        return SanitizeAliasSegment(name);
                     }
                 }
             }
-            return null;
+            return SanitizeAliasSegment(segment);
         }
 
         private static bool IsLikelyTemplatePartName(string name)
@@ -1364,6 +1352,63 @@ namespace WpfTestIde.Recording
                 // || name == "wrapPanel"
                 // || name == "uniformGrid"
                 ;
+        }
+
+        private static string? SanitizeAliasSegment(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            var chars = value.Trim().Select(c => char.IsLetterOrDigit(c) || c == '_' || c == '-' ? c : '_').ToArray();
+            var s = new string(chars).Trim('_');
+            while (s.Contains("__", StringComparison.Ordinal)) s = s.Replace("__", "_", StringComparison.Ordinal);
+            return string.IsNullOrEmpty(s) ? null : s;
+        }
+
+        private static string NormalizeAncestorPath(string? ancestorPath, string? terminalSegment)
+        {
+            if (string.IsNullOrWhiteSpace(ancestorPath)) return "";
+            var raw = ancestorPath.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var kept = new List<string>(raw.Length);
+            string? prev = null;
+            foreach (var r in raw)
+            {
+                var seg = SanitizeAliasSegment(r);
+                if (string.IsNullOrEmpty(seg)) continue;
+                if (prev != null && seg.Equals(prev, StringComparison.OrdinalIgnoreCase)) continue; // collapse adjacent duplicates
+                kept.Add(seg);
+                prev = seg;
+            }
+            while (kept.Count > 0 && !string.IsNullOrEmpty(terminalSegment) &&
+                   kept[^1].Equals(terminalSegment, StringComparison.OrdinalIgnoreCase))
+            {
+                kept.RemoveAt(kept.Count - 1);
+            }
+            // Remove any remaining interior duplicates of terminal segment to avoid "A.B.B"
+            if (!string.IsNullOrEmpty(terminalSegment))
+                kept = kept.Where((s, i) => !s.Equals(terminalSegment, StringComparison.OrdinalIgnoreCase) || i == kept.Count - 1).ToList();
+            // Final collapse of any adjacent duplicates after filtering
+            var collapsed = new List<string>(kept.Count);
+            foreach (var s in kept)
+            {
+                if (collapsed.Count == 0 || !collapsed[^1].Equals(s, StringComparison.OrdinalIgnoreCase))
+                    collapsed.Add(s);
+            }
+            if (collapsed.Count > 0 && !string.IsNullOrEmpty(terminalSegment) &&
+                collapsed[^1].Equals(terminalSegment, StringComparison.OrdinalIgnoreCase))
+                collapsed.RemoveAt(collapsed.Count - 1);
+            return string.Join(".", collapsed);
+        }
+
+        private static string CollapseDuplicateAliasSegments(string alias)
+        {
+            if (string.IsNullOrWhiteSpace(alias)) return alias;
+            var parts = alias.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            var result = new List<string>(parts.Length);
+            foreach (var p in parts)
+            {
+                if (result.Count == 0 || !result[^1].Equals(p, StringComparison.OrdinalIgnoreCase))
+                    result.Add(p);
+            }
+            return string.Join(".", result);
         }
 
         private List<string> GetSelectedModesForCapture()

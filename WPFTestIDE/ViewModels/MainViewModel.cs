@@ -1338,6 +1338,7 @@ private string _ocrResultText = "";
                 // alias so generated scripts play back against the existing
                 // Element Repository without manual reconciliation.
                 string resolvedAlias = RepositoryLookup.ResolveAlias(entry.AutomationId, entry.Name) ?? step.Alias;
+                resolvedAlias = CollapseDuplicateAliasSegments(resolvedAlias);
                 
                 string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "repository", "attach_log.txt");
                 try
@@ -3175,35 +3176,17 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                             idOrName = parentId ?? string.Empty;
                         }
 
-                        // The element identifier (idOrName) must not be duplicated in
-                        // ancestorPath. BuildAncestorPath includes the parent segment that
-                        // the template-part walk-up promotes to idOrName. Strip idOrName
-                        // (always the last segment of ancestorPath) so the alias is
-                        // "Page.Ancestors.Element" not "Page.Ancestors.Element.Element".
-                        if (!string.IsNullOrEmpty(ancestorPath) && !string.IsNullOrEmpty(idOrName))
-                        {
-                            var ancestorSegments = ancestorPath.Split('.');
-                            var kept = new List<string>(ancestorSegments.Length);
-                            bool removed = false;
-                            for (int i = ancestorSegments.Length - 1; i >= 0; i--)
-                            {
-                                if (!removed && ancestorSegments[i] == idOrName)
-                                {
-                                    removed = true;
-                                    continue;
-                                }
-                                kept.Add(ancestorSegments[i]);
-                            }
-                            if (removed)
-                            {
-                                kept.Reverse();
-                                ancestorPath = string.Join(".", kept);
-                            }
-                        }
+                        idOrName = SanitizeAliasSegment(idOrName)
+                            ?? SanitizeAliasSegment(probe.AutomationId)
+                            ?? SanitizeAliasSegment(probe.Name)
+                            ?? SanitizeAliasSegment(probe.ControlType)
+                            ?? "Element";
 
-                        string alias = string.IsNullOrEmpty(ancestorPath)
-                            ? $"{page}.{idOrName}"
-                            : $"{page}.{ancestorPath}.{idOrName}";
+                        ancestorPath = NormalizeAncestorPath(ancestorPath, idOrName);
+                        string alias = CollapseDuplicateAliasSegments(
+                            string.IsNullOrEmpty(ancestorPath)
+                                ? $"{page}.{idOrName}"
+                                : $"{page}.{ancestorPath}.{idOrName}");
                         
                         var newElement = new ElementEntry
                         {
@@ -3221,17 +3204,13 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
                         {
                             await dispatcher.InvokeAsync(() =>
                             {
-                                Elements.Add(newElement);
-                                SelectedElement = newElement;
-                                EditingElement = newElement.Clone();
+                                UpsertPickedElement(newElement);
                                 StatusText = $"Picked: {alias}";
                             });
                         }
                         else
                         {
-                            Elements.Add(newElement);
-                            SelectedElement = newElement;
-                            EditingElement = newElement.Clone();
+                            UpsertPickedElement(newElement);
                             StatusText = $"Picked: {alias}";
                         }
                     }
@@ -3258,6 +3237,74 @@ private async System.Threading.Tasks.Task GetDataGridContentOcr()
             public string ControlType { get; set; } = "";
             public string? Text { get; set; }
             public string? XPath { get; set; }
+        }
+
+        private void UpsertPickedElement(ElementEntry entry)
+        {
+            var existing = Elements.FirstOrDefault(e =>
+                string.Equals(e.Alias, entry.Alias, StringComparison.OrdinalIgnoreCase)
+                || (!string.IsNullOrEmpty(entry.AutomationId) && string.Equals(e.AutomationId, entry.AutomationId, StringComparison.OrdinalIgnoreCase) && string.Equals(e.AppId, entry.AppId, StringComparison.OrdinalIgnoreCase))
+                || (!string.IsNullOrEmpty(entry.XPath) && string.Equals(e.XPath, entry.XPath, StringComparison.OrdinalIgnoreCase) && string.Equals(e.AppId, entry.AppId, StringComparison.OrdinalIgnoreCase)));
+            if (existing == null)
+            {
+                Elements.Add(entry);
+                SelectedElement = entry;
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(existing.XPath) && !string.IsNullOrEmpty(entry.XPath)) existing.XPath = entry.XPath;
+                if (string.IsNullOrEmpty(existing.AutomationId) && !string.IsNullOrEmpty(entry.AutomationId)) existing.AutomationId = entry.AutomationId;
+                if (string.IsNullOrEmpty(existing.Name) && !string.IsNullOrEmpty(entry.Name)) existing.Name = entry.Name;
+                if (!string.IsNullOrEmpty(entry.ControlType)) existing.ControlType = entry.ControlType;
+                SelectedElement = existing;
+            }
+            EditingElement = SelectedElement?.Clone();
+            if (EditingElement != null) EnsureStrategyOrder(EditingElement);
+        }
+
+        private static string? SanitizeAliasSegment(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            var chars = value.Trim().Select(c => char.IsLetterOrDigit(c) || c == '_' || c == '-' ? c : '_').ToArray();
+            var s = new string(chars).Trim('_');
+            while (s.Contains("__", StringComparison.Ordinal)) s = s.Replace("__", "_", StringComparison.Ordinal);
+            return string.IsNullOrEmpty(s) ? null : s;
+        }
+
+        private static string NormalizeAncestorPath(string? ancestorPath, string? terminalSegment)
+        {
+            if (string.IsNullOrWhiteSpace(ancestorPath)) return "";
+            var raw = ancestorPath.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var kept = new List<string>(raw.Length);
+            string? prev = null;
+            foreach (var r in raw)
+            {
+                var seg = SanitizeAliasSegment(r);
+                if (string.IsNullOrEmpty(seg)) continue;
+                if (prev != null && seg.Equals(prev, StringComparison.OrdinalIgnoreCase)) continue;
+                kept.Add(seg);
+                prev = seg;
+            }
+            while (kept.Count > 0 && !string.IsNullOrEmpty(terminalSegment) &&
+                   kept[^1].Equals(terminalSegment, StringComparison.OrdinalIgnoreCase))
+                kept.RemoveAt(kept.Count - 1);
+            var collapsed = new List<string>(kept.Count);
+            foreach (var s in kept)
+                if (collapsed.Count == 0 || !collapsed[^1].Equals(s, StringComparison.OrdinalIgnoreCase)) collapsed.Add(s);
+            if (collapsed.Count > 0 && !string.IsNullOrEmpty(terminalSegment) &&
+                collapsed[^1].Equals(terminalSegment, StringComparison.OrdinalIgnoreCase))
+                collapsed.RemoveAt(collapsed.Count - 1);
+            return string.Join(".", collapsed);
+        }
+
+        private static string CollapseDuplicateAliasSegments(string alias)
+        {
+            if (string.IsNullOrWhiteSpace(alias)) return alias;
+            var parts = alias.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            var result = new List<string>(parts.Length);
+            foreach (var p in parts)
+                if (result.Count == 0 || !result[^1].Equals(p, StringComparison.OrdinalIgnoreCase)) result.Add(p);
+            return string.Join(".", result);
         }
 
         public ICommand ToggleThemeCommand { get; }
