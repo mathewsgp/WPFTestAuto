@@ -80,12 +80,6 @@
                                 <TextBlock Text="Name" Style="{StaticResource FieldLabel}"/>
                                 <TextBox Style="{StaticResource FieldBox}" Text="{Binding EditingElement.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="ElementNameBox"/>
                             </StackPanel>
-                            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3">
-                                <TextBlock Text="XPath / Relative XPath" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Style="{StaticResource FieldBox}" Text="{Binding EditingElement.XPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56" MaxHeight="120" VerticalScrollBarVisibility="Auto"
-                                         AutomationProperties.AutomationId="ElementXPathBox"/>
-                            </StackPanel>
                         </Grid>
                     </StackPanel>
                 </Border>
